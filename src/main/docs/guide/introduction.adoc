@@ -1,1 +1,4 @@
-TODO
+link:https://json-schema.org/[JSON Schema] is a human-readable format for exchanging data that also enables
+JSON data consistency, validity and interoperability.
+
+Micronaut JSON Schema allows creating schemas for beans in your applications.

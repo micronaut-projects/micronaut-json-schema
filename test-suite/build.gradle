@@ -1,0 +1,31 @@
+plugins {
+    id 'io.micronaut.build.internal.json-schema-module'
+}
+
+dependencies {
+    implementation(mnValidation.validation)
+    implementation(projects.micronautJsonSchemaAnnotations)
+    implementation(mnSerde.micronaut.serde.jackson)
+
+    testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
+    testAnnotationProcessor(mnSerde.micronaut.serde.processor)
+    testAnnotationProcessor(mn.micronaut.inject.java)
+
+    api(mn.jackson.databind)
+
+    testImplementation(mn.micronaut.http.server.netty)
+    testImplementation(mn.micronaut.http.client)
+    testImplementation(libs.json.schema.validator)
+    testImplementation(mn.micronaut.inject.kotlin.test)
+    testImplementation(mn.micronaut.inject.groovy.test)
+    testImplementation(mn.micronaut.inject.java.test)
+    testImplementation(mn.micronaut.inject)
+}
+
+configurations.configureEach {
+    all*.exclude group: "ch.qos.logback"
+}
+
+test {
+    maxHeapSize = "1024m"
+}

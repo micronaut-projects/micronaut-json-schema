@@ -1,0 +1,17 @@
+Schema generation can be configured with properties of the
+link:{api}/io/micronaut/jsonschema/JsonSchema.html[JsonSchema] annotation, for example:
+
+snippet::io.micronaut.jsonschema.test.RWBlackbird[tags=clazz]
+
+<1> Configure the title and description of the generated JSON Schema.
+<2> Set the relative or absolute URL.
+This will affect the file name as well as the id by which this schema can be referenced.
+
+The generation can be configured globally by annotating a type with
+link:{api}/io/micronaut/jsonschema/JsonSchema.html[JsonSchemaConfiguration]:
+
+snippet::io.micronaut.jsonschema.test.JsonSchemaConfig[tags=clazz]
+
+<1> Set the base URL for all the schemas. It will be prepended to all relative schema URLs.
+    Refer to the link:{api}/io/micronaut/jsonschema/JsonSchema.html[JsonSchemaConfiguration] documentation to
+    see all configurable parameters.

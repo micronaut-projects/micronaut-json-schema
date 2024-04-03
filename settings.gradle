@@ -8,14 +8,22 @@ pluginManagement {
 plugins {
     id 'io.micronaut.build.shared.settings' version '6.7.0'
 }
+enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 
-rootProject.name = 'project-template-parent'
+rootProject.name = 'json-schema-parent'
 
-include 'project-template'
-include 'project-template-bom'
+include 'json-schema-bom'
+include 'json-schema-annotations'
+include 'json-schema-processor'
+include 'test-suite'
+include 'test-suite-groovy'
+include 'test-suite-kotlin'
 
 enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 
 micronautBuild {
+    useStandardizedProjectNames = true
     importMicronautCatalog()
+    importMicronautCatalog('micronaut-validation')
+    importMicronautCatalog('micronaut-serde')
 }

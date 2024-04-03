@@ -1,0 +1,23 @@
+package io.micronaut.jsonschema.test
+
+import io.micronaut.jsonschema.JsonSchema
+import io.micronaut.serde.annotation.Serdeable
+
+/**
+ * A red-winged blackbird.
+ *
+ * @param name The name
+ * @param wingSpan The wing span of the bird
+ */
+// tag::clazz[]
+@JsonSchema(
+    title = "RedWingedBlackbird", // <1>
+    description = "A species of blackbird with red wings",
+    uri = "/red-winged-blackbird" // <2>
+)
+@Serdeable
+class RWBlackbird (
+        val name: String,
+        val wingSpan: Double
+)
+// end::clazz[]

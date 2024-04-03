@@ -3,5 +3,11 @@ introduction:
 releaseHistory: Release History
 quickStart:
   title: Quick Start
+configuration:
+  title: Configuration
+supported-features:
+  title: Supported Information Sources
+serving:
+  title: Serving JSON Schemas
 repository: Repository
 
