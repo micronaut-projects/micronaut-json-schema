@@ -20,6 +20,12 @@ dependencies {
     testImplementation(mn.micronaut.inject.groovy.test)
     testImplementation(mn.micronaut.inject.java.test)
     testImplementation(mn.micronaut.inject)
+
+    testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(libs.junit.jupiter.api)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+    testImplementation(libs.junit.jupiter.params)
+
 }
 
 configurations.configureEach {
