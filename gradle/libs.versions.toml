@@ -16,12 +16,12 @@
 # a managed version (a version which alias starts with "managed-"
 
 [versions]
-micronaut = "4.3.12"
+micronaut = "4.4.0"
 micronaut-docs = "2.0.0"
-micronaut-logging = "1.2.0"
-micronaut-serde = "2.5.1"
+micronaut-logging = "1.2.3"
+micronaut-serde = "2.9.0"
 micronaut-test = "4.2.1"
-micronaut-validation = "4.2.0"
+micronaut-validation = "4.5.0"
 
 groovy = "4.0.17"
 json-schema-validator = "1.4.0"
