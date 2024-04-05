@@ -1,7 +1,6 @@
 introduction:
   title: Introduction
 dependencies: Dependencies
-releaseHistory: Release History
 quickStart:
   title: Quick Start
 configuration:
@@ -11,3 +10,4 @@ supported-features:
 serving:
   title: Serving JSON Schemas
 repository: Repository
+releaseHistory: Release History
