@@ -15,7 +15,6 @@ abstract class AbstractValidationSpec extends Specification {
 
     protected Set<ValidationMessage> validateJsonWithSchema(Object value, String schemaName) {
         String input = objectMapper.writeValueAsString(value)
-        println input
         return validateJsonWithSchema(input, schemaName)
     }
 
