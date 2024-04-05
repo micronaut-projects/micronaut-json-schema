@@ -5,8 +5,11 @@ quickStart:
   title: Quick Start
 configuration:
   title: Configuration
-supported-features:
+sources:
   title: Supported Information Sources
+  javadoc: JavaDoc
+  validationAnnotations: Validation Annotations
+  jacksonAnnotations: Jackson Annotations
 serving:
   title: Serving JSON Schemas
 repository: Repository

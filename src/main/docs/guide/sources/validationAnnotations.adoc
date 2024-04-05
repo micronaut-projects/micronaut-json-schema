@@ -1,0 +1,34 @@
+The following `jakarta.validation.constraints` annotations are supported:
+
+[cols="2", options="header"]
+|===
+| Validation Annotations | Supported
+| `AssertFalse` | ✅
+| `AssertTrue` | ✅
+| `DecimalMin` | ✅
+| `DecimalMax` | ✅
+| `Email` | ✅
+| `Max` | ✅
+| `Min` | ✅
+| `Negative` | ✅
+| `NegativeOrZero` | ✅
+| `NotBlank` | ✅
+| `NotEmpty` | ✅
+| `NotNull` | ✅
+| `Null` | ✅
+| `Pattern` | ✅
+| `Positive` | ✅
+| `PositiveOrZero` | ✅
+| `Size` | ✅
+| `Digits` | ❌
+| `Future` | ❌
+| `FutureOrPresent` | ❌
+| `Past` | ❌
+| `PastOrPresent` | ❌
+|===
+
+By default, properties are not nullable. `jakarta.annotations.Nullable` can be added to make them nullable.
+Note, that validation might not correspond to actual bean values, as by default null
+values are completely omitted during JSON serialization.
+
+NOTE: Custom validators cannot be supported, as this information is implementation-specific and not available during build time.

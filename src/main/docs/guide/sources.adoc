@@ -1,0 +1,7 @@
+Information for JSON schema is aggregated from multiple sources.
+
+
+
+### Jackson annotations
+
+

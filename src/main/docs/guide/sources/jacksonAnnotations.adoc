@@ -1,0 +1,45 @@
+The following `com.fasterxml.jackson.annotation` annotations are supported:
+
+[cols="2", options="header"]
+|===
+| Jackson Annotations | Supported
+| `JsonClassDescription` | ✅
+| `JsonIgnore` | ✅
+| `JsonIgnoreProperties` | ✅
+| `JsonInclude` | ✅
+| `JsonIncludeProperties` | ✅
+| `JsonProperty` | ✅
+| `JsonPropertyDescription` | ✅
+| `JsonSubTypes` | ✅
+| `JsonTypeInfo` | ✅
+| `JsonTypeName` | ✅
+| `JsonUnwrapped` | ✅
+| `JsonAlias` | ❌
+| `JsonAnyGetter` | ❌
+| `JsonAnySetter` | ❌
+| `JsonAutoDetect` | ❌
+| `JsonBackReference` | ❌
+| `JsonCreator` | ❌
+| `JsonEnumDefaultValue` | ❌
+| `JsonFormat` | ❌
+| `JsonGetter` | ❌
+| `JsonIdentityInfo` | ❌
+| `JsonIdentityReference` | ❌
+| `JsonIgnoreType` | ❌
+| `JsonKey` | ❌
+| `JsonManagedReference` | ❌
+| `JsonMerge` | ❌
+| `JsonRawValue` | ❌
+| `JsonRootName` | ❌
+| `JsonSetter` | ❌
+| `JsonTypeId` | ❌
+| `JsonValue` | ❌
+| `JsonView` | ❌
+| `JacksonInject` | ❌
+| `JsonFilter` | ❌
+| `JsonPropertyOrder` | ❌
+|===
+
+NOTE: Custom serializers and deserializers cannot be supported, as this information is implementation-specific
+and not available during build time. This also applies to some other features, like the `JsonFilter` annotation
+which allows defining custom filters.
