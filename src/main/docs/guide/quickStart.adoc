@@ -12,4 +12,10 @@ snippet::io.micronaut.jsonschema.test.Llama[]
 <4> The JavaDoc will be added as schema description.
 
 The following file will be created on the classpath: `META-INF/schemas/llama.schema.json`.
+
+[source,json]
+----
+include::test-suite/src/test/resources/expected-llama.schema.json[]
+----
+
 It can be used in your application and will be included in the jar file.
