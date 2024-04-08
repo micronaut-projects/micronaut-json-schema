@@ -28,8 +28,3 @@ compileTestGroovy {
     dependsOn tasks.getByPath('compileTestKotlin')
     classpath += files(compileTestKotlin)
 }
-
-
-test {
-    maxHeapSize = "1024m"
-}
