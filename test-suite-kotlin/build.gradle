@@ -28,7 +28,3 @@ compileTestGroovy {
     dependsOn tasks.getByPath('compileTestKotlin')
     classpath += files(compileTestKotlin)
 }
-
-configurations.configureEach {
-    all*.exclude group: "ch.qos.logback"
-}
