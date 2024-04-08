@@ -32,7 +32,3 @@ compileTestGroovy {
 configurations.configureEach {
     all*.exclude group: "ch.qos.logback"
 }
-
-test {
-    maxHeapSize = "1024m"
-}

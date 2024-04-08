@@ -26,6 +26,4 @@ configurations.configureEach {
 
 test {
     useJUnitPlatform()
-
-    maxHeapSize = "1024m"
 }
