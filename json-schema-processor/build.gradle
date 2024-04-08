@@ -1,12 +1,11 @@
 plugins {
-    id 'io.micronaut.build.internal.json-schema-module'
+    id("io.micronaut.build.internal.json-schema-module")
 }
 
 dependencies {
     compileOnly(mn.micronaut.core.processor)
 
     implementation(mn.micronaut.http)
-
     api(projects.micronautJsonSchemaAnnotations)
     api(mn.jackson.databind)
 

@@ -1,5 +1,5 @@
 plugins {
-    id 'io.micronaut.build.internal.json-schema-module'
+    id("io.micronaut.build.internal.json-schema-module")
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.ksp)
 }
