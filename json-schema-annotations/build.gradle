@@ -3,9 +3,6 @@ plugins {
 }
 
 
-configurations.configureEach {
-    all*.exclude group: "ch.qos.logback"
-}
 
 test {
     useJUnitPlatform()
