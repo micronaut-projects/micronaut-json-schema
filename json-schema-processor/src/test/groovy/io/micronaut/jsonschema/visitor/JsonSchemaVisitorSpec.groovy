@@ -90,7 +90,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
         expect:
         schema.title == "GreenSalamander"
-        schema.$id == "https://example.com/schemas/green-salamander"
+        schema.$id == "https://example.com/schemas/green-salamander.schema.json"
         schema.$schema != null
     }
 
@@ -116,7 +116,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
         expect:
         schema.title == "GreenSalamander"
-        schema.$id == "https://example.com/schemas/salamander/green-salamander"
+        schema.$id == "https://example.com/schemas/salamander/green-salamander.schema.json"
         schema.$schema != null
     }
 
