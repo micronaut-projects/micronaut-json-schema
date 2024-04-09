@@ -39,10 +39,7 @@ import io.micronaut.jsonschema.visitor.serialization.JsonSchemaMapperFactory;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URI;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static io.micronaut.jsonschema.visitor.JsonSchemaConfigurationVisitor.JSON_SCHEMA_CONFIGURATION_PROPERTY;
 
@@ -61,6 +58,8 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
         new ValidationInfoAggregator(),
         new DocumentationInfoAggregator()
     );
+    private static final String SUFFIX = ".schema.json";
+    private static final String SLASH = "/";
 
     @Override
     public @NonNull TypeElementVisitor.VisitorKind getVisitorKind() {
@@ -92,8 +91,17 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
                 .orElse(element.getGenericType().getSimpleName().replace('$', '.')));
             schemaAnn.stringValue("description").ifPresent(schema::setDescription);
 
-            String uri = schemaAnn.stringValue("uri")
-                .orElse("/" + NameUtils.camelCaseToKebabCase(schema.getTitle()));
+
+            Optional<String> uriOptional = schemaAnn.stringValue("uri");
+            String uri;
+            if (uriOptional.isPresent()) {
+                uri = uriOptional.get();
+                if (!uri.contains("://")) {
+                    uri = uri + SUFFIX;
+                }
+            } else {
+                uri = SLASH + NameUtils.camelCaseToKebabCase(schema.getTitle()) + SUFFIX;
+            }
             if (!uri.contains("://")) {
                 if (context.baseUrl() != null) {
                     uri = context.baseUrl() + uri;
@@ -102,7 +110,6 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
                         + " does not have a resolvable URI", element);
                 }
             }
-
             schema.set$id(uri);
             schema.set$schema(Schema.SCHEMA_DRAFT_2022_12);
         }
@@ -175,7 +182,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
 
     public static void writeSchema(Schema schema, ClassElement originatingElement, VisitorContext visitorContext, JsonSchemaContext context) {
         String fileName = getFileName(schema, context);
-        String path = context.outputLocation() + "/" + fileName + ".schema.json";
+        String path = context.outputLocation() + SLASH + fileName;
         GeneratedFile specFile = visitorContext.visitMetaInfFile(path, originatingElement).orElse(null);
         if (specFile == null) {
             visitorContext.warn("Unable to get [\" " + path + "\"] file to write JSON schema", null);
@@ -194,13 +201,13 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
         String id = schema.get$id();
         if (context.baseUrl() != null && id.startsWith(context.baseUrl())) {
             id = id.substring(context.baseUrl().length());
-        } else if (id.contains("://")) {
+        } else if (id.contains(":" + SLASH + SLASH)) {
             id = URI.create(id).getPath().substring(1);
             if (id.startsWith(context.outputLocation())) {
                 id = id.substring(context.outputLocation().length());
             }
         }
-        if (id.startsWith("/")) {
+        if (id.startsWith(SLASH)) {
             id = id.substring(1);
         }
         return id;
