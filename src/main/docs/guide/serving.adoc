@@ -1,7 +1,9 @@
-You can serve the JSON schemas as part of your API by defining the following controller:
+To expose the generated JSON Schema output from your running application, add https://docs.micronaut.io/latest/guide/#staticResources[static resources] configuration.
 
-snippet::io.micronaut.jsonschema.test.SchemaController[]
+[source,properties]
+----
+include::test-suite/src/test/resources/application.properties[]
+----
 
-<1> The schemas will be available on the `/schemas` path, which can be customized for your specific needs.
-<2> The schemas will be read from the `META-INF/schemas` classpath folder.
-<3> Use a `ResourceLoader` to load the schemas optionally adding the required file extension.
+<1> The schemas are exposed on the `/schemas` path, which can be customized for your specific needs.
+<2> The schemas are be read from the `META-INF/schemas` classpath folder.

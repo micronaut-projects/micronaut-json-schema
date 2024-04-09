@@ -23,8 +23,7 @@ class ServingSchemasSpec extends Specification {
     void "test get schemas"() {
         when:
         String result = client.toBlocking().retrieve(
-                HttpRequest.GET(server.getURI().resolve("/schemas/llama")).accept(MediaType.APPLICATION_JSON),
-                String.class
+                HttpRequest.GET(server.getURI().resolve("/schemas/llama.schema.json"))
         )
 
         then:
@@ -33,8 +32,7 @@ class ServingSchemasSpec extends Specification {
 
         when:
         result = client.toBlocking().retrieve(
-                HttpRequest.GET(server.getURI().resolve("/schemas/red-winged-blackbird")).accept(MediaType.APPLICATION_JSON),
-                String.class
+                HttpRequest.GET(server.getURI().resolve("/schemas/red-winged-blackbird.schema.json"))
         )
 
         then:
