@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.micronaut.core.annotation.AnnotationValue;
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.TypedElement;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 /**
  * An aggregator for adding information from the jackson serialization annotations.
  */
+@Internal
 public class JacksonInfoAggregator implements SchemaInfoAggregator {
 
     @Override

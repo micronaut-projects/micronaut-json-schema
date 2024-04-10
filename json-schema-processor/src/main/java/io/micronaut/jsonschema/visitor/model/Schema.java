@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.visitor.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.micronaut.core.annotation.Internal;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,6 +29,7 @@ import java.util.Map;
 /**
  * A JSON schema.
  */
+@Internal
 public final class Schema {
 
     public static final String SCHEMA_DRAFT_2022_12 = "https://json-schema.org/draft/2020-12/schema";

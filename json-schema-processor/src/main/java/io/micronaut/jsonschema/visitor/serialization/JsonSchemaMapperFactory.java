@@ -19,10 +19,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.micronaut.core.annotation.Internal;
 
 /**
  * A factory of mappers for swagger serialization and deserialization.
  */
+@Internal
 public class JsonSchemaMapperFactory {
 
     /**

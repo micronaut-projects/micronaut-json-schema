@@ -15,9 +15,12 @@
  */
 package io.micronaut.jsonschema.visitor;
 
+import io.micronaut.core.annotation.Internal;
+
 /**
  * A utility class for name conversions.
  */
+@Internal
 public class NameUtils {
 
     /**
