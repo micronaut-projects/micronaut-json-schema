@@ -15,7 +15,7 @@ The following file will be created on the classpath: `META-INF/schemas/llama.sch
 
 [source,json]
 ----
-include::test-suite/src/test/resources/expected-llama.schema.json[]
+include::json-schema-validation/src/test/resources/expected-llama.schema.json[]
 ----
 
 It can be used in your application and will be included in the jar file.

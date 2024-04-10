@@ -1,13 +1,27 @@
 package io.micronaut.jsonschema.test
 
+import io.micronaut.jsonschema.validation.JsonSchemaValidator
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
+import jakarta.inject.Inject
+import spock.lang.Specification
 
-@MicronautTest
-class ObjectsValidationSpec extends AbstractValidationSpec {
+import java.util.function.Function
+
+@MicronautTest(startApplication = false)
+class ObjectsValidationSpec extends Specification {
+    List<Function<String, String>> MAPPING = List.of(new Function<String, String>() {
+        @Override
+        String apply(String s) {
+            return s.replace("https://example.com/schemas", "classpath:META-INF/schemas")
+        }
+    })
+
+    @Inject
+    JsonSchemaValidator jsonSchemaValidator
 
     void "valid record"() {
         when:
-        var assertions = validateJsonWithSchema(new Llama("John", 12), "llama")
+        var assertions = jsonSchemaValidator.validate(new Llama("John", 12), Llama)
 
         then:
         assertions.size() == 0
@@ -15,7 +29,7 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
 
     void "invalid record"() {
         when:
-        var assertions = validateJsonWithSchema(llama, "llama")
+        var assertions = jsonSchemaValidator.validate(llama, Llama)
 
         then:
         assertions.size() == 1
@@ -30,7 +44,7 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
 
     void "valid object"() {
         when:
-        var assertions = validateJsonWithSchema(
+        var assertions = jsonSchemaValidator.validate(
                 new Salamander().setColors(["green", "red"])
                         .setEnvironments(["pond", "river"])
                         .setSkinColor("green")
@@ -39,7 +53,7 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
                         .setNegative(-12)
                         .setInteger(15)
                         .setNumber(20.25),
-                "salamander"
+                Salamander
         )
 
         then:
@@ -48,7 +62,7 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
 
     void "invalid object"() {
         when:
-        var assertions = validateJsonWithSchema(salamander, "salamander")
+        var assertions = jsonSchemaValidator.validate(salamander, Salamander)
 
         then:
         assertions.size() == 1
@@ -71,7 +85,7 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
 
     void "valid object with inheritance"() {
         when:
-        var assertions = validateJsonWithSchema(bird, "bird")
+        var assertions = jsonSchemaValidator.validate(bird, Bird)
 
         then:
         assertions.size() == 0
@@ -84,14 +98,13 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
 
     void "invalid object with inheritance"() {
         when:
-        var assertions = validateJsonWithSchema(bird, "bird")
+        var assertions = jsonSchemaValidator.validate(bird, Bird)
 
         then:
         assertions.size() == 3
-        assertions[0].message == ": must be valid to one and only one schema, but 0 are valid"
-        assertions[1].message == message1
-        assertions[2].message == message2
-
+        assertions*.message.any { it == ": must be valid to one and only one schema, but 0 are valid" }
+        assertions*.message.any { it == message1 }
+        assertions*.message.any { it == message2 }
 
         where:
         bird                          | message1                                               | message2
@@ -105,7 +118,7 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
         var possum = new Possum("Bob", [
                 new Possum("Alice", [], new Possum.Environment("field"))
         ], new Possum.Environment("marshland"))
-        var assertions = validateJsonWithSchema(possum, "possum")
+        var assertions = jsonSchemaValidator.validate(possum, Possum, MAPPING)
 
         then:
         assertions.size() == 0
@@ -113,7 +126,7 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
 
     void "invalid object with references"() {
         when:
-        var assertions = validateJsonWithSchema(possum, "possum")
+        var assertions = jsonSchemaValidator.validate(possum, Possum, MAPPING)
 
         then:
         assertions.size() == 1
@@ -130,7 +143,7 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
     void "valid object with changed path"() {
         when:
         var bird = new RWBlackbird("Clara", 1.2)
-        var assertions = validateJsonWithSchema(bird, "red-winged-blackbird")
+        var assertions = jsonSchemaValidator.validate(bird, RWBlackbird)
 
         then:
         assertions.size() == 0
@@ -139,7 +152,7 @@ class ObjectsValidationSpec extends AbstractValidationSpec {
     void "invalid object with changed path"() {
         when:
         var bird = '{"name":12}'
-        var assertions = validateJsonWithSchema(bird, "red-winged-blackbird")
+        var assertions = jsonSchemaValidator.validate(bird, RWBlackbird)
 
         then:
         assertions.size() == 1

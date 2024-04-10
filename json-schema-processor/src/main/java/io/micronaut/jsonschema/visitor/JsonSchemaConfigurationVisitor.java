@@ -82,10 +82,11 @@ public final class JsonSchemaConfigurationVisitor implements TypeElementVisitor<
     ) {
         public static final String DEFAULT_OUTPUT_LOCATION = "schemas";
         public static final boolean DEFAULT_BINARY_AS_ARRAY = false;
+        private static final String DEFAULT_BASE_URL = "http://localhost:8080/schemas";
 
         public static JsonSchemaContext createDefault() {
             return new JsonSchemaContext(
-                DEFAULT_OUTPUT_LOCATION, null, DEFAULT_BINARY_AS_ARRAY, new HashMap<>()
+                DEFAULT_OUTPUT_LOCATION, DEFAULT_BASE_URL, DEFAULT_BINARY_AS_ARRAY, new HashMap<>()
             );
         }
     }

@@ -24,7 +24,7 @@ micronaut-test = "4.2.1"
 micronaut-validation = "4.5.0"
 
 groovy = "4.0.17"
-json-schema-validator = "1.4.0"
+managed-json-schema-validator = "1.4.0"
 kotlin = "1.9.23"
 ksp = "1.9.23-1.0.19"
 spock = "2.3-groovy-4.0"
@@ -36,7 +36,7 @@ micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.r
 micronaut-test = { module = "io.micronaut.test:micronaut-test-bom", version.ref = "micronaut-test" }
 micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-bom", version.ref = "micronaut-validation" }
 
-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+managed-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "managed-json-schema-validator" }
 
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
