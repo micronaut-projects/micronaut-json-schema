@@ -7,11 +7,9 @@ snippet::io.micronaut.jsonschema.test.RWBlackbird[tags=clazz]
 <2> Set the relative or absolute URL.
 This will affect the file name as well as the id by which this schema can be referenced.
 
-The generation can be configured globally by annotating a type with
-link:{api}/io/micronaut/jsonschema/JsonSchema.html[JsonSchemaConfiguration]:
+For the previous class, the following file will be created on the classpath: `META-INF/schemas/red-winged-blackbird.schema.json`.
 
-snippet::io.micronaut.jsonschema.test.JsonSchemaConfig[tags=clazz]
-
-<1> Set the base URL for all the schemas. It will be prepended to all relative schema URLs.
-    Refer to the link:{api}/io/micronaut/jsonschema/JsonSchema.html[JsonSchemaConfiguration] documentation to
-    see all configurable parameters.
+[source,json]
+----
+include::json-schema-validation/src/test/resources/expected-rwblackbird.json[]
+----

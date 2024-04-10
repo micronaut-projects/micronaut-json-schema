@@ -12,6 +12,7 @@ enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 
 rootProject.name = 'json-schema-parent'
 
+include 'json-schema-validation'
 include 'json-schema-bom'
 include 'json-schema-annotations'
 include 'json-schema-processor'

@@ -25,7 +25,7 @@ class ReferenceSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.title == "Possum"
         schema.properties.size() == 1
         schema.properties['children'].type == [Schema.Type.ARRAY]
-        schema.properties['children'].items.$ref == '/possum.schema.json'
+        schema.properties['children'].items.$ref == 'http://localhost:8080/schemas/possum.schema.json'
     }
 
     void "schema reference"() {
@@ -58,7 +58,7 @@ class ReferenceSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.title == "Player"
         schema.properties.size() == 2
         schema.properties['name'].type == [Schema.Type.STRING]
-        schema.properties['pos'].$ref == '/position.schema.json'
+        schema.properties['pos'].$ref == 'http://localhost:8080/schemas/position.schema.json'
     }
 
 }

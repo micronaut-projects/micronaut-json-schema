@@ -19,7 +19,7 @@ dependencies {
 
     testImplementation(mn.micronaut.http.server.netty)
     testImplementation(mn.micronaut.http.client)
-    testImplementation(libs.json.schema.validator)
+    testImplementation(projects.micronautJsonSchemaValidation)
     testImplementation(mn.micronaut.inject.groovy.test)
     testImplementation(mn.micronaut.inject.java.test)
     testImplementation(mn.micronaut.inject)

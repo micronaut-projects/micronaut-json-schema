@@ -126,8 +126,8 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties == null
         schema.oneOf.size() == 2
 
-        schema.oneOf[0].$ref == '/salamander.schema.json'
-        schema.oneOf[1].$ref == '/alligator.schema.json'
+        schema.oneOf[0].$ref == 'http://localhost:8080/schemas/salamander.schema.json'
+        schema.oneOf[1].$ref == 'http://localhost:8080/schemas/alligator.schema.json'
     }
 
 }
