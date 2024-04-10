@@ -32,8 +32,6 @@ import java.util.Map;
 @Internal
 public final class Schema {
 
-    public static final String SCHEMA_DRAFT_2022_12 = "https://json-schema.org/draft/2020-12/schema";
-
     public static final String THIS_SCHEMA_REF = "#";
     public static final String DEF_SCHEMA_REF_PREFIX = "#/$defs/";
 

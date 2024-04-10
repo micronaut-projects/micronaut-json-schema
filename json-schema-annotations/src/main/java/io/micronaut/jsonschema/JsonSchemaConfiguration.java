@@ -45,4 +45,35 @@ public @interface JsonSchemaConfiguration {
      */
     boolean binaryAsArray() default false;
 
+    /**
+     * Which JSON schema draft to generate.
+     *
+     * @return The JSON schema draft
+     */
+    JsonSchemaDraft draft() default JsonSchemaDraft.DRAFT_2020_12;
+
+
+    /**
+     * An enum for JSON Schema draft versions.
+     * Currently only 2020-12 draft is supported.
+     */
+    enum JsonSchemaDraft {
+        DRAFT_2020_12("https://json-schema.org/draft/2020-12/schema");
+
+        private final String draftUrl;
+
+        JsonSchemaDraft(String draftUrl) {
+            this.draftUrl = draftUrl;
+        }
+
+        /**
+         * Get the URL referencing the schema of the draft.
+         *
+         * @return The schema URL.
+         */
+        public String getDraftUrl() {
+            return draftUrl;
+        }
+    }
+
 }
