@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.visitor.aggregator;
 
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.TypedElement;
 import io.micronaut.inject.visitor.VisitorContext;
@@ -29,6 +30,7 @@ import java.util.Map;
 /**
  * An aggregator for adding information from the validation annotations.
  */
+@Internal
 public class ValidationInfoAggregator implements SchemaInfoAggregator {
 
     private static final String JAKARTA_VALIDATION_PREFIX = "jakarta.validation.constraints.";

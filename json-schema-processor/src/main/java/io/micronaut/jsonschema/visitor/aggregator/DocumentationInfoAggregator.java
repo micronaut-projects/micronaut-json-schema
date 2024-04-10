@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.visitor.aggregator;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.javadoc.Javadoc;
 import com.github.javaparser.javadoc.JavadocBlockTag;
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.TypedElement;
@@ -32,6 +33,7 @@ import java.util.Optional;
 /**
  * An aggregator for adding information from the jackson serialization annotations.
  */
+@Internal
 public class DocumentationInfoAggregator implements SchemaInfoAggregator {
 
     @Override
