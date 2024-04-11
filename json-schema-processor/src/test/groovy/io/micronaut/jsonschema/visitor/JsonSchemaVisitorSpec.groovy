@@ -180,6 +180,33 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['complexMap'].additionalProperties.items.type == [Schema.Type.STRING]
     }
 
+    void "schema with strict configuration"() {
+        given:
+        def schema = buildJsonSchema('test.Salamander', 'salamander', """
+        package test;
+
+        import io.micronaut.jsonschema.*;
+        import java.util.*;
+
+        @JsonSchemaConfiguration(baseUri = "localhost:8080/schemas", strictMode = true)
+        interface AnimalJsonSchemaConfiguration {
+        }
+
+        @JsonSchema
+        public record Salamander(
+                String name,
+                boolean poisonous,
+                int age
+        ) {
+        }
+""")
+
+        expect:
+        schema.title == "Salamander"
+        schema.properties.size() == 3
+        schema.additionalProperties == Schema.FALSE
+    }
+
     void "validation schema"() {
         given:
         def schema = buildJsonSchema('test.Salamander', 'salamander', """

@@ -175,6 +175,9 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
         if (schema.getTitle() == null) {
             schema.setTitle(element.getSimpleName().replace('$', '.'));
         }
+        if (context.strictMode()) {
+            schema.setAdditionalProperties(Schema.FALSE);
+        }
         context.createdSchemasByType().put(element.getGenericType().getName(), schema);
         for (PropertyElement property: element.getBeanProperties()) {
             schema.putProperty(property.getName(), createSchema(property, visitorContext, context));

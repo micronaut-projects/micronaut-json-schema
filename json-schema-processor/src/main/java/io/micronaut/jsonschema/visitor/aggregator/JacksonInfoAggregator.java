@@ -15,6 +15,8 @@
  */
 package io.micronaut.jsonschema.visitor.aggregator;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -31,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.ast.ClassElement;
+import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.TypedElement;
 import io.micronaut.inject.visitor.VisitorContext;
@@ -39,6 +42,7 @@ import io.micronaut.jsonschema.visitor.JsonSchemaVisitor;
 import io.micronaut.jsonschema.visitor.model.Schema;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,12 +57,12 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
         ClassElement type = element.getGenericType();
 
         addSubtypeInfo(type, schema, visitorContext, context);
-        addPropertyInfo(type, schema, visitorContext);
+        addPropertyInfo(type, schema, visitorContext, context);
 
         return schema;
     }
 
-    private void addPropertyInfo(ClassElement element, Schema schema, VisitorContext visitorContext) {
+    private void addPropertyInfo(ClassElement element, Schema schema, VisitorContext visitorContext, JsonSchemaContext context) {
         if (element.hasAnnotation(JsonClassDescription.class)) {
             schema.setDescription(element.stringValue(JsonClassDescription.class).orElse(null));
         }
@@ -67,7 +71,7 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
         Set<String> ignoreProperties = null;
         if (element.hasAnnotation(JsonIncludeProperties.class)) {
             includeProperties = Arrays.stream(element.stringValues(JsonIncludeProperties.class))
-                    .collect(Collectors.toSet());
+                .collect(Collectors.toSet());
         }
         if (element.hasAnnotation(JsonIgnoreProperties.class)) {
             ignoreProperties = Arrays.stream(element.stringValues(JsonIgnoreProperties.class))
@@ -82,20 +86,27 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                 }
                 String name = property.stringValue(JsonProperty.class).orElse(property.getName());
                 if (property.hasAnnotation(JsonIgnore.class)
-                        || (ignoreProperties != null && ignoreProperties.contains(name))
+                    || (ignoreProperties != null && ignoreProperties.contains(name))
                 ) {
                     schema.getProperties().remove(property.getName());
                     continue;
                 }
                 if (includeProperties != null && !includeProperties.contains(name)) {
-                    if (!element.hasAnnotation(JsonInclude.class)) {
+                    if (!property.hasAnnotation(JsonInclude.class)) {
                         schema.getProperties().remove(property.getName());
                         continue;
                     }
                 }
 
-                element.stringValue(JsonPropertyDescription.class)
-                    .ifPresent(schema::setDescription);
+                if (property.hasAnnotation(JsonAnyGetter.class) || property.hasAnnotation(JsonAnySetter.class)) {
+                    if (!property.getType().isAssignable(Map.class)) {
+                        visitorContext.fail("Property annotated with @JsonAnyGetter must be of type Map", property);
+                    }
+                    schema.getProperties().remove(property.getName());
+                    schema.setAdditionalProperties(propertySchema.getAdditionalProperties());
+                }
+                property.stringValue(JsonPropertyDescription.class)
+                    .ifPresent(propertySchema::setDescription);
                 if (property.hasAnnotation(JsonUnwrapped.class)) {
                     schema.getProperties().remove(property.getName());
                     schema.getProperties().putAll(propertySchema.getProperties());
@@ -107,6 +118,12 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                 }
             }
         }
+
+        for (MethodElement method : element.getMethods()) {
+            if (method.hasAnnotation(JsonAnySetter.class) && method.getParameters().length == 2) {
+                schema.setAdditionalProperties(JsonSchemaVisitor.createSchema(method.getParameters()[1], visitorContext, context));
+            }
+        }
     }
 
     private void addSubtypeInfo(ClassElement element, Schema schema, VisitorContext visitorContext, JsonSchemaContext context) {
@@ -116,7 +133,7 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
             return;
         }
         JsonTypeInfo.Id id = typeInfoAnn.enumValue("use", JsonTypeInfo.Id.class).orElse(Id.NAME);
-        JsonTypeInfo.As as = typeInfoAnn.enumValue("as", JsonTypeInfo.As.class).orElse(As.PROPERTY);
+        JsonTypeInfo.As as = typeInfoAnn.enumValue("include", JsonTypeInfo.As.class).orElse(As.PROPERTY);
         String discriminatorName = typeInfoAnn.stringValue("property")
             .orElse(id.getDefaultPropertyName());
 
@@ -147,7 +164,7 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                         if (as == As.PROPERTY || as == As.EXISTING_PROPERTY) {
                             subTypeSchema.putProperty(discriminatorName, Schema.string().setConstValue(discriminatorValue));
                         } else if (as == As.WRAPPER_OBJECT) {
-                            subTypeSchema = Schema.object().putProperty(discriminatorName, subTypeSchema);
+                            subTypeSchema = Schema.object().putProperty(discriminatorValue, subTypeSchema);
                         } else {
                             visitorContext.warn("@JsonTypeInfo(include = " + as + ") is not supported", element);
                         }

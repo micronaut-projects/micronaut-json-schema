@@ -15,8 +15,8 @@ The following `com.fasterxml.jackson.annotation` annotations are supported:
 | `JsonTypeName` | ✅
 | `JsonUnwrapped` | ✅
 | `JsonAlias` | ❌
-| `JsonAnyGetter` | ❌
-| `JsonAnySetter` | ❌
+| `JsonAnyGetter` | ✅
+| `JsonAnySetter` | ✅
 | `JsonAutoDetect` | ❌
 | `JsonBackReference` | ❌
 | `JsonCreator` | ❌

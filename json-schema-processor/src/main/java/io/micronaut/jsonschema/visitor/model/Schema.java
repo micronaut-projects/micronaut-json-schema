@@ -32,6 +32,18 @@ import java.util.Map;
 @Internal
 public final class Schema {
 
+    /**
+     * A true schema is a schema that would be valid for any instance.
+     * This is also equivalent to just an empty schema, as it has no restrictions then.
+     */
+    public static final Schema TRUE = new Schema();
+
+    /**
+     * A false schema is a schema that would be invalid for any instance.
+     * This is also equivalent to not true.
+     */
+    public static final Schema FALSE = new Schema().setNot(TRUE);
+
     public static final String THIS_SCHEMA_REF = "#";
     public static final String DEF_SCHEMA_REF_PREFIX = "#/$defs/";
 
@@ -82,6 +94,8 @@ public final class Schema {
     private Schema additionalProperties;
 
     private List<Schema> oneOf;
+
+    private Schema not;
 
     public String getTitle() {
         return title;
@@ -430,6 +444,15 @@ public final class Schema {
 
     public static Schema reference(String id) {
         return new Schema().set$ref(id);
+    }
+
+    public Schema getNot() {
+        return not;
+    }
+
+    public Schema setNot(Schema not) {
+        this.not = not;
+        return this;
     }
 
     /**

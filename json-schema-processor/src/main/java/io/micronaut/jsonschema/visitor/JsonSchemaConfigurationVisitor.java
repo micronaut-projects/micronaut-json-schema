@@ -64,7 +64,9 @@ public final class JsonSchemaConfigurationVisitor implements TypeElementVisitor<
                 .orElse(JsonSchemaContext.DEFAULT_BINARY_AS_ARRAY);
             JsonSchemaDraft draft = annotation.enumValue("draft", JsonSchemaDraft.class)
                 .orElse(JsonSchemaContext.DEFAULT_DRAFT);
-            JsonSchemaContext context = new JsonSchemaContext(outputLocation, baseUri, binaryAsArray, draft, new HashMap<>());
+            boolean strictMode = annotation.booleanValue("strictMode")
+                .orElse(JsonSchemaContext.DEFAULT_STRICT_MODE);
+            JsonSchemaContext context = new JsonSchemaContext(outputLocation, baseUri, binaryAsArray, draft, strictMode, new HashMap<>());
             visitorContext.put(JSON_SCHEMA_CONFIGURATION_PROPERTY, context);
         }
     }
@@ -82,16 +84,18 @@ public final class JsonSchemaConfigurationVisitor implements TypeElementVisitor<
         String baseUrl,
         boolean binaryAsArray,
         JsonSchemaDraft draft,
+        boolean strictMode,
         Map<String, Schema> createdSchemasByType
     ) {
         public static final String DEFAULT_OUTPUT_LOCATION = "schemas";
         public static final boolean DEFAULT_BINARY_AS_ARRAY = false;
         private static final String DEFAULT_BASE_URL = "http://localhost:8080/schemas";
         private static final JsonSchemaDraft DEFAULT_DRAFT = JsonSchemaDraft.DRAFT_2020_12;
+        private static final boolean DEFAULT_STRICT_MODE = false;
 
         public static JsonSchemaContext createDefault() {
             return new JsonSchemaContext(
-                DEFAULT_OUTPUT_LOCATION, DEFAULT_BASE_URL, DEFAULT_BINARY_AS_ARRAY, DEFAULT_DRAFT, new HashMap<>()
+                DEFAULT_OUTPUT_LOCATION, DEFAULT_BASE_URL, DEFAULT_BINARY_AS_ARRAY, DEFAULT_DRAFT, DEFAULT_STRICT_MODE, new HashMap<>()
             );
         }
     }
