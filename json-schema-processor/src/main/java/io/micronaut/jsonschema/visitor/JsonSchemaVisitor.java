@@ -158,7 +158,8 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
         } else {
             switch (type.getName()) {
                 case "boolean", "java.lang.Boolean" -> schema.addType(Type.BOOLEAN);
-                case "int", "java.lang.Integer", "long", "java.lang.Long" -> schema.addType(Type.INTEGER);
+                case "int", "java.lang.Integer", "long", "java.lang.Long",
+                    "short", "java.lang.Short", "byte", "java.lang.Byte" -> schema.addType(Type.INTEGER);
                 case "java.math.BigDecimal", "float", "java.lang.Float",
                     "double", "java.lang.Double" -> schema.addType(Type.NUMBER);
                 case "java.lang.String" -> schema.addType(Type.STRING);

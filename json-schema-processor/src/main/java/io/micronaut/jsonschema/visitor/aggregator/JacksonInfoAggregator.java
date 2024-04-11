@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
@@ -74,7 +75,7 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
         }
 
         if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
-            for (PropertyElement property: element.getBeanProperties()) {
+            for (PropertyElement property : element.getBeanProperties()) {
                 Schema propertySchema = schema.getProperties().get(property.getName());
                 if (propertySchema == null) {
                     continue;
@@ -115,15 +116,15 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
             return;
         }
         JsonTypeInfo.Id id = typeInfoAnn.enumValue("use", JsonTypeInfo.Id.class).orElse(Id.NAME);
+        JsonTypeInfo.As as = typeInfoAnn.enumValue("as", JsonTypeInfo.As.class).orElse(As.PROPERTY);
         String discriminatorName = typeInfoAnn.stringValue("property")
             .orElse(id.getDefaultPropertyName());
 
-        for (AnnotationValue<?> subTypeAnn: subTypesAnn.getAnnotations("value", JsonSubTypes.Type.class)) {
+        for (AnnotationValue<?> subTypeAnn : subTypesAnn.getAnnotations("value", JsonSubTypes.Type.class)) {
             ClassElement subType = subTypeAnn.stringValue()
                 .flatMap(visitorContext::getClassElement).orElse(null);
             if (subType != null) {
                 Schema subTypeSchema = JsonSchemaVisitor.createSchema(subType, visitorContext, context);
-                schema.addOneOf(subTypeSchema);
 
                 if (discriminatorName != null) {
                     String discriminatorValue = null;
@@ -143,9 +144,17 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                     }
 
                     if (discriminatorValue != null) {
-                        subTypeSchema.putProperty(discriminatorName, Schema.string().setConstValue(discriminatorValue));
+                        if (as == As.PROPERTY || as == As.EXISTING_PROPERTY) {
+                            subTypeSchema.putProperty(discriminatorName, Schema.string().setConstValue(discriminatorValue));
+                        } else if (as == As.WRAPPER_OBJECT) {
+                            subTypeSchema = Schema.object().putProperty(discriminatorName, subTypeSchema);
+                        } else {
+                            visitorContext.warn("@JsonTypeInfo(include = " + as + ") is not supported", element);
+                        }
                     }
                 }
+
+                schema.addOneOf(subTypeSchema);
             }
         }
     }
