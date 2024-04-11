@@ -22,6 +22,7 @@ import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.visitor.TypeElementVisitor;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.JsonSchemaConfiguration;
+import io.micronaut.jsonschema.JsonSchemaConfiguration.JsonSchemaDraft;
 import io.micronaut.jsonschema.visitor.model.Schema;
 
 import java.util.HashMap;
@@ -61,7 +62,9 @@ public final class JsonSchemaConfigurationVisitor implements TypeElementVisitor<
             }
             boolean binaryAsArray = annotation.booleanValue("binaryAsArray")
                 .orElse(JsonSchemaContext.DEFAULT_BINARY_AS_ARRAY);
-            JsonSchemaContext context = new JsonSchemaContext(outputLocation, baseUri, binaryAsArray, new HashMap<>());
+            JsonSchemaDraft draft = annotation.enumValue("draft", JsonSchemaDraft.class)
+                .orElse(JsonSchemaContext.DEFAULT_DRAFT);
+            JsonSchemaContext context = new JsonSchemaContext(outputLocation, baseUri, binaryAsArray, draft, new HashMap<>());
             visitorContext.put(JSON_SCHEMA_CONFIGURATION_PROPERTY, context);
         }
     }
@@ -78,15 +81,17 @@ public final class JsonSchemaConfigurationVisitor implements TypeElementVisitor<
         String outputLocation,
         String baseUrl,
         boolean binaryAsArray,
+        JsonSchemaDraft draft,
         Map<String, Schema> createdSchemasByType
     ) {
         public static final String DEFAULT_OUTPUT_LOCATION = "schemas";
         public static final boolean DEFAULT_BINARY_AS_ARRAY = false;
         private static final String DEFAULT_BASE_URL = "http://localhost:8080/schemas";
+        private static final JsonSchemaDraft DEFAULT_DRAFT = JsonSchemaDraft.DRAFT_2020_12;
 
         public static JsonSchemaContext createDefault() {
             return new JsonSchemaContext(
-                DEFAULT_OUTPUT_LOCATION, DEFAULT_BASE_URL, DEFAULT_BINARY_AS_ARRAY, new HashMap<>()
+                DEFAULT_OUTPUT_LOCATION, DEFAULT_BASE_URL, DEFAULT_BINARY_AS_ARRAY, DEFAULT_DRAFT, new HashMap<>()
             );
         }
     }

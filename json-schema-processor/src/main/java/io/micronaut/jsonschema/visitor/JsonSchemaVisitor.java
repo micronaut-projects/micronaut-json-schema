@@ -111,7 +111,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
                 }
             }
             schema.set$id(uri);
-            schema.set$schema(Schema.SCHEMA_DRAFT_2022_12);
+            schema.set$schema(context.draft().getDraftUrl());
         }
 
         setSchemaType(element, visitorContext, context, schema);
