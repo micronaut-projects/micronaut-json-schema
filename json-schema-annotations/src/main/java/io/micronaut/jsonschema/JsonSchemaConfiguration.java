@@ -52,6 +52,13 @@ public @interface JsonSchemaConfiguration {
      */
     JsonSchemaDraft draft() default JsonSchemaDraft.DRAFT_2020_12;
 
+    /**
+     * Whether to generate schemas in strict mode.
+     * In strict mode unresolved properties in JSON will cause an error.
+     *
+     * @return Whether strict mode is enabled
+     */
+    boolean strictMode() default false;
 
     /**
      * An enum for JSON Schema draft versions.

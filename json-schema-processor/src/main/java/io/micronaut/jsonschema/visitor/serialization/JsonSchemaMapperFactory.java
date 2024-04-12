@@ -16,10 +16,33 @@
 package io.micronaut.jsonschema.visitor.serialization;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.DeserializationConfig;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.BeanDeserializerFactory;
+import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
+import com.fasterxml.jackson.databind.deser.std.DelegatingDeserializer;
+import com.fasterxml.jackson.databind.introspect.BasicBeanDescription;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.TreeTraversingParser;
+import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
+import com.fasterxml.jackson.databind.type.SimpleType;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.jsonschema.visitor.model.Schema;
+
+import java.io.IOException;
 
 /**
  * A factory of mappers for swagger serialization and deserialization.
@@ -44,7 +67,63 @@ public class JsonSchemaMapperFactory {
         mapper.setSerializationInclusion(Include.NON_NULL);
         mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Schema.class, new SchemaSerializer());
+        module.setDeserializerModifier(new BeanDeserializerModifier() {
+            @Override
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
+                if (beanDesc.getBeanClass() == Schema.class) {
+                    return new SchemaDeserializer(deserializer);
+                }
+                return deserializer;
+            }
+        });
+        mapper.registerModule(module);
+
         return mapper;
     }
 
+    static class SchemaSerializer extends JsonSerializer<Schema> {
+        @Override
+        public void serialize(Schema schema, JsonGenerator jsonGenerator, SerializerProvider provider) throws IOException {
+            if (schema == Schema.TRUE) {
+                jsonGenerator.writeBoolean(true);
+            } else if (schema == Schema.FALSE) {
+                jsonGenerator.writeBoolean(false);
+            } else {
+                BeanSerializerFactory.instance.createSerializer(provider, SimpleType.construct(Schema.class))
+                    .serialize(schema, jsonGenerator, provider);
+            }
+        }
+    }
+
+    static class SchemaDeserializer extends DelegatingDeserializer {
+
+        public SchemaDeserializer(JsonDeserializer delegate) {
+            super(delegate);
+        }
+
+        @Override
+        protected JsonDeserializer<?> newDelegatingInstance(JsonDeserializer<?> delegate) {
+            return new SchemaDeserializer(delegate);
+        }
+
+        @Override
+        public Schema deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException, JacksonException {
+            JsonNode tree = jsonParser.getCodec().readTree(jsonParser);
+            jsonParser.finishToken();
+            if (tree.isObject()) {
+                JsonParser newParser = new TreeTraversingParser(tree, jsonParser.getCodec());
+                newParser.nextToken();
+                try {
+                    return (Schema) getDelegatee().deserialize(newParser, context);
+                } catch (Exception e) {
+                    System.out.println(e);
+                }
+            } else if (tree instanceof BooleanNode bool) {
+                return bool.asBoolean() ? Schema.TRUE : Schema.FALSE;
+            }
+            return null;
+        }
+    }
 }
