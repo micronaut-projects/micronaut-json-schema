@@ -23,7 +23,7 @@ import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.TypedElement;
 import io.micronaut.inject.visitor.VisitorContext;
-import io.micronaut.jsonschema.visitor.JsonSchemaConfigurationVisitor.JsonSchemaContext;
+import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
 import io.micronaut.jsonschema.visitor.model.Schema;
 
 import java.util.HashMap;

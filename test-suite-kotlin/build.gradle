@@ -24,6 +24,10 @@ dependencies {
     testImplementation(mn.micronaut.inject)
 }
 
+ksp {
+    arg("micronaut.jsonschema.baseUri", "https://example.com/schemas")
+}
+
 compileTestGroovy {
     dependsOn tasks.getByPath('compileTestKotlin')
     classpath += files(compileTestKotlin)

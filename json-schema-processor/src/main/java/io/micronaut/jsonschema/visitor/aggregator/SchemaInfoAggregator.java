@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.visitor.aggregator;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.ast.TypedElement;
 import io.micronaut.inject.visitor.VisitorContext;
-import io.micronaut.jsonschema.visitor.JsonSchemaConfigurationVisitor.JsonSchemaContext;
+import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
 import io.micronaut.jsonschema.visitor.model.Schema;
 
 /**

@@ -24,3 +24,7 @@ dependencies {
     testImplementation(mn.micronaut.inject.java.test)
     testImplementation(mn.micronaut.inject)
 }
+
+tasks.withType(GroovyCompile).configureEach {
+    options.compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas")
+}

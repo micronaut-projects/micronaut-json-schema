@@ -3,7 +3,7 @@ introduction:
 dependencies: Dependencies
 quickStart:
   title: Quick Start
-jsonSchemaConfig: JSON Schema Configuration
+globalConfiguration: JSON Schema Configuration
 configuration:
   title: JSON Schema Annotation Members
 serving:

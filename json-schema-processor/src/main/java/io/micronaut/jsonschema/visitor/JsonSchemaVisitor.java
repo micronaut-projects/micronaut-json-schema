@@ -27,11 +27,11 @@ import io.micronaut.inject.visitor.TypeElementVisitor;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.inject.writer.GeneratedFile;
 import io.micronaut.jsonschema.JsonSchema;
-import io.micronaut.jsonschema.visitor.JsonSchemaConfigurationVisitor.JsonSchemaContext;
 import io.micronaut.jsonschema.visitor.aggregator.DocumentationInfoAggregator;
 import io.micronaut.jsonschema.visitor.aggregator.JacksonInfoAggregator;
 import io.micronaut.jsonschema.visitor.aggregator.SchemaInfoAggregator;
 import io.micronaut.jsonschema.visitor.aggregator.ValidationInfoAggregator;
+import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
 import io.micronaut.jsonschema.visitor.model.Schema;
 import io.micronaut.jsonschema.visitor.model.Schema.Type;
 import io.micronaut.jsonschema.visitor.serialization.JsonSchemaMapperFactory;
@@ -41,7 +41,7 @@ import java.io.Writer;
 import java.net.URI;
 import java.util.*;
 
-import static io.micronaut.jsonschema.visitor.JsonSchemaConfigurationVisitor.JSON_SCHEMA_CONFIGURATION_PROPERTY;
+import static io.micronaut.jsonschema.visitor.context.JsonSchemaContext.JSON_SCHEMA_CONTEXT_PROPERTY;
 
 /**
  * A visitor for creating JSON schemas for beans.
@@ -67,12 +67,17 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
     }
 
     @Override
+    public Set<String> getSupportedOptions() {
+        return JsonSchemaContext.getParameters();
+    }
+
+    @Override
     public void visitClass(ClassElement element, VisitorContext visitorContext) {
         if (element.hasAnnotation(JsonSchema.class)) {
-            JsonSchemaContext context = visitorContext.get(JSON_SCHEMA_CONFIGURATION_PROPERTY, JsonSchemaContext.class, null);
+            JsonSchemaContext context = visitorContext.get(JSON_SCHEMA_CONTEXT_PROPERTY, JsonSchemaContext.class, null);
             if (context == null) {
-                context = JsonSchemaContext.createDefault();
-                visitorContext.put(JSON_SCHEMA_CONFIGURATION_PROPERTY, context);
+                context = JsonSchemaContext.createDefault(visitorContext.getOptions());
+                visitorContext.put(JSON_SCHEMA_CONTEXT_PROPERTY, context);
             }
             createTopLevelSchema(element, visitorContext, context);
         }

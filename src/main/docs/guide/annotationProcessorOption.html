@@ -1,0 +1,39 @@
+<div class="listingblock multi-language-sample">
+    <div class="content">
+        <pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="gradle">// For Java
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas") // (1)
+}
+// For Groovy
+tasks.withType(GroovyCompile).configureEach {
+    options.compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas") // (1)
+}
+// For KSP
+ksp {
+    arg("micronaut.jsonschema.baseUri", "https://example.com/schemas") // (1)
+}
+// For Kapt
+kapt {
+    arguments {
+        arg("micronaut.jsonschema.baseUri", "https://example.com/schemas") // (1)
+    }
+}</code></pre>
+    </div>
+</div>
+<div class="listingblock multi-language-sample">
+    <div class="content">
+        <pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;build>
+    &lt;plugins>
+        &lt;plugin>
+            &lt;groupId>org.apache.maven.plugins&lt;/groupId>
+            &lt;artifactId>maven-compiler-plugin&lt;/artifactId>
+            &lt;configuration>
+                &lt;compilerArgs>
+                    &lt;arg>-micronaut.jsonschema.baseUri=https://example.com/schemas&lt;/arg> &lt;!-- (1) -->
+                &lt;/compilerArgs>
+            &lt;/configuration>
+        &lt;/plugin>
+    &lt;/plugins>
+&lt;/build></code></pre>
+    </div>
+</div>

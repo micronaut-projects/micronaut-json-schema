@@ -70,23 +70,18 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
     void "simple record with configuration schema"() {
         given:
+        def options = ["baseUri": "https://example.com/schemas"]
         def schema = buildJsonSchema('test.Salamander', 'green-salamander', """
         package test;
 
         import io.micronaut.jsonschema.*;
         import java.util.*;
 
-        @JsonSchemaConfiguration(
-                baseUri = "https://example.com/schemas"
-        )
-        interface AnimalJsonSchemaConfiguration {
-        }
-
         @JsonSchema(title = "GreenSalamander")
         public record Salamander(
         ) {
         }
-""")
+""", options)
 
         expect:
         schema.title == "GreenSalamander"
@@ -96,23 +91,18 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
     void "simple record with configuration schema and uri"() {
         given:
+        def config = ["baseUri": "https://example.com/schemas"]
         def schema = buildJsonSchema('test.Salamander', 'salamander/green-salamander', """
         package test;
 
         import io.micronaut.jsonschema.*;
         import java.util.*;
 
-        @JsonSchemaConfiguration(
-                baseUri = "https://example.com/schemas"
-        )
-        interface AnimalJsonSchemaConfiguration {
-        }
-
         @JsonSchema(title = "GreenSalamander", uri = "/salamander/green-salamander")
         public record Salamander(
         ) {
         }
-""")
+""", config)
 
         expect:
         schema.title == "GreenSalamander"
@@ -182,15 +172,12 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
     void "schema with strict configuration"() {
         given:
+        def config = ["strictMode": "true"]
         def schema = buildJsonSchema('test.Salamander', 'salamander', """
         package test;
 
         import io.micronaut.jsonschema.*;
         import java.util.*;
-
-        @JsonSchemaConfiguration(baseUri = "localhost:8080/schemas", strictMode = true)
-        interface AnimalJsonSchemaConfiguration {
-        }
 
         @JsonSchema
         public record Salamander(
@@ -199,7 +186,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
                 int age
         ) {
         }
-""")
+""", config)
 
         expect:
         schema.title == "Salamander"
