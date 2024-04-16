@@ -16,10 +16,13 @@
 package io.micronaut.jsonschema.visitor.context;
 
 import io.micronaut.core.util.StringUtils;
+import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.visitor.model.Schema;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,7 +45,8 @@ public record JsonSchemaContext(
     boolean binaryAsArray,
     JsonSchemaDraft draft,
     boolean strictMode,
-    Map<String, Schema> createdSchemasByType
+    Map<String, Schema> createdSchemasByType,
+    List<ClassElement> currentOriginatingElements
 ) {
 
     public static final String JSON_SCHEMA_CONTEXT_PROPERTY = "io.micronaut.jsonschema";
@@ -72,7 +76,7 @@ public record JsonSchemaContext(
         JsonSchemaDraft draft = options.get(JSON_SCHEMA_DRAFT_PARAMETER) == null ?
             DEFAULT_DRAFT : JsonSchemaDraft.valueOf(JSON_SCHEMA_DRAFT_PARAMETER);
         boolean strictMode = options.getOrDefault(STRICT_MODE_PARAMETER, String.valueOf(DEFAULT_STRICT_MODE)).equals(StringUtils.TRUE);
-        return new JsonSchemaContext(outputLocation, baseUrl, binaryAsArray, draft, strictMode, new HashMap<>());
+        return new JsonSchemaContext(outputLocation, baseUrl, binaryAsArray, draft, strictMode, new HashMap<>(), new ArrayList<>());
     }
 
     /**

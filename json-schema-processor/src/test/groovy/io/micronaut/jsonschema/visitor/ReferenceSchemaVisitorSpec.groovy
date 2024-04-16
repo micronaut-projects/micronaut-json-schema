@@ -61,4 +61,28 @@ class ReferenceSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['pos'].$ref == 'http://localhost:8080/schemas/position.schema.json'
     }
 
+    void "property schema reference"() {
+        given:
+        def schema = buildJsonSchema('test.Player', 'player', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import io.micronaut.jsonschema.JsonSchema;
+        import java.util.List;
+
+        @JsonSchema
+        public record Player(
+                String name,
+                @JsonSchema(uri = "/position") Object pos
+        ) {
+        }
+""")
+
+        expect:
+        schema.title == "Player"
+        schema.properties.size() == 2
+        schema.properties['name'].type == [Schema.Type.STRING]
+        schema.properties['pos'].$ref == 'http://localhost:8080/schemas/position.schema.json'
+    }
+
 }

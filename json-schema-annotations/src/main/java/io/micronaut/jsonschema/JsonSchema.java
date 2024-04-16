@@ -15,6 +15,9 @@
  */
 package io.micronaut.jsonschema;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
+
 /**
  * An annotation that signifies that json schema should be created for the object.
  * The JSON schema will attempt to mimic the way this object would be serialized.
@@ -22,6 +25,7 @@ package io.micronaut.jsonschema;
  * @since 1.0.0
  * @author Andriy Dmytruk
  */
+@Target({ ElementType.TYPE, ElementType.FIELD })
 public @interface JsonSchema {
 
     /**

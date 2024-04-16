@@ -63,7 +63,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
 
     @Override
     public @NonNull TypeElementVisitor.VisitorKind getVisitorKind() {
-        return VisitorKind.AGGREGATING;
+        return VisitorKind.ISOLATING;
     }
 
     @Override
@@ -79,13 +79,25 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
                 context = JsonSchemaContext.createDefault(visitorContext.getOptions());
                 visitorContext.put(JSON_SCHEMA_CONTEXT_PROPERTY, context);
             }
-            createTopLevelSchema(element, visitorContext, context);
+            context.currentOriginatingElements().clear();
+            Schema schema = createTopLevelSchema(element, visitorContext, context);
+            writeSchema(schema, element.getGenericType(), visitorContext, context);
         }
     }
 
+    /**
+     * A method for creating a JSON schema. The schema will always a top-level schema and
+     * never a reference.
+     *
+     * @param element The element
+     * @param visitorContext The visitor context
+     * @param context The JSON schema creation context
+     * @return The schema
+     */
     public static Schema createTopLevelSchema(TypedElement element, VisitorContext visitorContext, JsonSchemaContext context) {
         Schema schema = context.createdSchemasByType().get(element.getGenericType().getName());
         if (schema != null) {
+            context.currentOriginatingElements().add(element.getGenericType());
             return schema;
         }
         schema = new Schema();
@@ -95,27 +107,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
             schema.setTitle(schemaAnn.stringValue("title")
                 .orElse(element.getGenericType().getSimpleName().replace('$', '.')));
             schemaAnn.stringValue("description").ifPresent(schema::setDescription);
-
-
-            Optional<String> uriOptional = schemaAnn.stringValue("uri");
-            String uri;
-            if (uriOptional.isPresent()) {
-                uri = uriOptional.get();
-                if (!uri.contains("://")) {
-                    uri = uri + SUFFIX;
-                }
-            } else {
-                uri = SLASH + NameUtils.camelCaseToKebabCase(schema.getTitle()) + SUFFIX;
-            }
-            if (!uri.contains("://")) {
-                if (context.baseUrl() != null) {
-                    uri = context.baseUrl() + uri;
-                } else {
-                    visitorContext.warn("The JSON schema for type " + element.getName()
-                        + " does not have a resolvable URI", element);
-                }
-            }
-            schema.set$id(uri);
+            schema.set$id(createSchemaId(element, schemaAnn, visitorContext, context));
             schema.set$schema(context.draft().getDraftUrl());
         }
 
@@ -127,17 +119,65 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
 
         if (schemaAnn != null) {
             context.createdSchemasByType().put(element.getGenericType().getName(), schema);
-            writeSchema(schema, element.getGenericType(), visitorContext, context);
         }
         return schema;
     }
 
+    /**
+     * A method for creating a property of the schema. In case the property references
+     * another schema, it will create a reference.
+     *
+     * @param element The element
+     * @param visitorContext The visitor context
+     * @param context The JSON schema creation context
+     * @return The schema
+     */
     public static Schema createSchema(TypedElement element, VisitorContext visitorContext, JsonSchemaContext context) {
-        Schema topLevelSchema = createTopLevelSchema(element, visitorContext, context);
-        if (topLevelSchema.get$id() != null) {
-            return Schema.reference(topLevelSchema.get$id());
+        if (!(element instanceof ClassElement) && element.hasAnnotation(JsonSchema.class)) {
+            // The annotation is on a property
+            String ref = createSchemaId(element, element.getAnnotation(JsonSchema.class), visitorContext, context);
+            return Schema.reference(ref);
+        } else if (element.getGenericType().hasAnnotation(JsonSchema.class)) {
+            // The annotation is on the type
+            String ref;
+            if (context.createdSchemasByType().containsKey(element.getGenericType().getName())) {
+                ref = context.createdSchemasByType().get(element.getGenericType().getName()).get$id();
+            } else {
+                ref = createSchemaId(element, element.getGenericType().getAnnotation(JsonSchema.class), visitorContext, context);
+            }
+            context.currentOriginatingElements().add(element.getGenericType());
+            return Schema.reference(ref);
+        } else {
+            return createTopLevelSchema(element, visitorContext, context);
         }
-        return topLevelSchema;
+    }
+
+    private static String createSchemaId(
+        TypedElement element, AnnotationValue<JsonSchema> schemaAnn,
+        VisitorContext visitorContext, JsonSchemaContext context
+    ) {
+        String title = schemaAnn.stringValue("title")
+            .orElse(element.getGenericType().getSimpleName().replace('$', '.'));
+
+        Optional<String> uriOptional = schemaAnn.stringValue("uri");
+        String uri;
+        if (uriOptional.isPresent()) {
+            uri = uriOptional.get();
+            if (!uri.contains("://")) {
+                uri = uri + SUFFIX;
+            }
+        } else {
+            uri = SLASH + NameUtils.camelCaseToKebabCase(title) + SUFFIX;
+        }
+        if (!uri.contains("://")) {
+            if (context.baseUrl() != null) {
+                uri = context.baseUrl() + uri;
+            } else {
+                visitorContext.warn("The JSON schema for type " + element.getName()
+                    + " does not have a resolvable URI", element);
+            }
+        }
+        return uri;
     }
 
     private static void setSchemaType(TypedElement element, VisitorContext visitorContext, JsonSchemaContext context, Schema schema) {
@@ -160,6 +200,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
             // Enum values must be camel case
             schema.addType(Type.STRING)
                 .setEnumValues(enumElement.values().stream().map(v -> (Object) v).toList());
+            context.currentOriginatingElements().add(enumElement);
         } else {
             switch (type.getName()) {
                 case "boolean", "java.lang.Boolean" -> schema.addType(Type.BOOLEAN);
@@ -177,6 +218,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
 
     public static void setBeanSchemaProperties(ClassElement element, VisitorContext visitorContext, JsonSchemaContext context, Schema schema) {
         schema.addType(Type.OBJECT);
+        context.currentOriginatingElements().add(element);
         if (schema.getTitle() == null) {
             schema.setTitle(element.getSimpleName().replace('$', '.'));
         }
