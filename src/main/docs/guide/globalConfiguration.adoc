@@ -1,0 +1,32 @@
+The generation can be configured globally with annotation processor options:
+
+++++
+include::src/main/docs/guide/annotationProcessorOption.html[]
+++++
+
+<1> Set the base URL for all the schemas. It will be prepended to all relative schema URLs.
+
+With the previous configuration, the following file will be created on the classpath: `META-INF/schemas/llama.schema.json`.
+
+[source,json]
+----
+include::test-suite/src/test/resources/expected-llama.schema.json[]
+----
+
+All the supported options are:
+
+[cols="2", options="header"]
+|===
+| Option | Description
+| `micronaut.jsonschema.baseUri`
+    | Set the base URL for all the schemas. It will be prepended to all relative schema URLs.
+| `micronaut.jsonschema.outputLocation`
+    | The location where JSON schemas will be generated inside the build `META-INF/` directory.
+| `micronaut.jsonschema.binaryAsArray`
+    | Whether to encode byte array as a JSON array. The default and preferred behavior is to encode it as a Base64-encoded string.
+| `micronaut.jsonschema.draft`
+    | Specify the JSON Schema draft versions. Currently only `DRAFT_2020_12` value is supported.
+| `micronaut.jsonschema.strictMode`
+    | Whether to generate schemas in strict mode. In strict mode unresolved properties in JSON will cause an error.
+|===
+
