@@ -15,21 +15,9 @@
  */
 package io.micronaut.jsonschema.visitor.aggregator;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonClassDescription;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonIncludeProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.ast.ClassElement;
@@ -41,7 +29,9 @@ import io.micronaut.jsonschema.visitor.JsonSchemaVisitor;
 import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
 import io.micronaut.jsonschema.visitor.model.Schema;
 
+import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,10 +42,21 @@ import java.util.stream.Collectors;
 @Internal
 public class JacksonInfoAggregator implements SchemaInfoAggregator {
 
+    public static final List<Class<? extends Annotation>> UNSUPPORTED_ANNOTATIONS = List.of(
+        JsonAlias.class, JsonAutoDetect.class, JsonBackReference.class, JsonCreator.class,
+        JsonEnumDefaultValue.class, JsonFormat.class, JsonIdentityInfo.class,
+        JsonIdentityReference.class, JsonKey.class, JsonManagedReference.class, JsonRawValue.class,
+        JsonRootName.class, JsonTypeId.class, JsonValue.class, JsonView.class,
+        JsonFilter.class
+    );
+
     @Override
     public Schema addInfo(TypedElement element, Schema schema, VisitorContext visitorContext, JsonSchemaContext context) {
         ClassElement type = element.getGenericType();
 
+        UNSUPPORTED_ANNOTATIONS.stream().filter(element::hasAnnotation).forEach(ann ->
+            visitorContext.warn("Could not add annotation " + ann + " to schema as it is not supported by the JacksonInfoAggregator", element)
+        );
         addSubtypeInfo(type, schema, visitorContext, context);
         addPropertyInfo(type, schema, visitorContext, context);
 
@@ -84,8 +85,14 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                 if (propertySchema == null) {
                     continue;
                 }
-                String name = property.stringValue(JsonProperty.class).orElse(property.getName());
+                String name = property.stringValue(JsonProperty.class)
+                    .orElse(property.stringValue(JsonGetter.class)
+                        .orElse(property.stringValue(JsonSetter.class)
+                            .orElse(property.getName())
+                        )
+                    );
                 if (property.hasAnnotation(JsonIgnore.class)
+                    || property.getGenericType().hasAnnotation(JsonIgnoreType.class)
                     || (ignoreProperties != null && ignoreProperties.contains(name))
                 ) {
                     schema.getProperties().remove(property.getName());
@@ -110,11 +117,9 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                 if (property.hasAnnotation(JsonUnwrapped.class)) {
                     schema.getProperties().remove(property.getName());
                     schema.getProperties().putAll(propertySchema.getProperties());
-                } else {
-                    property.stringValue(JsonProperty.class).ifPresent(newName -> {
-                        schema.getProperties().remove(property.getName());
-                        schema.putProperty(newName, propertySchema);
-                    });
+                } else if (!name.equals(property.getName())) {
+                    schema.getProperties().remove(property.getName());
+                    schema.putProperty(name, propertySchema);
                 }
             }
         }

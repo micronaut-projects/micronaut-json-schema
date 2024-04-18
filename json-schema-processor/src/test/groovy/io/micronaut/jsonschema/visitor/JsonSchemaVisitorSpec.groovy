@@ -203,6 +203,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         import jakarta.annotation.Nullable;
         import jakarta.validation.constraints.*;
         import java.util.*;
+        import java.math.BigDecimal;
 
         @JsonSchema
         public record Salamander(
@@ -232,7 +233,9 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
                 @AssertFalse
                 boolean alwaysFalse,
                 @AssertTrue
-                boolean alwaysTrue
+                boolean alwaysTrue,
+                @Digits(integer = 4, fraction = 4)
+                BigDecimal digits
         ) {
         }
 """)
@@ -257,6 +260,10 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['nullable'].type == [Schema.Type.STRING, Schema.Type.NULL]
         schema.properties['alwaysTrue'].constValue == true
         schema.properties['alwaysFalse'].constValue == false
+        schema.properties['digits'].type == [Schema.Type.NUMBER]
+        schema.properties['digits'].exclusiveMaximum == 10000
+        schema.properties['digits'].exclusiveMinimum == -10000
+        schema.properties['digits'].multipleOf == 0.0001
     }
 
     void "class schema with documentation"() {

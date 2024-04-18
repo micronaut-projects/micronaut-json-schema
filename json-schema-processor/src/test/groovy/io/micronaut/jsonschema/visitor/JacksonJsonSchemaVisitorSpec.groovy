@@ -207,6 +207,34 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['weight'].type == [Schema.Type.NUMBER]
     }
 
+    void "schema with JsonIgnoreType"() {
+        given:
+        def schema = buildJsonSchema('test.Elephant', 'elephant', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import io.micronaut.jsonschema.JsonSchema;
+        import java.util.*;
+
+        @JsonSchema
+        public record Elephant (
+                @JsonIgnore
+                int age,
+                String name,
+                Position position
+        ) {
+        }
+
+        @JsonIgnoreType
+        record Position(int x, int y) {}
+""")
+
+        expect:
+        schema.title == "Elephant"
+        schema.properties.size() == 1
+        schema.properties['name'].type == [Schema.Type.STRING]
+    }
+
     void "schema with JsonIgnoreProperties"() {
         given:
         def schema = buildJsonSchema('test.Elephant', 'elephant', """
@@ -371,6 +399,48 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['weight'].type == [Schema.Type.NUMBER]
         schema.properties['finLength'].type == [Schema.Type.NUMBER]
         schema.properties['speed'].type == [Schema.Type.NUMBER]
+    }
+
+    void "schema with JsonGetter and JsonSetter"() {
+        given:
+        def schema = buildJsonSchema('test.Turtle', 'turtle', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import io.micronaut.jsonschema.JsonSchema;
+        import java.util.*;
+
+        @JsonSchema
+        public class Turtle {
+
+            private int age;
+
+            @JsonGetter("speciesName")
+            public String getSpecies() {
+                return "turtle";
+            }
+
+            @JsonSetter
+            public void setIsLizard(boolean isLizard) {
+            }
+
+            public int getAge() {
+                return age;
+            }
+
+            public void setAge(int age) {
+                this.age = age;
+            }
+
+        }
+""")
+
+        expect:
+        schema.title == "Turtle"
+        schema.properties.size() == 3
+        schema.properties['speciesName'].type == [Schema.Type.STRING]
+        schema.properties['age'].type == [Schema.Type.INTEGER]
+        schema.properties['isLizard'].type == [Schema.Type.BOOLEAN]
     }
 
 }

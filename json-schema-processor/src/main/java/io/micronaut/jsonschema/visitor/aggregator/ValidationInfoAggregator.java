@@ -51,10 +51,24 @@ public class ValidationInfoAggregator implements SchemaInfoAggregator {
     private static final String DECIMAL_MAX_ANN = JAKARTA_VALIDATION_PREFIX + "DecimalMax";
     private static final String PATTERN_ANN = JAKARTA_VALIDATION_PREFIX + "Pattern";
     private static final String EMAIL_ANN = JAKARTA_VALIDATION_PREFIX + "Email";
+    private static final String DIGITS_ANN = JAKARTA_VALIDATION_PREFIX + "Digits";
+    private static final String FUTURE_ANN = JAKARTA_VALIDATION_PREFIX + "Future";
+    private static final String FUTURE_OR_PRESENT_ANN = JAKARTA_VALIDATION_PREFIX + "FutureOrPresent";
+    private static final String PAST_ANN = JAKARTA_VALIDATION_PREFIX + "Past";
+    private static final String PAST_OR_PRESENT_ANN = JAKARTA_VALIDATION_PREFIX + "PastOrPresent";
+
     private static final String LIST_SUFFIX = "$List";
+
+    public static final List<String> UNSUPPORTED_ANNOTATIONS = List.of(
+        FUTURE_ANN, FUTURE_OR_PRESENT_ANN, PAST_ANN, PAST_OR_PRESENT_ANN
+    );
 
     @Override
     public Schema addInfo(TypedElement element, Schema schema, VisitorContext visitorContext, JsonSchemaContext context) {
+        UNSUPPORTED_ANNOTATIONS.stream().filter(ann -> element.hasAnnotation(ann + LIST_SUFFIX)).forEach(ann ->
+            visitorContext.warn("Could not add annotation " + ann + " to schema as it is not supported by the JacksonInfoAggregator", element)
+        );
+
         ClassElement type = element.getGenericType();
         if (element.hasAnnotation(NULL_ANN + LIST_SUFFIX)) {
             schema.setType(List.of(Schema.Type.NULL));
@@ -131,6 +145,20 @@ public class ValidationInfoAggregator implements SchemaInfoAggregator {
                 element.getAnnotationValuesByName(EMAIL_ANN).forEach(ann ->
                     ann.stringValue("regexp").ifPresent(schema::setPattern));
             }
+
+            element.getAnnotationValuesByName(DIGITS_ANN).forEach(ann -> {
+                ann.intValue("integer").ifPresent(integer -> {
+                    BigDecimal value = BigDecimal.valueOf(10).pow(integer);
+                    schema.setExclusiveMaximum(value);
+                    schema.setExclusiveMinimum(value.negate());
+                });
+                ann.intValue("fraction").ifPresent(fraction -> {
+                    if (fraction > 0) {
+                        BigDecimal value = BigDecimal.ONE.divide(BigDecimal.TEN).pow(fraction);
+                        schema.setMultipleOf(value);
+                    }
+                });
+            });
         }
         return schema;
     }
