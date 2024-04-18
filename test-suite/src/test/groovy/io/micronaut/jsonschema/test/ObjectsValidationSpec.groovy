@@ -9,12 +9,6 @@ import java.util.function.Function
 
 @MicronautTest(startApplication = false)
 class ObjectsValidationSpec extends Specification {
-    List<Function<String, String>> MAPPING = List.of(new Function<String, String>() {
-        @Override
-        String apply(String s) {
-            return s.replace("https://example.com/schemas", "classpath:META-INF/schemas")
-        }
-    })
 
     @Inject
     JsonSchemaValidator jsonSchemaValidator
@@ -118,7 +112,7 @@ class ObjectsValidationSpec extends Specification {
         var possum = new Possum("Bob", [
                 new Possum("Alice", [], new Possum.Environment("field"))
         ], new Possum.Environment("marshland"))
-        var assertions = jsonSchemaValidator.validate(possum, Possum, MAPPING)
+        var assertions = jsonSchemaValidator.validate(possum, Possum)
 
         then:
         assertions.size() == 0
@@ -126,7 +120,7 @@ class ObjectsValidationSpec extends Specification {
 
     void "invalid object with references"() {
         when:
-        var assertions = jsonSchemaValidator.validate(possum, Possum, MAPPING)
+        var assertions = jsonSchemaValidator.validate(possum, Possum)
 
         then:
         assertions.size() == 1
