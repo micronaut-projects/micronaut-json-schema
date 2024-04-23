@@ -1,0 +1,1078 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+    <title>Micronaut JSON schema</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="../css/main.css" type="text/css" media="screen, print" title="Style" charset="utf-8" />
+    <link rel="stylesheet" href="../css/custom.css" type="text/css" media="screen, print" title="Style" charset="utf-8" />
+    <link rel="stylesheet" href="../css/pdf.css" type="text/css" media="print" title="PDF" charset="utf-8" />
+    <link rel="stylesheet" href="../css/highlight/agate.css">
+    <script src="../js/highlight.pack.js"></script>
+    <script src="../js/guide.js"></script>
+    <script src="../js/multi-language-sample.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <link rel="stylesheet" href="../css/multi-language-sample.css"/>
+    <script src="../js/docs.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.13/clipboard.min.js"></script>
+    <script type="text/javascript">
+        function addJsClass(el) {
+            var classes = document.body.className.split(" ");
+            classes.push("js");
+            document.body.className = classes.join(" ");
+        }
+    </script>
+
+</head>
+
+<body class="body" id="docs" onload="addJsClass();" onhashchange="highlightMenu()">
+
+<div id="table-of-content-nav-link" class="desktop">
+    <a id="theme-switcher" title="Switch to dark theme" href="javascript:switchTheme(true)"><i class="fa fa-moon-o"></i></a>
+    <a title="Collapse/Open Table of contents" title="Hide Table of Contents" href="javascript:hideTableOfContents();" class="button">[ + ]</a>
+</div>
+
+<div id="main">
+    <div id="navigation" class="no-print">
+        <div class="navTitle">
+            <span id="logo"><a href="http://micronaut.io" title="Go to Micronaut Website"><img src="../img/micronaut-logo-white.svg" alt="Micronaut"/></a></span>
+        </div>
+        <div class="navLinks">
+            <ul>
+                    <li><div id="nav-summary" onmouseover="toggleNavSummary(false)" onmouseout="toggleNavSummary(true)" class="desktop">
+                            <a href="../guide/index.html" class="button">Table of contents</a>
+                            <div id="nav-summary-childs" style="display:none;">
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#introduction"><strong>1</strong><span>Introduction</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#dependencies"><strong>2</strong><span>Dependencies</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#quickStart"><strong>3</strong><span>Quick Start</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#globalConfiguration"><strong>4</strong><span>JSON Schema Configuration</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#configuration"><strong>5</strong><span>JSON Schema Annotation Members</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#serving"><strong>6</strong><span>Serving JSON Schemas</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#validation"><strong>7</strong><span>JSON Schema Validation</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#sources"><strong>8</strong><span>Supported Information Sources</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>9</strong><span>Repository</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#releaseHistory"><strong>10</strong><span>Release History</span></a></div>
+                                
+                            </div>
+                        </div>
+                    </li>
+
+                <li id="table-of-content-nav-link-mobile" class="mobile">
+                    <a title="Scroll to Table of contents" href="javascript:scrollToTop();" class="button">Toc</a>
+                </li>
+                <li class="desktop">
+                    <a title="Go to API documentation" href="../api/index.html" class="button">API Reference</a>
+                </li>
+                <li class="mobile">
+                    <a title="Go to API documentation" href="../api/index.html" class="button">API</a>
+                </li>
+                <li class="desktop">
+                    <a title="Go to Configuration Reference documentation" href="../guide/configurationreference.html" class="button">Configuration Reference</a>
+                </li>
+                <li class="mobile">
+                    <a title="Go to Configuration Reference documentation" href="../guide/configurationreference.html" class="button">Conf</a>
+                </li>
+            </ul>
+
+        </div>
+    </div>
+    
+    <div id="table-of-content">
+        <div class="toc-content">
+
+        <h2>Table of Contents</h2>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-introduction"><a href="#introduction"><strong>1</strong><span>Introduction</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-dependencies"><a href="#dependencies"><strong>2</strong><span>Dependencies</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-quickStart"><a href="#quickStart"><strong>3</strong><span>Quick Start</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-globalConfiguration"><a href="#globalConfiguration"><strong>4</strong><span>JSON Schema Configuration</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-configuration"><a href="#configuration"><strong>5</strong><span>JSON Schema Annotation Members</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-serving"><a href="#serving"><strong>6</strong><span>Serving JSON Schemas</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-validation"><a href="#validation"><strong>7</strong><span>JSON Schema Validation</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-sources"><a href="#sources"><strong>8</strong><span>Supported Information Sources</span></a></div>
+        
+        <div class="toc-item" style="margin-left:10px" id="toc-item-javadoc"><a href="#javadoc"><strong>8.1</strong><span>JavaDoc</span></a></div>
+        
+        <div class="toc-item" style="margin-left:10px" id="toc-item-validationAnnotations"><a href="#validationAnnotations"><strong>8.2</strong><span>Validation Annotations</span></a></div>
+        
+        <div class="toc-item" style="margin-left:10px" id="toc-item-jacksonAnnotations"><a href="#jacksonAnnotations"><strong>8.3</strong><span>Jackson Annotations</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>9</strong><span>Repository</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-releaseHistory"><a href="#releaseHistory"><strong>10</strong><span>Release History</span></a></div>
+        
+        </div>
+    </div>
+    
+    <div class="docs-content">
+    <div class="project">
+        <h1>Micronaut JSON schema</h1>
+        <p></p>
+        <p>JSON schema support for Micronaut</p>
+        <p><strong>Version:</strong> 1.0.0-SNAPSHOT </p>
+    </div>
+    
+<h1 id="introduction"><a class="anchor" href="#introduction"></a>1 Introduction</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/introduction.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p><a href="https://json-schema.org/">JSON Schema</a> is a human-readable format for exchanging data that also enables
+JSON data consistency, validity and interoperability.</p>
+</div>
+<div class="paragraph">
+<p>Micronaut JSON Schema allows creating schemas for beans in your applications.</p>
+</div>
+
+<h1 id="dependencies"><a class="anchor" href="#dependencies"></a>2 Dependencies</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/dependencies.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>To get started add Micronaut JSON Schema processor to the annotation processor scope of your build configuration:</p>
+</div>
+<div class="paragraph">
+<p>        <div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">annotationProcessor(<span class="hljs-string">"io.micronaut.json-schema:micronaut-json-schema-processor")</span></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;annotationProcessorPaths&gt;
+    &lt;path&gt;
+        &lt;groupId&gt;io.micronaut.json-schema&lt;/groupId&gt;
+        &lt;artifactId&gt;micronaut-json-schema-processor&lt;/artifactId&gt;
+    &lt;/path&gt;
+&lt;/annotationProcessorPaths&gt;</code></pre>
+</div>
+</div></p>
+</div>
+<div class="paragraph">
+<p>and the Micronaut JSON Schema Annotations dependency to compile classpath
+        <div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">implementation(<span class="hljs-string">"io.micronaut.json-schema:micronaut-json-schema-annotations")</span></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;dependency&gt;
+    &lt;groupId&gt;io.micronaut.json-schema&lt;/groupId&gt;
+    &lt;artifactId&gt;micronaut-json-schema-annotations&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div></p>
+</div>
+
+<h1 id="quickStart"><a class="anchor" href="#quickStart"></a>3 Quick Start</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/quickStart.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>Annotate a bean with <a href="../api/io/micronaut/jsonschema/JsonSchema.html">JsonSchema</a> to trigger the creation of a
+schema for it during build time:</p>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">package io.micronaut.jsonschema.test;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import io.micronaut.jsonschema.JsonSchema;
+import io.micronaut.serde.annotation.Serdeable;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
+
+/**
+ * A llama. <b class="conum">(4)</b>
+ *
+ * @param name The name
+ * @param age The age
+ */
+@JsonSchema // <b class="conum">(1)</b>
+@Serdeable // <b class="conum">(2)</b>
+public record Llama(
+    @NotBlank // <b class="conum">(3)</b>
+    @JsonInclude(Include.NON_NULL)
+    String name,
+    @PositiveOrZero // <b class="conum">(3)</b>
+    int age
+) {
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">package io.micronaut.jsonschema.test
+
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import io.micronaut.jsonschema.JsonSchema
+import io.micronaut.serde.annotation.Serdeable
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.PositiveOrZero
+
+/**
+ * A llama. <b class="conum">(4)</b>
+ */
+@JsonSchema // <b class="conum">(1)</b>
+@Serdeable // <b class="conum">(2)</b>
+class Llama {
+    /**
+     * The name.
+     */
+    @NotBlank // <b class="conum">(3)</b>
+    @JsonInclude(Include.NON_NULL)
+    String name
+
+    /**
+     * The age.
+     */
+    @PositiveOrZero // <b class="conum">(3)</b>
+    int age
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">package io.micronaut.jsonschema.test
+
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import io.micronaut.jsonschema.JsonSchema
+import io.micronaut.serde.annotation.Serdeable
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.PositiveOrZero
+
+/**
+ * A llama. <b class="conum">(4)</b>
+ *
+ * @param name The name
+ * @param age The age
+ */
+@JsonSchema // <b class="conum">(1)</b>
+@Serdeable // <b class="conum">(2)</b>
+class Llama(
+        @field:JsonInclude(Include.NON_NULL)
+        @field:NotBlank
+        val name: String,
+        @field:PositiveOrZero
+        val age: Int // <b class="conum">(3)</b>
+)</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Add the <a href="../api/io/micronaut/jsonschema/JsonSchema.html">JsonSchema</a> annotation.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>(Optional) To use Micronaut Serialization as the serialization solution for your application refer to the
+<a href="https://micronaut-projects.github.io/micronaut-serialization/latest/guide/">Micronaut Serialization</a>
+documentation and add <code>Serdeable</code> annotation to the bean.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Add additional required annotations to your bean. See supported annotations in the following sections.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>The JavaDoc will be added as schema description.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following file will be created on the classpath: <code>META-INF/schemas/llama.schema.json</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"http://localhost:8080/schemas/llama.schema.json",
+  "title":"Llama",
+  "description":"A llama. &lt;4&gt;",
+  "type":["object"],
+  "properties":{
+    "age":{
+      "description":"The age",
+      "type":["integer"],
+      "minimum":0
+    },
+    "name":{
+      "description":"The name",
+      "type":["string"],
+      "minLength":1
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It can be used in your application and will be included in the jar file.</p>
+</div>
+
+<h1 id="globalConfiguration"><a class="anchor" href="#globalConfiguration"></a>4 JSON Schema Configuration</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/globalConfiguration.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>The generation can be configured globally with annotation processor options:</p>
+</div>
+<div class="listingblock multi-language-sample">
+    <div class="content">
+        <pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="gradle">// For Java
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas") // (1)
+}
+// For Groovy
+tasks.withType(GroovyCompile).configureEach {
+    options.compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas") // (1)
+}
+// For KSP
+ksp {
+    arg("micronaut.jsonschema.baseUri", "https://example.com/schemas") // (1)
+}
+// For Kapt
+kapt {
+    arguments {
+        arg("micronaut.jsonschema.baseUri", "https://example.com/schemas") // (1)
+    }
+}</code></pre>
+    </div>
+</div>
+<div class="listingblock multi-language-sample">
+    <div class="content">
+        <pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;build>
+    &lt;plugins>
+        &lt;plugin>
+            &lt;groupId>org.apache.maven.plugins&lt;/groupId>
+            &lt;artifactId>maven-compiler-plugin&lt;/artifactId>
+            &lt;configuration>
+                &lt;compilerArgs>
+                    &lt;arg>-Amicronaut.jsonschema.baseUri=https://example.com/schemas&lt;/arg> &lt;!-- (1) -->
+                &lt;/compilerArgs>
+            &lt;/configuration>
+        &lt;/plugin>
+    &lt;/plugins>
+&lt;/build></code></pre>
+    </div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Set the base URL for all the schemas. It will be prepended to all relative schema URLs.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>With the previous configuration, the following file will be created on the classpath: <code>META-INF/schemas/llama.schema.json</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://example.com/schemas/llama.schema.json",
+  "title":"Llama",
+  "description":"A llama. &lt;4&gt;",
+  "type":["object"],
+  "properties":{
+    "age":{
+      "description":"The age",
+      "type":["integer"],
+      "minimum":0
+    },
+    "name":{
+      "description":"The name",
+      "type":["string"],
+      "minLength":1
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>All the supported options are:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.baseUri</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set the base URL for all the schemas. It will be prepended to all relative schema URLs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.outputLocation</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The location where JSON schemas will be generated inside the build <code>META-INF/</code> directory.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.binaryAsArray</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether to encode byte array as a JSON array. The default and preferred behavior is to encode it as a Base64-encoded string.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.draft</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specify the JSON Schema draft versions. Currently only <code>DRAFT_2020_12</code> value is supported.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.strictMode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether to generate schemas in strict mode. In strict mode unresolved properties in JSON will cause an error.</p></td>
+</tr>
+</tbody>
+</table>
+
+<h1 id="configuration"><a class="anchor" href="#configuration"></a>5 JSON Schema Annotation Members</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/configuration.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>Schema generation can be configured with properties of the
+<a href="../api/io/micronaut/jsonschema/JsonSchema.html">JsonSchema</a> annotation, for example:</p>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@JsonSchema(
+    title = "RedWingedBlackbird", // <b class="conum">(1)</b>
+    description = "A species of blackbird with red wings",
+    uri = "/red-winged-blackbird" // <b class="conum">(2)</b>
+)
+@Serdeable
+public record RWBlackbird(
+    String name,
+    double wingSpan
+) {
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">@JsonSchema(
+    title = "RedWingedBlackbird", // <b class="conum">(1)</b>
+    description = "A species of blackbird with red wings",
+    uri = "/red-winged-blackbird" // <b class="conum">(2)</b>
+)
+@Serdeable
+class RWBlackbird {
+    /**
+     * The name.
+     */
+    String name
+
+    /**
+     * The wingspan.
+     */
+    double wingSpan
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">@JsonSchema(
+    title = "RedWingedBlackbird", // <b class="conum">(1)</b>
+    description = "A species of blackbird with red wings",
+    uri = "/red-winged-blackbird" // <b class="conum">(2)</b>
+)
+@Serdeable
+class RWBlackbird (
+        val name: String,
+        val wingSpan: Double
+)</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Configure the title and description of the generated JSON Schema.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Set the relative or absolute URL.
+This will affect the file name as well as the id by which this schema can be referenced.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For the previous class, the following file will be created on the classpath: <code>META-INF/schemas/red-winged-blackbird.schema.json</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"http://localhost:8080/schemas/red-winged-blackbird.schema.json",
+  "title":"RedWingedBlackbird",
+  "description":"A species of blackbird with red wings",
+  "type":["object"],
+  "properties":{
+    "name":{
+      "description":"The name",
+      "type":["string"]
+    },
+    "wingSpan":{
+      "description":"The wing span of the bird",
+      "type":["number"]
+    }
+  }
+}</code></pre>
+</div>
+</div>
+
+<h1 id="serving"><a class="anchor" href="#serving"></a>6 Serving JSON Schemas</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/serving.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>To expose the generated JSON Schema output from your running application, add <a href="https://docs.micronaut.io/latest/guide/#staticResources">static resources</a> configuration.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.router.static-resources.jsonschema.paths=classpath:META-INF/schemas
+micronaut.router.static-resources.jsonschema.mapping=/schemas/**
+micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The schemas are exposed on the <code>/schemas</code> path, which can be customized for your specific needs.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The schemas are be read from the <code>META-INF/schemas</code> classpath folder.</td>
+</tr>
+</table>
+</div>
+
+<h1 id="validation"><a class="anchor" href="#validation"></a>7 JSON Schema Validation</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/validation.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>If you want to validate a JSON file against your generated JSON Schema, you can inject a bean of type <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a>. You need the following dependency:</p>
+</div>
+<div class="paragraph">
+<p>        <div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">implementation(<span class="hljs-string">"io.micronaut.json-schema:micronaut-json-schema-validation")</span></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;dependency&gt;
+    &lt;groupId&gt;io.micronaut.json-schema&lt;/groupId&gt;
+    &lt;artifactId&gt;micronaut-json-schema-validation&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div></p>
+</div>
+
+<h1 id="sources"><a class="anchor" href="#sources"></a>8 Supported Information Sources</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/sources.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>Information for JSON schema is aggregated from multiple sources.</p>
+</div>
+
+<h2 id="javadoc"><a class="anchor" href="#javadoc"></a>8.1 JavaDoc</h2>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/sources/javadoc.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>JavaDoc on types and properties will be added to the description properties of schemas. This includes class, property
+descriptions and record parameter descriptions.</p>
+</div>
+
+<h2 id="validationAnnotations"><a class="anchor" href="#validationAnnotations"></a>8.2 Validation Annotations</h2>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/sources/validationAnnotations.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>The following <code>jakarta.validation.constraints</code> annotations are supported:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 28.5714%;">
+<col style="width: 14.2857%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Validation Annotations</th>
+<th class="tableblock halign-left valign-top">Supported</th>
+<th class="tableblock halign-left valign-top">Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>AssertFalse</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>AssertTrue</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DecimalMin</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DecimalMax</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Email</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Max</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Min</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Negative</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NegativeOrZero</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NotBlank</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NotEmpty</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>NotNull</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Null</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Pattern</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Positive</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PositiveOrZero</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Digits</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Future</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSON schema does not define fields for validating date-time formats</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>FutureOrPresent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSON schema does not define fields for validating date-time formats</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Past</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSON schema does not define fields for validating date-time formats</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PastOrPresent</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSON schema does not define fields for validating date-time formats</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>By default, properties are not nullable. <code>jakarta.annotations.Nullable</code> can be added to make them nullable.
+Note, that validation might not correspond to actual bean values, as by default null
+values are completely omitted during JSON serialization.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Custom validators cannot be supported, as this information is implementation-specific and not available during build time.
+</td>
+</tr>
+</table>
+</div>
+
+<h2 id="jacksonAnnotations"><a class="anchor" href="#jacksonAnnotations"></a>8.3 Jackson Annotations</h2>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/sources/jacksonAnnotations.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>The following <code>com.fasterxml.jackson.annotation</code> annotations are supported:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 28.5714%;">
+<col style="width: 14.2857%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Jackson Annotations</th>
+<th class="tableblock halign-left valign-top">Supported</th>
+<th class="tableblock halign-left valign-top">Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JacksonInject</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The annotation has no effect</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonAnyGetter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonAnySetter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonClassDescription</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonGetter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonIgnore</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonIgnoreProperties</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonIgnoreType</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonInclude</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonIncludeProperties</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonMerge</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The annotation has no effect</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonProperty</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonPropertyDescription</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonSetter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonSubTypes</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonTypeInfo</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>include</code> values <code>WRAPPER_ARRAY</code> and <code>EXTERNAL_PROPERTY</code> are not supported</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonTypeName</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonUnwrapped</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonPropertyOrder</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">✅</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The annotation has no effect</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonAlias</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonAutoDetect</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonBackReference</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonCreator</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonEnumDefaultValue</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonFilter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cannot be supported*</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonFormat</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonIdentityInfo</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonIdentityReference</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonKey</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonManagedReference</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonRawValue</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonRootName</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonTypeId</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonValue</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>JsonView</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">❌</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+*Custom serializers and deserializers cannot be supported, as this information is implementation-specific
+and not available during build time. This also applies to some other features, like the <code>JsonFilter</code> annotation
+which allows defining custom filters.
+</td>
+</tr>
+</table>
+</div>
+
+<h1 id="repository"><a class="anchor" href="#repository"></a>9 Repository</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/repository.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>You can find the source code of this project in this repository:</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/micronaut-projects/micronaut-json-schema">https://github.com/micronaut-projects/micronaut-json-schema</a></p>
+</div>
+
+<h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>10 Release History</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/master/src/main/docs/guide/releaseHistory.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>For this project, you can find a list of releases (with release notes) here:</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/micronaut-projects/micronaut-json-schema/releases">https://github.com/micronaut-projects/micronaut-json-schema/releases</a></p>
+</div>
+
+    </div>
+</div>
+
+<script type="text/javascript">
+
+</script>
+</body>
+</html>
