@@ -1,1 +1,21 @@
-TODO
+
+Annotate a bean with link:{api}/io/micronaut/jsonschema/JsonSchema.html[JsonSchema] to trigger the creation of a
+schema for it during build time:
+
+snippet::io.micronaut.jsonschema.test.Llama[]
+
+<1> Add the link:{api}/io/micronaut/jsonschema/JsonSchema.html[JsonSchema] annotation.
+<2> (Optional) To use Micronaut Serialization as the serialization solution for your application refer to the
+    link:https://micronaut-projects.github.io/micronaut-serialization/latest/guide/[Micronaut Serialization]
+    documentation and add `Serdeable` annotation to the bean.
+<3> Add additional required annotations to your bean. See supported annotations in the following sections.
+<4> The JavaDoc will be added as schema description.
+
+The following file will be created on the classpath: `META-INF/schemas/llama.schema.json`.
+
+[source,json]
+----
+include::json-schema-validation/src/test/resources/expected-llama.schema.json[]
+----
+
+It can be used in your application and will be included in the jar file.

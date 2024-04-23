@@ -1,0 +1,45 @@
+The following `com.fasterxml.jackson.annotation` annotations are supported:
+
+[cols="2,1,4", options="header"]
+|===
+| Jackson Annotations | Supported | Comment
+| `JacksonInject` | ✅ | The annotation has no effect
+| `JsonAnyGetter` | ✅ |
+| `JsonAnySetter` | ✅ |
+| `JsonClassDescription` | ✅ |
+| `JsonGetter` | ✅ |
+| `JsonIgnore` | ✅ |
+| `JsonIgnoreProperties` | ✅ |
+| `JsonIgnoreType` | ✅ |
+| `JsonInclude` | ✅ |
+| `JsonIncludeProperties` | ✅ |
+| `JsonMerge` | ✅ | The annotation has no effect
+| `JsonProperty` | ✅ |
+| `JsonPropertyDescription` | ✅ |
+| `JsonSetter` | ✅ |
+| `JsonSubTypes` | ✅ |
+| `JsonTypeInfo` | ✅ | `include` values `WRAPPER_ARRAY` and `EXTERNAL_PROPERTY` are not supported
+| `JsonTypeName` | ✅ |
+| `JsonUnwrapped` | ✅ |
+| `JsonPropertyOrder` | ✅ | The annotation has no effect
+| `JsonAlias` | ❌ |
+| `JsonAutoDetect` | ❌ |
+| `JsonBackReference` | ❌ |
+| `JsonCreator` | ❌ |
+| `JsonEnumDefaultValue` | ❌ |
+| `JsonFilter` | ❌ | Cannot be supported*
+| `JsonFormat` | ❌ |
+| `JsonIdentityInfo` | ❌ |
+| `JsonIdentityReference` | ❌ |
+| `JsonKey` | ❌ |
+| `JsonManagedReference` | ❌ |
+| `JsonRawValue` | ❌ |
+| `JsonRootName` | ❌ |
+| `JsonTypeId` | ❌ |
+| `JsonValue` | ❌ |
+| `JsonView` | ❌ |
+|===
+
+NOTE: *Custom serializers and deserializers cannot be supported, as this information is implementation-specific
+and not available during build time. This also applies to some other features, like the `JsonFilter` annotation
+which allows defining custom filters.

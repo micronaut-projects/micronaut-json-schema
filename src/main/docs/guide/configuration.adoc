@@ -1,0 +1,15 @@
+Schema generation can be configured with properties of the
+link:{api}/io/micronaut/jsonschema/JsonSchema.html[JsonSchema] annotation, for example:
+
+snippet::io.micronaut.jsonschema.test.RWBlackbird[tags=clazz]
+
+<1> Configure the title and description of the generated JSON Schema.
+<2> Set the relative or absolute URL.
+This will affect the file name as well as the id by which this schema can be referenced.
+
+For the previous class, the following file will be created on the classpath: `META-INF/schemas/red-winged-blackbird.schema.json`.
+
+[source,json]
+----
+include::json-schema-validation/src/test/resources/expected-rwblackbird.json[]
+----

@@ -1,0 +1,30 @@
+plugins {
+    id 'groovy'
+    id("io.micronaut.build.internal.json-schema-module")
+}
+
+dependencies {
+    implementation(mnValidation.validation)
+    implementation(projects.micronautJsonSchemaAnnotations)
+    implementation(mnSerde.micronaut.serde.jackson)
+
+    implementation(projects.micronautJsonSchemaProcessor)
+
+    testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
+    testAnnotationProcessor(mnSerde.micronaut.serde.processor)
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testAnnotationProcessor(mn.micronaut.inject.groovy)
+
+    api(mn.jackson.databind)
+
+    testImplementation(mn.micronaut.http.server.netty)
+    testImplementation(mn.micronaut.http.client)
+    testImplementation(projects.micronautJsonSchemaValidation)
+    testImplementation(mn.micronaut.inject.groovy.test)
+    testImplementation(mn.micronaut.inject.java.test)
+    testImplementation(mn.micronaut.inject)
+}
+
+tasks.withType(GroovyCompile).configureEach {
+    options.compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas")
+}

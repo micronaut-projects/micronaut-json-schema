@@ -1,3 +1,9 @@
 plugins {
     id 'io.micronaut.build.internal.json-schema-module'
 }
+
+
+
+test {
+    useJUnitPlatform()
+}

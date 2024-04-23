@@ -1,0 +1,2 @@
+JavaDoc on types and properties will be added to the description properties of schemas. This includes class, property
+descriptions and record parameter descriptions.

@@ -1,7 +1,20 @@
 introduction:
   title: Introduction
-releaseHistory: Release History
+dependencies: Dependencies
 quickStart:
   title: Quick Start
-repository: Repository
+globalConfiguration: JSON Schema Configuration
+configuration:
+  title: JSON Schema Annotation Members
+serving:
+  title: Serving JSON Schemas
+validation:
+  title: JSON Schema Validation
+sources:
+  title: Supported Information Sources
+  javadoc: JavaDoc
+  validationAnnotations: Validation Annotations
+  jacksonAnnotations: Jackson Annotations
 
+repository: Repository
+releaseHistory: Release History
