@@ -1,3 +1,3 @@
 If you want to validate a JSON file against your generated JSON Schema, you can inject a bean of type api:jsonschema.validation.JsonSchemaValidator[]. You need the following dependency:
 
-dependency:micronaut-json-schema-validation[groupId="io.micronaut.json-schema"]
+dependency:micronaut-json-schema-validation[groupId="io.micronaut.jsonschema"]
