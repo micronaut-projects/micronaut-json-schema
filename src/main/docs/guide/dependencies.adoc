@@ -1,6 +1,6 @@
 To get started add Micronaut JSON Schema processor to the annotation processor scope of your build configuration:
 
-dependency:micronaut-json-schema-processor[scope="annotationProcessor", groupId="io.micronaut.json-schema"]
+dependency:micronaut-json-schema-processor[scope="annotationProcessor", groupId="io.micronaut.jsonschema"]
 
 and the Micronaut JSON Schema Annotations dependency to compile classpath
-dependency:micronaut-json-schema-annotations[groupId="io.micronaut.json-schema"]
+dependency:micronaut-json-schema-annotations[groupId="io.micronaut.jsonschema"]
