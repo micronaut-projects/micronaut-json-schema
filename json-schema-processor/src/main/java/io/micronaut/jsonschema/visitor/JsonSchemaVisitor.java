@@ -247,7 +247,9 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
         }
         context.createdSchemasByType().put(element.getGenericType().getName(), schema);
         for (PropertyElement property: element.getBeanProperties()) {
-            schema.putProperty(property.getName(), createSchema(property, visitorContext, context));
+            Schema propertySchema = createSchema(property, visitorContext, context);
+            propertySchema.setSourceElement(property);
+            schema.putProperty(property.getName(), propertySchema);
         }
     }
 

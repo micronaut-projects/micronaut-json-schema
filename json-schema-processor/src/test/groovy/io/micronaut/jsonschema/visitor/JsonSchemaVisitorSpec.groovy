@@ -304,6 +304,34 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['digits'].multipleOf == 0.0001
     }
 
+    void "required properties schema"() {
+        given:
+        def schema = buildJsonSchema('test.ClownFish', 'clown-fish', """
+        package test;
+
+        import io.micronaut.core.annotation.NonNull;
+        import io.micronaut.jsonschema.JsonSchema;
+        import jakarta.annotation.Nonnull;
+        import jakarta.validation.constraints.*;
+
+        @JsonSchema
+        public record ClownFish(
+                @Nonnull
+                String name,
+                @NotNull
+                String color,
+                @NonNull
+                Double weight,
+                Integer age
+        ) {
+        }
+""")
+
+        expect:
+        schema.title == "ClownFish"
+        schema.required == ['name', 'color', 'weight']
+    }
+
     void "class schema with documentation"() {
         given:
         def schema = buildJsonSchema('test.Heron', 'heron', """

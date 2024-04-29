@@ -16,9 +16,11 @@
 package io.micronaut.jsonschema.visitor.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.inject.ast.TypedElement;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -96,6 +98,9 @@ public final class Schema {
     private List<Schema> oneOf;
 
     private Schema not;
+
+    @JsonIgnore
+    private TypedElement sourceElement;
 
     public String getTitle() {
         return title;
@@ -365,6 +370,14 @@ public final class Schema {
         return this;
     }
 
+    public Schema addRequired(String requiredProperty) {
+        if (required == null) {
+            required = new ArrayList<>();
+        }
+        this.required.add(requiredProperty);
+        return this;
+    }
+
     public Schema getAdditionalProperties() {
         return additionalProperties;
     }
@@ -452,6 +465,15 @@ public final class Schema {
 
     public Schema setNot(Schema not) {
         this.not = not;
+        return this;
+    }
+
+    public TypedElement getSourceElement() {
+        return sourceElement;
+    }
+
+    public Schema setSourceElement(TypedElement sourceElement) {
+        this.sourceElement = sourceElement;
         return this;
     }
 
