@@ -19,6 +19,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
                 int age,
                 Color color,
                 List<String> environments,
+                Set<String> environmentsSet,
                 Map<String, List<String>> complexMap
         ) {
         }
@@ -38,6 +39,10 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['color'].enumValues == ["RED", "GREEN", "BLUE"]
         schema.properties['environments'].type == [Schema.Type.ARRAY]
         schema.properties['environments'].items.type == [Schema.Type.STRING]
+        !schema.properties['environments'].uniqueItems
+        schema.properties['environmentsSet'].type == [Schema.Type.ARRAY]
+        schema.properties['environmentsSet'].items.type == [Schema.Type.STRING]
+        schema.properties['environmentsSet'].uniqueItems
         schema.properties['complexMap'].type == [Schema.Type.OBJECT]
         schema.properties['complexMap'].additionalProperties.type == [Schema.Type.ARRAY]
         schema.properties['complexMap'].additionalProperties.items.type == [Schema.Type.STRING]

@@ -192,10 +192,11 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
             } else {
                 schema.addType(Type.OBJECT).setAdditionalProperties(createSchema(valueType, visitorContext, context));
             }
-        } else if (type.isAssignable(Set.class)) {
-            schema.addType(Type.ARRAY).setItems(createSchema(type.getTypeArguments().get("E"), visitorContext, context));
         } else if (type.isAssignable(Collection.class)) {
             schema.addType(Type.ARRAY).setItems(createSchema(type.getTypeArguments().get("E"), visitorContext, context));
+            if (type.isAssignable(Set.class)) {
+                schema.setUniqueItems(true);
+            }
         } else if (!type.isPrimitive() && type.getRawClassElement() instanceof EnumElement enumElement) {
             // Enum values must be camel case
             schema.addType(Type.STRING)
