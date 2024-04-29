@@ -39,6 +39,8 @@ import io.micronaut.jsonschema.visitor.serialization.JsonSchemaMapperFactory;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URI;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.*;
 
 import static io.micronaut.jsonschema.visitor.context.JsonSchemaContext.JSON_SCHEMA_CONTEXT_PROPERTY;
@@ -202,16 +204,33 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
             schema.addType(Type.STRING)
                 .setEnumValues(enumElement.values().stream().map(v -> (Object) v).toList());
             context.currentOriginatingElements().add(enumElement);
+        } else if (type.isAssignable(Number.class)) {
+            switch(type.getName()) {
+                case "java.lang.Integer", "java.lang.Long", "java.lang.Short",
+                    "java.lang.Byte", "java.math.BigInteger" -> schema.addType(Type.INTEGER);
+                default -> schema.addType(Type.NUMBER);
+            }
+        } else if (type.isAssignable(CharSequence.class)) {
+            schema.addType(Type.STRING);
+        } else if (type.isAssignable(Temporal.class)) {
+            schema.addType(Type.STRING);
+            switch (type.getName()) {
+                case "java.time.ZonedDateTime", "java.time.LocalDateTime", "java.time.OffsetDateTime",
+                    "java.time.Instant", "java.time.ChronoLocalDateTime",
+                    "java.time.ChronoZonedDateTime" -> schema.setFormat("date-time");
+                // New in draft 7
+                case "java.time.OffsetTime", "java.time.LocalTime" -> schema.setFormat("time");
+                case "java.time.LocalDate", "java.time.ChronoLocalDate" -> schema.setFormat("date");
+            }
+        } else if (type.isAssignable(TemporalAmount.class)) {
+            schema.addType(Type.STRING).setFormat("duration"); // New in draft 2019-09
         } else {
             switch (type.getName()) {
                 case "boolean", "java.lang.Boolean" -> schema.addType(Type.BOOLEAN);
-                case "int", "java.lang.Integer", "long", "java.lang.Long",
-                    "short", "java.lang.Short", "byte", "java.lang.Byte" -> schema.addType(Type.INTEGER);
-                case "java.math.BigDecimal", "float", "java.lang.Float",
-                    "double", "java.lang.Double" -> schema.addType(Type.NUMBER);
-                case "java.lang.String" -> schema.addType(Type.STRING);
-                case "java.time.Instant" -> schema.addType(Type.STRING);
+                case "int", "long", "short", "byte", "java.lang.Byte" -> schema.addType(Type.INTEGER);
+                case "float", "double" -> schema.addType(Type.NUMBER);
                 case "java.util.UUID" -> schema.addType(Type.STRING).setFormat("uuid");
+                case "java.util.Date", "java.sql.Date" -> schema.addType(Type.STRING).setFormat("date-time");
                 default -> setBeanSchemaProperties(type, visitorContext, context, schema);
             }
         }

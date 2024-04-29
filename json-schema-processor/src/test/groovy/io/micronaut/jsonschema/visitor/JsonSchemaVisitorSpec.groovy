@@ -2,6 +2,8 @@ package io.micronaut.jsonschema.visitor
 
 import io.micronaut.jsonschema.visitor.model.Schema
 
+import java.util.function.Predicate
+
 
 class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
@@ -19,7 +21,6 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
                 int age,
                 Color color,
                 List<String> environments,
-                Set<String> environmentsSet,
                 Map<String, List<String>> complexMap
         ) {
         }
@@ -39,13 +40,45 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['color'].enumValues == ["RED", "GREEN", "BLUE"]
         schema.properties['environments'].type == [Schema.Type.ARRAY]
         schema.properties['environments'].items.type == [Schema.Type.STRING]
-        !schema.properties['environments'].uniqueItems
-        schema.properties['environmentsSet'].type == [Schema.Type.ARRAY]
-        schema.properties['environmentsSet'].items.type == [Schema.Type.STRING]
-        schema.properties['environmentsSet'].uniqueItems
         schema.properties['complexMap'].type == [Schema.Type.OBJECT]
         schema.properties['complexMap'].additionalProperties.type == [Schema.Type.ARRAY]
         schema.properties['complexMap'].additionalProperties.items.type == [Schema.Type.STRING]
+    }
+
+    void "types schema test"() {
+        given:
+        def schema = buildJsonSchema('test.Single', 'single', """
+        package test;
+
+        import io.micronaut.jsonschema.JsonSchema;
+        import java.util.*;
+
+        @JsonSchema
+        public record Single(
+                %s value
+        ) {
+        }
+""", type)
+
+        expect:
+        schema.title == "Single"
+        schema.properties['value'] != null
+        check(schema.properties['value'])
+
+        where:
+        type                      | check
+        "java.lang.Number"        | (p) -> p.type == [Schema.Type.NUMBER]
+        "java.math.BigInteger"    | (p) -> p.type == [Schema.Type.INTEGER]
+        "java.math.BigDecimal"    | (p) -> p.type == [Schema.Type.NUMBER]
+        "java.time.ZonedDateTime" | (p) -> p.type == [Schema.Type.STRING] && p.format == "date-time"
+        "java.time.Instant"       | (p) -> p.type == [Schema.Type.STRING] && p.format == "date-time"
+        "java.time.LocalDate"     | (p) -> p.type == [Schema.Type.STRING] && p.format == "date"
+        "java.time.OffsetTime"    | (p) -> p.type == [Schema.Type.STRING] && p.format == "time"
+        "java.time.Duration"      | (p) -> p.type == [Schema.Type.STRING] && p.format == "duration"
+        "java.util.Date"          | (p) -> p.type == [Schema.Type.STRING] && p.format == "date-time"
+        "List<String>"            | (p) -> p.type == [Schema.Type.ARRAY] && !p.uniqueItems
+        "Set<String>"             | (p) -> p.type == [Schema.Type.ARRAY] && p.uniqueItems
+        "Map<String, String>"     | (p) -> p.type == [Schema.Type.OBJECT] && p.additionalProperties.type == [Schema.Type.STRING]
     }
 
     void "simple record customized schema"() {
