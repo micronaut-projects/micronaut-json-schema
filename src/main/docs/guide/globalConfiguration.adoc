@@ -27,6 +27,6 @@ All the supported options are:
 | `micronaut.jsonschema.draft`
     | Specify the JSON Schema draft versions. Currently only `DRAFT_2020_12` value is supported.
 | `micronaut.jsonschema.strictMode`
-    | Whether to generate schemas in strict mode. In strict mode unresolved properties in JSON will cause an error.
+    | Whether to generate schemas in strict mode. In strict mode unresolved properties in JSON will cause an error. All the properties that are not annotated as nullable must be non-null.
 |===
 

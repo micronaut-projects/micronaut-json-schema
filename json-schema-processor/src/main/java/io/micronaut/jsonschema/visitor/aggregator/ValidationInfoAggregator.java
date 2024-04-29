@@ -73,13 +73,11 @@ public class ValidationInfoAggregator implements SchemaInfoAggregator {
             visitorContext.warn("Could not add annotation " + ann + " to schema as it is not supported by the JacksonInfoAggregator", element)
         );
 
-        addRequiredPropertiesInfo(element.getGenericType(), schema);
+        addRequiredPropertiesInfo(element.getGenericType(), schema, context);
 
         ClassElement type = element.getGenericType();
         if (element.hasAnnotation(NULL_ANN + LIST_SUFFIX)) {
             schema.setType(List.of(Schema.Type.NULL));
-        } else if (element.hasAnnotation(NULLABLE_ANN)) {
-            schema.addType(Schema.Type.NULL);
         }
 
         if (schema.getType().contains(Type.BOOLEAN)) {
@@ -169,11 +167,14 @@ public class ValidationInfoAggregator implements SchemaInfoAggregator {
         return schema;
     }
 
-    private void addRequiredPropertiesInfo(ClassElement element, Schema schema) {
+    private void addRequiredPropertiesInfo(ClassElement element, Schema schema, JsonSchemaContext context) {
         if (schema.getProperties() != null) {
             for (Entry<String, Schema> property: schema.getProperties().entrySet()) {
                 TypedElement sourceElement = property.getValue().getSourceElement();
-                if (sourceElement.hasAnnotation(NOT_NULL_ANN + LIST_SUFFIX)
+                if (context.strictMode() && !sourceElement.hasAnnotation(NON_NULL_ANN)) {
+                    schema.addRequired(property.getKey());
+                } else if (sourceElement.isPrimitive()
+                        || sourceElement.hasAnnotation(NOT_NULL_ANN + LIST_SUFFIX)
                         || sourceElement.hasAnnotation(NON_NULL_ANN)
                 ) {
                     schema.addRequired(property.getKey());

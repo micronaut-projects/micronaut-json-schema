@@ -2,9 +2,6 @@ package io.micronaut.jsonschema.visitor
 
 import io.micronaut.jsonschema.visitor.model.Schema
 
-import java.util.function.Predicate
-
-
 class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
     void "simple record schema"() {
@@ -230,6 +227,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.title == "Salamander"
         schema.properties.size() == 3
         schema.additionalProperties == Schema.FALSE
+        schema.required == ["name", "poisonous", "age"]
     }
 
     void "validation schema"() {
@@ -295,7 +293,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['number'].minimum == 10
         schema.properties['number'].maximum == 100.5
         schema.properties['alwaysNull'].type == [Schema.Type.NULL]
-        schema.properties['nullable'].type == [Schema.Type.STRING, Schema.Type.NULL]
+        schema.properties['nullable'].type == [Schema.Type.STRING]
         schema.properties['alwaysTrue'].constValue == true
         schema.properties['alwaysFalse'].constValue == false
         schema.properties['digits'].type == [Schema.Type.NUMBER]
