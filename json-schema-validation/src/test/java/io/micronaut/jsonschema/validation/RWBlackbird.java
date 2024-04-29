@@ -18,7 +18,7 @@ import io.micronaut.jsonschema.JsonSchema;
 @Introspected
 public record RWBlackbird(
     String name,
-    double wingSpan
+    Double wingSpan
 ) {
 }
 // end::clazz[]

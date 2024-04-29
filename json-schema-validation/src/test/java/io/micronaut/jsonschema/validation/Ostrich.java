@@ -11,6 +11,6 @@ import jakarta.validation.constraints.Positive;
 record Ostrich(
         String name,
         @Positive
-        float runSpeed
+        Float runSpeed
 ) implements Bird {
 }

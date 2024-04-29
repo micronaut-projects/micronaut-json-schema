@@ -183,5 +183,4 @@ public class ValidationInfoAggregator implements SchemaInfoAggregator {
         }
     }
 
-
 }

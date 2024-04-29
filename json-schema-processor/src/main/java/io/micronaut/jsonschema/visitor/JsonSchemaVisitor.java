@@ -205,7 +205,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
                 .setEnumValues(enumElement.values().stream().map(v -> (Object) v).toList());
             context.currentOriginatingElements().add(enumElement);
         } else if (type.isAssignable(Number.class)) {
-            switch(type.getName()) {
+            switch (type.getName()) {
                 case "java.lang.Integer", "java.lang.Long", "java.lang.Short",
                     "java.lang.Byte", "java.math.BigInteger" -> schema.addType(Type.INTEGER);
                 default -> schema.addType(Type.NUMBER);
@@ -215,12 +215,10 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
         } else if (type.isAssignable(Temporal.class)) {
             schema.addType(Type.STRING);
             switch (type.getName()) {
-                case "java.time.ZonedDateTime", "java.time.LocalDateTime", "java.time.OffsetDateTime",
-                    "java.time.Instant", "java.time.ChronoLocalDateTime",
-                    "java.time.ChronoZonedDateTime" -> schema.setFormat("date-time");
-                // New in draft 7
+                // Time and date are new in draft 7
                 case "java.time.OffsetTime", "java.time.LocalTime" -> schema.setFormat("time");
                 case "java.time.LocalDate", "java.time.ChronoLocalDate" -> schema.setFormat("date");
+                default -> schema.setFormat("date-time");
             }
         } else if (type.isAssignable(TemporalAmount.class)) {
             schema.addType(Type.STRING).setFormat("duration"); // New in draft 2019-09

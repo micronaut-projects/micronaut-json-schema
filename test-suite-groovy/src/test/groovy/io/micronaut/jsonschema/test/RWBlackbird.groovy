@@ -22,6 +22,6 @@ class RWBlackbird {
     /**
      * The wingspan.
      */
-    double wingSpan
+    Double wingSpan
 }
 // end::clazz[]

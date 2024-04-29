@@ -21,7 +21,7 @@ class RWBlackbirdTest {
 
     @Test
     void validObjectWithChangedPath() throws IOException {
-        var bird = new RWBlackbird("Clara", 1.2f);
+        var bird = new RWBlackbird("Clara", 1.2d);
         var assertions = validator.validate(bird, RWBlackbird.class);
         assertEquals(0, assertions.size());
     }

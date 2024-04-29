@@ -24,5 +24,5 @@ class Llama {
      * The age.
      */
     @PositiveOrZero // <3>
-    int age
+    Integer age
 }

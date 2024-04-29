@@ -18,6 +18,6 @@ import io.micronaut.serde.annotation.Serdeable
 @Serdeable
 class RWBlackbird (
         val name: String,
-        val wingSpan: Double
+        val wingSpan: Double?
 )
 // end::clazz[]

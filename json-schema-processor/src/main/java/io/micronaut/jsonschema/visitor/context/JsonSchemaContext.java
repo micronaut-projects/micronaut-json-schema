@@ -39,6 +39,7 @@ import java.util.Set;
  *                   In strict mode unresolved properties in JSON will cause an error.
  *                   All the properties that are not annotated as nullable must be non-null.
  * @param createdSchemasByType A cache of crated schemas
+ * @param currentOriginatingElements The originating elements for the current schema
  */
 public record JsonSchemaContext(
     String outputLocation,

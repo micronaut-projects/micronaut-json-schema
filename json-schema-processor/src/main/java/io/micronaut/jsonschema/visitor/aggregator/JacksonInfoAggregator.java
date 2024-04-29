@@ -167,7 +167,8 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
 
                     if (discriminatorValue != null) {
                         if (as == As.PROPERTY || as == As.EXISTING_PROPERTY) {
-                            subTypeSchema.putProperty(discriminatorName, Schema.string().setConstValue(discriminatorValue));
+                            subTypeSchema.putProperty(discriminatorName, Schema.string().setConstValue(discriminatorValue))
+                                .addRequired(discriminatorName);
                         } else if (as == As.WRAPPER_OBJECT) {
                             subTypeSchema = Schema.object().putProperty(discriminatorValue, subTypeSchema);
                         } else {
