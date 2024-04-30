@@ -85,8 +85,10 @@ loadScripts(document, 'script');</script>
 <dd><code><span id="param-draft">draft</span></code> - An enum for JSON Schema draft versions.
               Currently only 2020-12 draft is supported.</dd>
 <dd><code><span id="param-strictMode">strictMode</span></code> - Whether to generate schemas in strict mode.
-                   In strict mode unresolved properties in JSON will cause an error.</dd>
+                   In strict mode unresolved properties in JSON will cause an error.
+                   All the properties that are not annotated as nullable must be non-null.</dd>
 <dd><code><span id="param-createdSchemasByType">createdSchemasByType</span></code> - A cache of crated schemas</dd>
+<dd><code><span id="param-currentOriginatingElements">currentOriginatingElements</span></code> - The originating elements for the current schema</dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">JsonSchemaContext</span>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputLocation, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;baseUrl, boolean&nbsp;binaryAsArray, <a href="JsonSchemaContext.JsonSchemaDraft.html" title="enum class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext.JsonSchemaDraft</a>&nbsp;draft, boolean&nbsp;strictMode, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="../model/Schema.html" title="class in io.micronaut.jsonschema.visitor.model">Schema</a>&gt;&nbsp;createdSchemasByType, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;io.micronaut.inject.ast.ClassElement&gt;&nbsp;currentOriginatingElements)
@@ -204,7 +206,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;io.micronaut.inject.ast.ClassElement&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#currentOriginatingElements()" class="member-name-link">currentOriginatingElements</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns the value of the <code>currentOriginatingElements</code> record component.</div>
+<div class="block">Returns the value of the <a href="#param-currentOriginatingElements"><code>currentOriginatingElements</code></a> record component.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="JsonSchemaContext.JsonSchemaDraft.html" title="enum class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext.JsonSchemaDraft</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#draft()" class="member-name-link">draft</a>()</code></div>
@@ -409,7 +411,7 @@ loadScripts(document, 'script');</script>
 <dd><code>draft</code> - the value for the <a href="#param-draft"><code>draft</code></a> record component</dd>
 <dd><code>strictMode</code> - the value for the <a href="#param-strictMode"><code>strictMode</code></a> record component</dd>
 <dd><code>createdSchemasByType</code> - the value for the <a href="#param-createdSchemasByType"><code>createdSchemasByType</code></a> record component</dd>
-<dd><code>currentOriginatingElements</code> - the value for the <code>currentOriginatingElements</code> record component</dd>
+<dd><code>currentOriginatingElements</code> - the value for the <a href="#param-currentOriginatingElements"><code>currentOriginatingElements</code></a> record component</dd>
 </dl>
 </section>
 </li>
@@ -544,10 +546,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="currentOriginatingElements()">
 <h3>currentOriginatingElements</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;io.micronaut.inject.ast.ClassElement&gt;</span>&nbsp;<span class="element-name">currentOriginatingElements</span>()</div>
-<div class="block">Returns the value of the <code>currentOriginatingElements</code> record component.</div>
+<div class="block">Returns the value of the <a href="#param-currentOriginatingElements"><code>currentOriginatingElements</code></a> record component.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>the value of the <code>currentOriginatingElements</code> record component</dd>
+<dd>the value of the <a href="#param-currentOriginatingElements"><code>currentOriginatingElements</code></a> record component</dd>
 </dl>
 </section>
 </li>

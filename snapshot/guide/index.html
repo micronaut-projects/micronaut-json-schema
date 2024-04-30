@@ -233,7 +233,7 @@ public record Llama(
     @JsonInclude(Include.NON_NULL)
     String name,
     @PositiveOrZero // <b class="conum">(3)</b>
-    int age
+    Integer age
 ) {
 }</code></pre>
 </div>
@@ -266,7 +266,7 @@ class Llama {
      * The age.
      */
     @PositiveOrZero // <b class="conum">(3)</b>
-    int age
+    Integer age
 }</code></pre>
 </div>
 </div>
@@ -294,7 +294,7 @@ class Llama(
         @field:NotBlank
         val name: String,
         @field:PositiveOrZero
-        val age: Int // <b class="conum">(3)</b>
+        val age: Int? // <b class="conum">(3)</b>
 )</code></pre>
 </div>
 </div>
@@ -342,7 +342,8 @@ documentation and add <code>Serdeable</code> annotation to the bean.</td>
       "type":["string"],
       "minLength":1
     }
-  }
+  },
+  "required":["age"]
 }</code></pre>
 </div>
 </div>
@@ -468,7 +469,7 @@ kapt {
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.strictMode</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Whether to generate schemas in strict mode. In strict mode unresolved properties in JSON will cause an error.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether to generate schemas in strict mode. In strict mode unresolved properties in JSON will cause an error. All the properties that are not annotated as nullable must be non-null.</p></td>
 </tr>
 </tbody>
 </table>
@@ -496,7 +497,7 @@ kapt {
 @Serdeable
 public record RWBlackbird(
     String name,
-    double wingSpan
+    Double wingSpan
 ) {
 }</code></pre>
 </div>
@@ -518,7 +519,7 @@ class RWBlackbird {
     /**
      * The wingspan.
      */
-    double wingSpan
+    Double wingSpan
 }</code></pre>
 </div>
 </div>
@@ -532,7 +533,7 @@ class RWBlackbird {
 @Serdeable
 class RWBlackbird (
         val name: String,
-        val wingSpan: Double
+        val wingSpan: Double?
 )</code></pre>
 </div>
 </div>
