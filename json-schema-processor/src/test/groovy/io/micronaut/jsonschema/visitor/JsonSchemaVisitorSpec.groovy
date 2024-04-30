@@ -2,7 +2,6 @@ package io.micronaut.jsonschema.visitor
 
 import io.micronaut.jsonschema.visitor.model.Schema
 
-
 class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
     void "simple record schema"() {
@@ -41,6 +40,42 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['complexMap'].type == [Schema.Type.OBJECT]
         schema.properties['complexMap'].additionalProperties.type == [Schema.Type.ARRAY]
         schema.properties['complexMap'].additionalProperties.items.type == [Schema.Type.STRING]
+    }
+
+    void "types schema test"() {
+        given:
+        def schema = buildJsonSchema('test.Single', 'single', """
+        package test;
+
+        import io.micronaut.jsonschema.JsonSchema;
+        import java.util.*;
+
+        @JsonSchema
+        public record Single(
+                %s value
+        ) {
+        }
+""", type)
+
+        expect:
+        schema.title == "Single"
+        schema.properties['value'] != null
+        check(schema.properties['value'])
+
+        where:
+        type                      | check
+        "java.lang.Number"        | (p) -> p.type == [Schema.Type.NUMBER]
+        "java.math.BigInteger"    | (p) -> p.type == [Schema.Type.INTEGER]
+        "java.math.BigDecimal"    | (p) -> p.type == [Schema.Type.NUMBER]
+        "java.time.ZonedDateTime" | (p) -> p.type == [Schema.Type.STRING] && p.format == "date-time"
+        "java.time.Instant"       | (p) -> p.type == [Schema.Type.STRING] && p.format == "date-time"
+        "java.time.LocalDate"     | (p) -> p.type == [Schema.Type.STRING] && p.format == "date"
+        "java.time.OffsetTime"    | (p) -> p.type == [Schema.Type.STRING] && p.format == "time"
+        "java.time.Duration"      | (p) -> p.type == [Schema.Type.STRING] && p.format == "duration"
+        "java.util.Date"          | (p) -> p.type == [Schema.Type.STRING] && p.format == "date-time"
+        "List<String>"            | (p) -> p.type == [Schema.Type.ARRAY] && !p.uniqueItems
+        "Set<String>"             | (p) -> p.type == [Schema.Type.ARRAY] && p.uniqueItems
+        "Map<String, String>"     | (p) -> p.type == [Schema.Type.OBJECT] && p.additionalProperties.type == [Schema.Type.STRING]
     }
 
     void "simple record customized schema"() {
@@ -192,6 +227,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.title == "Salamander"
         schema.properties.size() == 3
         schema.additionalProperties == Schema.FALSE
+        schema.required == ["name", "poisonous", "age"]
     }
 
     void "validation schema"() {
@@ -257,13 +293,41 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['number'].minimum == 10
         schema.properties['number'].maximum == 100.5
         schema.properties['alwaysNull'].type == [Schema.Type.NULL]
-        schema.properties['nullable'].type == [Schema.Type.STRING, Schema.Type.NULL]
+        schema.properties['nullable'].type == [Schema.Type.STRING]
         schema.properties['alwaysTrue'].constValue == true
         schema.properties['alwaysFalse'].constValue == false
         schema.properties['digits'].type == [Schema.Type.NUMBER]
         schema.properties['digits'].exclusiveMaximum == 10000
         schema.properties['digits'].exclusiveMinimum == -10000
         schema.properties['digits'].multipleOf == 0.0001
+    }
+
+    void "required properties schema"() {
+        given:
+        def schema = buildJsonSchema('test.ClownFish', 'clown-fish', """
+        package test;
+
+        import io.micronaut.core.annotation.NonNull;
+        import io.micronaut.jsonschema.JsonSchema;
+        import jakarta.annotation.Nonnull;
+        import jakarta.validation.constraints.*;
+
+        @JsonSchema
+        public record ClownFish(
+                @Nonnull
+                String name,
+                @NotNull
+                String color,
+                @NonNull
+                Double weight,
+                Integer age
+        ) {
+        }
+""")
+
+        expect:
+        schema.title == "ClownFish"
+        schema.required == ['name', 'color', 'weight']
     }
 
     void "class schema with documentation"() {

@@ -32,7 +32,7 @@ public interface Bird {
     record Ostrich(
         String name,
         @Positive
-        float runSpeed
+        Float runSpeed
     ) implements Bird {
     }
 
@@ -46,7 +46,7 @@ public interface Bird {
     record Eagle(
         String name,
         @Min(1)
-        float flySpeed
+        Float flySpeed
     ) implements Bird {
     }
 

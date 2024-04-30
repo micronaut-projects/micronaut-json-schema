@@ -20,5 +20,5 @@ class Llama(
         @field:NotBlank
         val name: String,
         @field:PositiveOrZero
-        val age: Int // <3>
+        val age: Int? // <3>
 )

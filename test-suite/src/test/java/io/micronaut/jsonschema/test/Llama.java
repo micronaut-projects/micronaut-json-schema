@@ -20,6 +20,6 @@ public record Llama(
     @JsonInclude(Include.NON_NULL)
     String name,
     @PositiveOrZero // <3>
-    int age
+    Integer age
 ) {
 }

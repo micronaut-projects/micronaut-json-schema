@@ -46,4 +46,9 @@ public class ValidationMessageAdapter implements ValidationMessage {
     public com.networknt.schema.ValidationMessage getValidationMessage() {
         return validationMessage;
     }
+
+    @Override
+    public String toString() {
+        return "ValidationMessageAdapter{message=" + getMessage() + "}";
+    }
 }

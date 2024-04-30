@@ -53,7 +53,7 @@ class BirdTest {
 
     private static Stream<Arguments> provideInvalid() {
         return Stream.of(
-                Arguments.of(new Ostrich("Glob", -12), "/runSpeed: must have an exclusive minimum value of 0", "/@type: must be the constant value 'eagle-bird'"),
+                Arguments.of(new Ostrich("Glob", -12f), "/runSpeed: must have an exclusive minimum value of 0", "/@type: must be the constant value 'eagle-bird'"),
                 Arguments.of(new Eagle("Blob", 0.5f), "/@type: must be the constant value 'ostrich-bird'", "/flySpeed: must have a minimum value of 1")
         );
     }

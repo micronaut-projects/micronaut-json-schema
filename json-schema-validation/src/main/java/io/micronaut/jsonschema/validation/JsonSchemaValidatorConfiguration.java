@@ -37,6 +37,9 @@ public record JsonSchemaValidatorConfiguration(
     String classpathFolder
 ) {
 
+    /**
+     * The JSON schema validation configuration prefix.
+     */
     public static final String PREFIX = "micronaut.jsonschema.validation";
 
 }

@@ -13,6 +13,6 @@ import jakarta.validation.constraints.Min;
 record Eagle(
         String name,
         @Min(1)
-        float flySpeed
+        Float flySpeed
 ) implements Bird {
 }

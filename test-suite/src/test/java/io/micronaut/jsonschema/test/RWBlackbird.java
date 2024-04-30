@@ -18,7 +18,7 @@ import io.micronaut.serde.annotation.Serdeable;
 @Serdeable
 public record RWBlackbird(
     String name,
-    double wingSpan
+    Double wingSpan
 ) {
 }
 // end::clazz[]
