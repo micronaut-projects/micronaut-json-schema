@@ -9,7 +9,4 @@
               <!-- files="DefaultBeanContext.java|BeanDefinitionWriter.java|DefaultHttpClient.java"/> -->
 
     <suppress checks="MissingJavadocType" files=".*doc-examples.*" />
-    <suppress checks="MethodName" files=".*jsonschema.visitor.model.Schema.java" />
-    <suppress checks="ParameterName" files=".*jsonschema.visitor.model.Schema.java" />
-
 </suppressions>
