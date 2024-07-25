@@ -24,7 +24,7 @@ micronaut-test = "4.3.0"
 micronaut-validation = "4.6.1"
 
 groovy = "4.0.17"
-managed-json-schema-validator = "1.4.3"
+managed-json-schema-validator = "1.5.1"
 kotlin = "1.9.25"
 ksp = "1.9.25-1.0.20"
 spock = "2.3-groovy-4.0"
