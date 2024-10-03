@@ -20,9 +20,12 @@ class ObjectGenerationTest {
 
     @Test
     void objectBuilder() throws IOException {
-        File jsonFile = new File("expected-llama.schema.json");
+        File jsonFile = new File("llama.schema.json");
         var recordCreator = new JsonRecordCreator(resourceLoader);
-        RecordDef recordDef = recordCreator.build(jsonFile);
+        var jsonSchema = recordCreator.getJsonSchema(jsonFile.getPath());
+        String objectName = jsonSchema.get("title").toString() + "Record";
+        RecordDef recordDef = recordCreator.build(jsonSchema, objectName);
+
         assertNotNull(recordDef);
         assertEquals("LlamaRecord", recordDef.getSimpleName());
         assertEquals(2, recordDef.getProperties().size());
@@ -38,9 +41,8 @@ class ObjectGenerationTest {
 
     @Test
     void objectGenerator() throws IOException {
-        File jsonFile = new File("expected-llama.schema.json");
+        File jsonFile = new File("llama.schema.json");
         var recordCreator = new JsonRecordCreator(resourceLoader);
         assertTrue(recordCreator.generate(jsonFile));
     }
-
 }

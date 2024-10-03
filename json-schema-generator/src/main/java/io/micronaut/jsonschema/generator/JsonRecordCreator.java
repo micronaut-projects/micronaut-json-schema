@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -61,30 +61,32 @@ public final class JsonRecordCreator {
 
     public boolean generate(File fileLocation) throws IOException {
         try {
-            var objectDef = build(fileLocation);
+            var jsonSchema = getJsonSchema(fileLocation.getPath());
+            String objectName = jsonSchema.get("title").toString() + "Record";
 
-            // TODO: why is it returning null??
+            var objectDef = build(jsonSchema, objectName);
+
             SourceGenerator sourceGenerator = SourceGenerators
                 .findByLanguage(VisitorContext.Language.JAVA).orElse(null);
             if (sourceGenerator == null) {
                 return false;
             }
-            sourceGenerator.write(objectDef, new FileWriter(fileLocation));
+            File newFile = new File( "com.example." + objectName + ".java");
+            if (!newFile.exists() && !newFile.createNewFile()) {
+                throw new IOException("Could not create file " + newFile.getAbsolutePath());
+            }
+            try (FileWriter writer = new FileWriter(newFile)) {
+                sourceGenerator.write(objectDef, writer);
+            }
             return true;
         } catch (ProcessingException | IOException e) {
             throw e;
         }
     }
 
-    public RecordDef build(File fileLocation) throws IOException {
-        var jsonSchema = getJsonSchema(fileLocation.getPath());
-
-        String objectName = jsonSchema.get("title").toString() + "Record";
-        String builderClassName = "com.example." + objectName;
-
+    public RecordDef build(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
         // For now, only record def
-        // TODO:
-        //      - decide between record vs class
+        // TODO: decide between record vs class
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
@@ -93,7 +95,7 @@ public final class JsonRecordCreator {
         return objectBuilder.build();
     }
 
-    private Map<String, ?> getJsonSchema(String path) throws IOException {
+    public Map<String, ?> getJsonSchema(String path) throws IOException {
         JsonMapper jsonMapper = new JsonMapper();
 
         Optional<InputStream> jsonOptional = resourceLoader.getResourceAsStream(path);
@@ -101,43 +103,51 @@ public final class JsonRecordCreator {
             throw new FileNotFoundException("Resource file is not found.");
         }
         String jsonString = new String(jsonOptional.get().readAllBytes(), StandardCharsets.UTF_8);
-        return (Map<String, ?>) jsonMapper.readValue(jsonString, Map.class);
+        return (Map<String, ?>) jsonMapper.readValue(jsonString, HashMap.class);
     }
 
     private static void addFields(Map<String, ?> jsonSchema, RecordDef.RecordDefBuilder objectBuilder) {
         Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
-        for (Map.Entry<String, ?> entry : properties.entrySet()) {
-            String key = entry.getKey();
-            Map<String, Object> value = (Map<String, Object>) entry.getValue();
-            PropertyDef field = createField(key, value);
-            objectBuilder.addProperty(field);
-        }
+        properties.entrySet().stream()
+            .forEach(entry -> {
+                PropertyDef field = createField(entry.getKey(), (Map<String, Object>) entry.getValue());
+                objectBuilder.addProperty(field);
+            });
     }
 
     private static PropertyDef createField(String propertyName, Map<String, Object> description) {
-        ArrayList<String> typeName = (ArrayList<String>) description.getOrDefault("type", List.of("object"));
+        String typeName = getPropertyType(description);
         TypeDef propertyType;
-        if  (typeName.get(0).equals("array")) {
-            // TODO: check for multidimensional arrays
-            ArrayList<String> arrayTypeName = (ArrayList<String>) ((Map<String, ?>) description.get("items")).get("type");
-            propertyType = new TypeDef.Array(TYPE_MAP.get(arrayTypeName.get(0)), 1, true);
+        // TODO: handle enum
+        if  (typeName.equals("array")) {
+            // check for multidimensional arrays
+            var items = (Map<String, Object>) description.get("items");
+            int dimensions = 1;
+            var arrayTypeName = getPropertyType(items);
+            while (arrayTypeName.equals("array")) {
+                items = (Map<String, Object>) items.get("items");
+                dimensions++;
+                arrayTypeName = getPropertyType(items);
+            }
+            propertyType = new TypeDef.Array(TYPE_MAP.get(arrayTypeName), dimensions, true);
         } else {
-            propertyType = TYPE_MAP.get(typeName.get(0));
+            propertyType = TYPE_MAP.get(typeName);
         }
 
-        // TODO: add annotations
+        // TODO: add annotations and default value
         PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(propertyName)
             .ofType(propertyType);
-
-        /* TODO: default value
-        try {
-            beanProperty.stringValue(Bindable.class, "defaultValue").ifPresent(defaultValue ->
-                fieldDef.initializer(ExpressionDef.constant(beanProperty.getType(), fieldType, defaultValue))
-            );
-        } catch (IllegalArgumentException e) {
-            throw new IllegalStateException("Invalid or unsupported default value specified: " + beanProperty.stringValue(Bindable.class, "defaultValue").orElse(null));
-        }
-         */
         return propertyDef.build();
+    }
+
+    private static String getPropertyType(Map<String, Object> description) {
+        var type = description.getOrDefault("type", "enum");
+        String typeName;
+        if (type.getClass() == ArrayList.class) {
+            typeName = ((ArrayList<?>) type).get(0).toString();
+        } else {
+            typeName = type.toString();
+        }
+        return typeName;
     }
 }
