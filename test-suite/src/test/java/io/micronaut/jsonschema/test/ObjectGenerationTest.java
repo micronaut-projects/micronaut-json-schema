@@ -1,7 +1,7 @@
 package io.micronaut.jsonschema.test;
 
 import io.micronaut.core.io.ResourceLoader;
-import io.micronaut.jsonschema.generator.JsonRecordCreator;
+import io.micronaut.jsonschema.generator.RecordGenerator;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ class ObjectGenerationTest {
     @Test
     void objectGenerator() throws IOException {
         File jsonFile = new File("llama.schema.json");
-        var recordCreator = new JsonRecordCreator(resourceLoader);
+        var recordCreator = new RecordGenerator(resourceLoader);
         assertTrue(recordCreator.generate(jsonFile, Optional.empty()));
     }
 }

@@ -31,52 +31,55 @@ public class AnnotationInfoAggregator {
 
     private static final String JAKARTA_ANNOTATION_PREFIX = "jakarta.annotation.";
     private static final String JAKARTA_VALIDATION_PREFIX = "jakarta.validation.constraints.";
-    private static final String NULLABLE_ANN = JAKARTA_ANNOTATION_PREFIX + "Nullable";
     private static final String NON_NULL_ANN = JAKARTA_ANNOTATION_PREFIX + "Nonnull";
-    private static final String NULL_ANN = JAKARTA_VALIDATION_PREFIX + "Null";
     private static final String ASSERT_FALSE_ANN = JAKARTA_VALIDATION_PREFIX + "AssertFalse";
     private static final String ASSERT_TRUE_ANN = JAKARTA_VALIDATION_PREFIX + "AssertTrue";
-    private static final String NOT_EMPTY_ANN = JAKARTA_VALIDATION_PREFIX + "NotEmpty";
-    private static final String NOT_NULL_ANN = JAKARTA_VALIDATION_PREFIX + "NotNull";
     private static final String SIZE_ANN = JAKARTA_VALIDATION_PREFIX + "Size";
-    private static final String NOT_BLANK_ANN = JAKARTA_VALIDATION_PREFIX + "NotBlank";
-    private static final String NEGATIVE_ANN = JAKARTA_VALIDATION_PREFIX + "Negative";
-    private static final String NEGATIVE_OR_ZERO_ANN = JAKARTA_VALIDATION_PREFIX + "NegativeOrZero";
-    private static final String POSITIVE_ANN = JAKARTA_VALIDATION_PREFIX + "Positive";
-    private static final String POSITIVE_OR_ZERO_ANN = JAKARTA_VALIDATION_PREFIX + "PositiveOrZero";
     private static final String MIN_ANN = JAKARTA_VALIDATION_PREFIX + "Min";
     private static final String MAX_ANN = JAKARTA_VALIDATION_PREFIX + "Max";
     private static final String DECIMAL_MIN_ANN = JAKARTA_VALIDATION_PREFIX + "DecimalMin";
     private static final String DECIMAL_MAX_ANN = JAKARTA_VALIDATION_PREFIX + "DecimalMax";
     private static final String PATTERN_ANN = JAKARTA_VALIDATION_PREFIX + "Pattern";
     private static final String EMAIL_ANN = JAKARTA_VALIDATION_PREFIX + "Email";
-    private static final String DIGITS_ANN = JAKARTA_VALIDATION_PREFIX + "Digits";
+    private static final float EXCLUSIVE_DELTA = Float.MIN_VALUE;
 
-    public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, Map<String, Object> schemaMap, TypeDef propertyType) {
+    public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, Map<String, Object> schemaMap, TypeDef propertyType, boolean isRequired) {
+        var MIN_ANNOTATION = (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MIN_ANN : MIN_ANN;
+        var MAX_ANNOTATION = (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MAX_ANN : MAX_ANN;
+        if (isRequired) {
+            propertyDef.addAnnotation(NON_NULL_ANN);
+        }
         schemaMap.forEach((key, value) -> {
             AnnotationDef.AnnotationDefBuilder annBuilder = null;
             switch (key) {
                 // check annotation related to numbers
                 case "minimum":
                     annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(
-                            (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MIN_ANN : MIN_ANN)
-                        )
+                        .builder(ClassTypeDef.of(MIN_ANNOTATION))
                         .addMember("value", value);
                     break;
                 case "maximum":
                     annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(
-                            (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MAX_ANN : MAX_ANN)
-                        )
+                        .builder(ClassTypeDef.of(MAX_ANNOTATION))
                         .addMember("value", value);
                     break;
-                case "maxLength":
+                case "exclusiveMinimum":
+                    annBuilder = AnnotationDef
+                        .builder(ClassTypeDef.of(MIN_ANNOTATION))
+                        .addMember("value", ((float) value) + EXCLUSIVE_DELTA);
+                    break;
+                case "exclusiveMaximum":
+                    annBuilder = AnnotationDef
+                        .builder(ClassTypeDef.of(MAX_ANNOTATION))
+                        .addMember("value", ((float) value) - EXCLUSIVE_DELTA);
+                    break;
+                // list annotations
+                case "maxLength", "maxItems":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(SIZE_ANN))
                         .addMember("max", value);
                     break;
-                case "minLength":
+                case "minLength", "minItems":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(SIZE_ANN))
                         .addMember("min", value);
@@ -86,9 +89,16 @@ public class AnnotationInfoAggregator {
                         .builder(ClassTypeDef.of(PATTERN_ANN))
                         .addMember("regexp", value);
                     break;
+                // string annotations
                 case "email": annBuilder = AnnotationDef
                     .builder(ClassTypeDef.of(EMAIL_ANN));
+                // boolean annotations
                 case "const":
+                    if (propertyType == TypeDef.Primitive.BOOLEAN) {
+                        var assert_ann = (value.toString().equals(Boolean.TRUE.toString())) ? ASSERT_TRUE_ANN : ASSERT_FALSE_ANN;
+                        annBuilder = AnnotationDef.builder(ClassTypeDef.of(assert_ann));
+                    }
+                    // TODO: handle all const values
                     break;
                 default:
                     break;

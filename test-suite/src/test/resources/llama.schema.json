@@ -27,5 +27,6 @@
         "type": "number"
       }
     }
-  }
+  },
+  "required": ["age", "name"]
 }

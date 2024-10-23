@@ -44,7 +44,7 @@ import java.util.Optional;
 import static io.micronaut.core.util.StringUtils.capitalize;
 
 /**
- * ...
+ * A generator to create Java Beans from Json Schema
  *
  * @author Elif Kurtay
  * @since 1.2
@@ -52,7 +52,7 @@ import static io.micronaut.core.util.StringUtils.capitalize;
 
 @Internal
 @Singleton
-public final class JsonRecordCreator {
+public final class RecordGenerator {
 
     private static final Map<String, TypeDef> TYPE_MAP = CollectionUtils.mapOf(new Object[]{
         "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN,
@@ -62,7 +62,7 @@ public final class JsonRecordCreator {
     private final ResourceLoader resourceLoader;
     private List<EnumDef> enums = new ArrayList<>();
 
-    public JsonRecordCreator(ResourceLoader resourceLoader) {
+    public RecordGenerator(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
 
@@ -121,13 +121,21 @@ public final class JsonRecordCreator {
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
 
-        Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
-        properties.entrySet().forEach(entry ->
-            addField(objectBuilder, entry.getKey(), (Map<String, Object>) entry.getValue()));
+        if (jsonSchema.containsKey("properties")) {
+            Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
+            List<String> requiredProperties;
+            if (jsonSchema.containsKey("required")) {
+                requiredProperties = (List<String>) jsonSchema.get("required");
+            } else {
+                requiredProperties = new ArrayList<>();
+            }
+            properties.entrySet().forEach(entry ->
+                addField(objectBuilder, entry.getKey(), (Map<String, Object>) entry.getValue(), requiredProperties.contains(entry.getKey())));
+        }
         return objectBuilder.build();
     }
 
-    private void addField(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
+    private void addField(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description, boolean isRequired) {
         String typeName = getPropertyType(description);
         boolean isEnum = description.containsKey("enum");
         TypeDef propertyType;
@@ -164,7 +172,7 @@ public final class JsonRecordCreator {
             propertyDef = PropertyDef.builder(propertyName)
                 .ofType(propertyType);
         }
-        AnnotationInfoAggregator.addAnnotations(propertyDef, description, propertyType);
+        AnnotationInfoAggregator.addAnnotations(propertyDef, description, propertyType, isRequired);
         objectBuilder.addProperty(propertyDef.build());
     }
 
