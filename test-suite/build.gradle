@@ -3,8 +3,12 @@ plugins {
 }
 
 dependencies {
+    testImplementation(mnSourcegen.micronaut.sourcegen.model)
+    testImplementation(mnSourcegen.micronaut.sourcegen.generator)
+    testImplementation(mnSourcegen.micronaut.sourcegen.annotations)
     testImplementation(mnValidation.validation)
     testImplementation(projects.micronautJsonSchemaAnnotations)
+    testImplementation(projects.micronautJsonSchemaGenerator)
     testImplementation(mnSerde.micronaut.serde.jackson)
 
     testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
