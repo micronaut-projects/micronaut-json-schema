@@ -39,7 +39,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
 
@@ -58,6 +60,10 @@ public final class RecordGenerator {
         "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN,
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
+
+    private static final Map<String, Class> CLASS_MAP = CollectionUtils.mapOf(new Object[]{
+        "integer", Integer.class, "boolean", Boolean.class, "string", String.class,
+        "object", Object.class, "number", Float.class, "null", Object.class});
 
     private final ResourceLoader resourceLoader;
     private List<EnumDef> enums = new ArrayList<>();
@@ -151,9 +157,14 @@ public final class RecordGenerator {
             }
             isEnum = items.containsKey("enum");
             description = items;
-            // TODO: change to List
-            // if uniqueItems ? generate a Set : List
-            propertyType = new TypeDef.Array(TYPE_MAP.get(arrayTypeName), dimensions, true);
+
+            // TODO: do the multiple dimensions
+            if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
+                propertyType = TypeDef.parameterized(Set.class, CLASS_MAP.get(arrayTypeName));
+            } else {
+                propertyType = TypeDef.parameterized(List.class, CLASS_MAP.get(arrayTypeName));
+            }
+            // propertyType = new TypeDef.Array(TYPE_MAP.get(arrayTypeName), dimensions, true);
         } else {
             propertyType = TYPE_MAP.get(typeName);
         }

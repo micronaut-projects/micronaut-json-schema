@@ -32,6 +32,7 @@ public class AnnotationInfoAggregator {
     private static final String JAKARTA_ANNOTATION_PREFIX = "jakarta.annotation.";
     private static final String JAKARTA_VALIDATION_PREFIX = "jakarta.validation.constraints.";
     private static final String NON_NULL_ANN = JAKARTA_ANNOTATION_PREFIX + "Nonnull";
+    private static final String NOT_NULL_ANN = JAKARTA_VALIDATION_PREFIX + "NotNull";
     private static final String ASSERT_FALSE_ANN = JAKARTA_VALIDATION_PREFIX + "AssertFalse";
     private static final String ASSERT_TRUE_ANN = JAKARTA_VALIDATION_PREFIX + "AssertTrue";
     private static final String SIZE_ANN = JAKARTA_VALIDATION_PREFIX + "Size";
@@ -48,6 +49,7 @@ public class AnnotationInfoAggregator {
         var MAX_ANNOTATION = (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MAX_ANN : MAX_ANN;
         if (isRequired) {
             propertyDef.addAnnotation(NON_NULL_ANN);
+            propertyDef.addAnnotation(NOT_NULL_ANN);
         }
         schemaMap.forEach((key, value) -> {
             AnnotationDef.AnnotationDefBuilder annBuilder = null;
