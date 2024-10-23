@@ -13,5 +13,8 @@ dependencies {
 
     api(projects.micronautJsonSchemaAnnotations)
     api(mn.jackson.databind)
+
+    testImplementation(libs.java.parser)
+    testImplementation(mnValidation.micronaut.validation)
 }
 

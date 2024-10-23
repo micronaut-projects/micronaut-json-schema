@@ -17,7 +17,6 @@ package io.micronaut.jsonschema.generator;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
@@ -30,11 +29,8 @@ import jakarta.inject.Singleton;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,12 +60,11 @@ public final class RecordGenerator {
         "integer", Integer.class, "boolean", Boolean.class, "string", String.class,
         "object", Object.class, "number", Float.class, "null", Object.class});
 
-    private final ResourceLoader resourceLoader;
     private List<EnumDef> enums = new ArrayList<>();
 
-    public RecordGenerator(ResourceLoader resourceLoader) {
-        this.resourceLoader = resourceLoader;
-    }
+    // TODO objectName and fileName should match. Perhaps we should just take output directory as argument. The argument does not need to be optional then
+    // TODO support generating from an inputstream, not just file: generate(InputStream jsonSchemaStream, Optional<File> outputFileLocation)
+    // TODO take language as argument.
 
     public boolean generate(File jsonFileLocation, Optional<File> outputFileLocation) throws IOException {
         try {
@@ -79,12 +74,15 @@ public final class RecordGenerator {
                 return false;
             }
 
+            // TODO configure package as argument
+            String packageName = "test";
             var jsonSchema = getJsonSchema(jsonFileLocation.getPath());
             String objectName = jsonSchema.get("title").toString() + "Record";
 
-            File outputFile = getOutputFile(outputFileLocation, objectName);
+            File outputFile = getOutputFile(outputFileLocation,
+                (packageName + ".").replace('.', File.separatorChar) + objectName);
             try (FileWriter writer = new FileWriter(outputFile)) {
-                var objectDef = build(jsonSchema, objectName);
+                var objectDef = build(jsonSchema, packageName + "." + objectName);
                 for (EnumDef enumDef : enums) {
                     sourceGenerator.write(enumDef, writer);
                 }
@@ -109,13 +107,7 @@ public final class RecordGenerator {
 
     private Map<String, ?> getJsonSchema(String path) throws IOException {
         JsonMapper jsonMapper = new JsonMapper();
-
-        Optional<InputStream> jsonOptional = resourceLoader.getResourceAsStream(path);
-        if (jsonOptional.isEmpty()) {
-            throw new FileNotFoundException("Resource file is not found.");
-        }
-        String jsonString = new String(jsonOptional.get().readAllBytes(), StandardCharsets.UTF_8);
-        return (Map<String, ?>) jsonMapper.readValue(jsonString, HashMap.class);
+        return (Map<String, ?>) jsonMapper.readValue(new File(path), HashMap.class);
     }
 
     private RecordDef build(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
