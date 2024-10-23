@@ -39,14 +39,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
 
 /**
- * A generator to create Java Beans from Json Schema
+ * A generator to create Java Beans from Json Schema.
  *
  * @author Elif Kurtay
  * @since 1.2
@@ -100,7 +99,7 @@ public final class RecordGenerator {
     private static File getOutputFile(Optional<File> outputFileLocation, String objectName) throws IOException {
         File outputFile = outputFileLocation.orElse(null);
         if (outputFile == null) { // default file
-            outputFile = new File( objectName + ".java");
+            outputFile = new File(objectName + ".java");
         }
         if (!outputFile.exists() && !outputFile.createNewFile()) {
             throw new IOException("Could not create file " + outputFile.getAbsolutePath());
@@ -169,21 +168,18 @@ public final class RecordGenerator {
             propertyType = TYPE_MAP.get(typeName);
         }
 
-        PropertyDef.PropertyDefBuilder propertyDef;
-        if(isEnum) {
+        if (isEnum) {
             EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(propertyName));
             for (Object anEnum : ((List<?>) description.get("enum"))) {
                 enumBuilder.addEnumConstant(anEnum.toString());
             }
             EnumDef enumDef = enumBuilder.build();
             this.enums.add(enumDef);
-            propertyDef = PropertyDef.builder(propertyName)
-                .ofType(enumDef.asTypeDef());
-        } else {
-            propertyDef = PropertyDef.builder(propertyName)
-                .ofType(propertyType);
+            propertyType = enumDef.asTypeDef();
         }
+        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(propertyName).ofType(propertyType);
         AnnotationInfoAggregator.addAnnotations(propertyDef, description, propertyType, isRequired);
+
         objectBuilder.addProperty(propertyDef.build());
     }
 

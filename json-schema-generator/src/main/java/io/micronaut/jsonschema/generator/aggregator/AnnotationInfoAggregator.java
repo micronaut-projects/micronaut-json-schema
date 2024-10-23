@@ -24,14 +24,12 @@ import io.micronaut.sourcegen.model.TypeDef;
 import java.util.Map;
 
 /**
- * An aggregator for adding annotation information from json schema
+ * An aggregator for adding annotation information from json schema.
  */
 @Internal
 public class AnnotationInfoAggregator {
 
-    private static final String JAKARTA_ANNOTATION_PREFIX = "jakarta.annotation.";
     private static final String JAKARTA_VALIDATION_PREFIX = "jakarta.validation.constraints.";
-    private static final String NON_NULL_ANN = JAKARTA_ANNOTATION_PREFIX + "Nonnull";
     private static final String NOT_NULL_ANN = JAKARTA_VALIDATION_PREFIX + "NotNull";
     private static final String ASSERT_FALSE_ANN = JAKARTA_VALIDATION_PREFIX + "AssertFalse";
     private static final String ASSERT_TRUE_ANN = JAKARTA_VALIDATION_PREFIX + "AssertTrue";
@@ -45,10 +43,9 @@ public class AnnotationInfoAggregator {
     private static final float EXCLUSIVE_DELTA = Float.MIN_VALUE;
 
     public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, Map<String, Object> schemaMap, TypeDef propertyType, boolean isRequired) {
-        var MIN_ANNOTATION = (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MIN_ANN : MIN_ANN;
-        var MAX_ANNOTATION = (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MAX_ANN : MAX_ANN;
+        var minAnn = (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MIN_ANN : MIN_ANN;
+        var maxAnn = (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MAX_ANN : MAX_ANN;
         if (isRequired) {
-            propertyDef.addAnnotation(NON_NULL_ANN);
             propertyDef.addAnnotation(NOT_NULL_ANN);
         }
         schemaMap.forEach((key, value) -> {
@@ -57,22 +54,22 @@ public class AnnotationInfoAggregator {
                 // check annotation related to numbers
                 case "minimum":
                     annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(MIN_ANNOTATION))
+                        .builder(ClassTypeDef.of(minAnn))
                         .addMember("value", value);
                     break;
                 case "maximum":
                     annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(MAX_ANNOTATION))
+                        .builder(ClassTypeDef.of(maxAnn))
                         .addMember("value", value);
                     break;
                 case "exclusiveMinimum":
                     annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(MIN_ANNOTATION))
+                        .builder(ClassTypeDef.of(minAnn))
                         .addMember("value", ((float) value) + EXCLUSIVE_DELTA);
                     break;
                 case "exclusiveMaximum":
                     annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(MAX_ANNOTATION))
+                        .builder(ClassTypeDef.of(maxAnn))
                         .addMember("value", ((float) value) - EXCLUSIVE_DELTA);
                     break;
                 // list annotations
@@ -97,8 +94,8 @@ public class AnnotationInfoAggregator {
                 // boolean annotations
                 case "const":
                     if (propertyType == TypeDef.Primitive.BOOLEAN) {
-                        var assert_ann = (value.toString().equals(Boolean.TRUE.toString())) ? ASSERT_TRUE_ANN : ASSERT_FALSE_ANN;
-                        annBuilder = AnnotationDef.builder(ClassTypeDef.of(assert_ann));
+                        var assertAnn = (value.toString().equals(Boolean.TRUE.toString())) ? ASSERT_TRUE_ANN : ASSERT_FALSE_ANN;
+                        annBuilder = AnnotationDef.builder(ClassTypeDef.of(assertAnn));
                     }
                     // TODO: handle all const values
                     break;
