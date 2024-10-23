@@ -21,10 +21,12 @@ import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.jsonschema.generator.aggregator.AnnotationInfoAggregator;
 import io.micronaut.serde.annotation.Serdeable;
 import io.micronaut.sourcegen.generator.SourceGenerator;
 import io.micronaut.sourcegen.generator.SourceGenerators;
 import io.micronaut.sourcegen.model.*;
+import jakarta.inject.Singleton;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -35,8 +37,11 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static io.micronaut.core.util.StringUtils.capitalize;
 
 /**
  * ...
@@ -46,6 +51,7 @@ import java.util.Optional;
  */
 
 @Internal
+@Singleton
 public final class JsonRecordCreator {
 
     private static final Map<String, TypeDef> TYPE_MAP = CollectionUtils.mapOf(new Object[]{
@@ -53,29 +59,30 @@ public final class JsonRecordCreator {
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
 
-    ResourceLoader resourceLoader;
+    private final ResourceLoader resourceLoader;
+    private List<EnumDef> enums = new ArrayList<>();
 
     public JsonRecordCreator(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
 
-    public boolean generate(File fileLocation) throws IOException {
+    public boolean generate(File jsonFileLocation, Optional<File> outputFileLocation) throws IOException {
         try {
-            var jsonSchema = getJsonSchema(fileLocation.getPath());
-            String objectName = jsonSchema.get("title").toString() + "Record";
-
-            var objectDef = build(jsonSchema, objectName);
-
             SourceGenerator sourceGenerator = SourceGenerators
                 .findByLanguage(VisitorContext.Language.JAVA).orElse(null);
             if (sourceGenerator == null) {
                 return false;
             }
-            File newFile = new File( "com.example." + objectName + ".java");
-            if (!newFile.exists() && !newFile.createNewFile()) {
-                throw new IOException("Could not create file " + newFile.getAbsolutePath());
-            }
-            try (FileWriter writer = new FileWriter(newFile)) {
+
+            var jsonSchema = getJsonSchema(jsonFileLocation.getPath());
+            String objectName = jsonSchema.get("title").toString() + "Record";
+
+            File outputFile = getOutputFile(outputFileLocation, objectName);
+            try (FileWriter writer = new FileWriter(outputFile)) {
+                var objectDef = build(jsonSchema, objectName);
+                for (EnumDef enumDef : enums) {
+                    sourceGenerator.write(enumDef, writer);
+                }
                 sourceGenerator.write(objectDef, writer);
             }
             return true;
@@ -84,18 +91,18 @@ public final class JsonRecordCreator {
         }
     }
 
-    public RecordDef build(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
-        // For now, only record def
-        // TODO: decide between record vs class
-        RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
-            .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(Serdeable.class);
-
-        addFields(jsonSchema, objectBuilder);
-        return objectBuilder.build();
+    private static File getOutputFile(Optional<File> outputFileLocation, String objectName) throws IOException {
+        File outputFile = outputFileLocation.orElse(null);
+        if (outputFile == null) { // default file
+            outputFile = new File( objectName + ".java");
+        }
+        if (!outputFile.exists() && !outputFile.createNewFile()) {
+            throw new IOException("Could not create file " + outputFile.getAbsolutePath());
+        }
+        return outputFile;
     }
 
-    public Map<String, ?> getJsonSchema(String path) throws IOException {
+    private Map<String, ?> getJsonSchema(String path) throws IOException {
         JsonMapper jsonMapper = new JsonMapper();
 
         Optional<InputStream> jsonOptional = resourceLoader.getResourceAsStream(path);
@@ -106,21 +113,26 @@ public final class JsonRecordCreator {
         return (Map<String, ?>) jsonMapper.readValue(jsonString, HashMap.class);
     }
 
-    private static void addFields(Map<String, ?> jsonSchema, RecordDef.RecordDefBuilder objectBuilder) {
+    private RecordDef build(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
+        /* TODO: decide between record vs class
+        *       For now, only record def
+        */
+        RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Serdeable.class);
+
         Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
-        properties.entrySet().stream()
-            .forEach(entry -> {
-                PropertyDef field = createField(entry.getKey(), (Map<String, Object>) entry.getValue());
-                objectBuilder.addProperty(field);
-            });
+        properties.entrySet().forEach(entry ->
+            addField(objectBuilder, entry.getKey(), (Map<String, Object>) entry.getValue()));
+        return objectBuilder.build();
     }
 
-    private static PropertyDef createField(String propertyName, Map<String, Object> description) {
+    private void addField(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
         String typeName = getPropertyType(description);
+        boolean isEnum = description.containsKey("enum");
         TypeDef propertyType;
-        // TODO: handle enum
         if  (typeName.equals("array")) {
-            // check for multidimensional arrays
+            // checking for multidimensional arrays
             var items = (Map<String, Object>) description.get("items");
             int dimensions = 1;
             var arrayTypeName = getPropertyType(items);
@@ -129,19 +141,35 @@ public final class JsonRecordCreator {
                 dimensions++;
                 arrayTypeName = getPropertyType(items);
             }
+            isEnum = items.containsKey("enum");
+            description = items;
+            // TODO: change to List
+            // if uniqueItems ? generate a Set : List
             propertyType = new TypeDef.Array(TYPE_MAP.get(arrayTypeName), dimensions, true);
         } else {
             propertyType = TYPE_MAP.get(typeName);
         }
 
-        // TODO: add annotations and default value
-        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(propertyName)
-            .ofType(propertyType);
-        return propertyDef.build();
+        PropertyDef.PropertyDefBuilder propertyDef;
+        if(isEnum) {
+            EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(propertyName));
+            for (Object anEnum : ((List<?>) description.get("enum"))) {
+                enumBuilder.addEnumConstant(anEnum.toString());
+            }
+            EnumDef enumDef = enumBuilder.build();
+            this.enums.add(enumDef);
+            propertyDef = PropertyDef.builder(propertyName)
+                .ofType(enumDef.asTypeDef());
+        } else {
+            propertyDef = PropertyDef.builder(propertyName)
+                .ofType(propertyType);
+        }
+        AnnotationInfoAggregator.addAnnotations(propertyDef, description, propertyType);
+        objectBuilder.addProperty(propertyDef.build());
     }
 
     private static String getPropertyType(Map<String, Object> description) {
-        var type = description.getOrDefault("type", "enum");
+        var type = description.getOrDefault("type", "object");
         String typeName;
         if (type.getClass() == ArrayList.class) {
             typeName = ((ArrayList<?>) type).get(0).toString();

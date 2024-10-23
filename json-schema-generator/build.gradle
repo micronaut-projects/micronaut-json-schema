@@ -8,7 +8,9 @@ dependencies {
     implementation(mnSourcegen.micronaut.sourcegen.model)
     implementation(mnSourcegen.micronaut.sourcegen.generator)
     implementation(mnSourcegen.micronaut.sourcegen.generator.java)
+    implementation(mnSourcegen.micronaut.sourcegen.annotations)
     implementation(mnSerde.micronaut.serde.jackson)
+
     api(projects.micronautJsonSchemaAnnotations)
     api(mn.jackson.databind)
 }
