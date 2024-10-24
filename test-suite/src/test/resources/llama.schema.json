@@ -22,9 +22,11 @@
     },
     "hours":{
       "description":"Happy hours",
-      "type":"array",
+      "type":["array"],
       "items": {
-        "type": "number"
+        "type": "number",
+        "exclusiveMinimum": 18.0,
+        "maximum": 22.5
       }
     }
   },

@@ -40,11 +40,13 @@ public class AnnotationInfoAggregator {
     private static final String DECIMAL_MAX_ANN = JAKARTA_VALIDATION_PREFIX + "DecimalMax";
     private static final String PATTERN_ANN = JAKARTA_VALIDATION_PREFIX + "Pattern";
     private static final String EMAIL_ANN = JAKARTA_VALIDATION_PREFIX + "Email";
-    private static final float EXCLUSIVE_DELTA = Float.MIN_VALUE;
+    private static final int EXCLUSIVE_DELTA_INT = 1;
+    private static final double EXCLUSIVE_DELTA_DOUBLE = Double.MIN_VALUE;
 
     public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, Map<String, Object> schemaMap, TypeDef propertyType, boolean isRequired) {
-        var minAnn = (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MIN_ANN : MIN_ANN;
-        var maxAnn = (propertyType == TypeDef.Primitive.FLOAT) ? DECIMAL_MAX_ANN : MAX_ANN;
+        boolean isFloat = propertyType.equals(TypeDef.Primitive.FLOAT) || propertyType.equals(TypeDef.of(Float.class));
+        var minAnn = (isFloat) ? DECIMAL_MIN_ANN : MIN_ANN;
+        var maxAnn = (isFloat) ? DECIMAL_MAX_ANN : MAX_ANN;
         if (isRequired) {
             propertyDef.addAnnotation(NOT_NULL_ANN);
         }
@@ -65,12 +67,16 @@ public class AnnotationInfoAggregator {
                 case "exclusiveMinimum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(minAnn))
-                        .addMember("value", ((float) value) + EXCLUSIVE_DELTA);
+                        .addMember("value",(isFloat) ?
+                            ((double) value) + EXCLUSIVE_DELTA_DOUBLE :
+                            ((int) value) + EXCLUSIVE_DELTA_INT);
                     break;
                 case "exclusiveMaximum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(maxAnn))
-                        .addMember("value", ((float) value) - EXCLUSIVE_DELTA);
+                        .addMember("value",(isFloat) ?
+                            ((double) value) - EXCLUSIVE_DELTA_DOUBLE :
+                            ((int) value) - EXCLUSIVE_DELTA_INT);
                     break;
                 // list annotations
                 case "maxLength", "maxItems":
