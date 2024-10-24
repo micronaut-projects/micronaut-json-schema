@@ -24,9 +24,13 @@
       "description":"Happy hours",
       "type":["array"],
       "items": {
-        "type": "number",
-        "exclusiveMinimum": 18.0,
-        "maximum": 22.5
+        "type":["array"],
+        "items": {
+          "type": "number",
+          "exclusiveMinimum": 18.0,
+          "maximum": 22.5
+        },
+        "minItems": 1
       }
     }
   },

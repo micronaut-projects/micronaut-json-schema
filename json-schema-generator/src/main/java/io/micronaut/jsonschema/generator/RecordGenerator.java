@@ -57,9 +57,9 @@ public final class RecordGenerator {
         "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN, "array", TypeDef.of(List.class),
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
-    private static final Map<String, TypeDef> PRIMITIVE_TYPE_MAP = CollectionUtils.mapOf(new Object[]{
+    private static final Map<String, TypeDef> GENERIC_TYPE_MAP = CollectionUtils.mapOf(new Object[]{
         "integer", TypeDef.of(Integer.class), "boolean", TypeDef.of(Boolean.class),
-        "number", TypeDef.of(Float.class), "string", TypeDef.STRING, "object", TypeDef.OBJECT,});
+        "number", TypeDef.of(Float.class), "string", TypeDef.STRING, "object", TypeDef.OBJECT});
 
     private List<EnumDef> enums = new ArrayList<>();
 
@@ -153,26 +153,18 @@ public final class RecordGenerator {
         if (description.containsKey("enum")) {
             propertyType = getEnumType(propertyName, description);
         }
-        TypeDef genericType = null;
+        PropertyDef.PropertyDefBuilder propertyDef;
+
         if  (propertyType.equals(TypeDef.of(List.class))) {
-            // TODO: MISSING MULTIDIMENSIONAL
-            var items = (Map<String, Object>) description.get("items");
-            Class listClass = List.class;
-            if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
-                listClass = Set.class;
-            }
+            List<AnnotationDef> annotations = new ArrayList<>();
+            propertyType = getTypeVariable(propertyName, description, annotations);
+            propertyDef = PropertyDef.builder(propertyName).ofType(propertyType);
 
-            if (items.containsKey("enum")) {
-                genericType = getEnumType(propertyName, items);
-            } else {
-                genericType = PRIMITIVE_TYPE_MAP.get(getPropertyType(items));
-            }
-
-            propertyType = TypeDef.parameterized(listClass, genericType);
-            description = items;
+            AnnotationInfoAggregator.addAnnotations(propertyDef, annotations, isRequired);
+        } else {
+            propertyDef = PropertyDef.builder(propertyName).ofType(propertyType);
+            AnnotationInfoAggregator.addAnnotations(propertyDef, description, propertyType, isRequired);
         }
-        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(propertyName).ofType(propertyType);
-        AnnotationInfoAggregator.addAnnotations(propertyDef, description, (genericType == null) ? propertyType : genericType, isRequired);
         objectBuilder.addProperty(propertyDef.build());
     }
 
@@ -186,21 +178,27 @@ public final class RecordGenerator {
         return enumDef.asTypeDef();
     }
 
-    private TypeDef getTypeVariable(Map<String, Object> description) {
+    private TypeDef getTypeVariable(String propertyName, Map<String, Object> description, List<AnnotationDef> annotations) {
         var items = (Map<String, Object>) description.get("items");
         Class listClass = List.class;
-        TypeDef propertyType = PRIMITIVE_TYPE_MAP.get(getPropertyType(items));
-        if (propertyType == TypeDef.of(listClass)) {
-            propertyType = getTypeVariable(items);
-        }
         if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
             listClass = Set.class;
         }
 
-        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder("").ofType(propertyType);
-        AnnotationInfoAggregator.addAnnotations(propertyDef, description, propertyType, false);
-        // TODO: change getClass() to a new implementation that would return a typedef with annotations
-        return TypeDef.parameterized(listClass, propertyDef.build().getClass());
+        TypeDef propertyType = TYPE_MAP.get(getPropertyType(items));
+        if (propertyType.equals(TypeDef.of(List.class))) {
+            annotations.addAll(AnnotationInfoAggregator.getAnnotations(items, propertyType));
+            propertyType = getTypeVariable(propertyName, items, annotations);
+        } else {
+            if (items.containsKey("enum")) {
+                propertyType = getEnumType(propertyName, items);
+            } else {
+                propertyType = GENERIC_TYPE_MAP.get(getPropertyType(items));
+            }
+            annotations.addAll(AnnotationInfoAggregator.getAnnotations(items, propertyType));
+        }
+        // TODO: add a new implementation that would return a typedef with annotations
+        return TypeDef.parameterized(listClass, propertyType);
     }
 
     private static String getPropertyType(Map<String, Object> description) {

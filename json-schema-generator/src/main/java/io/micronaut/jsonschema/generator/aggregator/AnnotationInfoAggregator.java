@@ -21,6 +21,8 @@ import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.PropertyDef;
 import io.micronaut.sourcegen.model.TypeDef;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -44,12 +46,24 @@ public class AnnotationInfoAggregator {
     private static final double EXCLUSIVE_DELTA_DOUBLE = Double.MIN_VALUE;
 
     public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, Map<String, Object> schemaMap, TypeDef propertyType, boolean isRequired) {
-        boolean isFloat = propertyType.equals(TypeDef.Primitive.FLOAT) || propertyType.equals(TypeDef.of(Float.class));
-        var minAnn = (isFloat) ? DECIMAL_MIN_ANN : MIN_ANN;
-        var maxAnn = (isFloat) ? DECIMAL_MAX_ANN : MAX_ANN;
         if (isRequired) {
             propertyDef.addAnnotation(NOT_NULL_ANN);
         }
+        getAnnotations(schemaMap, propertyType).forEach(propertyDef::addAnnotation);
+    }
+
+    public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, List<AnnotationDef> annotations, boolean isRequired) {
+        if (isRequired) {
+            propertyDef.addAnnotation(NOT_NULL_ANN);
+        }
+        annotations.forEach(propertyDef::addAnnotation);
+    }
+
+    public static List<AnnotationDef> getAnnotations(Map<String, Object> schemaMap, TypeDef propertyType) {
+        List<AnnotationDef> annotations = new ArrayList<>();
+        boolean isFloat = propertyType.equals(TypeDef.Primitive.FLOAT) || propertyType.equals(TypeDef.of(Float.class));
+        var minAnn = isFloat ? DECIMAL_MIN_ANN : MIN_ANN;
+        var maxAnn = isFloat ? DECIMAL_MAX_ANN : MAX_ANN;
         schemaMap.forEach((key, value) -> {
             AnnotationDef.AnnotationDefBuilder annBuilder = null;
             switch (key) {
@@ -67,14 +81,14 @@ public class AnnotationInfoAggregator {
                 case "exclusiveMinimum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(minAnn))
-                        .addMember("value",(isFloat) ?
+                        .addMember("value", isFloat ?
                             ((double) value) + EXCLUSIVE_DELTA_DOUBLE :
                             ((int) value) + EXCLUSIVE_DELTA_INT);
                     break;
                 case "exclusiveMaximum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(maxAnn))
-                        .addMember("value",(isFloat) ?
+                        .addMember("value", isFloat ?
                             ((double) value) - EXCLUSIVE_DELTA_DOUBLE :
                             ((int) value) - EXCLUSIVE_DELTA_INT);
                     break;
@@ -97,7 +111,7 @@ public class AnnotationInfoAggregator {
                 // string annotations
                 case "email": annBuilder = AnnotationDef
                     .builder(ClassTypeDef.of(EMAIL_ANN));
-                // boolean annotations
+                    // boolean annotations
                 case "const":
                     if (propertyType == TypeDef.Primitive.BOOLEAN) {
                         var assertAnn = (value.toString().equals(Boolean.TRUE.toString())) ? ASSERT_TRUE_ANN : ASSERT_FALSE_ANN;
@@ -109,8 +123,9 @@ public class AnnotationInfoAggregator {
                     break;
             }
             if (annBuilder != null) {
-                propertyDef.addAnnotation(annBuilder.build());
+                annotations.add(annBuilder.build());
             }
         });
+        return annotations;
     }
 }
