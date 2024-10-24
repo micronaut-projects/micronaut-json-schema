@@ -64,7 +64,6 @@ public final class RecordGenerator {
     private List<EnumDef> enums = new ArrayList<>();
 
     // TODO objectName and fileName should match. Perhaps we should just take output directory as argument. The argument does not need to be optional then
-    // DONE support generating from an inputstream, not just file: generate(InputStream jsonSchemaStream, Optional<File> outputFileLocation)
     // TODO take language as argument.
     public boolean generate(InputStream inputStream, Optional<File> outputFileLocation) throws IOException {
         var jsonSchema = getJsonSchema(inputStream, null);
@@ -97,6 +96,7 @@ public final class RecordGenerator {
 
             // TODO configure package as argument
             String packageName = "test";
+            // TODO do not add the 'Record' in the end.
             String objectName = jsonSchema.get("title").toString() + "Record";
 
             File outputFile = getOutputFile(outputFileLocation,
