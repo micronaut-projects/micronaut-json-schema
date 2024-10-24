@@ -17,6 +17,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         }""".stripIndent().trim()
     }
 
+    // TODO add json schema here and use inputstream to generate
+
     // TODO test all the types
 
     // TODO test enums

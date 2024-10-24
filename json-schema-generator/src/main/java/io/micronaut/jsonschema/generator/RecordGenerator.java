@@ -31,6 +31,8 @@ import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,21 +54,40 @@ import static io.micronaut.core.util.StringUtils.capitalize;
 public final class RecordGenerator {
 
     private static final Map<String, TypeDef> TYPE_MAP = CollectionUtils.mapOf(new Object[]{
-        "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN,
+        "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN, "array", TypeDef.of(List.class),
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
-
-    private static final Map<String, Class> CLASS_MAP = CollectionUtils.mapOf(new Object[]{
-        "integer", Integer.class, "boolean", Boolean.class, "string", String.class,
-        "object", Object.class, "number", Float.class, "null", Object.class});
+    private static final Map<String, TypeDef> GENERIC_TYPE_MAP = CollectionUtils.mapOf(new Object[]{
+        "integer", TypeDef.of(Integer.class), "boolean", TypeDef.of(Boolean.class),
+        "number", TypeDef.of(Float.class), "string", TypeDef.STRING, "object", TypeDef.OBJECT});
 
     private List<EnumDef> enums = new ArrayList<>();
 
     // TODO objectName and fileName should match. Perhaps we should just take output directory as argument. The argument does not need to be optional then
-    // TODO support generating from an inputstream, not just file: generate(InputStream jsonSchemaStream, Optional<File> outputFileLocation)
+    // DONE support generating from an inputstream, not just file: generate(InputStream jsonSchemaStream, Optional<File> outputFileLocation)
     // TODO take language as argument.
+    public boolean generate(InputStream inputStream, Optional<File> outputFileLocation) throws IOException {
+        var jsonSchema = getJsonSchema(inputStream, null);
+        return generateFromSchemaMap(jsonSchema, outputFileLocation);
+    }
 
     public boolean generate(File jsonFileLocation, Optional<File> outputFileLocation) throws IOException {
+        var jsonSchema = getJsonSchema(null, jsonFileLocation);
+        return generateFromSchemaMap(jsonSchema, outputFileLocation);
+    }
+
+    private Map<String, ?> getJsonSchema(InputStream inputStream, File schemaFile) throws IOException {
+        JsonMapper jsonMapper = new JsonMapper();
+        if (inputStream != null) {
+            String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            return (Map<String, ?>) jsonMapper.readValue(jsonString, HashMap.class);
+        } else if (schemaFile != null) {
+            return (Map<String, ?>) jsonMapper.readValue(schemaFile, HashMap.class);
+        }
+        return null;
+    }
+
+    public boolean generateFromSchemaMap(Map<String, ?> jsonSchema, Optional<File> outputFileLocation) throws IOException {
         try {
             SourceGenerator sourceGenerator = SourceGenerators
                 .findByLanguage(VisitorContext.Language.JAVA).orElse(null);
@@ -76,7 +97,6 @@ public final class RecordGenerator {
 
             // TODO configure package as argument
             String packageName = "test";
-            var jsonSchema = getJsonSchema(jsonFileLocation.getPath());
             String objectName = jsonSchema.get("title").toString() + "Record";
 
             File outputFile = getOutputFile(outputFileLocation,
@@ -98,6 +118,7 @@ public final class RecordGenerator {
         File outputFile = outputFileLocation.orElse(null);
         if (outputFile == null) { // default file
             outputFile = new File(objectName + ".java");
+            outputFile.getParentFile().mkdirs();
         }
         if (!outputFile.exists() && !outputFile.createNewFile()) {
             throw new IOException("Could not create file " + outputFile.getAbsolutePath());
@@ -105,15 +126,10 @@ public final class RecordGenerator {
         return outputFile;
     }
 
-    private Map<String, ?> getJsonSchema(String path) throws IOException {
-        JsonMapper jsonMapper = new JsonMapper();
-        return (Map<String, ?>) jsonMapper.readValue(new File(path), HashMap.class);
-    }
-
     private RecordDef build(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
         /* TODO: decide between record vs class
         *       For now, only record def
-        */
+         */
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
@@ -133,46 +149,56 @@ public final class RecordGenerator {
     }
 
     private void addField(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description, boolean isRequired) {
-        String typeName = getPropertyType(description);
-        boolean isEnum = description.containsKey("enum");
-        TypeDef propertyType;
-        if  (typeName.equals("array")) {
-            // checking for multidimensional arrays
-            var items = (Map<String, Object>) description.get("items");
-            int dimensions = 1;
-            var arrayTypeName = getPropertyType(items);
-            while (arrayTypeName.equals("array")) {
-                items = (Map<String, Object>) items.get("items");
-                dimensions++;
-                arrayTypeName = getPropertyType(items);
-            }
-            isEnum = items.containsKey("enum");
-            description = items;
+        TypeDef propertyType = TYPE_MAP.get(getPropertyType(description));
+        if (description.containsKey("enum")) {
+            propertyType = getEnumType(propertyName, description);
+        }
+        PropertyDef.PropertyDefBuilder propertyDef;
 
-            // TODO: do the multiple dimensions
-            if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
-                propertyType = TypeDef.parameterized(Set.class, CLASS_MAP.get(arrayTypeName));
-            } else {
-                propertyType = TypeDef.parameterized(List.class, CLASS_MAP.get(arrayTypeName));
-            }
-            // propertyType = new TypeDef.Array(TYPE_MAP.get(arrayTypeName), dimensions, true);
+        if  (propertyType.equals(TypeDef.of(List.class))) {
+            List<AnnotationDef> annotations = new ArrayList<>();
+            propertyType = getTypeVariable(propertyName, description, annotations);
+            propertyDef = PropertyDef.builder(propertyName).ofType(propertyType);
+
+            AnnotationInfoAggregator.addAnnotations(propertyDef, annotations, isRequired);
         } else {
-            propertyType = TYPE_MAP.get(typeName);
+            propertyDef = PropertyDef.builder(propertyName).ofType(propertyType);
+            AnnotationInfoAggregator.addAnnotations(propertyDef, description, propertyType, isRequired);
         }
-
-        if (isEnum) {
-            EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(propertyName));
-            for (Object anEnum : ((List<?>) description.get("enum"))) {
-                enumBuilder.addEnumConstant(anEnum.toString());
-            }
-            EnumDef enumDef = enumBuilder.build();
-            this.enums.add(enumDef);
-            propertyType = enumDef.asTypeDef();
-        }
-        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(propertyName).ofType(propertyType);
-        AnnotationInfoAggregator.addAnnotations(propertyDef, description, propertyType, isRequired);
-
         objectBuilder.addProperty(propertyDef.build());
+    }
+
+    private TypeDef getEnumType(String propertyName, Map<String, Object> description) {
+        EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(propertyName));
+        for (Object anEnum : ((List<?>) description.get("enum"))) {
+            enumBuilder.addEnumConstant(anEnum.toString());
+        }
+        EnumDef enumDef = enumBuilder.build();
+        this.enums.add(enumDef);
+        return enumDef.asTypeDef();
+    }
+
+    private TypeDef getTypeVariable(String propertyName, Map<String, Object> description, List<AnnotationDef> annotations) {
+        var items = (Map<String, Object>) description.get("items");
+        Class listClass = List.class;
+        if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
+            listClass = Set.class;
+        }
+
+        TypeDef propertyType = TYPE_MAP.get(getPropertyType(items));
+        if (propertyType.equals(TypeDef.of(List.class))) {
+            annotations.addAll(AnnotationInfoAggregator.getAnnotations(items, propertyType));
+            propertyType = getTypeVariable(propertyName, items, annotations);
+        } else {
+            if (items.containsKey("enum")) {
+                propertyType = getEnumType(propertyName, items);
+            } else {
+                propertyType = GENERIC_TYPE_MAP.get(getPropertyType(items));
+            }
+            annotations.addAll(AnnotationInfoAggregator.getAnnotations(items, propertyType));
+        }
+        // TODO: add a new implementation that would return a typedef with annotations
+        return TypeDef.parameterized(listClass, propertyType);
     }
 
     private static String getPropertyType(Map<String, Object> description) {
