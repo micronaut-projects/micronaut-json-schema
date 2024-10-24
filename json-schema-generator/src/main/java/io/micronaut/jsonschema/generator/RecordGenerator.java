@@ -31,6 +31,8 @@ import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,10 +65,30 @@ public final class RecordGenerator {
     private List<EnumDef> enums = new ArrayList<>();
 
     // TODO objectName and fileName should match. Perhaps we should just take output directory as argument. The argument does not need to be optional then
-    // TODO support generating from an inputstream, not just file: generate(InputStream jsonSchemaStream, Optional<File> outputFileLocation)
+    // DONE support generating from an inputstream, not just file: generate(InputStream jsonSchemaStream, Optional<File> outputFileLocation)
     // TODO take language as argument.
+    public boolean generate(InputStream inputStream, Optional<File> outputFileLocation) throws IOException {
+        var jsonSchema = getJsonSchema(inputStream, null);
+        return generateFromSchemaMap(jsonSchema, outputFileLocation);
+    }
 
     public boolean generate(File jsonFileLocation, Optional<File> outputFileLocation) throws IOException {
+        var jsonSchema = getJsonSchema(null, jsonFileLocation);
+        return generateFromSchemaMap(jsonSchema, outputFileLocation);
+    }
+
+    private Map<String, ?> getJsonSchema(InputStream inputStream, File schemaFile) throws IOException {
+        JsonMapper jsonMapper = new JsonMapper();
+        if (inputStream != null) {
+            String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            return (Map<String, ?>) jsonMapper.readValue(jsonString, HashMap.class);
+        } else if (schemaFile != null) {
+            return (Map<String, ?>) jsonMapper.readValue(schemaFile, HashMap.class);
+        }
+        return null;
+    }
+
+    public boolean generateFromSchemaMap(Map<String, ?> jsonSchema, Optional<File> outputFileLocation) throws IOException {
         try {
             SourceGenerator sourceGenerator = SourceGenerators
                 .findByLanguage(VisitorContext.Language.JAVA).orElse(null);
@@ -76,7 +98,6 @@ public final class RecordGenerator {
 
             // TODO configure package as argument
             String packageName = "test";
-            var jsonSchema = getJsonSchema(jsonFileLocation.getPath());
             String objectName = jsonSchema.get("title").toString() + "Record";
 
             File outputFile = getOutputFile(outputFileLocation,
@@ -98,16 +119,12 @@ public final class RecordGenerator {
         File outputFile = outputFileLocation.orElse(null);
         if (outputFile == null) { // default file
             outputFile = new File(objectName + ".java");
+            outputFile.getParentFile().mkdirs();
         }
         if (!outputFile.exists() && !outputFile.createNewFile()) {
             throw new IOException("Could not create file " + outputFile.getAbsolutePath());
         }
         return outputFile;
-    }
-
-    private Map<String, ?> getJsonSchema(String path) throws IOException {
-        JsonMapper jsonMapper = new JsonMapper();
-        return (Map<String, ?>) jsonMapper.readValue(new File(path), HashMap.class);
     }
 
     private RecordDef build(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
