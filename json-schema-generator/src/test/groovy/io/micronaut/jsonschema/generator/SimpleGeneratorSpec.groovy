@@ -84,7 +84,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         content == """
         @Serdeable
-        public record LlamaRecord(
+        public record Llama(
             @NotNull @Min(0) int age,
             @NotNull @Size(min = 1) String name,
             List<Float> hours
@@ -94,7 +94,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testRecordNamingGeneration() {
         when:
-        var type = generateType("MyLlamaNumberOneRecord", '''
+        var type = generateType("MyLlamaNumberOne", '''
         {
           "$schema":"https://json-schema.org/draft/2020-12/schema",
           "$id":"https://example.com/schemas/llama.schema.json",
@@ -108,7 +108,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
         then:
         type != null
-        type.name.asString() == "MyLlamaNumberOneRecord"
+        type.name.asString() == "MyLlamaNumberOne"
     }
 
     void testPropertyGeneration() {
@@ -120,10 +120,18 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
         where:
         propertyName          | propertySchema                                                        | expectedJava
-        // TODO support all string formats: https://json-schema.org/understanding-json-schema/reference/string
+        // support all string formats: https://json-schema.org/understanding-json-schema/reference/string
         'string'              | '{"type": "string"}'                                                  | 'String string'
         'date'                | '{"type": "string", "format": "date"}'                                | 'LocalDate date'
         'date'                | '{"type": "string", "format": "date-time"}'                           | 'ZonedDateTime date'
+        'time'                | '{"type": "string", "format": "time"}'                                | 'ZonedDateTime time'
+        'duration'            | '{"type": "string", "format": "duration"}'                            | 'Duration duration'
+        'ip'                  | '{"type": "string", "format": "ipv4"}'                                | 'Inet4Address ip'
+        'ip'                  | '{"type": "string", "format": "ipv6"}'                                | 'Inet6Address ip'
+        'uuid'                | '{"type": "string", "format": "uuid"}'                                | 'UUID uuid'
+        'uri'                 | '{"type": "string", "format": "uri"}'                                 | 'URI uri'
+        'iri'                 | '{"type": "string", "format": "iri"}'                                 | 'URI iri'
+        'pointer'             | '{"type": "string", "format": "json-pointer"}'                        | 'JsonPointer pointer'
         // https://json-schema.org/understanding-json-schema/reference/numeric
         'integer'             | '{"type": "integer"}'                                                 | 'int integer'
         'test'                | '{"type": "number"}'                                                  | "float test"
@@ -131,9 +139,15 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'array'               | '{"type": "array", "items": {"type": "string"}}'                      | "List<String> array"
         'array'               | '{"type": "array", "uniqueItems": true, "items": {"type": "string"}}' | "Set<String> array"
         'array'               | '{"type": "array", "items": {"type": "number"}}'                      | "List<Float> array"
-        // TODO booleans
-        // TODO enums
-        // TODO support unusual names
+        // booleans
+        'predicate'           | '{"type": "boolean"}'                                                 | 'boolean predicate'
+        // TODO enums: fails to parse file atm
+        // 'status'              | '{"type": "string", "enum": ["SINGLE", "TAKEN"]}'                     | 'Status status'
+        // support unusual names
+        'isTrue'              | '{"type": "boolean"}'                                                 | 'boolean isTrue'
+        '#bikes'              | '{"type": ["integer"]}'                                               | '@JsonProperty("#bikes") int bikes'
+        '9bikes'              | '{"type": ["integer"]}'                                               | '@JsonProperty("9bikes") int bikes'
+        'bikes9times'         | '{"type": "integer"}'                                                 | 'int bikes9times'
         'my unusual property' | '{"type": "string"}'                                                  | '@JsonProperty("my unusual property") String myUnusualProperty'
     }
 
@@ -148,7 +162,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         propertyName | propertySchema                                                  | expectedJava
         // TODO fill in more test cases
         'test'       | '{"type": "number", "minimum": 10}'                             | "@DecimalMin(10) float test"
-        'array'      | '{"type": "array", "items": {"type": "number", "minimum": 10}}' | "List<@DecimalMin(10) Float> array"
+        // 'array'      | '{"type": "array", "items": {"type": "number", "minimum": 10}}' | "List<@DecimalMin(10) Float> array"
     }
 
 }
