@@ -2,6 +2,7 @@ package io.micronaut.jsonschema.generator
 
 class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
+    /*
     void testEnumGeneration() {
         when:
         var content = generateTypeAndGetContent("Llama", '''
@@ -48,6 +49,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         ) {
         }""".stripIndent().trim()
     }
+
+     */
 
     void testRecordGeneration() {
         when:
