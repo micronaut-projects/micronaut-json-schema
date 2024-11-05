@@ -1,0 +1,7 @@
+io.micronaut.jsonschema
+io.micronaut.jsonschema.validation
+io.micronaut.jsonschema.visitor
+io.micronaut.jsonschema.visitor.aggregator
+io.micronaut.jsonschema.visitor.context
+io.micronaut.jsonschema.visitor.model
+io.micronaut.jsonschema.visitor.serialization
