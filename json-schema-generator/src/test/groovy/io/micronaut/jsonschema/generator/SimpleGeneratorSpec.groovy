@@ -4,7 +4,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testEnumGeneration() {
         when:
-        var content = generateTypeAndGetContent("LlamaRecord", '''
+        var content = generateTypeAndGetContent("Llama", '''
         {
           "$schema":"https://json-schema.org/draft/2020-12/schema",
           "$id":"https://example.com/schemas/status.schema.json",
@@ -23,27 +23,27 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         @Serdeable
         public enum Status(
             ACTIVE("active")
-            IN_PROGRESS("in-progress"),
+            IN_PROGRESS("in progress"),
             DELETED("deleted");
 
-            private final String value;
+            public String name;
 
-            public Status(String value) {
-                this.value = value;
+            private Status(String name) {
+                this.name = name;
             }
 
             @JsonCreator
-            public Status statusOf(String value) {
-                return switch (value) {
+            public Status statusOf(String name) {
+                return switch (name) {
                     case "active" -> ACTIVE;
-                    case "in-progress" -> IN_PROGRESS;
+                    case "in progress" -> IN_PROGRESS;
                     case "deleted" -> DELETED;
                 };
             }
 
             @JsonValue
-            public String getValue() {
-                return value;
+            public String getName() {
+                return this.name;
             }
         ) {
         }""".stripIndent().trim()
@@ -51,7 +51,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testRecordGeneration() {
         when:
-        var content = generateTypeAndGetContent("LlamaRecord", '''
+        var content = generateTypeAndGetContent("Llama", '''
         {
           "$schema":"https://json-schema.org/draft/2020-12/schema",
           "$id":"https://example.com/schemas/llama.schema.json",
@@ -73,7 +73,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
               "description":"Happy hours",
               "type":"array",
               "items": {
-                "type": "number"
+                "type": "number",
+                "minimum": 0.0
               }
             }
           },
@@ -87,7 +88,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         public record Llama(
             @NotNull @Min(0) int age,
             @NotNull @Size(min = 1) String name,
-            List<Float> hours
+            List<@DecimalMin(0.0) Float> hours
         ) {
         }""".stripIndent().trim()
     }
@@ -141,8 +142,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'array'               | '{"type": "array", "items": {"type": "number"}}'                      | "List<Float> array"
         // booleans
         'predicate'           | '{"type": "boolean"}'                                                 | 'boolean predicate'
-        // TODO enums: fails to parse file atm
-        // 'status'              | '{"type": "string", "enum": ["SINGLE", "TAKEN"]}'                     | 'Status status'
+        // enums
+        'status'              | '{"type": "string", "enum": ["SINGLE", "TAKEN"]}'                     | 'Status status'
         // support unusual names
         'isTrue'              | '{"type": "boolean"}'                                                 | 'boolean isTrue'
         '#bikes'              | '{"type": ["integer"]}'                                               | '@JsonProperty("#bikes") int bikes'
@@ -162,7 +163,10 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         propertyName | propertySchema                                                  | expectedJava
         // TODO fill in more test cases
         'test'       | '{"type": "number", "minimum": 10}'                             | "@DecimalMin(10) float test"
-        // 'array'      | '{"type": "array", "items": {"type": "number", "minimum": 10}}' | "List<@DecimalMin(10) Float> array"
+        'array'      |'{"type": "array", "items": {"type": "number", "minimum": 10.0}}'| "List<@DecimalMin(10.0) Float> array"
+        'arrayMulti' |'{"type": "array", "items": {"type": "array", ' +
+                '"items": {"type": "number", "minimum": 10.0}, ' +
+                '"uniqueItems": true, "minItems": 2}, "minItems": 1}'                  | "@Size(min = 1) List<@Size(min = 2) Set<@DecimalMin(10.0) Float>> arrayMulti"
     }
 
 }

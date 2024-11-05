@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
+import static java.lang.String.join;
 
 /**
  * A generator to create Java Beans from Json Schema.
@@ -65,8 +66,6 @@ public final class RecordGenerator {
         "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN, "array", TypeDef.of(List.class),
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
-
-    private List<EnumDef> enums = new ArrayList<>();
 
     // TODO objectName and fileName should match. Perhaps we should just take output directory as argument. The argument does not need to be optional then
     // TODO take language as argument.
@@ -101,23 +100,16 @@ public final class RecordGenerator {
 
             // TODO configure package as argument
             String packageName = "test";
-            String objectName = capitalize(toAcceptableName(jsonSchema.get("title").toString()));
+            String objectName = capitalize(getCamelCaseName(jsonSchema.get("title").toString()));
 
             File outputFile = getOutputFile(outputFileLocation,
                 (packageName + ".").replace('.', File.separatorChar) + objectName);
             try (FileWriter writer = new FileWriter(outputFile)) {
                 if (jsonSchema.containsKey("enum")) {
-                    EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(packageName + "." + objectName);
-                    for (Object anEnum : ((List<?>) jsonSchema.get("enum"))) {
-                        // TODO add non-string enum constants, look @SimpleGeneratorSpec.testEnumGeneration()
-                        enumBuilder.addEnumConstant(anEnum.toString());
-                    }
-                    sourceGenerator.write(enumBuilder.build(), writer);
+                    var objectDef = buildEnum(jsonSchema, packageName + "." + objectName);
+                    sourceGenerator.write(objectDef, writer);
                 } else {
-                    var objectDef = build(jsonSchema, packageName + "." + objectName);
-                    for (EnumDef enumDef : enums) {
-                        sourceGenerator.write(enumDef, writer);
-                    }
+                    var objectDef = buildRecord(jsonSchema, packageName + "." + objectName);
                     sourceGenerator.write(objectDef, writer);
                 }
             }
@@ -139,7 +131,67 @@ public final class RecordGenerator {
         return outputFile;
     }
 
-    private RecordDef build(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
+    private EnumDef buildEnum(Map<String, ?> jsonSchema, String builderClassName) {
+        EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(builderClassName))
+            .addModifiers(Modifier.PUBLIC);
+        // boolean isComplexEnum = false;
+        // Map<ExpressionDef.Constant, ExpressionDef> cases = new HashMap<>();
+        for (Object anEnum : ((List<?>) jsonSchema.get("enum"))) {
+            String constName = getConstantName(anEnum.toString());
+            enumBuilder.addEnumConstant(constName);
+            /* waiting for enum update
+            if (constName.equals(anEnum.toString())) {
+                enumBuilder.addEnumConstant(constName);
+            } else {
+                enumBuilder.addEnumConstant(constName, ExpressionDef.constant(anEnum.toString()));
+                cases.put(ExpressionDef.constant(anEnum.toString()), new VariableDef.Constant(TypeDef.THIS, constName));
+                isComplexEnum = true;
+            }
+             */
+        }
+        /* TODO
+            waiting for enum update
+        if (isComplexEnum) {
+            enumBuilder.addField(FieldDef.builder("name")
+                    .ofType(TypeDef.STRING)
+                    .addModifiers(Modifier.PUBLIC)
+                    .build())
+                .addAllFieldsConstructor(Modifier.PRIVATE)
+                .addMethod(MethodDef.builder("getName")
+                    .addModifiers(Modifier.PUBLIC)
+                    .addAnnotation(JsonValue.class)
+                    .returns(TypeDef.STRING)
+                    .build((aThis, parameters) ->
+                        aThis.field("name", TypeDef.STRING).returning()))
+                .addMethod(MethodDef.builder(propertyName + "Of")
+                    .addModifiers(Modifier.PUBLIC)
+                    .addAnnotation(JsonCreator.class)
+                    .returns(TypeDef.THIS)
+                    .addParameter("name", TypeDef.STRING)
+                    .build((aThis, parameters) ->
+                        parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases).returning()
+                    ));
+        }
+         */
+
+        /* TODO wait for enum upgrade
+        if (jsonSchema.containsKey("properties")) {
+            Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
+            List<String> requiredProperties;
+            if (jsonSchema.containsKey("required")) {
+                requiredProperties = (List<String>) jsonSchema.get("required");
+            } else {
+                requiredProperties = new ArrayList<>();
+            }
+            properties.entrySet().forEach(entry ->
+                addField(enumBuilder, entry.getKey(), (Map<String, Object>) entry.getValue(), requiredProperties.contains(entry.getKey())));
+        }
+
+         */
+        return enumBuilder.build();
+    }
+
+    private RecordDef buildRecord(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
         /* TODO: decide between record vs class
         *       For now, only record def
          */
@@ -161,71 +213,58 @@ public final class RecordGenerator {
         return objectBuilder.build();
     }
 
+    //TODO: change RecordDefBuilder to ObjectDefBuilder to use for both enum and record
     private void addField(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description, boolean isRequired) {
-        String name = toAcceptableName(propertyName);
+        String name = getCamelCaseName(propertyName);
 
-        TypeDef propertyType = getJsonType(description);
+        TypeDef propertyType = getTypeDefFromJson(description);
         if (description.containsKey("enum")) {
-            propertyType = getEnumType(name, description);
+            propertyType = getEnumType(objectBuilder, name, description);
         }
-        PropertyDef.PropertyDefBuilder propertyDef;
-
+        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name);
         if  (propertyType.equals(TypeDef.of(List.class))) {
-            List<AnnotationDef> annotations = new ArrayList<>();
-            propertyType = getTypeDef(propertyName, description, annotations);
-            propertyDef = PropertyDef.builder(name).ofType(propertyType);
-
-            AnnotationInfoAggregator.addAnnotations(propertyDef, annotations, isRequired);
+            propertyType = getTypeDef(objectBuilder, propertyName, description);
+            propertyDef.ofType(propertyType);
+            AnnotationInfoAggregator.addAnnotations(propertyDef, description, TypeDef.of(List.class), isRequired);
         } else {
-            propertyDef = PropertyDef.builder(name).ofType(propertyType);
+            propertyDef.ofType(propertyType);
             AnnotationInfoAggregator.addAnnotations(propertyDef, description, propertyType, isRequired);
         }
 
         if (!name.equals(propertyName)) {
-            AnnotationDef.AnnotationDefBuilder annotationDefBuilder = AnnotationDef.builder(JsonProperty.class).addMember("value", propertyName);
-            propertyDef.addAnnotation(annotationDefBuilder.build());
+            AnnotationDef annotationDef = AnnotationDef.builder(JsonProperty.class).addMember("value", propertyName).build();
+            propertyDef.addAnnotation(annotationDef);
         }
         objectBuilder.addProperty(propertyDef.build());
     }
 
-    private TypeDef getTypeDef(String propertyName, Map<String, Object> description, List<AnnotationDef> annotations) {
+    private TypeDef getTypeDef(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
         var items = (Map<String, Object>) description.get("items");
         Class listClass = List.class;
         if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
             listClass = Set.class;
         }
 
-        TypeDef propertyType = getJsonType(items);
+        TypeDef propertyType = getTypeDefFromJson(items);
         if (propertyType.equals(TypeDef.of(List.class))) {
-            annotations.addAll(AnnotationInfoAggregator.getAnnotations(items, propertyType));
-            propertyType = getTypeDef(propertyName, items, annotations);
-        } else {
-            if (items.containsKey("enum")) {
-                propertyType = getEnumType(propertyName, items);
-            } else {
-                propertyType = getJsonType(items);
-                if (propertyType instanceof TypeDef.Primitive primitive) {
-                    propertyType = primitive.wrapperType();
-                }
-            }
-            annotations.addAll(AnnotationInfoAggregator.getAnnotations(items, propertyType));
+            propertyType = getTypeDef(objectBuilder, propertyName, items);
+        } else if (items.containsKey("enum")) {
+            propertyType = getEnumType(objectBuilder, propertyName, items);
+        } else if (propertyType instanceof TypeDef.Primitive primitive) {
+            propertyType = primitive.wrapperType();
         }
-        // TODO: add a new implementation that would return a typedef with annotations
-        return TypeDef.parameterized(listClass, propertyType);
+
+        var annotations = AnnotationInfoAggregator.getAnnotations(items, propertyType);
+        return TypeDef.parameterized(listClass, propertyType.annotated(annotations));
     }
 
-
-    private TypeDef getEnumType(String propertyName, Map<String, Object> description) {
-        EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(propertyName));
-        for (Object anEnum : ((List<?>) description.get("enum"))) {
-            enumBuilder.addEnumConstant(anEnum.toString());
-        }
-        EnumDef enumDef = enumBuilder.build();
-        this.enums.add(enumDef);
+    private TypeDef getEnumType(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
+        EnumDef enumDef = buildEnum(description, propertyName);
+        objectBuilder.addInnerType(enumDef);
         return enumDef.asTypeDef();
     }
 
-    private static TypeDef getJsonType(Map<String, Object> description) {
+    private static TypeDef getTypeDefFromJson(Map<String, Object> description) {
         var type = description.getOrDefault("type", "object");
         String typeName;
         if (type.getClass() == ArrayList.class) {
@@ -250,7 +289,36 @@ public final class RecordGenerator {
         return TYPE_MAP.get(typeName);
     }
 
-    private static String toAcceptableName(String input) {
+    private static String getConstantName(String input) {
+        if (input.equals(input.toUpperCase())) {
+            return input;
+        }
+        String cleanedInput = input.replaceAll("[-_]", " ")
+            .replaceAll("(?<!^)(?=[A-Z])", " ")
+            .replaceAll("[^a-zA-Z0-9 ]", "")
+            .trim();
+
+        while (!Character.isJavaIdentifierStart(cleanedInput.charAt(0))) {
+            cleanedInput = cleanedInput.substring(1);
+        }
+
+        // Split into words
+        String[] words = cleanedInput.split("\\s+");
+        try {
+            // Check if the input is acceptable
+            if (words.length == 0 || words[0].isEmpty()) {
+                throw new IllegalArgumentException("The enum constant name is not an acceptable identifier name.");
+            }
+            for (int i = 0; i < words.length; i++) {
+                words[i] = words[i].toUpperCase();
+            }
+            return join("_", words);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        }
+    }
+
+    private static String getCamelCaseName(String input) {
         if (SourceVersion.isName(input)) {
             return input;
         }
