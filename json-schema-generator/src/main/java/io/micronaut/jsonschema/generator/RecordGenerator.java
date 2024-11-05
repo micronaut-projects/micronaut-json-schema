@@ -15,7 +15,9 @@
  */
 package io.micronaut.jsonschema.generator;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.core.annotation.Internal;
@@ -134,12 +136,10 @@ public final class RecordGenerator {
     private EnumDef buildEnum(Map<String, ?> jsonSchema, String builderClassName) {
         EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(builderClassName))
             .addModifiers(Modifier.PUBLIC);
-        // boolean isComplexEnum = false;
-        // Map<ExpressionDef.Constant, ExpressionDef> cases = new HashMap<>();
+        boolean isComplexEnum = false;
+        Map<ExpressionDef.Constant, ExpressionDef> cases = new HashMap<>();
         for (Object anEnum : ((List<?>) jsonSchema.get("enum"))) {
             String constName = getConstantName(anEnum.toString());
-            enumBuilder.addEnumConstant(constName);
-            /* waiting for enum update
             if (constName.equals(anEnum.toString())) {
                 enumBuilder.addEnumConstant(constName);
             } else {
@@ -147,10 +147,7 @@ public final class RecordGenerator {
                 cases.put(ExpressionDef.constant(anEnum.toString()), new VariableDef.Constant(TypeDef.THIS, constName));
                 isComplexEnum = true;
             }
-             */
         }
-        /* TODO
-            waiting for enum update
         if (isComplexEnum) {
             enumBuilder.addField(FieldDef.builder("name")
                     .ofType(TypeDef.STRING)
@@ -163,7 +160,7 @@ public final class RecordGenerator {
                     .returns(TypeDef.STRING)
                     .build((aThis, parameters) ->
                         aThis.field("name", TypeDef.STRING).returning()))
-                .addMethod(MethodDef.builder(propertyName + "Of")
+                .addMethod(MethodDef.builder("statusOf")
                     .addModifiers(Modifier.PUBLIC)
                     .addAnnotation(JsonCreator.class)
                     .returns(TypeDef.THIS)
@@ -172,9 +169,6 @@ public final class RecordGenerator {
                         parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases).returning()
                     ));
         }
-         */
-
-        /* TODO wait for enum upgrade
         if (jsonSchema.containsKey("properties")) {
             Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
             List<String> requiredProperties;
@@ -186,15 +180,10 @@ public final class RecordGenerator {
             properties.entrySet().forEach(entry ->
                 addField(enumBuilder, entry.getKey(), (Map<String, Object>) entry.getValue(), requiredProperties.contains(entry.getKey())));
         }
-
-         */
         return enumBuilder.build();
     }
 
     private RecordDef buildRecord(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
-        /* TODO: decide between record vs class
-        *       For now, only record def
-         */
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
@@ -213,8 +202,7 @@ public final class RecordGenerator {
         return objectBuilder.build();
     }
 
-    //TODO: change RecordDefBuilder to ObjectDefBuilder to use for both enum and record
-    private void addField(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description, boolean isRequired) {
+    private void addField(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description, boolean isRequired) {
         String name = getCamelCaseName(propertyName);
 
         TypeDef propertyType = getTypeDefFromJson(description);
@@ -238,7 +226,7 @@ public final class RecordGenerator {
         objectBuilder.addProperty(propertyDef.build());
     }
 
-    private TypeDef getTypeDef(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
+    private TypeDef getTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
         var items = (Map<String, Object>) description.get("items");
         Class listClass = List.class;
         if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
@@ -258,7 +246,7 @@ public final class RecordGenerator {
         return TypeDef.parameterized(listClass, propertyType.annotated(annotations));
     }
 
-    private TypeDef getEnumType(RecordDef.RecordDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
+    private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
         EnumDef enumDef = buildEnum(description, propertyName);
         objectBuilder.addInnerType(enumDef);
         return enumDef.asTypeDef();

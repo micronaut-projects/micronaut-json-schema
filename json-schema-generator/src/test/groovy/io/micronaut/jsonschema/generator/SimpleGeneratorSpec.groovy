@@ -2,7 +2,6 @@ package io.micronaut.jsonschema.generator
 
 class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
-    /*
     void testEnumGeneration() {
         when:
         var content = generateTypeAndGetContent("Llama", '''
@@ -21,36 +20,33 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
         then:
         content == """
-        @Serdeable
-        public enum Status(
-            ACTIVE("active")
-            IN_PROGRESS("in progress"),
-            DELETED("deleted");
+        public enum Status {
 
-            public String name;
+          ACTIVE("active"),
+          IN_PROGRESS("in progress"),
+          DELETED("deleted");
 
-            private Status(String name) {
-                this.name = name;
-            }
+          public String name;
 
-            @JsonCreator
-            public Status statusOf(String name) {
-                return switch (name) {
-                    case "active" -> ACTIVE;
-                    case "in progress" -> IN_PROGRESS;
-                    case "deleted" -> DELETED;
+          private Status(String name) {
+            this.name = name;
+          }
+
+          @JsonValue
+          public String getName() {
+            return this.name;
+          }
+
+          @JsonCreator
+          public Status statusOf(String name) {
+            return switch (name) {
+                  case "active" -> ACTIVE;
+                  case "deleted" -> DELETED;
+                  case "in progress" -> IN_PROGRESS;
                 };
-            }
-
-            @JsonValue
-            public String getName() {
-                return this.name;
-            }
-        ) {
+          }
         }""".stripIndent().trim()
     }
-
-     */
 
     void testRecordGeneration() {
         when:
