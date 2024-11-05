@@ -44,6 +44,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -137,7 +138,7 @@ public final class RecordGenerator {
         EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(builderClassName))
             .addModifiers(Modifier.PUBLIC);
         boolean isComplexEnum = false;
-        Map<ExpressionDef.Constant, ExpressionDef> cases = new HashMap<>();
+        LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
         for (Object anEnum : ((List<?>) jsonSchema.get("enum"))) {
             String constName = getConstantName(anEnum.toString());
             if (constName.equals(anEnum.toString())) {

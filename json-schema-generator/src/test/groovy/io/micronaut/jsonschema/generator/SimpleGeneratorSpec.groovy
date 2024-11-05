@@ -41,8 +41,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
           public Status statusOf(String name) {
             return switch (name) {
                   case "active" -> ACTIVE;
-                  case "deleted" -> DELETED;
                   case "in progress" -> IN_PROGRESS;
+                  case "deleted" -> DELETED;
                 };
           }
         }""".stripIndent().trim()
