@@ -25,8 +25,6 @@ import java.util.HashMap;
  */
 @Internal
 @Singleton
-public class DefinitionsAggregator
-{
+public class DefinitionsAggregator {
     private static HashMap<String, Object> definitions = new HashMap<>();
-
 }

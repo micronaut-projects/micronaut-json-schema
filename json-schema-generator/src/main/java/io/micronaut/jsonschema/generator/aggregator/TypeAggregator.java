@@ -48,7 +48,6 @@ public class TypeAggregator {
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
 
-
     public static TypeDef getTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
         var items = (Map<String, Object>) description.get("items");
         Class listClass = List.class;
@@ -95,6 +94,7 @@ public class TypeAggregator {
                 case "uri", "iri": return ClassTypeDef.of(URI.class);
                 case "json-pointer": return ClassTypeDef.of(JsonPointer.class);
                 // missing: email, web hostname, uri-reference, uri-template, regex
+                default: return TYPE_MAP.get(typeName);
             }
         }
         return TYPE_MAP.get(typeName);
