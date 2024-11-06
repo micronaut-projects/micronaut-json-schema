@@ -1,6 +1,7 @@
 package io.micronaut.jsonschema.generator;
 
 import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Assertions;
@@ -10,6 +11,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 @MicronautTest(startApplication = false)
@@ -19,12 +22,15 @@ class ObjectGenerationTest {
 
     @Test
     void objectGenerator() throws IOException {
-        var generator = new RecordGenerator();
+        var generator = new CodeGenerator();
         String schemaFileName = "llama.schema.json";
         Optional<InputStream> inputStream = resourceLoader.getResourceAsStream(new File(schemaFileName).getPath());
         if (inputStream.isEmpty()) {
             throw new FileNotFoundException("Resource file is not found.");
         }
-        Assertions.assertTrue(generator.generate(inputStream.get(), Optional.empty()));
+        Path outputPath = Paths.get("output"); // Define the base output path
+        String packageName = "com.example.project"; // Example package name
+        String fileName = "Llama.java";
+        Assertions.assertNotNull(generator.generate(inputStream.get(), VisitorContext.Language.JAVA, outputPath, packageName, fileName));
     }
 }

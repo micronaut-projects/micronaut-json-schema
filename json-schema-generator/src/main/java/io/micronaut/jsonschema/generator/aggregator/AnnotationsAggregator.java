@@ -29,7 +29,7 @@ import java.util.Map;
  * An aggregator for adding annotation information from json schema.
  */
 @Internal
-public class AnnotationInfoAggregator {
+public class AnnotationsAggregator {
 
     private static final String JAKARTA_VALIDATION_PREFIX = "jakarta.validation.constraints.";
     private static final String NOT_NULL_ANN = JAKARTA_VALIDATION_PREFIX + "NotNull";

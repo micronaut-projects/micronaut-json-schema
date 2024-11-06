@@ -4,7 +4,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testEnumGeneration() {
         when:
-        var content = generateTypeAndGetContent("Llama", '''
+        var content = generateTypeAndGetContent("Status", '''
         {
           "$schema":"https://json-schema.org/draft/2020-12/schema",
           "$id":"https://example.com/schemas/status.schema.json",

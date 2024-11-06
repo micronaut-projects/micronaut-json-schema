@@ -6,16 +6,21 @@ import com.github.javaparser.ParserConfiguration
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.body.RecordDeclaration
 import com.github.javaparser.ast.body.TypeDeclaration
+import io.micronaut.inject.visitor.VisitorContext
 import spock.lang.Specification
+
+import java.nio.file.Path
 
 class AbstractGeneratorSpec extends Specification {
 
     TypeDeclaration generateType(String className, String jsonSchema) {
-        RecordGenerator generator = new RecordGenerator()
+        CodeGenerator generator = new CodeGenerator()
 
-        File dir = File.createTempDir()
-        File generated = dir.toPath().resolve(className +".java").toFile()
-        generator.generate(new ByteArrayInputStream(jsonSchema.getBytes()), Optional.of(generated))
+        Path outputPath = new File("output").toPath() // Define the base output path
+        String packageName = "com.example.project"; // Example package name
+        String fileName = className +".java";
+
+        File generated = generator.generate(new ByteArrayInputStream(jsonSchema.getBytes()), VisitorContext.Language.JAVA, outputPath, packageName, fileName)
 
         try {
             ParserConfiguration configuration = new ParserConfiguration()
