@@ -43,11 +43,13 @@ import java.util.List;
 import java.util.Map;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
+import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.addDefinition;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getCamelCaseName;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getConstantName;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getEnumType;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTypeDef;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTypeDefFromJson;
+import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getFileName;
 
 /**
  * A generator to create Java Beans from Json Schema.
@@ -55,22 +57,78 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
  * @author Elif Kurtay
  * @since 1.2
  */
-
 @Internal
 @Singleton
 public final class CodeGenerator {
 
+    /**
+     * A method for creating a single record from a json schema. Used mainly in testing.
+     *
+     * @param inputStream The input stream of a json schema
+     * @param language The desired language for record to be generated in
+     * @param outputPath The output path for the output file
+     * @param packageName The package name for the output file
+     * @param fileName The fileName for the output file
+     * @return The generated file
+     */
     public File generate(InputStream inputStream, VisitorContext.Language language, Path outputPath, String packageName, String fileName) throws IOException {
         var jsonSchema = getJsonSchema(inputStream, null);
         return generateFromSchemaMap(jsonSchema, language, getOutputFile(outputPath, packageName, fileName));
     }
 
-    public boolean generate(File jsonFileLocation, VisitorContext.Language language, Path outputPath, String packageName) throws IOException {
+    /**
+     * A method for creating multiple records from a json schema.
+     *
+     * @param inputStream The input stream of a json schema
+     * @param language The desired language for record to be generated in
+     * @param outputPath The output path for the output file
+     * @param packageName The package name for the output file
+     * @return The number of generated files
+     */
+    public int generate(InputStream inputStream, VisitorContext.Language language, Path outputPath, String packageName) throws IOException {
+        int generatedClassCount = 0;
+        var jsonSchema = getJsonSchema(inputStream, null);
+        if (jsonSchema.containsKey("definitions")) {
+            var definitions = (Map<String,  Map<String, Object>>) jsonSchema.get("definitions");
+            for (Map.Entry<String, Map<String, Object>> definition : definitions.entrySet()) {
+                // skip resource list for now
+                if (definition.getKey().equals("ResourceList")) {
+                    continue;
+                }
+                TypeDef typeOfDefinition = getTypeDefFromJson(definition.getValue());
+                if (!typeOfDefinition.isPrimitive() && !typeOfDefinition.equals(TypeDef.STRING)) {
+                    generatedClassCount++;
+                    addDefinition("#/definitions/" + definition.getKey(), ClassTypeDef.of(definition.getKey()));
+                    generateFromSchemaMap(definition.getValue(), language, getOutputFile(outputPath, packageName, definition.getKey() + ".java"));
+                } else {
+                    addDefinition("#/definitions/" + definition.getKey(), definition.getValue());
+                }
+            }
+        }
+        if (jsonSchema.containsKey("type")) {
+            generatedClassCount++;
+            String fileName = getFileName(jsonSchema, language);
+            generateFromSchemaMap(jsonSchema, language, getOutputFile(outputPath, packageName, fileName));
+        }
+        return generatedClassCount;
+    }
+
+    /**
+     * A method for creating multiple records from a json schema.
+     *
+     * @param jsonFileLocation The input file location of a json schema
+     * @param language The desired language for record to be generated in
+     * @param outputPath The output path for the output file
+     * @param packageName The package name for the output file
+     * @return The number of generated files
+     */
+    public int generate(File jsonFileLocation, VisitorContext.Language language, Path outputPath, String packageName) throws IOException {
         var jsonSchema = getJsonSchema(null, jsonFileLocation);
         // TODO define file name
+        int generatedClassCount = 1;
         String fileName = capitalize(getCamelCaseName(jsonSchema.get("title").toString())) + ".java";
         File output = generateFromSchemaMap(jsonSchema, language, getOutputFile(outputPath, packageName, fileName));
-        return output.exists();
+        return generatedClassCount;
     }
 
     private Map<String, ?> getJsonSchema(InputStream inputStream, File schemaFile) throws IOException {

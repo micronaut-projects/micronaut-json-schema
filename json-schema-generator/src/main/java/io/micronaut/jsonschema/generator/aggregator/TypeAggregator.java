@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.generator.aggregator;
 import com.fasterxml.jackson.core.JsonPointer;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
+import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.EnumDef;
 import io.micronaut.sourcegen.model.ObjectDefBuilder;
@@ -34,7 +35,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.CodeGenerator.buildEnum;
+import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.getDefinitionType;
 import static java.lang.String.join;
 
 /**
@@ -82,22 +85,29 @@ public class TypeAggregator {
         } else {
             typeName = type.toString();
         }
+
+        TypeDef typeDef;
         if (typeName.equals("string") && description.containsKey("format")) {
             var format = description.get("format").toString();
             switch (format) {
-                case "date": return ClassTypeDef.of(LocalDate.class);
-                case "date-time", "time": return ClassTypeDef.of(ZonedDateTime.class);
-                case "duration": return ClassTypeDef.of(Duration.class);
-                case "ipv4": return ClassTypeDef.of(java.net.Inet4Address.class);
-                case "ipv6": return ClassTypeDef.of(java.net.Inet6Address.class);
-                case "uuid": return ClassTypeDef.of(UUID.class);
-                case "uri", "iri": return ClassTypeDef.of(URI.class);
-                case "json-pointer": return ClassTypeDef.of(JsonPointer.class);
+                case "date": typeDef = ClassTypeDef.of(LocalDate.class); break;
+                case "date-time", "time": typeDef = ClassTypeDef.of(ZonedDateTime.class); break;
+                case "duration": typeDef = ClassTypeDef.of(Duration.class); break;
+                case "ipv4": typeDef = ClassTypeDef.of(java.net.Inet4Address.class); break;
+                case "ipv6": typeDef = ClassTypeDef.of(java.net.Inet6Address.class); break;
+                case "uuid": typeDef = ClassTypeDef.of(UUID.class); break;
+                case "uri", "iri": typeDef = ClassTypeDef.of(URI.class); break;
+                case "json-pointer": typeDef = ClassTypeDef.of(JsonPointer.class); break;
                 // missing: email, web hostname, uri-reference, uri-template, regex
-                default: return TYPE_MAP.get(typeName);
+                default: typeDef = TypeDef.STRING;
             }
+        } else if (description.containsKey("$ref")) {
+            // TODO: should already exist
+            typeDef = getDefinitionType(description.get("$ref").toString());
+        } else {
+            typeDef = TYPE_MAP.get(typeName);
         }
-        return TYPE_MAP.get(typeName);
+        return typeDef;
     }
 
     public static String getConstantName(String input) {
@@ -162,5 +172,23 @@ public class TypeAggregator {
             }
         }
         return camelCaseString.toString();
+    }
+
+    public static String getFileName(Map<String, ?> schema, VisitorContext.Language language) {
+        String fileName = null;
+        if (schema.containsKey("title")) {
+            fileName = capitalize(getCamelCaseName(schema.get("title").toString()));
+        } else if (schema.keySet().size() == 1) {
+            fileName = schema.keySet().toArray()[0].toString();
+        } else {
+            fileName = "SchemaInterface";
+        }
+
+        switch (language) {
+            case KOTLIN: fileName += ".kt"; break;
+            case GROOVY: fileName += ".groovy"; break;
+            default: fileName += ".java"; break;
+        }
+        return fileName;
     }
 }

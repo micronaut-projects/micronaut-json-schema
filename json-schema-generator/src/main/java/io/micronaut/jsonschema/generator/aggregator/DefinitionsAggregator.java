@@ -16,9 +16,13 @@
 package io.micronaut.jsonschema.generator.aggregator;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.sourcegen.model.TypeDef;
 import jakarta.inject.Singleton;
 
 import java.util.HashMap;
+import java.util.Map;
+
+import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTypeDefFromJson;
 
 /**
  * An aggregator for storing and accessing definitions from json schema.
@@ -26,5 +30,36 @@ import java.util.HashMap;
 @Internal
 @Singleton
 public class DefinitionsAggregator {
-    private static HashMap<String, Object> definitions = new HashMap<>();
+    private static HashMap<String, TypeDef> definitions = new HashMap<>();
+
+    public static void addDefinition(String key, Map<String, Object> definition) {
+        if (!hasDefinition(key)) {
+            var typeDef = getTypeDefFromJson(definition);
+            var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef);
+            definitions.put(key, typeDef.annotated(annotations));
+        }
+    }
+
+    public static void addDefinition(String key, TypeDef classDef) {
+        if (!hasDefinition(key)) {
+            definitions.put(key, classDef);
+        }
+    }
+
+    public static boolean hasDefinition(String key) {
+        return definitions.containsKey(key);
+    }
+
+    public static TypeDef getDefinitionType(String key, Map<String, Object> definition) {
+        addDefinition(key, definition);
+        return definitions.get(key);
+    }
+
+    public static TypeDef getDefinitionType(String key) {
+        return definitions.get(key);
+    }
+
+    public static Map<String, TypeDef> getDefinitions() {
+        return definitions;
+    }
 }

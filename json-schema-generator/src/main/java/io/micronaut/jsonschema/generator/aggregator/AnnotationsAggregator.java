@@ -104,9 +104,11 @@ public class AnnotationsAggregator {
                         .addMember("min", value);
                     break;
                 case "pattern":
-                    annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(PATTERN_ANN))
-                        .addMember("regexp", value);
+                    if (propertyType.equals(TypeDef.STRING)) {
+                        annBuilder = AnnotationDef
+                            .builder(ClassTypeDef.of(PATTERN_ANN))
+                            .addMember("regexp", value);
+                    }
                     break;
                 // string annotations
                 case "email": annBuilder = AnnotationDef
