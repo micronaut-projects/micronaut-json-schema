@@ -61,8 +61,14 @@ public class AnnotationsAggregator {
         schemaMap.forEach((key, value) -> {
             AnnotationDef.AnnotationDefBuilder annBuilder = null;
             switch (key) {
-                case "nullable": annBuilder = AnnotationDef
-                    .builder(ClassTypeDef.of(NULLABLE_ANN));
+                case "nullable":
+                    if (value.toString().equals(Boolean.TRUE.toString())) {
+                        annBuilder = AnnotationDef
+                            .builder(ClassTypeDef.of(NULLABLE_ANN));
+                    } else {
+                        annBuilder = AnnotationDef
+                            .builder(ClassTypeDef.of(NOT_NULL_ANN));
+                    }
                 break;
                 // check annotation related to numbers
                 case "minimum":
