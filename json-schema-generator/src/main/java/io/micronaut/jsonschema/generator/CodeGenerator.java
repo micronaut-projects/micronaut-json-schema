@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
@@ -241,17 +242,7 @@ public final class CodeGenerator {
                         parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases).returning()
                     ));
         }
-        if (jsonSchema.containsKey("properties")) {
-            Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
-            List<String> requiredProperties;
-            if (jsonSchema.containsKey("required")) {
-                requiredProperties = (List<String>) jsonSchema.get("required");
-            } else {
-                requiredProperties = new ArrayList<>();
-            }
-            properties.entrySet().forEach(entry ->
-                addField(enumBuilder, entry.getKey(), (Map<String, Object>) entry.getValue(), requiredProperties.contains(entry.getKey())));
-        }
+        addFields(jsonSchema, enumBuilder);
         return enumBuilder.build();
     }
 
@@ -260,6 +251,11 @@ public final class CodeGenerator {
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
 
+        addFields(jsonSchema, objectBuilder);
+        return objectBuilder.build();
+    }
+
+    private static void addFields(Map<String, ?> jsonSchema, ObjectDefBuilder builder) {
         if (jsonSchema.containsKey("properties")) {
             Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
             List<String> requiredProperties;
@@ -269,9 +265,26 @@ public final class CodeGenerator {
                 requiredProperties = new ArrayList<>();
             }
             properties.entrySet().forEach(entry ->
-                addField(objectBuilder, entry.getKey(), (Map<String, Object>) entry.getValue(), requiredProperties.contains(entry.getKey())));
+                addField(builder, entry.getKey(), (Map<String, Object>) entry.getValue(), requiredProperties.contains(entry.getKey())));
+
+            if (jsonSchema.containsKey("additionalProperties") && !Objects.equals(jsonSchema.get("additionalProperties").toString(), "false")) {
+                if (Objects.equals(jsonSchema.get("additionalProperties").toString(), "true")) {
+                    builder.addProperty(
+                        PropertyDef.builder("additionalProperties")
+                            .ofType(TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT))
+                            .build()
+                    );
+                } else {
+                    Map<String, Object> map = (Map<String, Object>) jsonSchema.get("additionalProperties");
+                    TypeDef type = getTypeDefFromJson(map);
+                    builder.addProperty(
+                        PropertyDef.builder("additionalProperties")
+                            .ofType(TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, type))
+                            .build()
+                    );
+                }
+            }
         }
-        return objectBuilder.build();
     }
 
     private static void addField(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description, boolean isRequired) {

@@ -102,7 +102,6 @@ public class TypeAggregator {
                 default: typeDef = TypeDef.STRING;
             }
         } else if (description.containsKey("$ref")) {
-            // TODO: should already exist
             typeDef = getDefinitionType(description.get("$ref").toString());
         } else {
             typeDef = TYPE_MAP.get(typeName);

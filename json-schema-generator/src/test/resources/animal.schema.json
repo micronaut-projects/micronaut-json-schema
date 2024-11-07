@@ -50,7 +50,8 @@
           "$ref": "#/definitions/boolean"
         }
       },
-      "type": ["object"]
+      "type": ["object"],
+      "additionalProperties": false
     },
     "Dog": {
       "description": "The definition of a dog.",
@@ -71,7 +72,8 @@
           }
         }
       },
-      "type": "object"
+      "type": "object",
+      "additionalProperties": {"type": "string"}
     },
     "Fish": {
       "description": "The definition of a fish.",
@@ -84,7 +86,8 @@
           }
         }
       },
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true
     }
   }
 }
