@@ -67,7 +67,7 @@ public class DefinitionsAggregator {
         return null;
     }
 
-    public static Map<String, TypeDef> getDefinitions() {
-        return definitions;
+    public static void clearAllDefinitions() {
+        definitions.clear();
     }
 }

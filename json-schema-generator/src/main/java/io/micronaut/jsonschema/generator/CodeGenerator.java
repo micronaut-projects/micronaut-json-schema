@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.addDefinition;
+import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.clearAllDefinitions;
 import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.getDefinitionType;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getCamelCaseName;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getConstantName;
@@ -133,6 +134,7 @@ public final class CodeGenerator {
             String fileName = getFileName(jsonSchema, language);
             generateFromSchemaMap(jsonSchema, language, getOutputFile(outputPath, packageName, fileName));
         }
+        clearAllDefinitions();
         return generatedClassCount.get();
     }
 
@@ -145,9 +147,9 @@ public final class CodeGenerator {
      * @param packageName The package name for the output file
      * @return The number of generated files
      */
+    // TODO outdated
     public int generate(File jsonFileLocation, VisitorContext.Language language, Path outputPath, String packageName) throws IOException {
         var jsonSchema = getJsonSchema(null, jsonFileLocation);
-        // TODO define file name
         int generatedClassCount = 1;
         String fileName = capitalize(getCamelCaseName(jsonSchema.get("title").toString())) + ".java";
         File output = generateFromSchemaMap(jsonSchema, language, getOutputFile(outputPath, packageName, fileName));
@@ -248,6 +250,24 @@ public final class CodeGenerator {
 
     private RecordDef buildRecord(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Serdeable.class);
+
+        addFields(jsonSchema, objectBuilder);
+        return objectBuilder.build();
+    }
+
+    private ClassDef buildClass(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
+        ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Serdeable.class);
+
+        addFields(jsonSchema, objectBuilder);
+        return objectBuilder.build();
+    }
+
+    private InterfaceDef buildInterface(Map<String, ?> jsonSchema, String builderClassName) throws IOException {
+        InterfaceDef.InterfaceDefBuilder objectBuilder = InterfaceDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
 
