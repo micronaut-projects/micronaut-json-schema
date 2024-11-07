@@ -31,6 +31,7 @@ import java.util.Map;
 @Internal
 public class AnnotationsAggregator {
 
+    private static final String NULLABLE_ANN = "jakarta.annotation.Nullable";
     private static final String JAKARTA_VALIDATION_PREFIX = "jakarta.validation.constraints.";
     private static final String NOT_NULL_ANN = JAKARTA_VALIDATION_PREFIX + "NotNull";
     private static final String ASSERT_FALSE_ANN = JAKARTA_VALIDATION_PREFIX + "AssertFalse";
@@ -52,13 +53,6 @@ public class AnnotationsAggregator {
         getAnnotations(schemaMap, propertyType).forEach(propertyDef::addAnnotation);
     }
 
-    public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, List<AnnotationDef> annotations, boolean isRequired) {
-        if (isRequired) {
-            propertyDef.addAnnotation(NOT_NULL_ANN);
-        }
-        annotations.forEach(propertyDef::addAnnotation);
-    }
-
     public static List<AnnotationDef> getAnnotations(Map<String, Object> schemaMap, TypeDef propertyType) {
         List<AnnotationDef> annotations = new ArrayList<>();
         boolean isFloat = propertyType.equals(TypeDef.Primitive.FLOAT) || propertyType.equals(TypeDef.of(Float.class));
@@ -67,6 +61,9 @@ public class AnnotationsAggregator {
         schemaMap.forEach((key, value) -> {
             AnnotationDef.AnnotationDefBuilder annBuilder = null;
             switch (key) {
+                case "nullable": annBuilder = AnnotationDef
+                    .builder(ClassTypeDef.of(NULLABLE_ANN));
+                break;
                 // check annotation related to numbers
                 case "minimum":
                     annBuilder = AnnotationDef
