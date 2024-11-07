@@ -61,4 +61,18 @@ class ObjectGenerationTest {
         int generatedFiles = generator.generate(inputStream.get(), VisitorContext.Language.JAVA, outputPath, packageName);
         Assertions.assertEquals(4, generatedFiles);
     }
+
+    @Test
+    void folderGenerator3() throws IOException {
+        var generator = new CodeGenerator();
+        String schemaFileName = "fhir.schema.json";
+        Optional<InputStream> inputStream = resourceLoader.getResourceAsStream(new File(schemaFileName).getPath());
+        if (inputStream.isEmpty()) {
+            throw new FileNotFoundException("Resource file is not found.");
+        }
+        Path outputPath = Paths.get("output"); // Define the base output path
+        String packageName = "com.example.fhir"; // Example package name
+        int generatedFiles = generator.generate(inputStream.get(), VisitorContext.Language.JAVA, outputPath, packageName);
+        Assertions.assertEquals(863, generatedFiles);
+    }
 }

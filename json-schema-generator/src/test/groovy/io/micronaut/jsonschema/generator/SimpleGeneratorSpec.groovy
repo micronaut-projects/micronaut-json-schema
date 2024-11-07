@@ -145,6 +145,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'status'              | '{"type": "string", "enum": ["SINGLE", "TAKEN"]}'                     | 'Status status'
         // support unusual names
         'isTrue'              | '{"type": "boolean"}'                                                 | 'boolean isTrue'
+        'short'               | '{"type": "number"}'                                                  | '@JsonProperty("short") float short_json'
         '#bikes'              | '{"type": ["integer"]}'                                               | '@JsonProperty("#bikes") int bikes'
         '9bikes'              | '{"type": ["integer"]}'                                               | '@JsonProperty("9bikes") int bikes'
         'bikes9times'         | '{"type": "integer"}'                                                 | 'int bikes9times'

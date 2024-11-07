@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.aggregator;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
 import jakarta.inject.Singleton;
 
@@ -35,14 +36,15 @@ public class DefinitionsAggregator {
     public static void addDefinition(String key, Map<String, Object> definition) {
         if (!hasDefinition(key)) {
             var typeDef = getTypeDefFromJson(definition);
-            var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef);
-            definitions.put(key, typeDef.annotated(annotations));
+            definitions.put(key, typeDef);
         }
     }
 
     public static void addDefinition(String key, TypeDef classDef) {
         if (!hasDefinition(key)) {
             definitions.put(key, classDef);
+        } else {
+            definitions.replace(key, classDef);
         }
     }
 
@@ -56,7 +58,13 @@ public class DefinitionsAggregator {
     }
 
     public static TypeDef getDefinitionType(String key) {
-        return definitions.get(key);
+        if (hasDefinition(key)) {
+            return definitions.get(key);
+        }
+        if (key.equals("#/definitions/ResourceList")) {
+            return ClassTypeDef.of("ResourceList");
+        }
+        return null;
     }
 
     public static Map<String, TypeDef> getDefinitions() {

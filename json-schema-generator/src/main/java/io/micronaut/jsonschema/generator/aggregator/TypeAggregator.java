@@ -143,6 +143,9 @@ public class TypeAggregator {
         if (SourceVersion.isName(input)) {
             return input;
         }
+        if (SourceVersion.isKeyword(input)) {
+            return input + "_json";
+        }
         String cleanedInput = input.replaceAll("[-_]", " ")
             .replaceAll("[^a-zA-Z0-9 ]", "")
             .trim();

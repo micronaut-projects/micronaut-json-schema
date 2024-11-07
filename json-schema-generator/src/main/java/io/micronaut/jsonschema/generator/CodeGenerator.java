@@ -41,9 +41,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.addDefinition;
+import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.getDefinitionType;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getCamelCaseName;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getConstantName;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getEnumType;
@@ -86,31 +88,51 @@ public final class CodeGenerator {
      * @return The number of generated files
      */
     public int generate(InputStream inputStream, VisitorContext.Language language, Path outputPath, String packageName) throws IOException {
-        int generatedClassCount = 0;
+        AtomicInteger generatedClassCount = new AtomicInteger();
         var jsonSchema = getJsonSchema(inputStream, null);
         if (jsonSchema.containsKey("definitions")) {
             var definitions = (Map<String,  Map<String, Object>>) jsonSchema.get("definitions");
-            for (Map.Entry<String, Map<String, Object>> definition : definitions.entrySet()) {
-                // skip resource list for now
-                if (definition.getKey().equals("ResourceList")) {
-                    continue;
+            // save all definition types
+            definitions.forEach((key, value) -> {
+                if (key.equals("ResourceList")) {
+                    return;
                 }
-                TypeDef typeOfDefinition = getTypeDefFromJson(definition.getValue());
+                TypeDef typeOfDefinition = getTypeDefFromJson(value);
                 if (!typeOfDefinition.isPrimitive() && !typeOfDefinition.equals(TypeDef.STRING)) {
-                    generatedClassCount++;
-                    addDefinition("#/definitions/" + definition.getKey(), ClassTypeDef.of(definition.getKey()));
-                    generateFromSchemaMap(definition.getValue(), language, getOutputFile(outputPath, packageName, definition.getKey() + ".java"));
+                    addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)));
                 } else {
-                    addDefinition("#/definitions/" + definition.getKey(), definition.getValue());
+                    addDefinition("#/definitions/" + key, value);
                 }
-            }
+            });
+            // generate all classes
+            definitions.entrySet().stream().filter(definition -> {
+                if (definition.getKey().equals("ResourceList")) {
+                    return false;
+                }
+                TypeDef typeOfDefinition = getDefinitionType("#/definitions/" + definition.getKey());
+                boolean isClass = !typeOfDefinition.isPrimitive() && !typeOfDefinition.equals(TypeDef.STRING);
+
+                // update definition with annotations
+                var annotations = AnnotationsAggregator.getAnnotations(definition.getValue(), typeOfDefinition);
+                if (!annotations.isEmpty()) {
+                    addDefinition("#/definitions/" + definition.getKey(), typeOfDefinition.annotated(annotations));
+                }
+                return isClass;
+            }).forEach(definition -> {
+                try {
+                    generatedClassCount.getAndIncrement();
+                    generateFromSchemaMap(definition.getValue(), language, getOutputFile(outputPath, packageName, capitalize(definition.getKey()) + ".java"));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
         if (jsonSchema.containsKey("type")) {
-            generatedClassCount++;
+            generatedClassCount.getAndIncrement();
             String fileName = getFileName(jsonSchema, language);
             generateFromSchemaMap(jsonSchema, language, getOutputFile(outputPath, packageName, fileName));
         }
-        return generatedClassCount;
+        return generatedClassCount.get();
     }
 
     /**
@@ -253,6 +275,10 @@ public final class CodeGenerator {
     }
 
     private static void addField(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description, boolean isRequired) {
+        if (propertyName.equals("resourceType")) {
+            // TODO handle resourceType
+            return;
+        }
         String name = getCamelCaseName(propertyName);
 
         TypeDef propertyType = getTypeDefFromJson(description);
