@@ -17,6 +17,8 @@ package io.micronaut.jsonschema.generator;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.core.annotation.Internal;
@@ -91,11 +93,11 @@ public final class CodeGenerator {
         var jsonSchema = getJsonSchema(inputStream, null);
         initializeGenerator(language);
 
+        File outputFile = getOutputFile(outputPath, packageName, fileName);
         if (jsonSchema.containsKey("enum")) {
-            File outputFile = getOutputFile(outputPath, packageName, fileName);
             return generateFromSchemaMap(jsonSchema, outputFile, ObjectType.ENUM);
         }
-        return generateFromSchemaMap(jsonSchema, getOutputFile(outputPath, packageName, fileName), ObjectType.RECORD);
+        return generateFromSchemaMap(jsonSchema, outputFile, ObjectType.RECORD);
     }
 
     /**
@@ -112,11 +114,11 @@ public final class CodeGenerator {
         var jsonSchema = getJsonSchema(null, jsonFileLocation);
         initializeGenerator(language);
 
+        File outputFile = getOutputFile(outputPath, packageName, fileName);
         if (jsonSchema.containsKey("enum")) {
-            File outputFile = getOutputFile(outputPath, packageName, fileName);
             return generateFromSchemaMap(jsonSchema, outputFile, ObjectType.ENUM);
         }
-        return generateFromSchemaMap(jsonSchema, getOutputFile(outputPath, packageName, fileName), ObjectType.RECORD);
+        return generateFromSchemaMap(jsonSchema, outputFile, ObjectType.RECORD);
     }
 
     /**
@@ -149,7 +151,6 @@ public final class CodeGenerator {
         return generateFolder(jsonSchema, outputPath, packageName, language);
     }
 
-
     private Map<String, ?> getJsonSchema(InputStream inputStream, File schemaFile) throws IOException {
         JsonMapper jsonMapper = new JsonMapper();
         if (inputStream != null) {
@@ -165,7 +166,7 @@ public final class CodeGenerator {
         AtomicInteger generatedClassCount = new AtomicInteger();
         HashSet<String> oneOfSet = new HashSet<>();
         if (jsonSchema.containsKey("oneOf")) {
-            // TODO: add none reference types
+            // TODO: add no-reference types
             var oneOfRefs = (List<Map<String, String>>) jsonSchema.get("oneOf");
             oneOfRefs.forEach(oneOf -> oneOfSet.add(oneOf.get("$ref")));
         }
@@ -190,8 +191,7 @@ public final class CodeGenerator {
             String fileName = getFileName(jsonSchema, language);
             File outputFile = getOutputFile(outputPath, packageName, fileName);
             generateFromSchemaMap(jsonSchema, outputFile, ObjectType.ENUM);
-        }
-        else if (jsonSchema.containsKey("type") || jsonSchema.containsKey("properties")) {
+        } else if (jsonSchema.containsKey("type") || jsonSchema.containsKey("properties")) {
             generatedClassCount.getAndIncrement();
             String fileName = getFileName(jsonSchema, language);
             File outputFile = getOutputFile(outputPath, packageName, fileName);
@@ -264,25 +264,12 @@ public final class CodeGenerator {
             String className = outputFile.getName().substring(0, outputFile.getName().lastIndexOf('.'));
 
             try (FileWriter writer = new FileWriter(outputFile)) {
-                ObjectDef objectDef;
-                switch (objectType) {
-                    case ENUM: {
-                        objectDef = buildEnum(jsonSchema, className);
-                        break;
-                    }
-                    case CLASS: {
-                        objectDef = buildClass(jsonSchema, className);
-                        break;
-                    }
-                    case INTERFACE: {
-                        objectDef = buildInterface(jsonSchema, className);
-                        break;
-                    }
-                    default: {
-                        objectDef = buildRecord(jsonSchema, className);
-                        break;
-                    }
-                }
+                ObjectDef objectDef = switch (objectType) {
+                    case ENUM -> buildEnum(jsonSchema, className);
+                    case CLASS -> buildClass(jsonSchema, className);
+                    case INTERFACE -> buildInterface(jsonSchema, className);
+                    default -> buildRecord(jsonSchema, className);
+                };
                 sourceGenerator.write(objectDef, writer);
             }
             return outputFile;
@@ -345,12 +332,31 @@ public final class CodeGenerator {
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
 
+        // TODO add a discriminator flag for annotation
+        boolean hasDiscriminator = jsonSchema.containsKey("discriminator");
         if (hasDefinition("superClass")) {
             var superClass = getDefinitionType("superClass");
             objectBuilder.superclass((ClassTypeDef) superClass);
+            if (hasDiscriminator) {
+                AnnotationDef annotationDef = AnnotationDef.builder(JsonTypeInfo.class)
+                    .addMember("use", JsonTypeInfo.Id.NAME)
+                    .addMember("property", "class")
+                    .build();
+                objectBuilder.addAnnotation(annotationDef);
+            }
         } else if (hasDefinition("superInterface")) {
             var superInterface = getDefinitionType("superInterface");
             objectBuilder.addSuperinterface(superInterface);
+            if (hasDiscriminator) {
+                AnnotationDef annotationDef = AnnotationDef.builder(JsonTypeInfo.class)
+                    .addMember("use", JsonTypeInfo.Id.NAME)
+                    .addMember("property", "class")
+                    .build();
+                objectBuilder.addAnnotation(annotationDef);
+            }
+        } else if (hasDiscriminator) {
+            // top level class
+            addDiscriminatorAnnotations(jsonSchema, objectBuilder);
         }
 
         addFields(jsonSchema, objectBuilder);
@@ -361,6 +367,10 @@ public final class CodeGenerator {
         InterfaceDef.InterfaceDefBuilder objectBuilder = InterfaceDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
+        if (jsonSchema.containsKey("discriminator")) {
+            // top level interface
+            addDiscriminatorAnnotations(jsonSchema, objectBuilder);
+        }
         return objectBuilder.build();
     }
 
@@ -421,5 +431,26 @@ public final class CodeGenerator {
             propertyDef.addAnnotation(annotationDef);
         }
         objectBuilder.addProperty(propertyDef.build());
+    }
+
+    private static void addDiscriminatorAnnotations(Map<String, ?> jsonSchema, ObjectDefBuilder objectBuilder) {
+        var discriminator = (Map<String, ?>) jsonSchema.get("discriminator");
+        AnnotationDef jsonTypeInfo = AnnotationDef.builder(JsonTypeInfo.class)
+            .addMember("use", JsonTypeInfo.Id.NAME)
+            .addMember("property", discriminator.get("propertyName"))
+            .build();
+        objectBuilder.addAnnotation(jsonTypeInfo);
+
+        var mapping = (Map<String, String>) discriminator.get("mapping");
+        List<AnnotationDef> subTypeList = mapping.entrySet()
+            .stream()
+            .map(entry -> AnnotationDef
+                .builder(JsonSubTypes.Type.class)
+                .addMember("value", getDefinitionType(entry.getValue()))
+                .addMember("name", entry.getKey())
+                .build())
+            .toList();
+        AnnotationDef jsonSubTypes = AnnotationDef.builder(JsonSubTypes.class).addMember("value", subTypeList).build();
+        objectBuilder.addAnnotation(jsonSubTypes);
     }
 }
