@@ -27,6 +27,9 @@ import java.util.Map;
 
 /**
  * An aggregator for adding annotation information from json schema.
+ *
+ * @author Elif Kurtay
+ * @since 1.2
  */
 @Internal
 public class AnnotationsAggregator {

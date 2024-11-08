@@ -42,6 +42,9 @@ import static java.lang.String.join;
 
 /**
  * An aggregator for deducing type information from json schema.
+ *
+ * @author Elif Kurtay
+ * @since 1.2
  */
 @Internal
 public class TypeAggregator {
@@ -183,8 +186,9 @@ public class TypeAggregator {
         } else if (schema.keySet().size() == 1) {
             fileName = schema.keySet().toArray()[0].toString();
         } else {
-            fileName = "SchemaInterface";
+            fileName = "ResourceType";
         }
+        // TODO: add discriminator propertyName
 
         switch (language) {
             case KOTLIN: fileName += ".kt"; break;

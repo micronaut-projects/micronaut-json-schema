@@ -20,7 +20,7 @@ class AbstractGeneratorSpec extends Specification {
         String packageName = "com.example.project"; // Example package name
         String fileName = className +".java";
 
-        File generated = generator.generate(new ByteArrayInputStream(jsonSchema.getBytes()), VisitorContext.Language.JAVA, outputPath, packageName, fileName)
+        File generated = generator.generate(new ByteArrayInputStream(jsonSchema.getBytes()), outputPath, packageName, fileName, VisitorContext.Language.JAVA)
 
         try {
             ParserConfiguration configuration = new ParserConfiguration()

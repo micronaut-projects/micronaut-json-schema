@@ -30,8 +30,8 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.project"; // Example package name
-        String fileName = "Llama.java";
-        Assertions.assertNotNull(generator.generate(inputStream.get(), VisitorContext.Language.JAVA, outputPath, packageName, fileName));
+        String fileName = "Llama2.java";
+        Assertions.assertNotNull(generator.generate(inputStream.get(), outputPath, packageName, fileName, VisitorContext.Language.JAVA));
     }
 
     @Test
@@ -44,7 +44,7 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.project"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), VisitorContext.Language.JAVA, outputPath, packageName);
+        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName, VisitorContext.Language.JAVA);
         Assertions.assertEquals(1, generatedFiles);
     }
 
@@ -58,7 +58,7 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.animals"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), VisitorContext.Language.JAVA, outputPath, packageName);
+        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName, VisitorContext.Language.JAVA);
         Assertions.assertEquals(4, generatedFiles);
     }
 
@@ -72,7 +72,7 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.fhir"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), VisitorContext.Language.JAVA, outputPath, packageName);
-        Assertions.assertEquals(863, generatedFiles);
+        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName, VisitorContext.Language.JAVA);
+        Assertions.assertEquals(864, generatedFiles);
     }
 }

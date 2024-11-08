@@ -27,6 +27,10 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 
 /**
  * An aggregator for storing and accessing definitions from json schema.
+ * Saves a map of definition reference to TypeDef.
+ *
+ * @author Elif Kurtay
+ * @since 1.2
  */
 @Internal
 @Singleton
