@@ -19,6 +19,14 @@
       "minLength":1
     }
   },
+  "discriminator": {
+    "propertyName": "resourceType",
+    "mapping": {
+      "Cat": "#/definitions/Cat",
+      "Dog": "#/definitions/Dog",
+      "Fish": "#/definitions/Fish"
+    }
+  },
   "oneOf": [{
     "$ref": "#/definitions/Cat"
   },{

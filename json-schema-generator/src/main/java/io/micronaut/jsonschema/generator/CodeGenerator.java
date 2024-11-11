@@ -71,6 +71,7 @@ public final class CodeGenerator {
 
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
     private SourceGenerator sourceGenerator;
+    private String discriminatorProperty = "";
 
     private void initializeGenerator(VisitorContext.Language language) {
         sourceGenerator = SourceGenerators.findByLanguage(language).orElse(null);
@@ -172,6 +173,7 @@ public final class CodeGenerator {
         }
         // save all definition types
         if (jsonSchema.containsKey("definitions")) {
+            // TODO: add no-reference types
             var definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
             definitions.forEach((key, value) -> {
                 if (key.equals("ResourceList")) {
@@ -185,6 +187,7 @@ public final class CodeGenerator {
                 }
             });
         }
+
         // generate top level schema
         if (jsonSchema.containsKey("enum")) {
             generatedClassCount.getAndIncrement();
@@ -211,33 +214,35 @@ public final class CodeGenerator {
             addDefinition("superInterface", ClassTypeDef.of(className));
         }
 
+        // generate classes in definitions
         if (jsonSchema.containsKey("definitions")) {
-            // generate classes in definitions
             var definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
-            definitions.entrySet().stream().filter(definition -> {
-                if (definition.getKey().equals("ResourceList")) {
-                    return false;
-                }
-                TypeDef typeOfDefinition = getDefinitionType("#/definitions/" + definition.getKey());
-                assert typeOfDefinition != null;
-                boolean isClass = !typeOfDefinition.isPrimitive() && !typeOfDefinition.equals(TypeDef.STRING);
+            definitions.entrySet()
+                .stream()
+                .filter(definition -> {
+                    if (definition.getKey().equals("ResourceList")) {
+                        return false;
+                    }
+                    TypeDef typeOfDefinition = getDefinitionType("#/definitions/" + definition.getKey());
+                    assert typeOfDefinition != null;
+                    boolean isClass = !typeOfDefinition.isPrimitive() && !typeOfDefinition.equals(TypeDef.STRING);
 
-                // update definition with annotations
-                var annotations = AnnotationsAggregator.getAnnotations(definition.getValue(), typeOfDefinition);
-                if (!annotations.isEmpty()) {
-                    addDefinition("#/definitions/" + definition.getKey(), typeOfDefinition.annotated(annotations));
-                }
-                return isClass;
-            }).forEach(definition -> {
-                try {
-                    generatedClassCount.getAndIncrement();
-                    File outputFile = getOutputFile(outputPath, packageName, capitalize(definition.getKey()) + ".java");
-                    ObjectType generationType = (oneOfSet.contains("#/definitions/" + definition.getKey())) ? ObjectType.CLASS : ObjectType.RECORD;
-                    generateFromSchemaMap(definition.getValue(), outputFile, generationType);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+                    // update definition with annotations
+                    var annotations = AnnotationsAggregator.getAnnotations(definition.getValue(), typeOfDefinition);
+                    if (!annotations.isEmpty()) {
+                        addDefinition("#/definitions/" + definition.getKey(), typeOfDefinition.annotated(annotations));
+                    }
+                    return isClass;
+                }).forEach(definition -> {
+                    try {
+                        generatedClassCount.getAndIncrement();
+                        File outputFile = getOutputFile(outputPath, packageName, capitalize(definition.getKey()) + ".java");
+                        ObjectType generationType = (oneOfSet.contains("#/definitions/" + definition.getKey())) ? ObjectType.CLASS : ObjectType.RECORD;
+                        generateFromSchemaMap(definition.getValue(), outputFile, generationType);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
         }
         clearAllDefinitions();
         return generatedClassCount.get();
@@ -332,31 +337,23 @@ public final class CodeGenerator {
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
 
-        // TODO add a discriminator flag for annotation
-        boolean hasDiscriminator = jsonSchema.containsKey("discriminator");
         if (hasDefinition("superClass")) {
             var superClass = getDefinitionType("superClass");
             objectBuilder.superclass((ClassTypeDef) superClass);
-            if (hasDiscriminator) {
-                AnnotationDef annotationDef = AnnotationDef.builder(JsonTypeInfo.class)
-                    .addMember("use", JsonTypeInfo.Id.NAME)
-                    .addMember("property", "class")
-                    .build();
-                objectBuilder.addAnnotation(annotationDef);
-            }
         } else if (hasDefinition("superInterface")) {
             var superInterface = getDefinitionType("superInterface");
             objectBuilder.addSuperinterface(superInterface);
-            if (hasDiscriminator) {
-                AnnotationDef annotationDef = AnnotationDef.builder(JsonTypeInfo.class)
-                    .addMember("use", JsonTypeInfo.Id.NAME)
-                    .addMember("property", "class")
-                    .build();
-                objectBuilder.addAnnotation(annotationDef);
-            }
-        } else if (hasDiscriminator) {
+        } else {
             // top level class
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
+        }
+
+        if (!discriminatorProperty.isBlank()) {
+            AnnotationDef jsonTypeInfo = AnnotationDef.builder(JsonTypeInfo.class)
+                .addMember("use", JsonTypeInfo.Id.NAME)
+                .addMember("property", discriminatorProperty)
+                .build();
+            objectBuilder.addAnnotation(jsonTypeInfo);
         }
 
         addFields(jsonSchema, objectBuilder);
@@ -370,6 +367,13 @@ public final class CodeGenerator {
         if (jsonSchema.containsKey("discriminator")) {
             // top level interface
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
+            if (!discriminatorProperty.isBlank()) {
+                AnnotationDef jsonTypeInfo = AnnotationDef.builder(JsonTypeInfo.class)
+                    .addMember("use", JsonTypeInfo.Id.NAME)
+                    .addMember("property", discriminatorProperty)
+                    .build();
+                objectBuilder.addAnnotation(jsonTypeInfo);
+            }
         }
         return objectBuilder.build();
     }
@@ -433,13 +437,12 @@ public final class CodeGenerator {
         objectBuilder.addProperty(propertyDef.build());
     }
 
-    private static void addDiscriminatorAnnotations(Map<String, ?> jsonSchema, ObjectDefBuilder objectBuilder) {
+    private void addDiscriminatorAnnotations(Map<String, ?> jsonSchema, ObjectDefBuilder objectBuilder) {
+        if (!jsonSchema.containsKey("discriminator")) {
+            return;
+        }
         var discriminator = (Map<String, ?>) jsonSchema.get("discriminator");
-        AnnotationDef jsonTypeInfo = AnnotationDef.builder(JsonTypeInfo.class)
-            .addMember("use", JsonTypeInfo.Id.NAME)
-            .addMember("property", discriminator.get("propertyName"))
-            .build();
-        objectBuilder.addAnnotation(jsonTypeInfo);
+        discriminatorProperty = (String) discriminator.get("propertyName");
 
         var mapping = (Map<String, String>) discriminator.get("mapping");
         List<AnnotationDef> subTypeList = mapping.entrySet()
