@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
@@ -36,28 +35,19 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.addDefinition;
-import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.clearAllDefinitions;
-import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.getDefinitionType;
-import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.hasDefinition;
-import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getCamelCaseName;
-import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getConstantName;
-import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getEnumType;
-import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTypeDef;
-import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTypeDefFromJson;
-import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getFileName;
+import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.*;
+import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
 
 /**
  * A generator to create Java Beans from Json Schema.
@@ -152,17 +142,6 @@ public final class CodeGenerator {
         return generateFolder(jsonSchema, outputPath, packageName, language);
     }
 
-    private Map<String, ?> getJsonSchema(InputStream inputStream, File schemaFile) throws IOException {
-        JsonMapper jsonMapper = new JsonMapper();
-        if (inputStream != null) {
-            String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            return (Map<String, ?>) jsonMapper.readValue(jsonString, HashMap.class);
-        } else if (schemaFile != null) {
-            return (Map<String, ?>) jsonMapper.readValue(schemaFile, HashMap.class);
-        }
-        return null;
-    }
-
     private int generateFolder(Map<String, ?> jsonSchema, Path outputPath, String packageName, VisitorContext.Language language) throws IOException {
         AtomicInteger generatedClassCount = new AtomicInteger();
         HashSet<String> oneOfSet = new HashSet<>();
@@ -248,22 +227,6 @@ public final class CodeGenerator {
         return generatedClassCount.get();
     }
 
-    private static File getOutputFile(Path outputPath, String packageName, String fileName) throws IOException {
-        // Create full path
-        String packagePath = packageName.replace('.', File.separatorChar);
-        Path fullPath = outputPath.resolve(packagePath).resolve(fileName);
-
-        // Create directories if they do not exist
-        File outputFile = fullPath.toFile();
-        if (!outputFile.getParentFile().exists()) {
-            outputFile.getParentFile().mkdirs();
-        }
-        if (!outputFile.exists() && !outputFile.createNewFile()) {
-            throw new IOException("Could not create file " + outputFile.getAbsolutePath());
-        }
-        return outputFile;
-    }
-
     private File generateFromSchemaMap(Map<String, ?> jsonSchema, File outputFile, ObjectType objectType) throws IOException {
         try {
             String className = outputFile.getName().substring(0, outputFile.getName().lastIndexOf('.'));
@@ -283,7 +246,7 @@ public final class CodeGenerator {
         }
     }
 
-    public static EnumDef buildEnum(Map<String, ?> jsonSchema, String builderClassName) {
+    public EnumDef buildEnum(Map<String, ?> jsonSchema, String builderClassName) {
         EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(builderClassName))
             .addModifiers(Modifier.PUBLIC);
         boolean isComplexEnum = false;
@@ -348,15 +311,26 @@ public final class CodeGenerator {
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
         }
 
+        addFields(jsonSchema, objectBuilder);
+
         if (!discriminatorProperty.isBlank()) {
             AnnotationDef jsonTypeInfo = AnnotationDef.builder(JsonTypeInfo.class)
                 .addMember("use", JsonTypeInfo.Id.NAME)
                 .addMember("property", discriminatorProperty)
                 .build();
             objectBuilder.addAnnotation(jsonTypeInfo);
-        }
 
-        addFields(jsonSchema, objectBuilder);
+            ClassDef.ClassDefBuilder classBuilder = (ClassDef.ClassDefBuilder) objectBuilder;
+            Map<String, Map<String, ?>> properties = (Map<String, Map<String, ?>>) jsonSchema.get("properties");
+            if (properties.containsKey(discriminatorProperty)) {
+                classBuilder.addField(FieldDef.builder(discriminatorProperty)
+                    .ofType(TypeDef.STRING)
+                    .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                    .initializer(ExpressionDef.constant(properties.get(discriminatorProperty).get("const")))
+                    .build());
+                return classBuilder.build();
+            }
+        }
         return objectBuilder.build();
     }
 
@@ -378,7 +352,7 @@ public final class CodeGenerator {
         return objectBuilder.build();
     }
 
-    private static void addFields(Map<String, ?> jsonSchema, ObjectDefBuilder builder) {
+    private void addFields(Map<String, ?> jsonSchema, ObjectDefBuilder builder) {
         if (jsonSchema.containsKey("properties")) {
             Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
             List<String> requiredProperties;
@@ -410,8 +384,8 @@ public final class CodeGenerator {
         }
     }
 
-    private static void addField(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description, boolean isRequired) {
-        if (propertyName.equals("resourceType")) {
+    private void addField(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description, boolean isRequired) {
+        if (propertyName.equals(discriminatorProperty)) {
             return;
         }
         String name = getCamelCaseName(propertyName);
@@ -455,5 +429,31 @@ public final class CodeGenerator {
             .toList();
         AnnotationDef jsonSubTypes = AnnotationDef.builder(JsonSubTypes.class).addMember("value", subTypeList).build();
         objectBuilder.addAnnotation(jsonSubTypes);
+    }
+
+    private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
+        EnumDef enumDef = buildEnum(description, propertyName);
+        objectBuilder.addInnerType(enumDef);
+        return enumDef.asTypeDef();
+    }
+
+    private TypeDef getTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
+        var items = (Map<String, Object>) description.get("items");
+        Class listClass = List.class;
+        if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
+            listClass = Set.class;
+        }
+
+        TypeDef propertyType = getTypeDefFromJson(items);
+        if (propertyType.equals(TypeDef.of(List.class))) {
+            propertyType = getTypeDef(objectBuilder, propertyName, items);
+        } else if (items.containsKey("enum")) {
+            propertyType = getEnumType(objectBuilder, propertyName, items);
+        } else if (propertyType instanceof TypeDef.Primitive primitive) {
+            propertyType = primitive.wrapperType();
+        }
+
+        var annotations = AnnotationsAggregator.getAnnotations(items, propertyType);
+        return TypeDef.parameterized(listClass, propertyType.annotated(annotations));
     }
 }

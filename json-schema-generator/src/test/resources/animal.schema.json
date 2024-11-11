@@ -53,6 +53,9 @@
     "Cat": {
       "description": "The definition of a cat.",
       "properties": {
+        "resourceType": {
+          "const": "Cat"
+        },
         "hasMate": {
           "description": "True when the cat has found their mate.",
           "$ref": "#/definitions/boolean"
@@ -64,6 +67,10 @@
     "Dog": {
       "description": "The definition of a dog.",
       "properties": {
+        "resourceType": {
+          "description": "This is a Account resource",
+          "const": "Dog"
+        },
         "hasMate": {
           "description": "True when the dog has found their mate.",
           "$ref": "#/definitions/boolean"
@@ -86,6 +93,10 @@
     "Fish": {
       "description": "The definition of a fish.",
       "properties": {
+        "resourceType": {
+          "description": "This is a Account resource",
+          "const": "Fish"
+        },
         "friends" : {
           "description": "A list of the fish's aquarium friends",
           "type": "array",

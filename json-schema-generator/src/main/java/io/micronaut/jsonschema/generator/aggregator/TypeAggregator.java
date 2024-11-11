@@ -16,27 +16,30 @@
 package io.micronaut.jsonschema.generator.aggregator;
 
 import com.fasterxml.jackson.core.JsonPointer;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.sourcegen.model.ClassTypeDef;
-import io.micronaut.sourcegen.model.EnumDef;
-import io.micronaut.sourcegen.model.ObjectDefBuilder;
 import io.micronaut.sourcegen.model.TypeDef;
 
 import javax.lang.model.SourceVersion;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.CodeGenerator.buildEnum;
 import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.getDefinitionType;
 import static java.lang.String.join;
 
@@ -53,32 +56,6 @@ public class TypeAggregator {
         "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN, "array", TypeDef.of(List.class),
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
-
-    public static TypeDef getTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
-        var items = (Map<String, Object>) description.get("items");
-        Class listClass = List.class;
-        if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
-            listClass = Set.class;
-        }
-
-        TypeDef propertyType = getTypeDefFromJson(items);
-        if (propertyType.equals(TypeDef.of(List.class))) {
-            propertyType = getTypeDef(objectBuilder, propertyName, items);
-        } else if (items.containsKey("enum")) {
-            propertyType = getEnumType(objectBuilder, propertyName, items);
-        } else if (propertyType instanceof TypeDef.Primitive primitive) {
-            propertyType = primitive.wrapperType();
-        }
-
-        var annotations = AnnotationsAggregator.getAnnotations(items, propertyType);
-        return TypeDef.parameterized(listClass, propertyType.annotated(annotations));
-    }
-
-    public static TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
-        EnumDef enumDef = buildEnum(description, propertyName);
-        objectBuilder.addInnerType(enumDef);
-        return enumDef.asTypeDef();
-    }
 
     public static TypeDef getTypeDefFromJson(Map<String, Object> description) {
         var type = description.getOrDefault("type", "object");
@@ -110,6 +87,34 @@ public class TypeAggregator {
             typeDef = TYPE_MAP.get(typeName);
         }
         return typeDef;
+    }
+
+    public static Map<String, ?> getJsonSchema(InputStream inputStream, File schemaFile) throws IOException {
+        JsonMapper jsonMapper = new JsonMapper();
+        if (inputStream != null) {
+            String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            return (Map<String, ?>) jsonMapper.readValue(jsonString, HashMap.class);
+        } else if (schemaFile != null) {
+            return (Map<String, ?>) jsonMapper.readValue(schemaFile, HashMap.class);
+        }
+        return null;
+    }
+
+
+    public static File getOutputFile(Path outputPath, String packageName, String fileName) throws IOException {
+        // Create full path
+        String packagePath = packageName.replace('.', File.separatorChar);
+        Path fullPath = outputPath.resolve(packagePath).resolve(fileName);
+
+        // Create directories if they do not exist
+        File outputFile = fullPath.toFile();
+        if (!outputFile.getParentFile().exists()) {
+            outputFile.getParentFile().mkdirs();
+        }
+        if (!outputFile.exists() && !outputFile.createNewFile()) {
+            throw new IOException("Could not create file " + outputFile.getAbsolutePath());
+        }
+        return outputFile;
     }
 
     public static String getConstantName(String input) {
