@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.aggregator;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
 import jakarta.inject.Singleton;
 
@@ -38,8 +39,8 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 @Internal
 @Singleton
 public class DefinitionsAggregator {
-    private static HashMap<String, TypeDef> definitions = new HashMap<>();
-    private static HashMap<String, Map<String, ?>> oneOfSet = new HashMap<>();
+    private static final HashMap<String, TypeDef> definitions = new HashMap<>();
+    private static final HashMap<String, Map<String, ?>> oneOfSet = new HashMap<>();
 
     public static TypeDef getDefinitionType(String key, Map<String, Object> definition) {
         addDefinition(key, definition);
@@ -71,9 +72,11 @@ public class DefinitionsAggregator {
     }
 
     public static void addDefinition(String key, Map<String, Object> definition) {
-        if (!hasDefinition(key)) {
-            var typeDef = getTypeDefFromJson(definition);
-            definitions.put(key, typeDef);
+        var typeDef = getTypeDefFromJson(definition);
+        if (!typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING)) {
+            addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)));
+        } else {
+            addDefinition("#/definitions/" + key, typeDef);
         }
     }
 
@@ -89,7 +92,7 @@ public class DefinitionsAggregator {
         oneOfSet.put(key, null);
     }
 
-    public static void addOneOf(Map<String, ?> oneOf) {
+    public static void addOneOf(Map<String, Object> oneOf) {
         String fileName;
         if (oneOf.containsKey("title")) {
             fileName = capitalize(getCamelCaseName(oneOf.get("title").toString()));
@@ -97,6 +100,7 @@ public class DefinitionsAggregator {
             fileName = "Option" + oneOfSet.size();
         }
         oneOfSet.put("#/oneOf/" + fileName, oneOf);
+        addDefinition("#/oneOf/" + fileName, ClassTypeDef.of(capitalize(fileName)));
     }
 
     public static void clearAllDefinitions() {

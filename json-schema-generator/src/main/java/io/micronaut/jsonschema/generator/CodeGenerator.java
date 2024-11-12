@@ -130,7 +130,7 @@ public final class CodeGenerator {
 
         // save all definition and oneOf types
         if (jsonSchema.containsKey("oneOf")) {
-            var oneOfRefs = (List<Map<String, ?>>) jsonSchema.get("oneOf");
+            var oneOfRefs = (List<Map<String, Object>>) jsonSchema.get("oneOf");
             oneOfRefs.forEach(oneOf -> {
                 if (oneOf.containsKey("$ref")) {
                     addOneOf((String) oneOf.get("$ref"));
@@ -146,13 +146,8 @@ public final class CodeGenerator {
                 if (value.containsKey("oneOf")) {
                     topLevelName[0] = key;
                     addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)));
-                    return;
-                }
-                TypeDef typeOfDefinition = getTypeDefFromJson(value);
-                if (!typeOfDefinition.isPrimitive() && !typeOfDefinition.equals(TypeDef.STRING)) {
-                    addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)));
                 } else {
-                    addDefinition("#/definitions/" + key, value);
+                    addDefinition(key, value);
                 }
             });
         }
