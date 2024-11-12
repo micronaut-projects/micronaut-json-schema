@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
@@ -184,16 +185,15 @@ public class TypeAggregator {
         return camelCaseString.toString();
     }
 
-    public static String getFileName(Map<String, ?> schema, VisitorContext.Language language) {
+    public static String getFileName(Map<String, ?> schema, Optional<String> topLevelName, VisitorContext.Language language) {
         String fileName = null;
         if (schema.containsKey("title")) {
             fileName = capitalize(getCamelCaseName(schema.get("title").toString()));
         } else if (schema.keySet().size() == 1) {
             fileName = schema.keySet().toArray()[0].toString();
         } else {
-            fileName = "ResourceType";
+            fileName = topLevelName.orElse("SchemaType");
         }
-        // TODO: add discriminator propertyName
 
         switch (language) {
             case KOTLIN: fileName += ".kt"; break;

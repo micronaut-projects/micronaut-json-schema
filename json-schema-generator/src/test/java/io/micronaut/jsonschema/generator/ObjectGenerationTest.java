@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -60,6 +61,18 @@ class ObjectGenerationTest {
         String packageName = "com.example.animals"; // Example package name
         int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName, VisitorContext.Language.JAVA);
         Assertions.assertEquals(4, generatedFiles);
+
+        // Assert that the expected files exist
+        String[] expectedFileNames = {
+            "com/example/animals/Animal.java",
+            "com/example/animals/Cat.java",
+            "com/example/animals/Dog.java",
+            "com/example/animals/Fish.java"
+        };
+        for (String expectedFileName : expectedFileNames) {
+            Path expectedFilePath = outputPath.resolve(expectedFileName);
+            Assertions.assertTrue(Files.exists(expectedFilePath), "Expected file not found: " + expectedFilePath);
+        }
     }
 
     @Test
@@ -74,5 +87,29 @@ class ObjectGenerationTest {
         String packageName = "com.example.fhir"; // Example package name
         int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName, VisitorContext.Language.JAVA);
         Assertions.assertEquals(864, generatedFiles);
+
+        // Assert that the expected files exist
+        String[] expectedFileNames = {
+            "com/example/fhir/ResourceList.java",
+            "com/example/fhir/Account.java",
+            "com/example/fhir/BackboneType.java",
+            "com/example/fhir/Xhtml.java"
+        };
+        for (String expectedFileName : expectedFileNames) {
+            Path expectedFilePath = outputPath.resolve(expectedFileName);
+            Assertions.assertTrue(Files.exists(expectedFilePath), "Expected file not found: " + expectedFilePath);
+        }
+
+        // Assert that primitive definitions are not generated
+        String[] unexpectedFileNames = {
+            "com/example/fhir/DateTime.java",
+            "com/example/fhir/Integer.java",
+            "com/example/fhir/Boolean.java",
+            "com/example/fhir/Canonical.java"
+        };
+        for (String unexpectedFileName : unexpectedFileNames) {
+            Path expectedFilePath = outputPath.resolve(unexpectedFileName);
+            Assertions.assertFalse(Files.exists(expectedFilePath), "Unexpected file found: " + expectedFilePath);
+        }
     }
 }

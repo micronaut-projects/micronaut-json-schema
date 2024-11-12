@@ -42,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -145,6 +146,7 @@ public final class CodeGenerator {
     private int generateFolder(Map<String, ?> jsonSchema, Path outputPath, String packageName, VisitorContext.Language language) throws IOException {
         AtomicInteger generatedClassCount = new AtomicInteger();
         HashSet<String> oneOfSet = new HashSet<>();
+        final String[] topLevelName = {""};
         if (jsonSchema.containsKey("oneOf")) {
             // TODO: add no-reference types
             var oneOfRefs = (List<Map<String, String>>) jsonSchema.get("oneOf");
@@ -155,7 +157,9 @@ public final class CodeGenerator {
             // TODO: add no-reference types
             var definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
             definitions.forEach((key, value) -> {
-                if (key.equals("ResourceList")) {
+                // WARNING: assumes the same interface as top level schema
+                if (value.containsKey("oneOf")) {
+                    topLevelName[0] = key;
                     return;
                 }
                 TypeDef typeOfDefinition = getTypeDefFromJson(value);
@@ -169,28 +173,11 @@ public final class CodeGenerator {
 
         // generate top level schema
         if (jsonSchema.containsKey("enum")) {
-            generatedClassCount.getAndIncrement();
-            String fileName = getFileName(jsonSchema, language);
-            File outputFile = getOutputFile(outputPath, packageName, fileName);
-            generateFromSchemaMap(jsonSchema, outputFile, ObjectType.ENUM);
-        } else if (jsonSchema.containsKey("type") || jsonSchema.containsKey("properties")) {
-            generatedClassCount.getAndIncrement();
-            String fileName = getFileName(jsonSchema, language);
-            File outputFile = getOutputFile(outputPath, packageName, fileName);
-            generateFromSchemaMap(jsonSchema, outputFile, ObjectType.CLASS);
-
-            // save superclass definition for inheritance
-            String className = fileName.substring(0, outputFile.getName().lastIndexOf('.'));
-            addDefinition("superClass", ClassTypeDef.of(className));
+            generateTopLevel(jsonSchema, topLevelName, outputPath, packageName, ObjectType.ENUM, language, generatedClassCount);
+        } else if (jsonSchema.containsKey("type")) {
+            generateTopLevel(jsonSchema, topLevelName, outputPath, packageName, ObjectType.CLASS, language, generatedClassCount);
         } else if (jsonSchema.containsKey("oneOf")) {
-            generatedClassCount.getAndIncrement();
-            String fileName = getFileName(jsonSchema, language);
-            File outputFile = getOutputFile(outputPath, packageName, fileName);
-            generateFromSchemaMap(jsonSchema, outputFile, ObjectType.INTERFACE);
-
-            // save superinterface definition for inheritance
-            String className = fileName.substring(0, outputFile.getName().lastIndexOf('.'));
-            addDefinition("superInterface", ClassTypeDef.of(className));
+            generateTopLevel(jsonSchema, topLevelName, outputPath, packageName, ObjectType.INTERFACE, language, generatedClassCount);
         }
 
         // generate classes in definitions
@@ -225,6 +212,20 @@ public final class CodeGenerator {
         }
         clearAllDefinitions();
         return generatedClassCount.get();
+    }
+
+    private void generateTopLevel(Map<String, ?> jsonSchema, String[] topLevelName, Path outputPath, String packageName, ObjectType type, VisitorContext.Language language, AtomicInteger generatedClassCount) throws IOException {
+        generatedClassCount.getAndIncrement();
+        String fileName = getFileName(jsonSchema, Optional.ofNullable(topLevelName).map(t -> t[0]), language);
+        File outputFile = getOutputFile(outputPath, packageName, fileName);
+        generateFromSchemaMap(jsonSchema, outputFile, type);
+
+        String className = fileName.substring(0, outputFile.getName().lastIndexOf('.'));
+        if (type == ObjectType.CLASS) {
+            addDefinition("superClass", ClassTypeDef.of(className));
+        } else if (type == ObjectType.INTERFACE) {
+            addDefinition("superInterface", ClassTypeDef.of(className));
+        }
     }
 
     private File generateFromSchemaMap(Map<String, ?> jsonSchema, File outputFile, ObjectType objectType) throws IOException {

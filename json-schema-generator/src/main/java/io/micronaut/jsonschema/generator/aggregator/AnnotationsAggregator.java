@@ -119,13 +119,12 @@ public class AnnotationsAggregator {
                 // string annotations
                 case "email": annBuilder = AnnotationDef
                     .builder(ClassTypeDef.of(EMAIL_ANN));
-                    // boolean annotations
+                // boolean annotations
                 case "const":
                     if (propertyType == TypeDef.Primitive.BOOLEAN) {
                         var assertAnn = (value.toString().equals(Boolean.TRUE.toString())) ? ASSERT_TRUE_ANN : ASSERT_FALSE_ANN;
                         annBuilder = AnnotationDef.builder(ClassTypeDef.of(assertAnn));
                     }
-                    // TODO: handle all const values
                     break;
                 default:
                     break;
