@@ -60,14 +60,15 @@ class ObjectGenerationTest {
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.animals"; // Example package name
         int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName);
-        Assertions.assertEquals(4, generatedFiles);
+        Assertions.assertEquals(5, generatedFiles);
 
         // Assert that the expected files exist
         String[] expectedFileNames = {
             "com/example/animals/Animal.java",
             "com/example/animals/Cat.java",
             "com/example/animals/Dog.java",
-            "com/example/animals/Fish.java"
+            "com/example/animals/Fish.java",
+            "com/example/animals/Human.java"
         };
         for (String expectedFileName : expectedFileNames) {
             Path expectedFilePath = outputPath.resolve(expectedFileName);

@@ -24,7 +24,8 @@
     "mapping": {
       "Cat": "#/definitions/Cat",
       "Dog": "#/definitions/Dog",
-      "Fish": "#/definitions/Fish"
+      "Fish": "#/definitions/Fish",
+      "Human": "#/oneOf/Human"
     }
   },
   "oneOf": [{
@@ -33,6 +34,23 @@
     "$ref": "#/definitions/Dog"
   },{
     "$ref": "#/definitions/Fish"
+  }, {
+    "title": "Human",
+    "type": "object",
+    "properties": {
+      "resourceType": {
+        "const": "Human"
+      },
+      "firstName": {
+        "type": "string"
+      },
+      "lastName": {
+        "type": "string"
+      },
+      "sport": {
+        "type": "string"
+      }
+    }
   }],
   "definitions": {
     "id": {

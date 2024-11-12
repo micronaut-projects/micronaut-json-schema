@@ -127,18 +127,25 @@ public final class CodeGenerator {
     private int generateFolder(Map<String, ?> jsonSchema, Path outputPath, String packageName) throws IOException {
         AtomicInteger generatedClassCount = new AtomicInteger();
         final String[] topLevelName = {""};
+
+        // save all definition and oneOf types
         if (jsonSchema.containsKey("oneOf")) {
-            // TODO: add no-reference types
-            var oneOfRefs = (List<Map<String, String>>) jsonSchema.get("oneOf");
-            oneOfRefs.forEach(oneOf -> addOneOf(oneOf.get("$ref")));
+            var oneOfRefs = (List<Map<String, ?>>) jsonSchema.get("oneOf");
+            oneOfRefs.forEach(oneOf -> {
+                if (oneOf.containsKey("$ref")) {
+                    addOneOf((String) oneOf.get("$ref"));
+                } else {
+                    addOneOf(oneOf);
+                }
+            });
         }
-        // save all definition types
         if (jsonSchema.containsKey("definitions")) {
             var definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
             definitions.forEach((key, value) -> {
                 // TODO WARNING: assumes the same interface as top level schema
                 if (value.containsKey("oneOf")) {
                     topLevelName[0] = key;
+                    addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)));
                     return;
                 }
                 TypeDef typeOfDefinition = getTypeDefFromJson(value);
@@ -154,7 +161,12 @@ public final class CodeGenerator {
         generateFromSchemaMap(jsonSchema, outputPath, packageName, topLevelName);
         generatedClassCount.getAndIncrement();
 
-        // generate classes in definitions
+        // generate classes in definitions and oneOfs
+        for (Map.Entry<String, Map<String, ?>> oneOf : getOneOfsToGenerate()) {
+            topLevelName[0] = oneOf.getKey();
+            generateFromSchemaMap(oneOf.getValue(), outputPath, packageName, topLevelName);
+            generatedClassCount.getAndIncrement();
+        }
         if (jsonSchema.containsKey("definitions")) {
             var definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
             definitions.entrySet()
@@ -205,19 +217,13 @@ public final class CodeGenerator {
                 } else {
                     type = ObjectType.INTERFACE;
                 }
-            } else if (isInheriting("#/definitions/" + className)) {
+            } else if (isInheriting(className)) {
                 // inheriting
                 type = ObjectType.CLASS;
             } else {
                 type = ObjectType.RECORD;
             }
 
-
-            if (type == ObjectType.CLASS) {
-                addDefinition("superClass", ClassTypeDef.of(className));
-            } else if (type == ObjectType.INTERFACE) {
-                addDefinition("superInterface", ClassTypeDef.of(className));
-            }
             try (FileWriter writer = new FileWriter(outputFile)) {
                 ObjectDef objectDef = switch (type) {
                     case ENUM -> buildEnum(jsonSchema, className);
@@ -226,6 +232,14 @@ public final class CodeGenerator {
                     default -> buildRecord(jsonSchema, className);
                 };
                 sourceGenerator.write(objectDef, writer);
+            }
+
+            if (jsonSchema.containsKey("oneOf")) {
+                if (type == ObjectType.CLASS) {
+                    addDefinition("superClass", ClassTypeDef.of(className));
+                } else if (type == ObjectType.INTERFACE) {
+                    addDefinition("superInterface", ClassTypeDef.of(className));
+                }
             }
             return outputFile;
         } catch (ProcessingException | IOException e) {
@@ -307,15 +321,13 @@ public final class CodeGenerator {
                 .build();
             objectBuilder.addAnnotation(jsonTypeInfo);
 
-            ClassDef.ClassDefBuilder classBuilder = (ClassDef.ClassDefBuilder) objectBuilder;
             Map<String, Map<String, ?>> properties = (Map<String, Map<String, ?>>) jsonSchema.get("properties");
             if (properties.containsKey(discriminatorProperty)) {
-                classBuilder.addField(FieldDef.builder(discriminatorProperty)
+                objectBuilder.addField(FieldDef.builder(discriminatorProperty)
                     .ofType(TypeDef.STRING)
                     .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                     .initializer(ExpressionDef.constant(properties.get(discriminatorProperty).get("const")))
                     .build());
-                return classBuilder.build();
             }
         }
         return objectBuilder.build();
@@ -383,7 +395,7 @@ public final class CodeGenerator {
         }
         PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name);
         if  (propertyType.equals(TypeDef.of(List.class))) {
-            propertyType = getTypeDef(objectBuilder, propertyName, description);
+            propertyType = getListTypeDef(objectBuilder, propertyName, description);
             propertyDef.ofType(propertyType);
             AnnotationsAggregator.addAnnotations(propertyDef, description, TypeDef.of(List.class), isRequired);
         } else {
@@ -424,7 +436,7 @@ public final class CodeGenerator {
         return enumDef.asTypeDef();
     }
 
-    private TypeDef getTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
+    private TypeDef getListTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
         var items = (Map<String, Object>) description.get("items");
         Class listClass = List.class;
         if (description.containsKey("uniqueItems") && description.get("uniqueItems").toString().equals("true")) {
@@ -433,7 +445,7 @@ public final class CodeGenerator {
 
         TypeDef propertyType = getTypeDefFromJson(items);
         if (propertyType.equals(TypeDef.of(List.class))) {
-            propertyType = getTypeDef(objectBuilder, propertyName, items);
+            propertyType = getListTypeDef(objectBuilder, propertyName, items);
         } else if (items.containsKey("enum")) {
             propertyType = getEnumType(objectBuilder, propertyName, items);
         } else if (propertyType instanceof TypeDef.Primitive primitive) {
