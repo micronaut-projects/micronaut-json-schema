@@ -28,7 +28,6 @@ import io.micronaut.serde.annotation.Serdeable;
 import io.micronaut.sourcegen.generator.SourceGenerator;
 import io.micronaut.sourcegen.generator.SourceGenerators;
 import io.micronaut.sourcegen.model.*;
-import jakarta.inject.Singleton;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -37,7 +36,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,18 +55,19 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
  * @since 1.2
  */
 @Internal
-@Singleton
 public final class CodeGenerator {
 
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
-    private SourceGenerator sourceGenerator;
+    private final SourceGenerator sourceGenerator;
+    private final VisitorContext.Language language;
     private String discriminatorProperty = "";
 
-    private void initializeGenerator(VisitorContext.Language language) {
+    public CodeGenerator(VisitorContext.Language language) {
         sourceGenerator = SourceGenerators.findByLanguage(language).orElse(null);
         if (sourceGenerator == null) {
             throw new RuntimeException("No source generator found for language " + language);
         }
+        this.language = language;
     }
 
     /**
@@ -78,18 +77,11 @@ public final class CodeGenerator {
      * @param outputPath The output path for the output file
      * @param packageName The package name for the output file
      * @param fileName The fileName for the output file
-     * @param language The desired language for record to be generated in
      * @return The generated file
      */
-    public File generate(InputStream inputStream, Path outputPath, String packageName, String fileName, VisitorContext.Language language) throws IOException {
+    public File generate(InputStream inputStream, Path outputPath, String packageName, String fileName) throws IOException {
         var jsonSchema = getJsonSchema(inputStream, null);
-        initializeGenerator(language);
-
-        File outputFile = getOutputFile(outputPath, packageName, fileName);
-        if (jsonSchema.containsKey("enum")) {
-            return generateFromSchemaMap(jsonSchema, outputFile, ObjectType.ENUM);
-        }
-        return generateFromSchemaMap(jsonSchema, outputFile, ObjectType.RECORD);
+        return generateFromSchemaMap(jsonSchema, outputPath, packageName, new String[]{fileName});
     }
 
     /**
@@ -99,18 +91,11 @@ public final class CodeGenerator {
      * @param outputPath The output path for the output file
      * @param packageName The package name for the output file
      * @param fileName The fileName for the output file
-     * @param language The desired language for record to be generated in
      * @return The number of generated files
      */
-    public File generate(File jsonFileLocation, Path outputPath, String packageName, String fileName, VisitorContext.Language language) throws IOException {
+    public File generate(File jsonFileLocation, Path outputPath, String packageName, String fileName) throws IOException {
         var jsonSchema = getJsonSchema(null, jsonFileLocation);
-        initializeGenerator(language);
-
-        File outputFile = getOutputFile(outputPath, packageName, fileName);
-        if (jsonSchema.containsKey("enum")) {
-            return generateFromSchemaMap(jsonSchema, outputFile, ObjectType.ENUM);
-        }
-        return generateFromSchemaMap(jsonSchema, outputFile, ObjectType.RECORD);
+        return generateFromSchemaMap(jsonSchema, outputPath, packageName, new String[]{fileName});
     }
 
     /**
@@ -119,13 +104,11 @@ public final class CodeGenerator {
      * @param inputStream The input stream of a json schema
      * @param outputPath The output path for the output file
      * @param packageName The package name for the output file
-     * @param language The desired language for record to be generated in
      * @return The number of generated files
      */
-    public int generate(InputStream inputStream, Path outputPath, String packageName, VisitorContext.Language language) throws IOException {
+    public int generate(InputStream inputStream, Path outputPath, String packageName) throws IOException {
         var jsonSchema = getJsonSchema(inputStream, null);
-        initializeGenerator(language);
-        return generateFolder(jsonSchema, outputPath, packageName, language);
+        return generateFolder(jsonSchema, outputPath, packageName);
     }
 
     /**
@@ -134,30 +117,26 @@ public final class CodeGenerator {
      * @param jsonFileLocation The input file location of a json schema
      * @param outputPath The output path for the output file
      * @param packageName The package name for the output file
-     * @param language The desired language for record to be generated in
      * @return The number of generated files
      */
-    public int generate(File jsonFileLocation, Path outputPath, String packageName, VisitorContext.Language language) throws IOException {
+    public int generate(File jsonFileLocation, Path outputPath, String packageName) throws IOException {
         var jsonSchema = getJsonSchema(null, jsonFileLocation);
-        initializeGenerator(language);
-        return generateFolder(jsonSchema, outputPath, packageName, language);
+        return generateFolder(jsonSchema, outputPath, packageName);
     }
 
-    private int generateFolder(Map<String, ?> jsonSchema, Path outputPath, String packageName, VisitorContext.Language language) throws IOException {
+    private int generateFolder(Map<String, ?> jsonSchema, Path outputPath, String packageName) throws IOException {
         AtomicInteger generatedClassCount = new AtomicInteger();
-        HashSet<String> oneOfSet = new HashSet<>();
         final String[] topLevelName = {""};
         if (jsonSchema.containsKey("oneOf")) {
             // TODO: add no-reference types
             var oneOfRefs = (List<Map<String, String>>) jsonSchema.get("oneOf");
-            oneOfRefs.forEach(oneOf -> oneOfSet.add(oneOf.get("$ref")));
+            oneOfRefs.forEach(oneOf -> addOneOf(oneOf.get("$ref")));
         }
         // save all definition types
         if (jsonSchema.containsKey("definitions")) {
-            // TODO: add no-reference types
             var definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
             definitions.forEach((key, value) -> {
-                // WARNING: assumes the same interface as top level schema
+                // TODO WARNING: assumes the same interface as top level schema
                 if (value.containsKey("oneOf")) {
                     topLevelName[0] = key;
                     return;
@@ -172,13 +151,8 @@ public final class CodeGenerator {
         }
 
         // generate top level schema
-        if (jsonSchema.containsKey("enum")) {
-            generateTopLevel(jsonSchema, topLevelName, outputPath, packageName, ObjectType.ENUM, language, generatedClassCount);
-        } else if (jsonSchema.containsKey("type")) {
-            generateTopLevel(jsonSchema, topLevelName, outputPath, packageName, ObjectType.CLASS, language, generatedClassCount);
-        } else if (jsonSchema.containsKey("oneOf")) {
-            generateTopLevel(jsonSchema, topLevelName, outputPath, packageName, ObjectType.INTERFACE, language, generatedClassCount);
-        }
+        generateFromSchemaMap(jsonSchema, outputPath, packageName, topLevelName);
+        generatedClassCount.getAndIncrement();
 
         // generate classes in definitions
         if (jsonSchema.containsKey("definitions")) {
@@ -186,7 +160,8 @@ public final class CodeGenerator {
             definitions.entrySet()
                 .stream()
                 .filter(definition -> {
-                    if (definition.getKey().equals("ResourceList")) {
+                    // assuming single inheritance at the top level
+                    if (definition.getValue().containsKey("oneOf")) {
                         return false;
                     }
                     TypeDef typeOfDefinition = getDefinitionType("#/definitions/" + definition.getKey());
@@ -201,10 +176,9 @@ public final class CodeGenerator {
                     return isClass;
                 }).forEach(definition -> {
                     try {
+                        topLevelName[0] = capitalize(definition.getKey());
+                        generateFromSchemaMap(definition.getValue(), outputPath, packageName, topLevelName);
                         generatedClassCount.getAndIncrement();
-                        File outputFile = getOutputFile(outputPath, packageName, capitalize(definition.getKey()) + ".java");
-                        ObjectType generationType = (oneOfSet.contains("#/definitions/" + definition.getKey())) ? ObjectType.CLASS : ObjectType.RECORD;
-                        generateFromSchemaMap(definition.getValue(), outputFile, generationType);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -214,26 +188,38 @@ public final class CodeGenerator {
         return generatedClassCount.get();
     }
 
-    private void generateTopLevel(Map<String, ?> jsonSchema, String[] topLevelName, Path outputPath, String packageName, ObjectType type, VisitorContext.Language language, AtomicInteger generatedClassCount) throws IOException {
-        generatedClassCount.getAndIncrement();
-        String fileName = getFileName(jsonSchema, Optional.ofNullable(topLevelName).map(t -> t[0]), language);
-        File outputFile = getOutputFile(outputPath, packageName, fileName);
-        generateFromSchemaMap(jsonSchema, outputFile, type);
-
-        String className = fileName.substring(0, outputFile.getName().lastIndexOf('.'));
-        if (type == ObjectType.CLASS) {
-            addDefinition("superClass", ClassTypeDef.of(className));
-        } else if (type == ObjectType.INTERFACE) {
-            addDefinition("superInterface", ClassTypeDef.of(className));
-        }
-    }
-
-    private File generateFromSchemaMap(Map<String, ?> jsonSchema, File outputFile, ObjectType objectType) throws IOException {
+    private File generateFromSchemaMap(Map<String, ?> jsonSchema, Path outputPath, String packageName, String[] fileName) throws IOException {
         try {
+            String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName).map(t -> t[0]), language);
+            File outputFile = getOutputFile(outputPath, packageName, decidedFileName);
             String className = outputFile.getName().substring(0, outputFile.getName().lastIndexOf('.'));
 
+            // decide type of generated object
+            ObjectType type;
+            if (jsonSchema.containsKey("enum")) {
+                type = ObjectType.ENUM;
+            } else if (jsonSchema.containsKey("oneOf")) {
+                // top level
+                if (jsonSchema.containsKey("properties") || jsonSchema.containsKey("type") || jsonSchema.containsKey("allOf")) {
+                    type = ObjectType.CLASS;
+                } else {
+                    type = ObjectType.INTERFACE;
+                }
+            } else if (isInheriting("#/definitions/" + className)) {
+                // inheriting
+                type = ObjectType.CLASS;
+            } else {
+                type = ObjectType.RECORD;
+            }
+
+
+            if (type == ObjectType.CLASS) {
+                addDefinition("superClass", ClassTypeDef.of(className));
+            } else if (type == ObjectType.INTERFACE) {
+                addDefinition("superInterface", ClassTypeDef.of(className));
+            }
             try (FileWriter writer = new FileWriter(outputFile)) {
-                ObjectDef objectDef = switch (objectType) {
+                ObjectDef objectDef = switch (type) {
                     case ENUM -> buildEnum(jsonSchema, className);
                     case CLASS -> buildClass(jsonSchema, className);
                     case INTERFACE -> buildInterface(jsonSchema, className);

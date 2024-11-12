@@ -14,13 +14,13 @@ import java.nio.file.Path
 class AbstractGeneratorSpec extends Specification {
 
     TypeDeclaration generateType(String className, String jsonSchema) {
-        CodeGenerator generator = new CodeGenerator()
+        CodeGenerator generator = new CodeGenerator(VisitorContext.Language.JAVA)
 
         Path outputPath = new File("output").toPath() // Define the base output path
         String packageName = "com.example.project"; // Example package name
         String fileName = className +".java";
 
-        File generated = generator.generate(new ByteArrayInputStream(jsonSchema.getBytes()), outputPath, packageName, fileName, VisitorContext.Language.JAVA)
+        File generated = generator.generate(new ByteArrayInputStream(jsonSchema.getBytes()), outputPath, packageName, fileName)
 
         try {
             ParserConfiguration configuration = new ParserConfiguration()

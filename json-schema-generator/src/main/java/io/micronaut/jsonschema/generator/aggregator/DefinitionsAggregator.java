@@ -21,6 +21,7 @@ import io.micronaut.sourcegen.model.TypeDef;
 import jakarta.inject.Singleton;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTypeDefFromJson;
@@ -36,25 +37,7 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 @Singleton
 public class DefinitionsAggregator {
     private static HashMap<String, TypeDef> definitions = new HashMap<>();
-
-    public static void addDefinition(String key, Map<String, Object> definition) {
-        if (!hasDefinition(key)) {
-            var typeDef = getTypeDefFromJson(definition);
-            definitions.put(key, typeDef);
-        }
-    }
-
-    public static void addDefinition(String key, TypeDef classDef) {
-        if (!hasDefinition(key)) {
-            definitions.put(key, classDef);
-        } else {
-            definitions.replace(key, classDef);
-        }
-    }
-
-    public static boolean hasDefinition(String key) {
-        return definitions.containsKey(key);
-    }
+    private static HashSet<String> oneOfSet = new HashSet<>();
 
     public static TypeDef getDefinitionType(String key, Map<String, Object> definition) {
         addDefinition(key, definition);
@@ -71,7 +54,35 @@ public class DefinitionsAggregator {
         return null;
     }
 
+    public static boolean hasDefinition(String key) {
+        return definitions.containsKey(key);
+    }
+
+    public static boolean isInheriting(String key) {
+        return oneOfSet.contains(key);
+    }
+
+    public static void addDefinition(String key, Map<String, Object> definition) {
+        if (!hasDefinition(key)) {
+            var typeDef = getTypeDefFromJson(definition);
+            definitions.put(key, typeDef);
+        }
+    }
+
+    public static void addDefinition(String key, TypeDef classDef) {
+        if (!hasDefinition(key)) {
+            definitions.put(key, classDef);
+        } else {
+            definitions.replace(key, classDef);
+        }
+    }
+
+    public static void addOneOf(String key) {
+        oneOfSet.add(key);
+    }
+
     public static void clearAllDefinitions() {
         definitions.clear();
+        oneOfSet.clear();
     }
 }

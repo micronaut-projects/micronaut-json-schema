@@ -23,7 +23,7 @@ class ObjectGenerationTest {
 
     @Test
     void objectGenerator() throws IOException {
-        var generator = new CodeGenerator();
+        var generator = new CodeGenerator(VisitorContext.Language.JAVA);
         String schemaFileName = "llama.schema.json";
         Optional<InputStream> inputStream = resourceLoader.getResourceAsStream(new File(schemaFileName).getPath());
         if (inputStream.isEmpty()) {
@@ -32,12 +32,12 @@ class ObjectGenerationTest {
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.project"; // Example package name
         String fileName = "Llama2.java";
-        Assertions.assertNotNull(generator.generate(inputStream.get(), outputPath, packageName, fileName, VisitorContext.Language.JAVA));
+        Assertions.assertNotNull(generator.generate(inputStream.get(), outputPath, packageName, fileName));
     }
 
     @Test
     void folderGenerator() throws IOException {
-        var generator = new CodeGenerator();
+        var generator = new CodeGenerator(VisitorContext.Language.JAVA);
         String schemaFileName = "llama.schema.json";
         Optional<InputStream> inputStream = resourceLoader.getResourceAsStream(new File(schemaFileName).getPath());
         if (inputStream.isEmpty()) {
@@ -45,13 +45,13 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.project"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName, VisitorContext.Language.JAVA);
+        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName);
         Assertions.assertEquals(1, generatedFiles);
     }
 
     @Test
     void folderGenerator2() throws IOException {
-        var generator = new CodeGenerator();
+        var generator = new CodeGenerator(VisitorContext.Language.JAVA);
         String schemaFileName = "animal.schema.json";
         Optional<InputStream> inputStream = resourceLoader.getResourceAsStream(new File(schemaFileName).getPath());
         if (inputStream.isEmpty()) {
@@ -59,7 +59,7 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.animals"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName, VisitorContext.Language.JAVA);
+        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName);
         Assertions.assertEquals(4, generatedFiles);
 
         // Assert that the expected files exist
@@ -77,7 +77,7 @@ class ObjectGenerationTest {
 
     @Test
     void folderGenerator3() throws IOException {
-        var generator = new CodeGenerator();
+        var generator = new CodeGenerator(VisitorContext.Language.JAVA);
         String schemaFileName = "fhir.schema.json";
         Optional<InputStream> inputStream = resourceLoader.getResourceAsStream(new File(schemaFileName).getPath());
         if (inputStream.isEmpty()) {
@@ -85,7 +85,7 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.fhir"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName, VisitorContext.Language.JAVA);
+        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName);
         Assertions.assertEquals(864, generatedFiles);
 
         // Assert that the expected files exist
