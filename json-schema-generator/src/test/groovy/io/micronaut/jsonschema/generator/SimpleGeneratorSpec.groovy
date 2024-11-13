@@ -92,6 +92,61 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         }""".stripIndent().trim()
     }
 
+    void testAdditionalProperties() {
+        when:
+        var content = generateTypeAndGetContent("Llama2", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/llama.schema.json",
+          "title":"Llama2",
+          "description":"A llama. <4>",
+          "type":["object"],
+          "properties":{
+            "age":{
+              "description":"The age",
+              "type":["integer"],
+              "minimum":0
+            },
+            "name":{
+              "description":"The name",
+              "type":"string",
+              "minLength":1
+            },
+            "hours":{
+              "description":"Happy hours",
+              "type":"array",
+              "items": {
+                "type": "number",
+                "minimum": 0.0
+              }
+            }
+          },
+          "required": ["age", "name"],
+          "additionalProperties": {"type": "string"}
+        }
+        ''')
+
+        then:
+        content == """
+        @Serdeable
+        public record Llama2(
+            @NotNull @Min(0) int age,
+            @NotNull @Size(min = 1) String name,
+            List<@DecimalMin(0.0) Float> hours,
+            Map<String, String> unknownFields
+        ) {
+          @JsonAnyGetter
+          public Map<String, String> otherFields() {
+            return unknownFields;
+          }
+
+          @JsonAnySetter
+          public void setOtherField(String name, String value) {
+            unknownFields.put(name, value);
+          }
+        }""".stripIndent().trim()
+    }
+
     void testRecordNamingGeneration() {
         when:
         var type = generateType("MyLlamaNumberOne", '''

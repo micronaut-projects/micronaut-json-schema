@@ -15,6 +15,8 @@
  */
 package io.micronaut.jsonschema.generator;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -369,21 +371,41 @@ public final class CodeGenerator {
                 addField(builder, entry.getKey(), (Map<String, Object>) entry.getValue(), requiredProperties.contains(entry.getKey())));
 
             if (jsonSchema.containsKey("additionalProperties") && !Objects.equals(jsonSchema.get("additionalProperties").toString(), "false")) {
+                TypeDef mapType;
                 if (Objects.equals(jsonSchema.get("additionalProperties").toString(), "true")) {
-                    builder.addProperty(
-                        PropertyDef.builder("additionalProperties")
-                            .ofType(TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT))
-                            .build()
-                    );
+                    mapType = TypeDef.OBJECT;
                 } else {
                     Map<String, Object> map = (Map<String, Object>) jsonSchema.get("additionalProperties");
-                    TypeDef type = getTypeDefFromJson(map);
-                    builder.addProperty(
-                        PropertyDef.builder("additionalProperties")
-                            .ofType(TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, type))
-                            .build()
-                    );
+                    mapType = getTypeDefFromJson(map);
                 }
+                TypeDef type = TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, mapType);
+                builder.addProperty(PropertyDef.builder("unknownFields")
+                        .ofType(type)
+                        .build());
+                builder.addMethod(MethodDef.builder("otherFields")
+                        .addModifiers(Modifier.PUBLIC)
+                        .returns(type)
+                        .addAnnotation(JsonAnyGetter.class)
+                        .build((aThis, parameters) -> {
+                            if (builder instanceof ClassDef.ClassDefBuilder) {
+                                return aThis.field("unknownFields", type).returning();
+                            }
+                            return new VariableDef.Local("unknownFields", type).returning();
+                        }));
+                builder.addMethod(MethodDef.builder("setOtherField")
+                        .addModifiers(Modifier.PUBLIC)
+                        .returns(TypeDef.VOID)
+                        .addAnnotation(JsonAnySetter.class)
+                        .addParameter("name", TypeDef.STRING)
+                        .addParameter("value", mapType)
+                        .build((aThis, parameters) -> {
+                            if (builder instanceof ClassDef.ClassDefBuilder) {
+                                return aThis.field("unknownFields", type)
+                                    .invoke("put", mapType, parameters);
+                            }
+                            return new VariableDef.Local("unknownFields", type)
+                                .invoke("put", mapType, parameters);
+                        }));
             }
         }
     }
