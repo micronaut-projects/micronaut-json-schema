@@ -101,7 +101,6 @@ public class TypeAggregator {
         return null;
     }
 
-
     public static File getOutputFile(Path outputPath, String packageName, String fileName) throws IOException {
         // Create full path
         String packagePath = packageName.replace('.', File.separatorChar);

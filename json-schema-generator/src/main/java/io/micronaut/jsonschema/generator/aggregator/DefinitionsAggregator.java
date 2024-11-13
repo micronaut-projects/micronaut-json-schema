@@ -39,35 +39,35 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 @Internal
 @Singleton
 public class DefinitionsAggregator {
-    private static final HashMap<String, TypeDef> definitions = new HashMap<>();
-    private static final HashMap<String, Map<String, ?>> oneOfSet = new HashMap<>();
+    private static final HashMap<String, TypeDef> DEFINITIONS = new HashMap<>();
+    private static final HashMap<String, Map<String, ?>> ONE_OF_SET = new HashMap<>();
 
     public static TypeDef getDefinitionType(String key, Map<String, Object> definition) {
         addDefinition(key, definition);
-        return definitions.get(key);
+        return DEFINITIONS.get(key);
     }
 
     public static TypeDef getDefinitionType(String key) {
         if (hasDefinition(key)) {
-            return definitions.get(key);
+            return DEFINITIONS.get(key);
         }
         return null;
     }
 
     public static List<AbstractMap.SimpleEntry<String, Map<String, ?>>> getOneOfsToGenerate() {
-        return oneOfSet.entrySet().stream().filter(entry -> entry.getValue() != null)
+        return ONE_OF_SET.entrySet().stream().filter(entry -> entry.getValue() != null)
             .map(e -> new AbstractMap.SimpleEntry<String, Map<String, ?>>(e.getKey()
                 .substring(e.getKey().lastIndexOf('/') + 1), e.getValue()))
             .toList();
     }
 
     public static boolean hasDefinition(String key) {
-        return definitions.containsKey(key);
+        return DEFINITIONS.containsKey(key);
     }
 
     public static boolean isInheriting(String key) {
-        boolean containsDef = oneOfSet.containsKey("#/definitions/" + key);
-        boolean containsOneOf = oneOfSet.containsKey("#/oneOf/" + key);
+        boolean containsDef = ONE_OF_SET.containsKey("#/definitions/" + key);
+        boolean containsOneOf = ONE_OF_SET.containsKey("#/oneOf/" + key);
         return containsDef || containsOneOf;
     }
 
@@ -82,14 +82,14 @@ public class DefinitionsAggregator {
 
     public static void addDefinition(String key, TypeDef classDef) {
         if (!hasDefinition(key)) {
-            definitions.put(key, classDef);
+            DEFINITIONS.put(key, classDef);
         } else {
-            definitions.replace(key, classDef);
+            DEFINITIONS.replace(key, classDef);
         }
     }
 
     public static void addOneOf(String key) {
-        oneOfSet.put(key, null);
+        ONE_OF_SET.put(key, null);
     }
 
     public static void addOneOf(Map<String, Object> oneOf) {
@@ -97,14 +97,14 @@ public class DefinitionsAggregator {
         if (oneOf.containsKey("title")) {
             fileName = capitalize(getCamelCaseName(oneOf.get("title").toString()));
         } else {
-            fileName = "Option" + oneOfSet.size();
+            fileName = "Option" + ONE_OF_SET.size();
         }
-        oneOfSet.put("#/oneOf/" + fileName, oneOf);
+        ONE_OF_SET.put("#/oneOf/" + fileName, oneOf);
         addDefinition("#/oneOf/" + fileName, ClassTypeDef.of(capitalize(fileName)));
     }
 
     public static void clearAllDefinitions() {
-        definitions.clear();
-        oneOfSet.clear();
+        DEFINITIONS.clear();
+        ONE_OF_SET.clear();
     }
 }

@@ -206,7 +206,7 @@ public final class CodeGenerator {
             if (jsonSchema.containsKey("enum")) {
                 type = ObjectType.ENUM;
             } else if (jsonSchema.containsKey("oneOf")) {
-                // top level
+                // top level = superclass
                 if (jsonSchema.containsKey("properties") || jsonSchema.containsKey("type") || jsonSchema.containsKey("allOf")) {
                     type = ObjectType.CLASS;
                 } else {
@@ -229,6 +229,7 @@ public final class CodeGenerator {
                 sourceGenerator.write(objectDef, writer);
             }
 
+            // add definition of superclass only after generation is complete!
             if (jsonSchema.containsKey("oneOf")) {
                 if (type == ObjectType.CLASS) {
                     addDefinition("superClass", ClassTypeDef.of(className));
@@ -383,12 +384,24 @@ public final class CodeGenerator {
             return;
         }
         String name = getCamelCaseName(propertyName);
+        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name);
+        if (!name.equals(propertyName)) {
+            AnnotationDef annotationDef = AnnotationDef.builder(JsonProperty.class).addMember("value", propertyName).build();
+            propertyDef.addAnnotation(annotationDef);
+        }
 
         TypeDef propertyType = getTypeDefFromJson(description);
         if (description.containsKey("enum")) {
             propertyType = getEnumType(objectBuilder, name, description);
+        } else if (description.containsKey("const")) {
+            ((ClassDef.ClassDefBuilder) objectBuilder).addField(FieldDef.builder(name)
+                .ofType(TypeDef.STRING)
+                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .initializer(ExpressionDef.constant(description.get("const")))
+                .build());
+            return;
         }
-        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name);
+
         if  (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, propertyName, description);
             propertyDef.ofType(propertyType);
@@ -396,11 +409,6 @@ public final class CodeGenerator {
         } else {
             propertyDef.ofType(propertyType);
             AnnotationsAggregator.addAnnotations(propertyDef, description, propertyType, isRequired);
-        }
-
-        if (!name.equals(propertyName)) {
-            AnnotationDef annotationDef = AnnotationDef.builder(JsonProperty.class).addMember("value", propertyName).build();
-            propertyDef.addAnnotation(annotationDef);
         }
         objectBuilder.addProperty(propertyDef.build());
     }
