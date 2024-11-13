@@ -81,6 +81,9 @@ public final class CodeGenerator {
      */
     public File generate(InputStream inputStream, Path outputPath, String packageName, String fileName) throws IOException {
         var jsonSchema = getJsonSchema(inputStream, null);
+        if (fileName.contains(".")) {
+            fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+        }
         return generateFromSchemaMap(jsonSchema, outputPath, packageName, new String[]{fileName});
     }
 
@@ -95,6 +98,9 @@ public final class CodeGenerator {
      */
     public File generate(File jsonFileLocation, Path outputPath, String packageName, String fileName) throws IOException {
         var jsonSchema = getJsonSchema(null, jsonFileLocation);
+        if (fileName.contains(".")) {
+            fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+        }
         return generateFromSchemaMap(jsonSchema, outputPath, packageName, new String[]{fileName});
     }
 
@@ -348,6 +354,9 @@ public final class CodeGenerator {
     }
 
     private void addFields(Map<String, ?> jsonSchema, ObjectDefBuilder builder) {
+        if (jsonSchema.containsKey("description")) {
+            builder.addJavadoc(jsonSchema.get("description").toString());
+        }
         if (jsonSchema.containsKey("properties")) {
             Map<String, ?> properties = (Map<String, ?>) jsonSchema.get("properties");
             List<String> requiredProperties;
@@ -390,16 +399,10 @@ public final class CodeGenerator {
             propertyDef.addAnnotation(annotationDef);
         }
 
+        // add type info and type validation annotations
         TypeDef propertyType = getTypeDefFromJson(description);
         if (description.containsKey("enum")) {
             propertyType = getEnumType(objectBuilder, name, description);
-        } else if (description.containsKey("const")) {
-            ((ClassDef.ClassDefBuilder) objectBuilder).addField(FieldDef.builder(name)
-                .ofType(TypeDef.STRING)
-                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .initializer(ExpressionDef.constant(description.get("const")))
-                .build());
-            return;
         }
 
         if  (propertyType.equals(TypeDef.of(List.class))) {
@@ -410,7 +413,25 @@ public final class CodeGenerator {
             propertyDef.ofType(propertyType);
             AnnotationsAggregator.addAnnotations(propertyDef, description, propertyType, isRequired);
         }
-        objectBuilder.addProperty(propertyDef.build());
+
+        // add javadoc
+        if (description.containsKey("description")) {
+            propertyDef.addJavadoc(description.get("description").toString().replaceAll("\\$", "\\$\\$"));
+        }
+
+        PropertyDef property = propertyDef.build();
+        // transfer to field if it is const and class builder
+        if (description.containsKey("const") && objectBuilder instanceof ClassDef.ClassDefBuilder) {
+            FieldDef.FieldDefBuilder fieldDefBuilder = FieldDef.builder(name)
+                .ofType(property.getType())
+                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                .initializer(ExpressionDef.constant(description.get("const")));
+            property.getAnnotations().forEach(fieldDefBuilder::addAnnotation);
+            property.getJavadoc().forEach(fieldDefBuilder::addJavadoc);
+            ((ClassDef.ClassDefBuilder) objectBuilder).addField(fieldDefBuilder.build());
+            return;
+        }
+        objectBuilder.addProperty(property);
     }
 
     private void addDiscriminatorAnnotations(Map<String, ?> jsonSchema, ObjectDefBuilder objectBuilder) {

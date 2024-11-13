@@ -186,7 +186,7 @@ public class TypeAggregator {
 
     public static String getFileName(Map<String, ?> schema, Optional<String> topLevelName, VisitorContext.Language language) {
         String fileName = null;
-        if (topLevelName.isPresent()) {
+        if (topLevelName.isPresent() && !topLevelName.get().isEmpty()) {
             fileName = topLevelName.get();
         } else if (schema.containsKey("title")) {
             fileName = capitalize(getCamelCaseName(schema.get("title").toString()));
