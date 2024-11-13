@@ -186,12 +186,14 @@ public class TypeAggregator {
 
     public static String getFileName(Map<String, ?> schema, Optional<String> topLevelName, VisitorContext.Language language) {
         String fileName = null;
-        if (schema.containsKey("title")) {
+        if (topLevelName.isPresent()) {
+            fileName = topLevelName.get();
+        } else if (schema.containsKey("title")) {
             fileName = capitalize(getCamelCaseName(schema.get("title").toString()));
         } else if (schema.keySet().size() == 1) {
             fileName = schema.keySet().toArray()[0].toString();
         } else {
-            fileName = topLevelName.orElse("SchemaType");
+            fileName = "SchemaFile"; // default
         }
 
         switch (language) {
