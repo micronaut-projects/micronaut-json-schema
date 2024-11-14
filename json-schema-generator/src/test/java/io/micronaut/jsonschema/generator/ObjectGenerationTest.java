@@ -113,4 +113,18 @@ class ObjectGenerationTest {
             Assertions.assertFalse(Files.exists(expectedFilePath), "Unexpected file found: " + expectedFilePath);
         }
     }
+
+    @Test
+    void folderGenerator4() throws IOException {
+        var generator = new CodeGenerator(VisitorContext.Language.JAVA);
+        String schemaFileName = "github-workflow.schema.json";
+        Optional<InputStream> inputStream = resourceLoader.getResourceAsStream(new File(schemaFileName).getPath());
+        if (inputStream.isEmpty()) {
+            throw new FileNotFoundException("Resource file is not found.");
+        }
+        Path outputPath = Paths.get("output"); // Define the base output path
+        String packageName = "com.example.github"; // Example package name
+        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName);
+        Assertions.assertEquals(12, generatedFiles);
+    }
 }

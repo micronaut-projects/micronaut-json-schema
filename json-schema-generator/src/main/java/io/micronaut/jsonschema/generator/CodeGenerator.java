@@ -26,6 +26,7 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
+import io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator;
 import io.micronaut.serde.annotation.Serdeable;
 import io.micronaut.sourcegen.generator.SourceGenerator;
 import io.micronaut.sourcegen.generator.SourceGenerators;
@@ -149,15 +150,26 @@ public final class CodeGenerator {
         }
         if (jsonSchema.containsKey("definitions")) {
             var definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
+            Map<String, Map<String, Object>> referencedDefinitions = new LinkedHashMap<>();
             definitions.forEach((key, value) -> {
-                // TODO WARNING: assumes the same interface as top level schema
-                if (value.containsKey("oneOf")) {
+                if (value.containsKey("oneOf") && jsonSchema.containsKey("discriminator")) {
+                    // WARNING: assumes the same interface as top level schema
                     topLevelName[0] = key;
                     addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)));
+                } else if (value.containsKey("oneOf")) {
+                    // inner oneOf's are treated as objects
+                    addDefinition("#/definitions/" + key, TypeDef.OBJECT);
+                } else if (value.containsKey("anyOf")) {
+                    // pick first
+                    var firstType = ((List<Map<String, Object>>) value.get("anyOf")).get(0);
+                    addDefinition(key, firstType);
+                } else if (value.containsKey("$ref")) {
+                    referencedDefinitions.put(key, value);
                 } else {
                     addDefinition(key, value);
                 }
             });
+            referencedDefinitions.forEach(DefinitionsAggregator::addDefinition);
         }
 
         // generate top level schema
@@ -191,7 +203,7 @@ public final class CodeGenerator {
                     return isClass;
                 }).forEach(definition -> {
                     try {
-                        topLevelName[0] = capitalize(definition.getKey());
+                        topLevelName[0] = capitalize(getCamelCaseName(definition.getKey()));
                         generateFromSchemaMap(definition.getValue(), outputPath, packageName, topLevelName);
                         generatedClassCount.getAndIncrement();
                     } catch (IOException e) {
