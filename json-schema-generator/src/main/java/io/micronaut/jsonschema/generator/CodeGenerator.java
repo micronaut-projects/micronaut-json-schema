@@ -265,7 +265,7 @@ public final class CodeGenerator {
     }
 
     public EnumDef buildEnum(Map<String, ?> jsonSchema, String builderClassName) {
-        EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(capitalize(builderClassName))
+        EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC);
         boolean isComplexEnum = false;
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
@@ -490,7 +490,7 @@ public final class CodeGenerator {
     }
 
     private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Map<String, Object> description) {
-        EnumDef enumDef = buildEnum(description, propertyName);
+        EnumDef enumDef = buildEnum(description, capitalize(propertyName));
         objectBuilder.addInnerType(enumDef);
         return enumDef.asTypeDef();
     }
