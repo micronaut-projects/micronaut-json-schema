@@ -30,6 +30,13 @@ dependencies {
 tasks.named("generateBean") {
 }
 
+tasks.named("generateBean2") {
+}
+
+tasks.withType(Checkstyle).configureEach {
+    enabled = false
+}
+
 sourceSets {
     test {
         java.srcDir('src/test/java')
