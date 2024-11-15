@@ -2,7 +2,7 @@
   "$schema":"https://json-schema.org/draft/2020-12/schema",
   "$id":"https://example.com/schemas/llama.schema.json",
   "title":"Animal",
-  "description":"An animal. <4>",
+  "description":"An animal. ",
   "type":["object"],
   "properties":{
     "id": {

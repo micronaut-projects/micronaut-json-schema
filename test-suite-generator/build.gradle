@@ -13,6 +13,7 @@ dependencies {
     api(projects.micronautJsonSchemaAnnotations)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
+    testAnnotationProcessor(mn.micronaut.inject.java.test)
 
     testImplementation(mn.micronaut.inject.kotlin.test)
     testImplementation(mn.micronaut.inject.groovy.test)
@@ -29,7 +30,8 @@ dependencies {
 tasks.named("generateBean") {
 }
 
-tasks.named("generateBean") {
-    jsonFile.convention(layout.projectDirectory.file("src/test/resources/llama.schema.json"))
-    packageName.convention("io.micronaut.jsonschema.generator.llama")
+sourceSets {
+    test {
+        java.srcDir('src/test/java')
+    }
 }

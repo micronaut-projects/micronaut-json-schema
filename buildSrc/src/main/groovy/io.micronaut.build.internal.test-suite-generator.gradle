@@ -19,12 +19,27 @@ dependencies {
     beanGenerator(project(":micronaut-json-schema-generator"))
 }
 
-def beanGenerate = tasks.register("generateBean", BeanGeneratorTask) {
+def beanGenerator = tasks.register("generateBean", BeanGeneratorTask) {
     language = "java"
     classpath.from(configurations.beanGenerator)
     jsonFile.convention(layout.projectDirectory.file("src/test/resources/animal.schema.json"))
-    outputDirectory.convention(layout.buildDirectory.dir("generated/sources/java"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
     packageName.convention("io.micronaut.jsonschema.generator.animals")
+}
+
+def beanGenerator2 = tasks.register("generateBean2", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/llama.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.llama")
+}
+
+sourceSets {
+    main {
+        java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(beanGenerator2.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+    }
 }
 
 dependencies {

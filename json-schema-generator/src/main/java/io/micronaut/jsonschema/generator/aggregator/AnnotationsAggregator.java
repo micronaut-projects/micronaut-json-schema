@@ -77,25 +77,25 @@ public class AnnotationsAggregator {
                 case "minimum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(minAnn))
-                        .addMember("value", value);
+                        .addMember("value", isFloat ? "" + value : value);
                     break;
                 case "maximum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(maxAnn))
-                        .addMember("value", value);
+                        .addMember("value", isFloat ? "" + value : value);
                     break;
                 case "exclusiveMinimum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(minAnn))
                         .addMember("value", isFloat ?
-                            ((double) value) + EXCLUSIVE_DELTA_DOUBLE :
+                            "" + (((double) value) + EXCLUSIVE_DELTA_DOUBLE) :
                             ((int) value) + EXCLUSIVE_DELTA_INT);
                     break;
                 case "exclusiveMaximum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(maxAnn))
                         .addMember("value", isFloat ?
-                            ((double) value) - EXCLUSIVE_DELTA_DOUBLE :
+                            "" + (((double) value) - EXCLUSIVE_DELTA_DOUBLE) :
                             ((int) value) - EXCLUSIVE_DELTA_INT);
                     break;
                 // list annotations

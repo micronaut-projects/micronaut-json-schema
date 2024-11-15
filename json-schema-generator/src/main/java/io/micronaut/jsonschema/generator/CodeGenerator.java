@@ -177,11 +177,6 @@ public final class CodeGenerator {
         generatedClassCount.getAndIncrement();
 
         // generate classes in definitions and oneOfs
-        for (Map.Entry<String, Map<String, ?>> oneOf : getOneOfsToGenerate()) {
-            topLevelName[0] = oneOf.getKey();
-            generateFromSchemaMap(oneOf.getValue(), outputPath, packageName, topLevelName);
-            generatedClassCount.getAndIncrement();
-        }
         if (jsonSchema.containsKey("definitions")) {
             var definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
             definitions.entrySet()
@@ -210,6 +205,11 @@ public final class CodeGenerator {
                         throw new RuntimeException(e);
                     }
                 });
+        }
+        for (Map.Entry<String, Map<String, ?>> oneOf : getOneOfsToGenerate()) {
+            topLevelName[0] = oneOf.getKey();
+            generateFromSchemaMap(oneOf.getValue(), outputPath, packageName, topLevelName);
+            generatedClassCount.getAndIncrement();
         }
         clearAllDefinitions();
         return generatedClassCount.get();
@@ -279,6 +279,8 @@ public final class CodeGenerator {
                 isComplexEnum = true;
             }
         }
+        // TODO: throw error?
+        cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
         if (isComplexEnum) {
             enumBuilder.addField(FieldDef.builder("name")
                     .ofType(TypeDef.STRING)

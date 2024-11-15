@@ -54,6 +54,7 @@ public abstract class BeanGeneratorTask extends DefaultTask {
     public abstract RegularFileProperty getJsonFile();
 
     @Input
+    @Optional
     public abstract Property<String> getLanguage();
 
     @OutputDirectory
@@ -72,23 +73,15 @@ public abstract class BeanGeneratorTask extends DefaultTask {
         return lang.equalsIgnoreCase("JAVA") ? getOutputDirectory().dir("java/main") : getOutputDirectory().dir("kotlin/main");
     }
 
-    @Internal
-    public Provider<Directory> getGeneratedTestSourcesDirectory() {
-        String lang = getLanguage().get();
-        return lang.equalsIgnoreCase("JAVA") ? getOutputDirectory().dir("groovy/test") : getOutputDirectory().dir("kotlin/test");
-    }
-
     @Inject
     protected abstract ExecOperations getExecOperations();
 
     @TaskAction
     public void execute() throws IOException {
         var generatedSourcesDir = getGeneratedSourcesDirectory().get().getAsFile();
-        var generatedTestSourcesDir = getGeneratedTestSourcesDirectory().get().getAsFile();
-        var lang = getLanguage().get();
+        var lang = getLanguage().getOrElse("java");
 
-        //Files.createDirectories(generatedSourcesDir.toPath());
-        //Files.createDirectories(generatedTestSourcesDir.toPath());
+        Files.createDirectories(generatedSourcesDir.toPath());
         getProject().getLogger().info("json: {}", getJsonFile().get());
         getExecOperations().javaexec(javaexec -> {
             javaexec.setClasspath(getClasspath());
@@ -96,7 +89,7 @@ public abstract class BeanGeneratorTask extends DefaultTask {
             var args = new ArrayList<String>();
             args.add(getJsonFile().get().getAsFile().toURI().toString());
             args.add(lang.toUpperCase());
-            args.add(getOutputDirectory().get().getAsFile().getAbsolutePath());
+            args.add(getGeneratedSourcesDirectory().get().getAsFile().getAbsolutePath());
             args.add(getPackageName().get());
             args.add(getFileName().getOrElse(""));
             javaexec.args(args);
