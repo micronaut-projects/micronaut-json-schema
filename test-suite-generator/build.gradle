@@ -1,0 +1,35 @@
+plugins {
+    id("io.micronaut.build.internal.json-schema-module")
+    id("io.micronaut.build.internal.test-suite-generator")
+}
+
+dependencies {
+    compileOnly(mn.micronaut.core.processor)
+
+    implementation(projects.micronautJsonSchemaGenerator)
+    implementation(mnSerde.micronaut.serde.jackson)
+    implementation(mnValidation.validation)
+
+    api(projects.micronautJsonSchemaAnnotations)
+
+    testAnnotationProcessor(mn.micronaut.inject.java)
+
+    testImplementation(mn.micronaut.inject.kotlin.test)
+    testImplementation(mn.micronaut.inject.groovy.test)
+    testImplementation(mn.micronaut.inject.java.test)
+    testImplementation(mn.micronaut.inject)
+    testImplementation(mnValidation.micronaut.validation)
+    testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.junit.jupiter.params)
+
+    testRuntimeOnly(libs.junit.jupiter.engine)
+}
+
+tasks.named("generateBean") {
+}
+
+tasks.named("generateBean") {
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/llama.schema.json"))
+    packageName.convention("io.micronaut.jsonschema.generator.llama")
+}

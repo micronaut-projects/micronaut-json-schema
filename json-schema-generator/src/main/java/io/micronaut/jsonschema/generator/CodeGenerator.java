@@ -219,7 +219,8 @@ public final class CodeGenerator {
         try {
             String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName).map(t -> t[0]), language);
             File outputFile = getOutputFile(outputPath, packageName, decidedFileName);
-            String className = outputFile.getName().substring(0, outputFile.getName().lastIndexOf('.'));
+            String simpleName = outputFile.getName().substring(0, outputFile.getName().lastIndexOf('.'));
+            String builderClassName = packageName + "." + simpleName;
 
             // decide type of generated object
             ObjectType type;
@@ -232,7 +233,7 @@ public final class CodeGenerator {
                 } else {
                     type = ObjectType.INTERFACE;
                 }
-            } else if (isInheriting(className)) {
+            } else if (isInheriting(simpleName)) {
                 // inheriting
                 type = ObjectType.CLASS;
             } else {
@@ -241,10 +242,10 @@ public final class CodeGenerator {
 
             try (FileWriter writer = new FileWriter(outputFile)) {
                 ObjectDef objectDef = switch (type) {
-                    case ENUM -> buildEnum(jsonSchema, className);
-                    case CLASS -> buildClass(jsonSchema, className);
-                    case INTERFACE -> buildInterface(jsonSchema, className);
-                    default -> buildRecord(jsonSchema, className);
+                    case ENUM -> buildEnum(jsonSchema, builderClassName);
+                    case CLASS -> buildClass(jsonSchema, builderClassName);
+                    case INTERFACE -> buildInterface(jsonSchema, builderClassName);
+                    default -> buildRecord(jsonSchema, builderClassName);
                 };
                 sourceGenerator.write(objectDef, writer);
             }
@@ -252,9 +253,9 @@ public final class CodeGenerator {
             // add definition of superclass only after generation is complete!
             if (jsonSchema.containsKey("oneOf")) {
                 if (type == ObjectType.CLASS) {
-                    addDefinition("superClass", ClassTypeDef.of(className));
+                    addDefinition("superClass", ClassTypeDef.of(simpleName));
                 } else if (type == ObjectType.INTERFACE) {
-                    addDefinition("superInterface", ClassTypeDef.of(className));
+                    addDefinition("superInterface", ClassTypeDef.of(simpleName));
                 }
             }
             return outputFile;

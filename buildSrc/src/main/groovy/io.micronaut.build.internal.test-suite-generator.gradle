@@ -1,0 +1,33 @@
+import io.micronaut.build.internal.generator.BeanGeneratorTask;
+
+plugins {
+    id("io.micronaut.build.internal.json-schema-base")
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    beanGenerator {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+dependencies {
+    beanGenerator(project(":micronaut-json-schema-generator"))
+}
+
+def beanGenerate = tasks.register("generateBean", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/animal.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/sources/java"))
+    packageName.convention("io.micronaut.jsonschema.generator.animals")
+}
+
+dependencies {
+    constraints {
+    }
+}

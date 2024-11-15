@@ -4,3 +4,10 @@ repositories {
         url("https://s01.oss.sonatype.org/content/repositories/snapshots")
     }
 }
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    testLogging {
+        exceptionFormat = 'full'
+    }
+}
