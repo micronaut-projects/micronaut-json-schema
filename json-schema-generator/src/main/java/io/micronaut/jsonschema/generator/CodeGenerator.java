@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -384,7 +385,7 @@ public final class CodeGenerator {
                     Map<String, Object> map = (Map<String, Object>) jsonSchema.get("additionalProperties");
                     mapType = getTypeDefFromJson(map);
                 }
-                TypeDef type = TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, mapType);
+                TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
                 builder.addProperty(PropertyDef.builder("unknownFields")
                         .ofType(type)
                         .build());
@@ -405,12 +406,13 @@ public final class CodeGenerator {
                         .addParameter("name", TypeDef.STRING)
                         .addParameter("value", mapType)
                         .build((aThis, parameters) -> {
-                            if (builder instanceof ClassDef.ClassDefBuilder) {
-                                return aThis.field("unknownFields", type)
-                                    .invoke("put", mapType, parameters);
-                            }
-                            return new VariableDef.Local("unknownFields", type)
-                                .invoke("put", mapType, parameters);
+                            var unknownField = (builder instanceof ClassDef.ClassDefBuilder) ?
+                                aThis.field("unknownFields", type) :
+                                new VariableDef.Local("unknownFields", type);
+
+                            return StatementDef.multi(
+                                unknownField.isNull().asConditionIf(unknownField.assign(ClassTypeDef.of(HashMap.class).instantiate())),
+                                unknownField.invoke("put", mapType, parameters));
                         }));
             }
         }

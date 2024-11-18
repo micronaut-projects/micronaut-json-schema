@@ -27,10 +27,7 @@ dependencies {
     testRuntimeOnly(libs.junit.jupiter.engine)
 }
 
-tasks.named("generateBean") {
-}
-
-tasks.named("generateBean2") {
+tasks.named("generateAnimals") {
 }
 
 tasks.withType(Checkstyle).configureEach {

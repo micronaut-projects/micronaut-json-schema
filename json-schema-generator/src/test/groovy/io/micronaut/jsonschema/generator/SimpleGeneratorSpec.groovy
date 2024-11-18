@@ -134,15 +134,18 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             @NotNull @Min(0) int age,
             @NotNull @Size(min = 1) String name,
             List<@DecimalMin(\"0.0\") Float> hours,
-            Map<String, String> unknownFields
+            HashMap<String, String> unknownFields
         ) {
           @JsonAnyGetter
-          public Map<String, String> otherFields() {
+          public HashMap<String, String> otherFields() {
             return unknownFields;
           }
 
           @JsonAnySetter
           public void setOtherField(String name, String value) {
+            if (unknownFields == null) {
+              unknownFields = new java.util.HashMap();
+            }
             unknownFields.put(name, value);
           }
         }""".stripIndent().trim()

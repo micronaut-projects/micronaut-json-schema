@@ -2,7 +2,7 @@
   "$schema":"https://json-schema.org/draft/2020-12/schema",
   "$id":"https://example.com/schemas/llama.schema.json",
   "title":"Animal",
-  "description":"An animal. ",
+  "description":"An animal.",
   "type":["object"],
   "properties":{
     "id": {
@@ -72,6 +72,7 @@
       "description": "The definition of a cat.",
       "properties": {
         "resourceType": {
+          "description": "This is a Cat resource.",
           "const": "Cat"
         },
         "hasMate": {
@@ -86,7 +87,7 @@
       "description": "The definition of a dog.",
       "properties": {
         "resourceType": {
-          "description": "This is a Account resource",
+          "description": "This is a Dog resource.",
           "const": "Dog"
         },
         "hasMate": {
@@ -94,11 +95,11 @@
           "$ref": "#/definitions/boolean"
         },
         "nickname" : {
-          "description": "A nickname of a good doggo",
+          "description": "A nickname of a good doggo.",
           "type": "string"
         },
         "enemies" : {
-          "description": "A list of the dog's cat enemies",
+          "description": "A list of the dog's cat enemies.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Cat"
@@ -112,11 +113,11 @@
       "description": "The definition of a fish.",
       "properties": {
         "resourceType": {
-          "description": "This is a Account resource",
+          "description": "This is a Fish resource.",
           "const": "Fish"
         },
         "friends" : {
-          "description": "A list of the fish's aquarium friends",
+          "description": "A list of the fish's aquarium friends.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Fish"
