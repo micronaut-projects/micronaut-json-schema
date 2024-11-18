@@ -88,7 +88,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         public record Llama(
             @NotNull @Min(0) int age,
             @NotNull @Size(min = 1) String name,
-            List<@DecimalMin(0.0) Float> hours
+            List<@DecimalMin(\"0.0\") Float> hours
         ) {
         }""".stripIndent().trim()
     }
@@ -133,7 +133,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         public record Llama2(
             @NotNull @Min(0) int age,
             @NotNull @Size(min = 1) String name,
-            List<@DecimalMin(0.0) Float> hours,
+            List<@DecimalMin(\"0.0\") Float> hours,
             Map<String, String> unknownFields
         ) {
           @JsonAnyGetter
@@ -218,11 +218,11 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         where:
         propertyName | propertySchema                                                  | expectedJava
         // TODO fill in more test cases
-        'test'       | '{"type": "number", "minimum": 10}'                             | "@DecimalMin(10) float test"
-        'array'      |'{"type": "array", "items": {"type": "number", "minimum": 10.0}}'| "List<@DecimalMin(10.0) Float> array"
+        'test'       | '{"type": "number", "minimum": 10}'                             | "@DecimalMin(\"10\") float test"
+        'array'      |'{"type": "array", "items": {"type": "number", "minimum": 10.0}}'| "List<@DecimalMin(\"10.0\") Float> array"
         'arrayMulti' |'{"type": "array", "items": {"type": "array", ' +
                 '"items": {"type": "number", "minimum": 10.0}, ' +
-                '"uniqueItems": true, "minItems": 2}, "minItems": 1}'                  | "@Size(min = 1) List<@Size(min = 2) Set<@DecimalMin(10.0) Float>> arrayMulti"
+                '"uniqueItems": true, "minItems": 2}, "minItems": 1}'                  | "@Size(min = 1) List<@Size(min = 2) Set<@DecimalMin(\"10.0\") Float>> arrayMulti"
     }
 
 }

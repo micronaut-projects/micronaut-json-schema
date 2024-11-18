@@ -444,7 +444,7 @@ public final class CodeGenerator {
 
         // add javadoc
         if (description.containsKey("description")) {
-            propertyDef.addJavadoc(description.get("description").toString().replaceAll("\\$", "\\$\\$"));
+            propertyDef.addJavadoc(description.get("description").toString());
         }
 
         PropertyDef property = propertyDef.build();
