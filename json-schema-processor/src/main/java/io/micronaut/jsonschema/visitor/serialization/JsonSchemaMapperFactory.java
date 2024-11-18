@@ -32,7 +32,10 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.deser.std.DelegatingDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.node.TreeTraversingParser;
 import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
 import com.fasterxml.jackson.databind.type.SimpleType;
@@ -40,6 +43,7 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.visitor.model.Schema;
 
 import java.io.IOException;
+import java.util.Collections;
 
 /**
  * A factory of mappers for swagger serialization and deserialization.
@@ -109,7 +113,17 @@ public class JsonSchemaMapperFactory {
         public Schema deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException, JacksonException {
             JsonNode tree = jsonParser.getCodec().readTree(jsonParser);
             jsonParser.finishToken();
-            if (tree.isObject()) {
+            if (tree instanceof ObjectNode node) {
+                // An empty schema is a true schema, as there is nothing to validate
+                if (node.isEmpty()) {
+                    return Schema.TRUE;
+                }
+                // Type is always stored as an array, convert it
+                if (node.get("type") instanceof TextNode text) {
+                    node.set("type",
+                        new ArrayNode(context.getNodeFactory(), Collections.singletonList(text))
+                    );
+                }
                 JsonParser newParser = new TreeTraversingParser(tree, jsonParser.getCodec());
                 newParser.nextToken();
                 try {
