@@ -21,6 +21,7 @@ import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.PropertyDef;
 import io.micronaut.sourcegen.model.TypeDef;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -77,25 +78,25 @@ public class AnnotationsAggregator {
                 case "minimum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(minAnn))
-                        .addMember("value", isFloat ? "" + value : value);
+                        .addMember("value", isFloat ? new BigDecimal(value.toString()) : value);
                     break;
                 case "maximum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(maxAnn))
-                        .addMember("value", isFloat ? "" + value : value);
+                        .addMember("value", isFloat ? new BigDecimal(value.toString()) : value);
                     break;
                 case "exclusiveMinimum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(minAnn))
                         .addMember("value", isFloat ?
-                            "" + (((double) value) + EXCLUSIVE_DELTA_DOUBLE) :
+                            new BigDecimal(((double) value) + EXCLUSIVE_DELTA_DOUBLE) :
                             ((int) value) + EXCLUSIVE_DELTA_INT);
                     break;
                 case "exclusiveMaximum":
                     annBuilder = AnnotationDef
                         .builder(ClassTypeDef.of(maxAnn))
                         .addMember("value", isFloat ?
-                            "" + (((double) value) - EXCLUSIVE_DELTA_DOUBLE) :
+                            new BigDecimal(((double) value) - EXCLUSIVE_DELTA_DOUBLE) :
                             ((int) value) - EXCLUSIVE_DELTA_INT);
                     break;
                 // list annotations

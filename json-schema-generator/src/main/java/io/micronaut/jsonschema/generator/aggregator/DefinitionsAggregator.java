@@ -30,8 +30,9 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getCam
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTypeDefFromJson;
 
 /**
- * An aggregator for storing and accessing definitions from json schema.
- * Saves a map of definition reference to TypeDef.
+ * An aggregator for storing and accessing definitions and oneOf relations from json schema.
+ * Saves a map of definition reference to TypeDef, Boolean (boolean value is true if the type is a class/interface object.
+ * Saves a map of oneOf objects to keep in track on inheriting objects.
  *
  * @author Elif Kurtay
  * @since 1.2
@@ -39,15 +40,17 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 @Internal
 @Singleton
 public class DefinitionsAggregator {
-    private static final HashMap<String, TypeDef> DEFINITIONS = new HashMap<>();
+    private static final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private static final HashMap<String, Map<String, ?>> ONE_OF_SET = new HashMap<>();
 
-    public static TypeDef getDefinitionType(String key, Map<String, Object> definition) {
-        addDefinition(key, definition);
-        return DEFINITIONS.get(key);
+    public static TypeDef getDefinitionType(String key) {
+        if (hasDefinition(key)) {
+            return DEFINITIONS.get(key).getKey();
+        }
+        return null;
     }
 
-    public static TypeDef getDefinitionType(String key) {
+    public static Map.Entry<TypeDef, Boolean> getDefinition(String key) {
         if (hasDefinition(key)) {
             return DEFINITIONS.get(key);
         }
@@ -73,18 +76,25 @@ public class DefinitionsAggregator {
 
     public static void addDefinition(String key, Map<String, Object> definition) {
         var typeDef = getTypeDefFromJson(definition);
-        if (!typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING)) {
-            addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)));
-        } else {
-            addDefinition("#/definitions/" + key, typeDef);
+        assert typeDef != null;
+        boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING);
+        if (isClass) {
+            typeDef = ClassTypeDef.of(capitalize(key));
         }
+        // add annotations to type
+        var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef);
+        if (!annotations.isEmpty()) {
+            typeDef = typeDef.annotated(annotations);
+        }
+        addDefinition("#/definitions/" + key, typeDef, isClass);
     }
 
-    public static void addDefinition(String key, TypeDef classDef) {
+    public static void addDefinition(String key, TypeDef classDef, boolean isClass) {
+        var newDef = new AbstractMap.SimpleEntry<TypeDef, Boolean>(classDef, isClass);
         if (!hasDefinition(key)) {
-            DEFINITIONS.put(key, classDef);
+            DEFINITIONS.put(key, newDef);
         } else {
-            DEFINITIONS.replace(key, classDef);
+            DEFINITIONS.replace(key, newDef);
         }
     }
 
@@ -100,7 +110,7 @@ public class DefinitionsAggregator {
             fileName = "Option" + ONE_OF_SET.size();
         }
         ONE_OF_SET.put("#/oneOf/" + fileName, oneOf);
-        addDefinition("#/oneOf/" + fileName, ClassTypeDef.of(capitalize(fileName)));
+        addDefinition("#/oneOf/" + fileName, ClassTypeDef.of(capitalize(fileName)), true);
     }
 
     public static void clearAllDefinitions() {

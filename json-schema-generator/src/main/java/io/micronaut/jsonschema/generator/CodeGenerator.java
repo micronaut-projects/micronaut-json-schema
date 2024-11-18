@@ -155,10 +155,10 @@ public final class CodeGenerator {
                 if (value.containsKey("oneOf") && jsonSchema.containsKey("discriminator")) {
                     // WARNING: assumes the same interface as top level schema
                     topLevelName[0] = key;
-                    addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)));
+                    addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)), true);
                 } else if (value.containsKey("oneOf")) {
                     // inner oneOf's are treated as objects
-                    addDefinition("#/definitions/" + key, TypeDef.OBJECT);
+                    addDefinition("#/definitions/" + key, TypeDef.OBJECT, true);
                 } else if (value.containsKey("anyOf")) {
                     // pick first
                     var firstType = ((List<Map<String, Object>>) value.get("anyOf")).get(0);
@@ -182,20 +182,11 @@ public final class CodeGenerator {
             definitions.entrySet()
                 .stream()
                 .filter(definition -> {
-                    // assuming single inheritance at the top level
+                    // assuming single inheritance at the top level, skips any other oneOf
                     if (definition.getValue().containsKey("oneOf")) {
                         return false;
                     }
-                    TypeDef typeOfDefinition = getDefinitionType("#/definitions/" + definition.getKey());
-                    assert typeOfDefinition != null;
-                    boolean isClass = !typeOfDefinition.isPrimitive() && !typeOfDefinition.equals(TypeDef.STRING);
-
-                    // update definition with annotations
-                    var annotations = AnnotationsAggregator.getAnnotations(definition.getValue(), typeOfDefinition);
-                    if (!annotations.isEmpty()) {
-                        addDefinition("#/definitions/" + definition.getKey(), typeOfDefinition.annotated(annotations));
-                    }
-                    return isClass;
+                    return Objects.requireNonNull(getDefinition("#/definitions/" + definition.getKey())).getValue();
                 }).forEach(definition -> {
                     try {
                         topLevelName[0] = capitalize(getCamelCaseName(definition.getKey()));
@@ -253,9 +244,9 @@ public final class CodeGenerator {
             // add definition of superclass only after generation is complete!
             if (jsonSchema.containsKey("oneOf")) {
                 if (type == ObjectType.CLASS) {
-                    addDefinition("superClass", ClassTypeDef.of(simpleName));
+                    addDefinition("superClass", ClassTypeDef.of(simpleName), true);
                 } else if (type == ObjectType.INTERFACE) {
-                    addDefinition("superInterface", ClassTypeDef.of(simpleName));
+                    addDefinition("superInterface", ClassTypeDef.of(simpleName), true);
                 }
             }
             return outputFile;
@@ -279,7 +270,7 @@ public final class CodeGenerator {
                 isComplexEnum = true;
             }
         }
-        // TODO: throw error?
+        // TODO: throw error on default?
         cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
         if (isComplexEnum) {
             enumBuilder.addField(FieldDef.builder("name")
