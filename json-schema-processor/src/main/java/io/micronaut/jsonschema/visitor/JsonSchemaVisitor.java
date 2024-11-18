@@ -27,13 +27,13 @@ import io.micronaut.inject.visitor.TypeElementVisitor;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.inject.writer.GeneratedFile;
 import io.micronaut.jsonschema.JsonSchema;
+import io.micronaut.jsonschema.model.Schema;
+import io.micronaut.jsonschema.model.Schema.Type;
 import io.micronaut.jsonschema.visitor.aggregator.DocumentationInfoAggregator;
 import io.micronaut.jsonschema.visitor.aggregator.JacksonInfoAggregator;
 import io.micronaut.jsonschema.visitor.aggregator.SchemaInfoAggregator;
 import io.micronaut.jsonschema.visitor.aggregator.ValidationInfoAggregator;
 import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
-import io.micronaut.jsonschema.visitor.model.Schema;
-import io.micronaut.jsonschema.visitor.model.Schema.Type;
 import io.micronaut.jsonschema.visitor.serialization.JsonSchemaMapperFactory;
 
 import java.io.IOException;
@@ -246,7 +246,6 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
         context.createdSchemasByType().put(element.getGenericType().getName(), schema);
         for (PropertyElement property: element.getBeanProperties()) {
             Schema propertySchema = createSchema(property, visitorContext, context);
-            propertySchema.setSourceElement(property);
             schema.putProperty(property.getName(), propertySchema);
         }
     }

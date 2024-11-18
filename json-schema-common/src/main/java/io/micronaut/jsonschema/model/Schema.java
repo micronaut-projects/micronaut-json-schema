@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.visitor.model;
+package io.micronaut.jsonschema.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.inject.ast.TypedElement;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -98,9 +96,6 @@ public final class Schema {
     private List<Schema> oneOf;
 
     private Schema not;
-
-    @JsonIgnore
-    private TypedElement sourceElement;
 
     public String getTitle() {
         return title;
@@ -465,15 +460,6 @@ public final class Schema {
 
     public Schema setNot(Schema not) {
         this.not = not;
-        return this;
-    }
-
-    public TypedElement getSourceElement() {
-        return sourceElement;
-    }
-
-    public Schema setSourceElement(TypedElement sourceElement) {
-        this.sourceElement = sourceElement;
         return this;
     }
 

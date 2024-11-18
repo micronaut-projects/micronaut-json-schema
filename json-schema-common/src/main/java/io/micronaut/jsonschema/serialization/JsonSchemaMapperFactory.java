@@ -40,13 +40,13 @@ import com.fasterxml.jackson.databind.node.TreeTraversingParser;
 import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
 import com.fasterxml.jackson.databind.type.SimpleType;
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.visitor.model.Schema;
+import io.micronaut.jsonschema.model.Schema;
 
 import java.io.IOException;
 import java.util.Collections;
 
 /**
- * A factory of mappers for swagger serialization and deserialization.
+ * A factory of mappers for json schema serialization and deserialization.
  */
 @Internal
 public class JsonSchemaMapperFactory {

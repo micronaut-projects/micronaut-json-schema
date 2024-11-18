@@ -1,6 +1,6 @@
 package io.micronaut.jsonschema.visitor
 
-import io.micronaut.jsonschema.visitor.model.Schema
+import io.micronaut.jsonschema.model.Schema
 
 class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
