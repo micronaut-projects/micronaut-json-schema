@@ -44,17 +44,24 @@ public class GeneratorMain {
      * @throws IOException In case definition file path is incorrect.
      */
     public static void main(String[] args) throws IOException {
-        var jsonFile = new File(args[0].substring(5));
-        var lang = VisitorContext.Language.valueOf(args[1].toUpperCase());
-        var outputPath = Paths.get(args[2]);
-        var outputPackageName = args[3];
-        var fileName = args[4];
+        if (args[0].isEmpty() && args[1].isEmpty()) {
+            throw new IllegalArgumentException("One of the arguments needs to be provided: jsonFile or inputDirectory.");
+        }
+        var lang = VisitorContext.Language.valueOf(args[2].toUpperCase());
+        var outputPath = Paths.get(args[3]);
+        var outputPackageName = args[4];
+        var fileName = args[5];
 
         var generator = new CodeGenerator(lang);
-        if (fileName.isBlank()) {
-            generator.generate(jsonFile, outputPath, outputPackageName);
+        if (args[1].isEmpty()) {
+            var jsonFile = new File(args[0].substring(5));
+            if (fileName.isBlank()) {
+                generator.generate(jsonFile, outputPath, outputPackageName);
+            } else {
+                generator.generate(jsonFile, outputPath, outputPackageName, fileName);
+            }
         } else {
-            generator.generate(jsonFile, outputPath, outputPackageName, fileName);
+            generator.generate(Paths.get(args[1]), outputPath, outputPackageName);
         }
     }
 }

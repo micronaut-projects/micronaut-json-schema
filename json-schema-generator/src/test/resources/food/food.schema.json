@@ -2,24 +2,24 @@
   "$id": "https://example.com/arrays.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Arrays of strings and objects",
-  "title": "Arrays",
+  "title": "Food",
   "type": "object",
   "properties": {
     "fruits": {
       "type": "array",
       "items": {
-        "$ref": "food.schema.json#/Fruits"
+        "$ref": "fruit.schema.json#/Fruits"
       }
     },
     "favouriteFruit": {
-      "$ref": "food.schema.json#/$defs/fruit"
+      "$ref": "fruit.schema.json#/definitions/fruit"
     },
     "vegetables": {
       "type": "array",
-      "items": { "$ref": "#/$defs/veggie" }
+      "items": { "$ref": "#/definitions/veggie" }
     }
   },
-  "$defs": {
+  "definitions": {
     "veggie": {
       "type": "object",
       "required": [ "veggieName", "veggieLike" ],

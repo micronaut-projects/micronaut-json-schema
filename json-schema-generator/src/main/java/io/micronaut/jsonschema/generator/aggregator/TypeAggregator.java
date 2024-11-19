@@ -84,7 +84,11 @@ public class TypeAggregator {
                 default: typeDef = TypeDef.STRING;
             }
         } else if (description.containsKey("$ref")) {
-            typeDef = getDefinitionType(CodeGenerator.getInputFileName() + description.get("$ref").toString());
+            String ref = description.get("$ref").toString();
+            if (ref.indexOf("#") == 0) {
+                ref = CodeGenerator.getInputFileName() + ref;
+            }
+            typeDef = getDefinitionType(ref);
         } else {
             typeDef = TYPE_MAP.get(typeName);
         }

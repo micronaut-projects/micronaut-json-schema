@@ -127,4 +127,13 @@ class ObjectGenerationTest {
         int generatedFiles = generator.generate(inputStream.get(), schemaFileName, outputPath, packageName);
         Assertions.assertEquals(12, generatedFiles);
     }
+
+    @Test
+    void folderGenerator5() throws IOException {
+        var generator = new CodeGenerator(VisitorContext.Language.JAVA);
+        var inputFolder = Paths.get("./src/test/resources/food/");
+        Path outputPath = Paths.get("output"); // Define the base output path
+        String packageName = "com.example.food"; // Example package name
+        generator.generate(inputFolder, outputPath, packageName);
+    }
 }

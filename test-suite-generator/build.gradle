@@ -30,6 +30,9 @@ dependencies {
 tasks.named("generateAnimals") {
 }
 
+tasks.named("generateFood") {
+}
+
 tasks.withType(Checkstyle).configureEach {
     enabled = false
 }

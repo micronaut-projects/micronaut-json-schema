@@ -27,9 +27,18 @@ def beanGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
     packageName.convention("io.micronaut.jsonschema.generator.animals")
 }
 
+def foodGenerator = tasks.register("generateFood", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    inputDirectory.convention(layout.projectDirectory.dir("src/test/resources/food"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.food")
+}
+
 sourceSets {
     main {
         java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(foodGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
     }
 }
 

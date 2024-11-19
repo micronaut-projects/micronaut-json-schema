@@ -24,6 +24,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
@@ -50,8 +51,13 @@ public abstract class BeanGeneratorTask extends DefaultTask {
     public abstract ConfigurableFileCollection getClasspath();
 
     @InputFile
+    @Optional
     @PathSensitive(PathSensitivity.NONE)
     public abstract RegularFileProperty getJsonFile();
+
+    @InputDirectory
+    @Optional
+    public abstract DirectoryProperty getInputDirectory();
 
     @Input
     @Optional
@@ -80,14 +86,16 @@ public abstract class BeanGeneratorTask extends DefaultTask {
     public void execute() throws IOException {
         var generatedSourcesDir = getGeneratedSourcesDirectory().get().getAsFile();
         var lang = getLanguage().getOrElse("java");
+        String jsonFile = getJsonFile().isPresent() ? getJsonFile().get().getAsFile().toURI().toString() : "";
+        String inputPath = getInputDirectory().isPresent() ? getInputDirectory().get().getAsFile().getAbsolutePath() : "";
 
         Files.createDirectories(generatedSourcesDir.toPath());
-        getProject().getLogger().info("json: {}", getJsonFile().get());
         getExecOperations().javaexec(javaexec -> {
             javaexec.setClasspath(getClasspath());
             javaexec.getMainClass().set("io.micronaut.jsonschema.generator.GeneratorMain");
             var args = new ArrayList<String>();
-            args.add(getJsonFile().get().getAsFile().toURI().toString());
+            args.add(jsonFile);
+            args.add(inputPath);
             args.add(lang.toUpperCase());
             args.add(getGeneratedSourcesDirectory().get().getAsFile().getAbsolutePath());
             args.add(getPackageName().get());

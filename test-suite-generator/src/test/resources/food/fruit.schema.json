@@ -1,0 +1,41 @@
+{
+  "$id": "https://example.com/fruits.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Arrays of strings and objects representing fruits and their properties",
+  "title": "Fruits",
+  "type": "object",
+  "properties": {
+    "fruits": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/fruit"
+      }
+    }
+  },
+  "definitions": {
+    "fruit": {
+      "type": "object",
+      "required": ["fruitName", "fruitColor", "fruitTaste"],
+      "properties": {
+        "fruitName": {
+          "type": "string",
+          "description": "The name of the fruit."
+        },
+        "fruitColor": {
+          "type": "string",
+          "description": "The color of the fruit."
+        },
+        "fruitTaste": {
+          "type": "string",
+          "enum": ["sweet", "sour", "bitter", "salty"],
+          "description": "The taste profile of the fruit."
+        },
+        "fruitSeason": {
+          "type": "string",
+          "description": "The season in which the fruit is typically available.",
+          "enum": ["spring", "summer", "fall", "winter"]
+        }
+      }
+    }
+  }
+}

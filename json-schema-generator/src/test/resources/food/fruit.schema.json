@@ -8,11 +8,11 @@
     "fruits": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/fruit"
+        "$ref": "#/definitions/fruit"
       }
     }
   },
-  "$defs": {
+  "definitions": {
     "fruit": {
       "type": "object",
       "required": ["fruitName", "fruitColor", "fruitTaste"],
@@ -36,7 +36,6 @@
           "enum": ["spring", "summer", "fall", "winter"]
         }
       }
-    },
-
+    }
   }
 }
