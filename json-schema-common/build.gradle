@@ -3,15 +3,8 @@ plugins {
 }
 
 dependencies {
-    compileOnly(mn.micronaut.core.processor)
-
-    implementation(mn.micronaut.http)
-    api(projects.micronautJsonSchemaAnnotations)
-    api(projects.micronautJsonSchemaCommon)
     api(mn.jackson.databind)
 
-    testImplementation(mnValidation.validation)
-    testImplementation(mn.micronaut.inject.kotlin.test)
     testImplementation(mn.micronaut.inject.groovy.test)
     testImplementation(mn.micronaut.inject.java.test)
     testImplementation(mnLogging.logback.classic)

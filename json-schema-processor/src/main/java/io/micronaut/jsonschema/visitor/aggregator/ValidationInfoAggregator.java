@@ -17,16 +17,15 @@ package io.micronaut.jsonschema.visitor.aggregator;
 
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.ast.ClassElement;
+import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.TypedElement;
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
-import io.micronaut.jsonschema.visitor.model.Schema;
-import io.micronaut.jsonschema.visitor.model.Schema.Type;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  * An aggregator for adding information from the validation annotations.
@@ -73,14 +72,12 @@ public class ValidationInfoAggregator implements SchemaInfoAggregator {
             visitorContext.warn("Could not add annotation " + ann + " to schema as it is not supported by the JacksonInfoAggregator", element)
         );
 
-        addRequiredPropertiesInfo(element.getGenericType(), schema, context);
-
         ClassElement type = element.getGenericType();
         if (element.hasAnnotation(NULL_ANN + LIST_SUFFIX)) {
             schema.setType(List.of(Schema.Type.NULL));
         }
 
-        if (schema.getType().contains(Type.BOOLEAN)) {
+        if (schema.getType().contains(Schema.Type.BOOLEAN)) {
             if (element.hasAnnotation(ASSERT_FALSE_ANN + LIST_SUFFIX)) {
                 schema.setConstValue(false);
             } else if (element.hasAnnotation(ASSERT_TRUE_ANN + LIST_SUFFIX)) {
@@ -167,18 +164,15 @@ public class ValidationInfoAggregator implements SchemaInfoAggregator {
         return schema;
     }
 
-    private void addRequiredPropertiesInfo(ClassElement element, Schema schema, JsonSchemaContext context) {
+    static void addRequiredPropertyInfo(String propertyName, PropertyElement property, Schema schema, JsonSchemaContext context) {
         if (schema.getProperties() != null) {
-            for (Entry<String, Schema> property: schema.getProperties().entrySet()) {
-                TypedElement sourceElement = property.getValue().getSourceElement();
-                if (context.strictMode() && !sourceElement.hasAnnotation(NON_NULL_ANN)) {
-                    schema.addRequired(property.getKey());
-                } else if (sourceElement.isPrimitive()
-                        || sourceElement.hasAnnotation(NOT_NULL_ANN + LIST_SUFFIX)
-                        || sourceElement.hasAnnotation(NON_NULL_ANN)
-                ) {
-                    schema.addRequired(property.getKey());
-                }
+            if (context.strictMode() && !property.hasAnnotation(NON_NULL_ANN)) {
+                schema.addRequired(propertyName);
+            } else if (property.isPrimitive()
+                    || property.hasAnnotation(NOT_NULL_ANN + LIST_SUFFIX)
+                    || property.hasAnnotation(NON_NULL_ANN)
+            ) {
+                schema.addRequired(propertyName);
             }
         }
     }

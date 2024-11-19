@@ -3,8 +3,8 @@ package io.micronaut.jsonschema.visitor
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.micronaut.annotation.processing.test.AbstractTypeElementSpec
 import io.micronaut.jsonschema.visitor.context.JsonSchemaContext
-import io.micronaut.jsonschema.visitor.model.Schema
-import io.micronaut.jsonschema.visitor.serialization.JsonSchemaMapperFactory
+import io.micronaut.jsonschema.model.Schema
+import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory
 import org.intellij.lang.annotations.Language
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

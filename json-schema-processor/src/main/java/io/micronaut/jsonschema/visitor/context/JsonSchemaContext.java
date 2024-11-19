@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.visitor.context;
 import io.micronaut.core.util.StringUtils;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.visitor.VisitorContext;
-import io.micronaut.jsonschema.visitor.model.Schema;
+import io.micronaut.jsonschema.model.Schema;
 
 import java.util.ArrayList;
 import java.util.HashMap;
