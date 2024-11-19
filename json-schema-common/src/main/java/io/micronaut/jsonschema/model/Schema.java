@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -50,6 +51,10 @@ public final class Schema {
     private String $schema;
     private String $id;
     private String $ref;
+
+    @JsonProperty("$defs")
+    @JsonAlias("definitions")
+    private Map<String, Schema> $defs;
 
     private String title;
     private String description;
@@ -423,6 +428,20 @@ public final class Schema {
 
     public Schema set$ref(String $ref) {
         this.$ref = $ref;
+        return this;
+    }
+
+    public Map<String, Schema> get$defs() {
+        return $defs;
+    }
+
+    public Schema set$defs(Map<String, Schema> $defs) {
+        this.$defs = $defs;
+        return this;
+    }
+
+    public Schema put$def(String key, Schema $def) {
+        $defs.put(key, $def);
         return this;
     }
 

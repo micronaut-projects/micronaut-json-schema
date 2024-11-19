@@ -1,4 +1,4 @@
-package io.micronaut.jsonschema.visitor.serialization
+package io.micronaut.jsonschema.serialization
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.micronaut.jsonschema.model.Schema
@@ -52,6 +52,22 @@ class SchemaSerializationSpec extends Specification {
         '{}'    | Schema.TRUE
         'true'  | Schema.TRUE
         'false' | Schema.FALSE
+    }
+
+    void "test definitions deserialization"() {
+        when:
+        Schema schema = mapper.readValue('{"definitions":{"a":{"type":"number"}}}', Schema.class)
+
+        then:
+        schema.get$defs().size() == 1
+        schema.get$defs().get("a").getType() == [Schema.Type.NUMBER]
+
+        when:
+        schema = mapper.readValue('{"$defs":{"b":{"type":"string"}}}', Schema.class)
+
+        then:
+        schema.get$defs().size() == 1
+        schema.get$defs().get("b").getType() == [Schema.Type.STRING]
     }
 
     void "test simple schema serialization"() {
