@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.jsonschema.generator.CodeGenerator;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
 
@@ -83,7 +84,7 @@ public class TypeAggregator {
                 default: typeDef = TypeDef.STRING;
             }
         } else if (description.containsKey("$ref")) {
-            typeDef = getDefinitionType(description.get("$ref").toString());
+            typeDef = getDefinitionType(CodeGenerator.getInputFileName() + description.get("$ref").toString());
         } else {
             typeDef = TYPE_MAP.get(typeName);
         }
@@ -191,6 +192,7 @@ public class TypeAggregator {
         } else if (schema.containsKey("title")) {
             fileName = capitalize(getCamelCaseName(schema.get("title").toString()));
         } else if (schema.keySet().size() == 1) {
+            // definition name
             fileName = schema.keySet().toArray()[0].toString();
         } else {
             fileName = "SchemaFile"; // default

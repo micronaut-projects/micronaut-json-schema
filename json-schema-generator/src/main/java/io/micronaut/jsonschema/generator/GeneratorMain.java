@@ -23,7 +23,7 @@ import java.nio.file.Paths;
 
 /**
  * An entry point to be used in tests, to simulate
- * what the Code Generation from Json Schema plugin would do
+ * what the Code Generation from Json Schema plugin would do.
  *
  * @version 1.3
  * @author Elif Kurtay

@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,6 +62,7 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
 @Internal
 public final class CodeGenerator {
 
+    private static String inputFileName = "";
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
     private final SourceGenerator sourceGenerator;
     private final VisitorContext.Language language;
@@ -85,10 +87,11 @@ public final class CodeGenerator {
      */
     public File generate(InputStream inputStream, Path outputPath, String packageName, String fileName) throws IOException {
         var jsonSchema = getJsonSchema(inputStream, null);
+        inputFileName = "InputStream.schema.json";
         if (fileName.contains(".")) {
             fileName = fileName.substring(0, fileName.lastIndexOf('.'));
         }
-        return generateFromSchemaMap(jsonSchema, outputPath, packageName, new String[]{fileName});
+        return generateFromSchemaMap(jsonSchema, outputPath, packageName, fileName);
     }
 
     /**
@@ -98,27 +101,34 @@ public final class CodeGenerator {
      * @param outputPath The output path for the output file
      * @param packageName The package name for the output file
      * @param fileName The fileName for the output file
-     * @return The number of generated files
+     * @return The generated file
      */
     public File generate(File jsonFileLocation, Path outputPath, String packageName, String fileName) throws IOException {
         var jsonSchema = getJsonSchema(null, jsonFileLocation);
         if (fileName.contains(".")) {
             fileName = fileName.substring(0, fileName.lastIndexOf('.'));
         }
-        return generateFromSchemaMap(jsonSchema, outputPath, packageName, new String[]{fileName});
+        inputFileName = jsonFileLocation.getName();
+        return generateFromSchemaMap(jsonSchema, outputPath, packageName, fileName);
     }
 
     /**
      * A method for creating multiple objects (class, record, interface) from a json schema.
      *
      * @param inputStream The input stream of a json schema
+     * @param schemaFileName The schema file's name
      * @param outputPath The output path for the output file
      * @param packageName The package name for the output file
      * @return The number of generated files
      */
-    public int generate(InputStream inputStream, Path outputPath, String packageName) throws IOException {
+    public int generate(InputStream inputStream, String schemaFileName, Path outputPath, String packageName) throws IOException {
         var jsonSchema = getJsonSchema(inputStream, null);
-        return generateFolder(jsonSchema, outputPath, packageName);
+        inputFileName = schemaFileName;
+        saveDefinitions((Map<String, Object>) jsonSchema);
+        int generatedCount = generateDefinitions(jsonSchema, outputPath, packageName);
+        clearAllDefinitions();
+        return generatedCount;
+        // return generateFile(jsonSchema, outputPath, packageName);
     }
 
     /**
@@ -131,50 +141,118 @@ public final class CodeGenerator {
      */
     public int generate(File jsonFileLocation, Path outputPath, String packageName) throws IOException {
         var jsonSchema = getJsonSchema(null, jsonFileLocation);
-        return generateFolder(jsonSchema, outputPath, packageName);
+        inputFileName = jsonFileLocation.getName();
+        saveDefinitions((Map<String, Object>) jsonSchema);
+        int generatedCount = generateDefinitions(jsonSchema, outputPath, packageName);
+        clearAllDefinitions();
+        return generatedCount;
+        // return generateFile(jsonSchema, outputPath, packageName);
     }
 
-    private int generateFolder(Map<String, ?> jsonSchema, Path outputPath, String packageName) throws IOException {
-        AtomicInteger generatedClassCount = new AtomicInteger();
-        final String[] topLevelName = {""};
+    /**
+     * A method for creating multiple objects (class, record, interface) from a json schema.
+     *
+     * @param jsonFolderLocation The input folder location of json schemas
+     * @param outputPath The output path for the output file
+     * @param packageName The package name for the output file
+     */
+    public void generate(Path jsonFolderLocation, Path outputPath, String packageName) {
+        try {
+            // Walk through the directory to find all json files
+            Files.walk(jsonFolderLocation)
+                .filter(file -> file.toString().endsWith(".schema.json")) // Filter to only JSON schema files
+                .forEach(file -> {
+                    try {
+                        // Read content of each JSON file
+                        var jsonSchema = getJsonSchema(null, file.toFile());
+                        inputFileName = file.getFileName().toString();
+                        saveDefinitions((Map<String, Object>) jsonSchema);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+            Files.walk(jsonFolderLocation)
+                .filter(file -> file.toString().endsWith(".schema.json"))
+                .forEach(file -> {
+                    try {
+                        // Read content of each JSON file
+                        var jsonSchema = getJsonSchema(null, file.toFile());
+                        inputFileName = file.getFileName().toString();
+                        generateDefinitions(jsonSchema, outputPath, packageName);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
 
+            clearAllDefinitions();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveDefinitions(Map<String, Object> jsonSchema) throws IOException {
+        String schemaName;
+        if (jsonSchema.containsKey("title")) {
+            schemaName = capitalize(getCamelCaseName(jsonSchema.get("title").toString()));
+        } else {
+            schemaName = capitalize(getCamelCaseName(inputFileName.substring(0, inputFileName.indexOf('.'))));
+        }
+        addDefinition(inputFileName + "#/" + schemaName, jsonSchema);
         // save all definition and oneOf types
         if (jsonSchema.containsKey("oneOf")) {
             var oneOfRefs = (List<Map<String, Object>>) jsonSchema.get("oneOf");
             oneOfRefs.forEach(oneOf -> {
                 if (oneOf.containsKey("$ref")) {
-                    addOneOf((String) oneOf.get("$ref"));
+                    String ref = oneOf.get("$ref").toString();
+                    if (ref.indexOf("#") == 0) {
+                        ref = inputFileName + ref;
+                    }
+                    addOneOf(ref);
                 } else {
-                    addOneOf(oneOf);
+                    addOneOf(inputFileName, oneOf);
                 }
             });
         }
-        if (jsonSchema.containsKey("definitions")) {
-            var definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
+        if (jsonSchema.containsKey("definitions") || jsonSchema.containsKey("$defs")) {
             Map<String, Map<String, Object>> referencedDefinitions = new LinkedHashMap<>();
+            Map<String, Map<String, Object>> definitions;
+            if (jsonSchema.containsKey("definitions")) {
+                definitions = (Map<String, Map<String, Object>>) jsonSchema.get("definitions");
+            } else {
+                definitions = (Map<String, Map<String, Object>>) jsonSchema.get("$defs");
+            }
+
             definitions.forEach((key, value) -> {
                 if (value.containsKey("oneOf") && jsonSchema.containsKey("discriminator")) {
                     // WARNING: assumes the same interface as top level schema
-                    topLevelName[0] = key;
-                    addDefinition("#/definitions/" + key, ClassTypeDef.of(capitalize(key)), true);
+                    addDefinition(inputFileName + "#/definitions/" + key, getDefinitionType(inputFileName + "#/" + schemaName), true);
                 } else if (value.containsKey("oneOf")) {
                     // inner oneOf's are treated as objects
-                    addDefinition("#/definitions/" + key, TypeDef.OBJECT, true);
+                    addDefinition(inputFileName + "#/definitions/" + key, TypeDef.OBJECT, true);
                 } else if (value.containsKey("anyOf")) {
-                    // pick first
+                    // strategy: pick first
                     var firstType = ((List<Map<String, Object>>) value.get("anyOf")).get(0);
-                    addDefinition(key, firstType);
+                    addDefinition(inputFileName + "#/definitions/" + key, firstType);
                 } else if (value.containsKey("$ref")) {
-                    referencedDefinitions.put(key, value);
+                    referencedDefinitions.put(inputFileName + "#/definitions/" + key, value);
                 } else {
-                    addDefinition(key, value);
+                    addDefinition(inputFileName + "#/definitions/" + key, value);
                 }
             });
             referencedDefinitions.forEach(DefinitionsAggregator::addDefinition);
         }
+    }
 
+    private int generateDefinitions(Map<String, ?> jsonSchema, Path outputPath, String packageName) throws IOException {
+        AtomicInteger generatedClassCount = new AtomicInteger();
         // generate top level schema
-        generateFromSchemaMap(jsonSchema, outputPath, packageName, topLevelName);
+        String schemaName;
+        if (jsonSchema.containsKey("title")) {
+            schemaName = capitalize(getCamelCaseName(jsonSchema.get("title").toString()));
+        } else {
+            schemaName = capitalize(getCamelCaseName(inputFileName.substring(0, inputFileName.indexOf('.'))));
+        }
+        generateFromSchemaMap(jsonSchema, outputPath, packageName, schemaName);
         generatedClassCount.getAndIncrement();
 
         // generate classes in definitions and oneOfs
@@ -187,11 +265,11 @@ public final class CodeGenerator {
                     if (definition.getValue().containsKey("oneOf")) {
                         return false;
                     }
-                    return Objects.requireNonNull(getDefinition("#/definitions/" + definition.getKey())).getValue();
+                    return Objects.requireNonNull(getDefinition(inputFileName + "#/definitions/" + definition.getKey())).getValue();
                 }).forEach(definition -> {
                     try {
-                        topLevelName[0] = capitalize(getCamelCaseName(definition.getKey()));
-                        generateFromSchemaMap(definition.getValue(), outputPath, packageName, topLevelName);
+                        var className = capitalize(getCamelCaseName(definition.getKey()));
+                        generateFromSchemaMap(definition.getValue(), outputPath, packageName, className);
                         generatedClassCount.getAndIncrement();
                     } catch (IOException e) {
                         throw new RuntimeException(e);
@@ -199,17 +277,15 @@ public final class CodeGenerator {
                 });
         }
         for (Map.Entry<String, Map<String, ?>> oneOf : getOneOfsToGenerate()) {
-            topLevelName[0] = oneOf.getKey();
-            generateFromSchemaMap(oneOf.getValue(), outputPath, packageName, topLevelName);
+            generateFromSchemaMap(oneOf.getValue(), outputPath, packageName, oneOf.getKey());
             generatedClassCount.getAndIncrement();
         }
-        clearAllDefinitions();
         return generatedClassCount.get();
     }
 
-    private File generateFromSchemaMap(Map<String, ?> jsonSchema, Path outputPath, String packageName, String[] fileName) throws IOException {
+    private File generateFromSchemaMap(Map<String, ?> jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
         try {
-            String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName).map(t -> t[0]), language);
+            String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName), language);
             File outputFile = getOutputFile(outputPath, packageName, decidedFileName);
             String simpleName = outputFile.getName().substring(0, outputFile.getName().lastIndexOf('.'));
             String builderClassName = packageName + "." + simpleName;
@@ -245,9 +321,9 @@ public final class CodeGenerator {
             // add definition of superclass only after generation is complete!
             if (jsonSchema.containsKey("oneOf")) {
                 if (type == ObjectType.CLASS) {
-                    addDefinition("superClass", ClassTypeDef.of(simpleName), true);
+                    addDefinition(inputFileName + "/superClass", ClassTypeDef.of(simpleName), true);
                 } else if (type == ObjectType.INTERFACE) {
-                    addDefinition("superInterface", ClassTypeDef.of(simpleName), true);
+                    addDefinition(inputFileName + "/superInterface", ClassTypeDef.of(simpleName), true);
                 }
             }
             return outputFile;
@@ -312,11 +388,11 @@ public final class CodeGenerator {
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
 
-        if (hasDefinition("superClass")) {
-            var superClass = getDefinitionType("superClass");
+        if (hasDefinition(inputFileName + "/superClass")) {
+            var superClass = getDefinitionType(inputFileName + "/superClass");
             objectBuilder.superclass((ClassTypeDef) superClass);
-        } else if (hasDefinition("superInterface")) {
-            var superInterface = getDefinitionType("superInterface");
+        } else if (hasDefinition(inputFileName + "/superInterface")) {
+            var superInterface = getDefinitionType(inputFileName + "/superInterface");
             objectBuilder.addSuperinterface(superInterface);
         } else {
             // top level class
@@ -476,7 +552,7 @@ public final class CodeGenerator {
             .stream()
             .map(entry -> AnnotationDef
                 .builder(JsonSubTypes.Type.class)
-                .addMember("value", getDefinitionType(entry.getValue()))
+                .addMember("value", getDefinitionType(inputFileName + entry.getValue()))
                 .addMember("name", entry.getKey())
                 .build())
             .toList();
@@ -508,5 +584,9 @@ public final class CodeGenerator {
 
         var annotations = AnnotationsAggregator.getAnnotations(items, propertyType);
         return TypeDef.parameterized(listClass, propertyType.annotated(annotations));
+    }
+
+    public static String getInputFileName() {
+        return inputFileName;
     }
 }

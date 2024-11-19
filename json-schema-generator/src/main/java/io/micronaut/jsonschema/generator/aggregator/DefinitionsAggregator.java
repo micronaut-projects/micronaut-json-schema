@@ -69,9 +69,12 @@ public class DefinitionsAggregator {
     }
 
     public static boolean isInheriting(String key) {
-        boolean containsDef = ONE_OF_SET.containsKey("#/definitions/" + key);
-        boolean containsOneOf = ONE_OF_SET.containsKey("#/oneOf/" + key);
-        return containsDef || containsOneOf;
+        for (HashMap.Entry<String, Map<String, ?>> entry : ONE_OF_SET.entrySet()) {
+            if (entry.getKey().substring(entry.getKey().lastIndexOf("/") + 1).equals(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void addDefinition(String key, Map<String, Object> definition) {
@@ -79,14 +82,14 @@ public class DefinitionsAggregator {
         assert typeDef != null;
         boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING);
         if (isClass) {
-            typeDef = ClassTypeDef.of(capitalize(key));
+            typeDef = ClassTypeDef.of(capitalize(key.substring(key.lastIndexOf('/') + 1)));
         }
         // add annotations to type
         var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef);
         if (!annotations.isEmpty()) {
             typeDef = typeDef.annotated(annotations);
         }
-        addDefinition("#/definitions/" + key, typeDef, isClass);
+        addDefinition(key, typeDef, isClass);
     }
 
     public static void addDefinition(String key, TypeDef classDef, boolean isClass) {
@@ -102,15 +105,15 @@ public class DefinitionsAggregator {
         ONE_OF_SET.put(key, null);
     }
 
-    public static void addOneOf(Map<String, Object> oneOf) {
-        String fileName;
+    public static void addOneOf(String fileName, Map<String, Object> oneOf) {
+        String className;
         if (oneOf.containsKey("title")) {
-            fileName = capitalize(getCamelCaseName(oneOf.get("title").toString()));
+            className = capitalize(getCamelCaseName(oneOf.get("title").toString()));
         } else {
-            fileName = "Option" + ONE_OF_SET.size();
+            className = "Option" + ONE_OF_SET.size();
         }
-        ONE_OF_SET.put("#/oneOf/" + fileName, oneOf);
-        addDefinition("#/oneOf/" + fileName, ClassTypeDef.of(capitalize(fileName)), true);
+        ONE_OF_SET.put(fileName + "#/oneOf/" + className, oneOf);
+        addDefinition(fileName + "#/oneOf/" + className, ClassTypeDef.of(capitalize(className)), true);
     }
 
     public static void clearAllDefinitions() {

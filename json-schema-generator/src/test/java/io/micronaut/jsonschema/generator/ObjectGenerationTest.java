@@ -45,7 +45,7 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.project"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName);
+        int generatedFiles = generator.generate(inputStream.get(), schemaFileName, outputPath, packageName);
         Assertions.assertEquals(1, generatedFiles);
     }
 
@@ -59,7 +59,7 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.animals"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName);
+        int generatedFiles = generator.generate(inputStream.get(), schemaFileName, outputPath, packageName);
         Assertions.assertEquals(5, generatedFiles);
 
         // Assert that the expected files exist
@@ -86,12 +86,12 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.fhir"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName);
+        int generatedFiles = generator.generate(inputStream.get(), schemaFileName, outputPath, packageName);
         Assertions.assertEquals(864, generatedFiles);
 
         // Assert that the expected files exist
         String[] expectedFileNames = {
-            "com/example/fhir/ResourceList.java",
+            "com/example/fhir/Fhir.java",
             "com/example/fhir/Account.java",
             "com/example/fhir/BackboneType.java",
             "com/example/fhir/Xhtml.java"
@@ -124,7 +124,7 @@ class ObjectGenerationTest {
         }
         Path outputPath = Paths.get("output"); // Define the base output path
         String packageName = "com.example.github"; // Example package name
-        int generatedFiles = generator.generate(inputStream.get(), outputPath, packageName);
+        int generatedFiles = generator.generate(inputStream.get(), schemaFileName, outputPath, packageName);
         Assertions.assertEquals(12, generatedFiles);
     }
 }

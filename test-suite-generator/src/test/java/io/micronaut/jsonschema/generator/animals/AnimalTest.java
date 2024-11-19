@@ -156,4 +156,5 @@ public class AnimalTest {
         assertEquals("Human", human.resourceType);
         assertEquals("ABCDEFGHIJKLMNO", human.getFirstName());
     }
+    // TODO: enum test
 }
