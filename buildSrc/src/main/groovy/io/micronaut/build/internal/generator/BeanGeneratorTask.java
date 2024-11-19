@@ -32,6 +32,7 @@ import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.TaskInstantiationException;
 import org.gradle.process.ExecOperations;
 
 import javax.inject.Inject;
@@ -88,6 +89,9 @@ public abstract class BeanGeneratorTask extends DefaultTask {
         var lang = getLanguage().getOrElse("java");
         String jsonFile = getJsonFile().isPresent() ? getJsonFile().get().getAsFile().toURI().toString() : "";
         String inputPath = getInputDirectory().isPresent() ? getInputDirectory().get().getAsFile().getAbsolutePath() : "";
+        if (jsonFile.isEmpty() && inputPath.isEmpty()) {
+            throw new TaskInstantiationException("One of the arguments needs to be provided: jsonFile or inputDirectory.");
+        }
 
         Files.createDirectories(generatedSourcesDir.toPath());
         getExecOperations().javaexec(javaexec -> {

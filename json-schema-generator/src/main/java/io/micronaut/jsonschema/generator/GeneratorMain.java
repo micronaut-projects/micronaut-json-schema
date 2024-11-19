@@ -44,9 +44,6 @@ public class GeneratorMain {
      * @throws IOException In case definition file path is incorrect.
      */
     public static void main(String[] args) throws IOException {
-        if (args[0].isEmpty() && args[1].isEmpty()) {
-            throw new IllegalArgumentException("One of the arguments needs to be provided: jsonFile or inputDirectory.");
-        }
         var lang = VisitorContext.Language.valueOf(args[2].toUpperCase());
         var outputPath = Paths.get(args[3]);
         var outputPackageName = args[4];

@@ -42,6 +42,7 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 public class DefinitionsAggregator {
     private static final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private static final HashMap<String, Map<String, ?>> ONE_OF_SET = new HashMap<>();
+    // TODO: re-organise one of set
 
     public static TypeDef getDefinitionType(String key) {
         if (hasDefinition(key)) {

@@ -158,6 +158,7 @@ public final class CodeGenerator {
      */
     public void generate(Path jsonFolderLocation, Path outputPath, String packageName) {
         try {
+            // TODO: optimise
             // Walk through the directory to find all json files
             Files.walk(jsonFolderLocation)
                 .filter(file -> file.toString().endsWith(".schema.json")) // Filter to only JSON schema files
