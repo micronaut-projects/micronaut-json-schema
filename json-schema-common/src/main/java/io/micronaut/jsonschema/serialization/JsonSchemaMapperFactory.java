@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.visitor.serialization;
+package io.micronaut.jsonschema.serialization;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JacksonException;
@@ -124,12 +124,9 @@ public class JsonSchemaMapperFactory {
                         new ArrayNode(context.getNodeFactory(), Collections.singletonList(text))
                     );
                 }
-                JsonParser newParser = new TreeTraversingParser(tree, jsonParser.getCodec());
-                newParser.nextToken();
-                try {
+                try (JsonParser newParser = new TreeTraversingParser(tree, jsonParser.getCodec())) {
+                    newParser.nextToken();
                     return (Schema) getDelegatee().deserialize(newParser, context);
-                } catch (Exception e) {
-                    System.out.println(e);
                 }
             } else if (tree instanceof BooleanNode bool) {
                 return bool.asBoolean() ? Schema.TRUE : Schema.FALSE;

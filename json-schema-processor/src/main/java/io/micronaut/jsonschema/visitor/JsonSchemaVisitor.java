@@ -29,12 +29,12 @@ import io.micronaut.inject.writer.GeneratedFile;
 import io.micronaut.jsonschema.JsonSchema;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.jsonschema.model.Schema.Type;
+import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import io.micronaut.jsonschema.visitor.aggregator.DocumentationInfoAggregator;
 import io.micronaut.jsonschema.visitor.aggregator.JacksonInfoAggregator;
 import io.micronaut.jsonschema.visitor.aggregator.SchemaInfoAggregator;
 import io.micronaut.jsonschema.visitor.aggregator.ValidationInfoAggregator;
 import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
-import io.micronaut.jsonschema.visitor.serialization.JsonSchemaMapperFactory;
 
 import java.io.IOException;
 import java.io.Writer;
