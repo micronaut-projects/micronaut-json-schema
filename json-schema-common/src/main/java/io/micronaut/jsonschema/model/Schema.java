@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.visitor.model;
+package io.micronaut.jsonschema.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.inject.ast.TypedElement;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -52,6 +51,10 @@ public final class Schema {
     private String $schema;
     private String $id;
     private String $ref;
+
+    @JsonProperty("$defs")
+    @JsonAlias("definitions")
+    private Map<String, Schema> $defs;
 
     private String title;
     private String description;
@@ -98,9 +101,6 @@ public final class Schema {
     private List<Schema> oneOf;
 
     private Schema not;
-
-    @JsonIgnore
-    private TypedElement sourceElement;
 
     public String getTitle() {
         return title;
@@ -431,6 +431,20 @@ public final class Schema {
         return this;
     }
 
+    public Map<String, Schema> get$defs() {
+        return $defs;
+    }
+
+    public Schema set$defs(Map<String, Schema> $defs) {
+        this.$defs = $defs;
+        return this;
+    }
+
+    public Schema put$def(String key, Schema $def) {
+        $defs.put(key, $def);
+        return this;
+    }
+
     public static Schema string() {
         return new Schema().addType(Type.STRING);
     }
@@ -465,15 +479,6 @@ public final class Schema {
 
     public Schema setNot(Schema not) {
         this.not = not;
-        return this;
-    }
-
-    public TypedElement getSourceElement() {
-        return sourceElement;
-    }
-
-    public Schema setSourceElement(TypedElement sourceElement) {
-        this.sourceElement = sourceElement;
         return this;
     }
 

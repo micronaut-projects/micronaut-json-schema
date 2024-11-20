@@ -25,9 +25,9 @@ import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.TypedElement;
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.jsonschema.visitor.JsonSchemaVisitor;
 import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
-import io.micronaut.jsonschema.visitor.model.Schema;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -121,6 +121,8 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                     schema.getProperties().remove(property.getName());
                     schema.putProperty(name, propertySchema);
                 }
+
+                ValidationInfoAggregator.addRequiredPropertyInfo(name, property, schema, context);
             }
         }
 
