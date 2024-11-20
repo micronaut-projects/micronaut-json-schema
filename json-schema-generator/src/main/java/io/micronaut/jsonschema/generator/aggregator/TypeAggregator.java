@@ -16,15 +16,17 @@
 package io.micronaut.jsonschema.generator.aggregator;
 
 import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.CodeGenerator;
+import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
 
 import javax.lang.model.SourceVersion;
+import io.micronaut.jsonschema.model.Schema;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,9 +36,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,20 +58,14 @@ public class TypeAggregator {
     private static final Map<String, TypeDef> TYPE_MAP = CollectionUtils.mapOf(new Object[]{
         "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN, "array", TypeDef.of(List.class),
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
-        "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
+        "number", ClassTypeDef.of(Float.class), "null", TypeDef.OBJECT});
 
-    public static TypeDef getTypeDefFromJson(Map<String, Object> description) {
-        var type = description.getOrDefault("type", "object");
-        String typeName;
-        if (type.getClass() == ArrayList.class) {
-            typeName = ((ArrayList<?>) type).get(0).toString();
-        } else {
-            typeName = type.toString();
-        }
+    public static TypeDef getTypeDefFromJson(Schema schema) {
+        var type = schema.getType() != null ? schema.getType().get(0) : Schema.Type.OBJECT;
 
         TypeDef typeDef;
-        if (typeName.equals("string") && description.containsKey("format")) {
-            var format = description.get("format").toString();
+        if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
+            var format = schema.getFormat();
             switch (format) {
                 case "date": typeDef = ClassTypeDef.of(LocalDate.class); break;
                 case "date-time", "time": typeDef = ClassTypeDef.of(ZonedDateTime.class); break;
@@ -80,28 +75,28 @@ public class TypeAggregator {
                 case "uuid": typeDef = ClassTypeDef.of(UUID.class); break;
                 case "uri", "iri": typeDef = ClassTypeDef.of(URI.class); break;
                 case "json-pointer": typeDef = ClassTypeDef.of(JsonPointer.class); break;
-                // missing: email, web hostname, uri-reference, uri-template, regex
+                // missing: web hostname, uri-reference, uri-template, regex
                 default: typeDef = TypeDef.STRING;
             }
-        } else if (description.containsKey("$ref")) {
-            String ref = description.get("$ref").toString();
+        } else if (schema.has$ref()) {
+            String ref = schema.get$ref();
             if (ref.indexOf("#") == 0) {
                 ref = CodeGenerator.getInputFileName() + ref;
             }
             typeDef = getDefinitionType(ref);
         } else {
-            typeDef = TYPE_MAP.get(typeName);
+            typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
         }
         return typeDef;
     }
 
-    public static Map<String, ?> getJsonSchema(InputStream inputStream, File schemaFile) throws IOException {
-        JsonMapper jsonMapper = new JsonMapper();
+    public static Schema getJsonSchema(InputStream inputStream, File schemaFile) throws IOException {
+        ObjectMapper jsonMapper = JsonSchemaMapperFactory.createMapper();
         if (inputStream != null) {
             String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            return (Map<String, ?>) jsonMapper.readValue(jsonString, HashMap.class);
+            return jsonMapper.readValue(jsonString, Schema.class);
         } else if (schemaFile != null) {
-            return (Map<String, ?>) jsonMapper.readValue(schemaFile, HashMap.class);
+            return jsonMapper.readValue(schemaFile, Schema.class);
         }
         return null;
     }
@@ -189,15 +184,12 @@ public class TypeAggregator {
         return camelCaseString.toString();
     }
 
-    public static String getFileName(Map<String, ?> schema, Optional<String> topLevelName, VisitorContext.Language language) {
-        String fileName = null;
+    public static String getFileName(Schema schema, Optional<String> topLevelName, VisitorContext.Language language) {
+        String fileName;
         if (topLevelName.isPresent() && !topLevelName.get().isEmpty()) {
             fileName = topLevelName.get();
-        } else if (schema.containsKey("title")) {
-            fileName = capitalize(getCamelCaseName(schema.get("title").toString()));
-        } else if (schema.keySet().size() == 1) {
-            // definition name
-            fileName = schema.keySet().toArray()[0].toString();
+        } else if (schema.hasTitle()) {
+            fileName = capitalize(getCamelCaseName(schema.getTitle()));
         } else {
             fileName = "SchemaFile"; // default
         }

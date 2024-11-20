@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import io.micronaut.core.annotation.Internal;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -52,6 +53,10 @@ public final class Schema {
     private String $id;
     private String $ref;
 
+    private Schema discriminator;
+    private String propertyName;
+    private HashMap<String, String> mapping;
+
     @JsonProperty("$defs")
     @JsonAlias("definitions")
     private Map<String, Schema> $defs;
@@ -72,6 +77,7 @@ public final class Schema {
     private Map<String, Schema> properties;
 
     private Object defaultValue;
+    private Boolean nullable;
     private Boolean deprecated;
     private Boolean readOnly;
     private Boolean writeOnly;
@@ -99,6 +105,8 @@ public final class Schema {
     private Schema additionalProperties;
 
     private List<Schema> oneOf;
+    private List<Schema> allOf;
+    private List<Schema> anyOf;
 
     private Schema not;
 
@@ -111,6 +119,10 @@ public final class Schema {
         return this;
     }
 
+    public boolean hasTitle() {
+        return title != null;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -118,6 +130,10 @@ public final class Schema {
     public Schema setDescription(String description) {
         this.description = description;
         return this;
+    }
+
+    public boolean hasDescription() {
+        return description != null;
     }
 
     public List<Type> getType() {
@@ -135,6 +151,10 @@ public final class Schema {
         }
         this.type.add(type);
         return this;
+    }
+
+    public boolean hasType() {
+        return type != null;
     }
 
     public String getFormat() {
@@ -155,6 +175,10 @@ public final class Schema {
         return this;
     }
 
+    public boolean hasConstValue() {
+        return constValue != null;
+    }
+
     public List<Object> getEnumValues() {
         return enumValues;
     }
@@ -162,6 +186,10 @@ public final class Schema {
     public Schema setEnumValues(List<Object> enumValues) {
         this.enumValues = enumValues;
         return this;
+    }
+
+    public boolean isEnum() {
+        return enumValues != null;
     }
 
     public Schema getItems() {
@@ -190,12 +218,25 @@ public final class Schema {
         return this;
     }
 
+    public boolean hasProperties() {
+        return properties != null;
+    }
+
     public Object getDefaultValue() {
         return defaultValue;
     }
 
     public Schema setDefaultValue(Object defaultValue) {
         this.defaultValue = defaultValue;
+        return this;
+    }
+
+    public Boolean isNullable() {
+        return nullable;
+    }
+
+    public Schema setNullable(boolean nullable) {
+        this.nullable = nullable;
         return this;
     }
 
@@ -378,6 +419,10 @@ public final class Schema {
         return this;
     }
 
+    public boolean hasRequired() {
+        return required != null && !required.isEmpty();
+    }
+
     public Schema getAdditionalProperties() {
         return additionalProperties;
     }
@@ -385,6 +430,10 @@ public final class Schema {
     public Schema setAdditionalProperties(Schema additionalProperties) {
         this.additionalProperties = additionalProperties;
         return this;
+    }
+
+    public boolean hasAdditionalProperties() {
+        return additionalProperties != null;
     }
 
     public List<Schema> getOneOf() {
@@ -402,6 +451,52 @@ public final class Schema {
         }
         oneOf.add(one);
         return this;
+    }
+
+    public boolean hasOneOf() {
+        return oneOf != null;
+    }
+
+    public List<Schema> getAllOf() {
+        return allOf;
+    }
+
+    public Schema setAllOf(List<Schema> allOf) {
+        this.allOf = allOf;
+        return this;
+    }
+
+    public Schema addAllOf(Schema one) {
+        if (allOf == null) {
+            allOf = new ArrayList<>();
+        }
+        allOf.add(one);
+        return this;
+    }
+
+    public boolean hasAllOf() {
+        return allOf != null;
+    }
+
+    public List<Schema> getAnyOf() {
+        return anyOf;
+    }
+
+    public Schema setAnyOf(List<Schema> anyOf) {
+        this.anyOf = anyOf;
+        return this;
+    }
+
+    public Schema addAnyOf(Schema one) {
+        if (anyOf == null) {
+            anyOf = new ArrayList<>();
+        }
+        anyOf.add(one);
+        return this;
+    }
+
+    public boolean hasAnyOf() {
+        return anyOf != null;
     }
 
     public String get$schema() {
@@ -431,6 +526,10 @@ public final class Schema {
         return this;
     }
 
+    public boolean has$ref() {
+        return $ref != null;
+    }
+
     public Map<String, Schema> get$defs() {
         return $defs;
     }
@@ -443,6 +542,38 @@ public final class Schema {
     public Schema put$def(String key, Schema $def) {
         $defs.put(key, $def);
         return this;
+    }
+
+    public boolean has$defs() {
+        return $defs != null;
+    }
+
+    public Schema getDiscriminator() {
+        return discriminator;
+    }
+
+    public void setDiscriminator(Schema discriminator) {
+        this.discriminator = discriminator;
+    }
+
+    public boolean hasDiscriminator() {
+        return discriminator != null;
+    }
+
+    public String getPropertyName() {
+        return propertyName;
+    }
+
+    public void setPropertyName(String propertyName) {
+        this.propertyName = propertyName;
+    }
+
+    public HashMap<String, String> getMapping() {
+        return mapping;
+    }
+
+    public void setMapping(HashMap<String, String> mapping) {
+        this.mapping = mapping;
     }
 
     public static Schema string() {

@@ -52,7 +52,7 @@ public class GeneratorMain {
         var generator = new CodeGenerator(lang);
         if (args[1].isEmpty()) {
             var jsonFile = new File(args[0].substring(5));
-            if (fileName.isBlank()) {
+            if (fileName.isEmpty()) {
                 generator.generate(jsonFile, outputPath, outputPackageName);
             } else {
                 generator.generate(jsonFile, outputPath, outputPackageName, fileName);

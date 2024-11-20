@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.aggregator;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
 import jakarta.inject.Singleton;
@@ -41,7 +42,7 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 @Singleton
 public class DefinitionsAggregator {
     private static final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
-    private static final HashMap<String, Map<String, ?>> ONE_OF_SET = new HashMap<>();
+    private static final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
     // TODO: re-organise one of set
 
     public static TypeDef getDefinitionType(String key) {
@@ -58,9 +59,9 @@ public class DefinitionsAggregator {
         return null;
     }
 
-    public static List<AbstractMap.SimpleEntry<String, Map<String, ?>>> getOneOfsToGenerate() {
+    public static List<AbstractMap.SimpleEntry<String, Schema>> getOneOfsToGenerate() {
         return ONE_OF_SET.entrySet().stream().filter(entry -> entry.getValue() != null)
-            .map(e -> new AbstractMap.SimpleEntry<String, Map<String, ?>>(e.getKey()
+            .map(e -> new AbstractMap.SimpleEntry<String, Schema>(e.getKey()
                 .substring(e.getKey().lastIndexOf('/') + 1), e.getValue()))
             .toList();
     }
@@ -70,7 +71,7 @@ public class DefinitionsAggregator {
     }
 
     public static boolean isInheriting(String key) {
-        for (HashMap.Entry<String, Map<String, ?>> entry : ONE_OF_SET.entrySet()) {
+        for (HashMap.Entry<String, Schema> entry : ONE_OF_SET.entrySet()) {
             if (entry.getKey().substring(entry.getKey().lastIndexOf("/") + 1).equals(key)) {
                 return true;
             }
@@ -78,10 +79,10 @@ public class DefinitionsAggregator {
         return false;
     }
 
-    public static void addDefinition(String key, Map<String, Object> definition) {
+    public static void addDefinition(String key, Schema definition) {
         var typeDef = getTypeDefFromJson(definition);
         assert typeDef != null;
-        boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING);
+        boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING) && !typeDef.equals(ClassTypeDef.of(Float.class));
         if (isClass) {
             typeDef = ClassTypeDef.of(capitalize(key.substring(key.lastIndexOf('/') + 1)));
         }
@@ -106,10 +107,10 @@ public class DefinitionsAggregator {
         ONE_OF_SET.put(key, null);
     }
 
-    public static void addOneOf(String fileName, Map<String, Object> oneOf) {
+    public static void addOneOf(String fileName, Schema oneOf) {
         String className;
-        if (oneOf.containsKey("title")) {
-            className = capitalize(getCamelCaseName(oneOf.get("title").toString()));
+        if (oneOf.hasTitle()) {
+            className = capitalize(getCamelCaseName(oneOf.getTitle()));
         } else {
             className = "Option" + ONE_OF_SET.size();
         }

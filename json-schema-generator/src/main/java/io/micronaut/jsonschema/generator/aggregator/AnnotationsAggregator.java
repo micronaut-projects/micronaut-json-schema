@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.aggregator;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.AnnotationDef;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.PropertyDef;
@@ -23,7 +24,6 @@ import io.micronaut.sourcegen.model.TypeDef;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * An aggregator for adding annotation information from json schema.
@@ -47,92 +47,116 @@ public class AnnotationsAggregator {
     private static final String PATTERN_ANN = JAKARTA_VALIDATION_PREFIX + "Pattern";
     private static final String EMAIL_ANN = JAKARTA_VALIDATION_PREFIX + "Email";
     private static final int EXCLUSIVE_DELTA_INT = 1;
-    private static final double EXCLUSIVE_DELTA_DOUBLE = Double.MIN_VALUE;
+    private static final double EXCLUSIVE_DELTA_DOUBLE = 0.001;
 
-    public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, Map<String, Object> schemaMap, TypeDef propertyType, boolean isRequired) {
+    public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, Schema schema, TypeDef propertyType, boolean isRequired) {
         if (isRequired) {
             propertyDef.addAnnotation(NOT_NULL_ANN);
         }
-        getAnnotations(schemaMap, propertyType).forEach(propertyDef::addAnnotation);
+        getAnnotations(schema, propertyType).forEach(propertyDef::addAnnotation);
     }
 
-    public static List<AnnotationDef> getAnnotations(Map<String, Object> schemaMap, TypeDef propertyType) {
+    public static List<AnnotationDef> getAnnotations(Schema schema, TypeDef propertyType) {
         List<AnnotationDef> annotations = new ArrayList<>();
-        boolean isFloat = propertyType.equals(TypeDef.Primitive.FLOAT) || propertyType.equals(TypeDef.of(Float.class));
+        boolean isFloat = propertyType.equals(TypeDef.Primitive.FLOAT) || propertyType.equals(ClassTypeDef.of(Float.class));
         var minAnn = isFloat ? DECIMAL_MIN_ANN : MIN_ANN;
         var maxAnn = isFloat ? DECIMAL_MAX_ANN : MAX_ANN;
-        schemaMap.forEach((key, value) -> {
-            AnnotationDef.AnnotationDefBuilder annBuilder = null;
-            switch (key) {
-                case "nullable":
-                    if (value.toString().equals(Boolean.TRUE.toString())) {
-                        annBuilder = AnnotationDef
-                            .builder(ClassTypeDef.of(NULLABLE_ANN));
-                    } else {
-                        annBuilder = AnnotationDef
-                            .builder(ClassTypeDef.of(NOT_NULL_ANN));
-                    }
-                break;
-                // check annotation related to numbers
-                case "minimum":
-                    annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(minAnn))
-                        .addMember("value", isFloat ? value + "" : value);
+
+        if (schema.isNullable() != null) {
+            var nullableAnn = schema.isNullable() ? NULLABLE_ANN : NOT_NULL_ANN;
+            annotations.add(AnnotationDef.builder(ClassTypeDef.of(nullableAnn)).build());
+        }
+        if (schema.getMinimum() != null) {
+            var value = schema.getMinimum();
+            annotations.add(AnnotationDef
+                .builder(ClassTypeDef.of(minAnn))
+                .addMember("value", isFloat ? value + "" : value)
+                .build());
+        }
+        if (schema.getMaximum() != null) {
+            var value = schema.getMaximum();
+            annotations.add(AnnotationDef
+                .builder(ClassTypeDef.of(maxAnn))
+                .addMember("value", isFloat ? value + "" : value)
+                .build());
+        }
+        if (schema.getExclusiveMinimum() != null) {
+            var value = schema.getExclusiveMinimum();
+            annotations.add(AnnotationDef
+                .builder(ClassTypeDef.of(minAnn))
+                .addMember("value", isFloat ?
+                    "" + (((double) value) + EXCLUSIVE_DELTA_DOUBLE) :
+                    ((int) value) + EXCLUSIVE_DELTA_INT)
+                .build());
+        }
+        if (schema.getExclusiveMaximum() != null) {
+            var value = schema.getExclusiveMaximum();
+            annotations.add(AnnotationDef
+                .builder(ClassTypeDef.of(maxAnn))
+                .addMember("value", isFloat ?
+                    "" + (((double) value) - EXCLUSIVE_DELTA_DOUBLE) :
+                    ((int) value) - EXCLUSIVE_DELTA_INT)
+                .build());
+        }
+        if (schema.getMaxLength() != null || schema.getMaxItems() != null) {
+            var value = schema.getMaxLength() != null ? schema.getMaxLength() : schema.getMaxItems();
+            annotations.add(AnnotationDef
+                .builder(ClassTypeDef.of(SIZE_ANN))
+                .addMember("max", value).build());
+        }
+        if (schema.getMinLength() != null || schema.getMinItems() != null) {
+            var value = schema.getMinLength() != null ? schema.getMinLength() : schema.getMinItems();
+            annotations.add(AnnotationDef
+                .builder(ClassTypeDef.of(SIZE_ANN))
+                .addMember("min", value).build());
+        }
+        if (schema.getPattern() != null && propertyType.equals(TypeDef.STRING)) {
+            var value = schema.getPattern();
+            annotations.add(AnnotationDef
+                .builder(ClassTypeDef.of(PATTERN_ANN))
+                .addMember("regexp", value).build());
+        }
+        if (schema.getPattern() != null && propertyType.equals(ClassTypeDef.of(Float.class))) {
+            var pattern = schema.getPattern();
+            switch (pattern) {
+                case "^[1-9][0-9]*$", "^\\d*\\.?\\d+$" -> // positive
+                    annotations.add(AnnotationDef
+                        .builder(ClassTypeDef.of(DECIMAL_MIN_ANN))
+                        .addMember("value", "" + EXCLUSIVE_DELTA_DOUBLE)
+                        .build());
+                case "^[0-9]*$", "^[0]|([1-9][0-9]*)$" -> // positive or zero
+                    annotations.add(AnnotationDef
+                        .builder(ClassTypeDef.of(MIN_ANN))
+                        .addMember("value", 0)
+                        .build());
+                case "^-\\d*\\.?\\d+$", "^-\\d+$" -> // negative
+                    annotations.add(AnnotationDef
+                        .builder(ClassTypeDef.of(DECIMAL_MAX_ANN))
+                        .addMember("value", "" + (0.0 -  EXCLUSIVE_DELTA_DOUBLE))
+                        .build());
+                case "^(-\\d+(\\.\\d+)?|0(\\.0+)?)$", "^-?(0|[1-9][0-9]{0,17})(\\.[0-9]{1,17})?([eE][+-]?[0-9]{1,9}})?$" -> // negative or zero
+                    annotations.add(AnnotationDef
+                        .builder(ClassTypeDef.of(MAX_ANN))
+                        .addMember("value", 0)
+                        .build());
+                case "^[0]|[-+]?[1-9][0-9]*$" -> {
+                    //TODO make integer
                     break;
-                case "maximum":
-                    annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(maxAnn))
-                        .addMember("value", isFloat ? value + "" : value);
-                    break;
-                case "exclusiveMinimum":
-                    annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(minAnn))
-                        .addMember("value", isFloat ?
-                            "" + (((double) value) + EXCLUSIVE_DELTA_DOUBLE) :
-                            ((int) value) + EXCLUSIVE_DELTA_INT);
-                    break;
-                case "exclusiveMaximum":
-                    annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(maxAnn))
-                        .addMember("value", isFloat ?
-                            "" + (((double) value) - EXCLUSIVE_DELTA_DOUBLE) :
-                            ((int) value) - EXCLUSIVE_DELTA_INT);
-                    break;
-                // list annotations
-                case "maxLength", "maxItems":
-                    annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(SIZE_ANN))
-                        .addMember("max", value);
-                    break;
-                case "minLength", "minItems":
-                    annBuilder = AnnotationDef
-                        .builder(ClassTypeDef.of(SIZE_ANN))
-                        .addMember("min", value);
-                    break;
-                case "pattern":
-                    if (propertyType.equals(TypeDef.STRING)) {
-                        annBuilder = AnnotationDef
-                            .builder(ClassTypeDef.of(PATTERN_ANN))
-                            .addMember("regexp", value);
-                    }
-                    break;
-                // string annotations
-                case "email": annBuilder = AnnotationDef
-                    .builder(ClassTypeDef.of(EMAIL_ANN));
-                // boolean annotations
-                case "const":
-                    if (propertyType == TypeDef.Primitive.BOOLEAN) {
-                        var assertAnn = (value.toString().equals(Boolean.TRUE.toString())) ? ASSERT_TRUE_ANN : ASSERT_FALSE_ANN;
-                        annBuilder = AnnotationDef.builder(ClassTypeDef.of(assertAnn));
-                    }
-                    break;
-                default:
-                    break;
+                }
+                default -> System.err.println("Unsupported validation pattern for number: " + pattern);
             }
-            if (annBuilder != null) {
-                annotations.add(annBuilder.build());
+        }
+        if (schema.getFormat() != null && schema.getFormat().equals("email")) {
+            annotations.add(AnnotationDef.builder(ClassTypeDef.of(EMAIL_ANN)).build());
+        }
+        if (schema.getConstValue() != null) {
+            if (schema.getConstValue().equals("true")) {
+                annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_TRUE_ANN)).build());
+            } else if (schema.getConstValue().equals("false")) {
+                annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_FALSE_ANN)).build());
             }
-        });
+        }
+        // TODO: Contains keywords?
         return annotations;
     }
 }
