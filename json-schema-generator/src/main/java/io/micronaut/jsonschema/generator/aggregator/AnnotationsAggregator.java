@@ -167,7 +167,6 @@ public class AnnotationsAggregator {
                 annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_FALSE_ANN)).build());
             }
         }
-        // TODO: Contains keywords?
         return annotations;
     }
 }

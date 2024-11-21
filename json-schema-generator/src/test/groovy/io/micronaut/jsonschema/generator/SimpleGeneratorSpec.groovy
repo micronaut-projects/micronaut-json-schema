@@ -198,6 +198,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'array'               | '{"type": "array", "items": {"type": "string"}}'                      | "List<String> array"
         'array'               | '{"type": "array", "uniqueItems": true, "items": {"type": "string"}}' | "Set<String> array"
         'array'               | '{"type": "array", "items": {"type": "number"}}'                      | "List<Float> array"
+        // support contains
+        'contain'             | '{"type": "array", "contains": {"type": "number"}}'                   | "List<Float> contain"
         // booleans
         'predicate'           | '{"type": "boolean"}'                                                 | 'boolean predicate'
         // enums

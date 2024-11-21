@@ -552,7 +552,10 @@ public final class CodeGenerator {
     }
 
     private TypeDef getListTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
-        Schema items = schema.getItems();
+        Schema items = schema.getItems() != null ? schema.getItems() : schema.getContains();
+        if (items == null) {
+            return TypeDef.OBJECT;
+        }
 
         TypeDef propertyType = getTypeDefFromJson(items);
         if (propertyType.equals(TypeDef.of(List.class))) {

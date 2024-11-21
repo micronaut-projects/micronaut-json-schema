@@ -98,7 +98,7 @@ public final class Schema {
     private Boolean uniqueItems;
     private Integer maxContains;
     private Integer minContains;
-    private List<Object> contains;
+    private Schema contains;
 
     private List<String> required;
 
@@ -393,11 +393,11 @@ public final class Schema {
         return this;
     }
 
-    public List<Object> getContains() {
+    public Schema getContains() {
         return contains;
     }
 
-    public Schema setContains(List<Object> contains) {
+    public Schema setContains(Schema contains) {
         this.contains = contains;
         return this;
     }
