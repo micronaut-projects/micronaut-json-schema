@@ -6,10 +6,7 @@
   "type": "object",
   "properties": {
     "fruits": {
-      "type": "array",
-      "items": {
-        "$ref": "fruit.schema.json#/$defs/fruit"
-      }
+      "$ref": "fruit.schema.json#/Fruits"
     },
     "favouriteFruit": {
       "$ref": "fruit.schema.json#/$defs/fruit"

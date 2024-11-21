@@ -157,7 +157,6 @@ public final class CodeGenerator {
      */
     public void generate(Path jsonFolderLocation, Path outputPath, String packageName) {
         try {
-            // TODO: optimise
             HashMap<Schema, String> schemas = new HashMap<>();
             // Walk through the directory to find all json files
             Files.walk(jsonFolderLocation)
@@ -291,7 +290,6 @@ public final class CodeGenerator {
                     type = ObjectType.INTERFACE;
                 }
             } else if (isInheriting(simpleName)) {
-                // inheriting
                 type = ObjectType.CLASS;
             } else {
                 type = ObjectType.RECORD;
@@ -336,7 +334,6 @@ public final class CodeGenerator {
                 isComplexEnum = true;
             }
         }
-        // TODO: throw error on default?
         cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
         if (isComplexEnum) {
             enumBuilder.addField(FieldDef.builder("name")
@@ -430,6 +427,11 @@ public final class CodeGenerator {
     private void addFields(Schema jsonSchema, ObjectDefBuilder builder) {
         if (jsonSchema.hasDescription()) {
             builder.addJavadoc(jsonSchema.getDescription());
+        }
+
+        if (jsonSchema.hasAllOf()) {
+            // merge "all of" schemas
+            jsonSchema.getAllOf().forEach(jsonSchema::merge);
         }
         if (jsonSchema.hasProperties()) {
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();

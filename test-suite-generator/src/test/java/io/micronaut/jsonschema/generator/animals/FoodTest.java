@@ -32,7 +32,9 @@ public class FoodTest {
     public void mapFood() throws JsonProcessingException {
         var food = jsonMapper.readValue("""
             {
-              "fruits": [{
+              "fruits": {
+              "fruits":
+              [{
                 "fruitName": "Strawberry",
                 "fruitColor": "Pink",
                 "fruitTaste": "sweet"
@@ -45,7 +47,8 @@ public class FoodTest {
                 "fruitColor": "Green",
                 "fruitTaste": "sour",
                 "fruitSeason": "summer"
-              }],
+              }]
+              },
               "favouriteFruit": {
                 "fruitName": "Strawberry",
                 "fruitColor": "Pink",
@@ -58,7 +61,7 @@ public class FoodTest {
             }
             """, Food.class);
         assertEquals(Food.class, food.getClass());
-        assertEquals(3, food.fruits().size());
+        assertEquals(3, food.fruits().fruits().size());
         assertEquals(1, food.vegetables().size());
 
         assertEquals("sweet", food.favouriteFruit().fruitTaste().getName());

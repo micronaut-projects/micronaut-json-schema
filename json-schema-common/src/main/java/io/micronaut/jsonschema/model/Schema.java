@@ -613,6 +613,261 @@ public final class Schema {
         return this;
     }
 
+    public Schema merge(Schema other) {
+        if (other == null) {
+            return this;
+        }
+
+        // Merge basic properties
+        if (other.$schema != null) {
+            this.$schema = other.$schema;
+        }
+        if (other.$id != null) {
+            this.$id = other.$id;
+        }
+        if (other.$ref != null) {
+            this.$ref = other.$ref;
+        }
+
+        // Merge discriminator
+        if (other.discriminator != null) {
+            if (this.discriminator == null) {
+                this.discriminator = other.discriminator;
+            } else {
+                this.discriminator.merge(other.discriminator);
+            }
+        }
+
+        // Merge propertyName
+        if (other.propertyName != null) {
+            this.propertyName = other.propertyName;
+        }
+
+        // Merge mapping
+        if (other.mapping != null) {
+            if (this.mapping == null) {
+                this.mapping = new HashMap<>();
+            }
+            this.mapping.putAll(other.mapping);
+        }
+
+        // Merge $defs
+        if (other.$defs != null) {
+            if (this.$defs == null) {
+                this.$defs = new HashMap<>();
+            }
+            this.$defs.putAll(other.$defs);
+        }
+
+        // Merge title
+        if (other.title != null) {
+            this.title = other.title;
+        }
+
+        // Merge description
+        if (other.description != null) {
+            this.description = other.description;
+        }
+
+        // Merge types
+        if (other.type != null) {
+            if (this.type == null) {
+                this.type = new ArrayList<>();
+            }
+            for (Type typeItem : other.type) {
+                if (!this.type.contains(typeItem)) {
+                    this.type.add(typeItem);
+                }
+            }
+        }
+
+        // Merge format
+        if (other.format != null) {
+            this.format = other.format;
+        }
+
+        // Merge constValue
+        if (other.constValue != null) {
+            this.constValue = other.constValue;
+        }
+
+        // Merge enumValues
+        if (other.enumValues != null) {
+            if (this.enumValues == null) {
+                this.enumValues = new ArrayList<>();
+            }
+            for (Object enumItem : other.enumValues) {
+                if (!this.enumValues.contains(enumItem)) {
+                    this.enumValues.add(enumItem);
+                }
+            }
+        }
+
+        // Merge items
+        if (other.items != null) {
+            if (this.items == null) {
+                this.items = other.items;
+            } else {
+                this.items.merge(other.items); // Assuming there's a merge method for Schema
+            }
+        }
+
+        // Merge properties
+        if (other.properties != null) {
+            if (this.properties == null) {
+                this.properties = new HashMap<>();
+            }
+            this.properties.putAll(other.properties);
+        }
+
+        // Merge defaultValue
+        if (other.defaultValue != null) {
+            this.defaultValue = other.defaultValue;
+        }
+
+        // Merge nullable
+        if (other.nullable != null) {
+            this.nullable = other.nullable;
+        }
+
+        // Merge deprecated
+        if (other.deprecated != null) {
+            this.deprecated = other.deprecated;
+        }
+
+        // Merge readOnly
+        if (other.readOnly != null) {
+            this.readOnly = other.readOnly;
+        }
+
+        // Merge writeOnly
+        if (other.writeOnly != null) {
+            this.writeOnly = other.writeOnly;
+        }
+
+        // Merge examples
+        if (other.examples != null) {
+            if (this.examples == null) {
+                this.examples = new ArrayList<>();
+            }
+            for (Object example : other.examples) {
+                if (!this.examples.contains(example)) {
+                    this.examples.add(example);
+                }
+            }
+        }
+
+        // Merge numerical constraints
+        if (other.multipleOf != null) {
+            this.multipleOf = other.multipleOf;
+        }
+        if (other.maximum != null) {
+            this.maximum = other.maximum;
+        }
+        if (other.minimum != null) {
+            this.minimum = other.minimum;
+        }
+        if (other.exclusiveMaximum != null) {
+            this.exclusiveMaximum = other.exclusiveMaximum;
+        }
+        if (other.exclusiveMinimum != null) {
+            this.exclusiveMinimum = other.exclusiveMinimum;
+        }
+
+        // Merge length constraints
+        if (other.maxLength != null) {
+            this.maxLength = other.maxLength;
+        }
+        if (other.minLength != null) {
+            this.minLength = other.minLength;
+        }
+        if (other.pattern != null) {
+            this.pattern = other.pattern;
+        }
+
+        // Merge item count constraints
+        if (other.maxItems != null) {
+            this.maxItems = other.maxItems;
+        }
+        if (other.minItems != null) {
+            this.minItems = other.minItems;
+        }
+        if (other.uniqueItems != null) {
+            this.uniqueItems = other.uniqueItems;
+        }
+        if (other.maxContains != null) {
+            this.maxContains = other.maxContains;
+        }
+        if (other.minContains != null) {
+            this.minContains = other.minContains;
+        }
+
+        // Merge contains
+        if (other.contains != null) {
+            if (this.contains == null) {
+                this.contains = other.contains;
+            } else {
+                this.contains.merge(other.contains); // Assuming there's a merge method for Schema
+            }
+        }
+
+        // Merge required
+        if (other.required != null) {
+            if (this.required == null) {
+                this.required = new ArrayList<>();
+            }
+            for (String requiredItem : other.required) {
+                if (!this.required.contains(requiredItem)) {
+                    this.required.add(requiredItem);
+                }
+            }
+        }
+
+        // Merge additionalProperties
+        if (other.additionalProperties != null) {
+            if (this.additionalProperties == null) {
+                this.additionalProperties = other.additionalProperties;
+            } else {
+                this.additionalProperties.merge(other.additionalProperties); // Assuming there's a merge method for Schema
+            }
+        }
+
+        // Merge oneOf
+        if (other.oneOf != null) {
+            if (this.oneOf == null) {
+                this.oneOf = new ArrayList<>();
+            }
+            this.oneOf.addAll(other.oneOf);
+        }
+
+        // Merge allOf
+        if (other.allOf != null) {
+            if (this.allOf == null) {
+                this.allOf = new ArrayList<>();
+            }
+            this.allOf.addAll(other.allOf);
+        }
+
+        // Merge anyOf
+        if (other.anyOf != null) {
+            if (this.anyOf == null) {
+                this.anyOf = new ArrayList<>();
+            }
+            this.anyOf.addAll(other.anyOf);
+        }
+
+        // Merge not
+        if (other.not != null) {
+            if (this.not == null) {
+                this.not = other.not;
+            } else {
+                this.not.merge(other.not); // Assuming there's a merge method for Schema
+            }
+        }
+        return this;
+    }
+
+
     /**
      * The type of schema exactly matching a primitive JSON type.
      */
