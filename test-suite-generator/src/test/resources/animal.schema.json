@@ -92,7 +92,8 @@
         },
         "hasMate": {
           "description": "True when the dog has found their mate.",
-          "$ref": "#/definitions/boolean"
+          "$ref": "#/definitions/boolean",
+          "const": true
         },
         "nickname" : {
           "description": "A nickname of a good doggo.",

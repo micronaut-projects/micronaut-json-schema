@@ -98,14 +98,16 @@ public class AnnotationsAggregator {
                     ((int) value) - EXCLUSIVE_DELTA_INT)
                 .build());
         }
-        if (schema.getMaxLength() != null || schema.getMaxItems() != null) {
+        if (schema.getMaxLength() != null || schema.getMaxItems() != null || schema.getMaxContains() != null) {
             var value = schema.getMaxLength() != null ? schema.getMaxLength() : schema.getMaxItems();
+            value = value == null ? schema.getMaxContains() : value;
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(SIZE_ANN))
                 .addMember("max", value).build());
         }
-        if (schema.getMinLength() != null || schema.getMinItems() != null) {
+        if (schema.getMinLength() != null || schema.getMinItems() != null || schema.getMinContains() != null) {
             var value = schema.getMinLength() != null ? schema.getMinLength() : schema.getMinItems();
+            value = value == null ? schema.getMinContains() : value;
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(SIZE_ANN))
                 .addMember("min", value).build());
@@ -126,7 +128,7 @@ public class AnnotationsAggregator {
                         .builder(ClassTypeDef.of(MIN_ANN))
                         .addMember("value", 1)
                         .build());
-                case "^\\d*\\.?\\d+$" -> // positive decimal
+                case "^\\d*.?\\d+$", "^[1-9][0-9]*.?[0-9]+$" -> // positive decimal
                     annotations.add(AnnotationDef
                         .builder(ClassTypeDef.of(DECIMAL_MIN_ANN))
                         .addMember("value", "" + EXCLUSIVE_DELTA_DOUBLE)
@@ -136,17 +138,17 @@ public class AnnotationsAggregator {
                         .builder(ClassTypeDef.of(MIN_ANN))
                         .addMember("value", 0)
                         .build());
-                case "^-\\d+$", "^-[1-9][0-9]*$" -> // negative int
+                case "^-d+$", "^-[1-9][0-9]*$" -> // negative int
                     annotations.add(AnnotationDef
                         .builder(ClassTypeDef.of(MAX_ANN))
                         .addMember("value", 0)
                         .build());
-                case "^-\\d*\\.?\\d+$", "^-[1-9][0-9]*\\.?[0-9]+$" -> // negative decimal
+                case "^-d*.?d+$", "^-[1-9][0-9]*.?[0-9]+$" -> // negative decimal
                     annotations.add(AnnotationDef
                         .builder(ClassTypeDef.of(DECIMAL_MAX_ANN))
                         .addMember("value", "" + (0.0 -  EXCLUSIVE_DELTA_DOUBLE))
                         .build());
-                case "^(-\\d+(\\.\\d+)?|0(\\.0+)?)$", "^-?(0|[1-9][0-9]{0,17})(\\.[0-9]{1,17})?([eE][+-]?[0-9]{1,9}})?$" -> // negative or zero
+                case "^(-d+(.d+)?|0(.0+)?)$", "^-?(0|[1-9][0-9]{0,17})(.[0-9]{1,17})?([eE][+-]?[0-9]{1,9}})?$" -> // negative or zero
                     annotations.add(AnnotationDef
                         .builder(ClassTypeDef.of(MAX_ANN))
                         .addMember("value", 0)
@@ -160,10 +162,10 @@ public class AnnotationsAggregator {
         if (schema.getFormat() != null && schema.getFormat().equals("email")) {
             annotations.add(AnnotationDef.builder(ClassTypeDef.of(EMAIL_ANN)).build());
         }
-        if (schema.getConstValue() != null) {
-            if (schema.getConstValue().equals("true")) {
+        if (schema.getConstValue() != null && propertyType.equals(TypeDef.Primitive.BOOLEAN)) {
+            if (schema.getConstValue().toString().equals("true")) {
                 annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_TRUE_ANN)).build());
-            } else if (schema.getConstValue().equals("false")) {
+            } else if (schema.getConstValue().toString().equals("false")) {
                 annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_FALSE_ANN)).build());
             }
         }
