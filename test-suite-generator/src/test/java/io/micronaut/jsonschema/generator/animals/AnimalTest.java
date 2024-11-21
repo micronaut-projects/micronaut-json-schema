@@ -93,7 +93,7 @@ public class AnimalTest {
         assertEquals("0x", dog.getId());
         assertEquals("2000-01-01", dog.getBirthdate());
         assertEquals("Micronaut", dog.getName());
-        assertEquals(true, dog.getHasMate());
+        assertEquals(true, dog.hasMate);
         assertEquals("Dog", dog.resourceType);
         assertEquals("Goodie", dog.getNickname());
         assertEquals("Owner", dog.getUnknownFields().get("ownerName"));
