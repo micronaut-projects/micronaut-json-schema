@@ -351,7 +351,7 @@ public final class CodeGenerator {
                     .build((aThis, parameters) ->
                         aThis.field("name", TypeDef.STRING).returning()))
                 .addMethod(MethodDef.builder("statusOf")
-                    .addModifiers(Modifier.PUBLIC)
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .addAnnotation(JsonCreator.class)
                     .returns(TypeDef.THIS)
                     .addParameter("name", TypeDef.STRING)

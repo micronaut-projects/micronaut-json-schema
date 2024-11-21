@@ -8,7 +8,7 @@
     "fruits": {
       "type": "array",
       "items": {
-        "$ref": "fruit.schema.json#/Fruits"
+        "$ref": "fruit.schema.json#/definitions/fruit"
       }
     },
     "favouriteFruit": {
