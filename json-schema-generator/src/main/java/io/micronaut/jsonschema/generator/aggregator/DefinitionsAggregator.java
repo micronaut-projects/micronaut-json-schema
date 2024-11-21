@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.aggregator;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.jsonschema.generator.CodeGenerator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
@@ -43,40 +44,35 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 public class DefinitionsAggregator {
     private static final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private static final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
-    // TODO: re-organise one of set
 
     public static TypeDef getDefinitionType(String key) {
-        if (hasDefinition(key)) {
-            return DEFINITIONS.get(key).getKey();
+        String defKey = unifyKey(key);
+        if (hasDefinition(defKey)) {
+            return DEFINITIONS.get(defKey).getKey();
         }
         return null;
     }
 
     public static Map.Entry<TypeDef, Boolean> getDefinition(String key) {
-        if (hasDefinition(key)) {
-            return DEFINITIONS.get(key);
+        String defKey = unifyKey(key);
+        if (hasDefinition(defKey)) {
+            return DEFINITIONS.get(defKey);
         }
         return null;
     }
 
-    public static List<AbstractMap.SimpleEntry<String, Schema>> getOneOfsToGenerate() {
-        return ONE_OF_SET.entrySet().stream().filter(entry -> entry.getValue() != null)
-            .map(e -> new AbstractMap.SimpleEntry<String, Schema>(e.getKey()
-                .substring(e.getKey().lastIndexOf('/') + 1), e.getValue()))
-            .toList();
+    public static List<Map.Entry<String, Schema>> getOneOfsToGenerate() {
+        return ONE_OF_SET.entrySet().stream().filter(entry -> entry.getValue() != null).toList();
     }
 
     public static boolean hasDefinition(String key) {
         return DEFINITIONS.containsKey(key);
     }
 
-    public static boolean isInheriting(String key) {
-        for (HashMap.Entry<String, Schema> entry : ONE_OF_SET.entrySet()) {
-            if (entry.getKey().substring(entry.getKey().lastIndexOf("/") + 1).equals(key)) {
-                return true;
-            }
-        }
-        return false;
+    public static boolean isInheriting(String className) {
+        String key = CodeGenerator.getInputFileName() + "#/oneOf/" + className;
+        String keyRef = CodeGenerator.getInputFileName() + "#/definitions/" + className;
+        return ONE_OF_SET.containsKey(key) || ONE_OF_SET.containsKey(keyRef);
     }
 
     public static void addDefinition(String key, Schema definition) {
@@ -93,23 +89,25 @@ public class DefinitionsAggregator {
         if (!annotations.isEmpty()) {
             typeDef = typeDef.annotated(annotations);
         }
-        addDefinition(key, typeDef, isClass);
+        addDefinition(unifyKey(key), typeDef, isClass);
     }
 
     public static void addDefinition(String key, TypeDef classDef, boolean isClass) {
-        var newDef = new AbstractMap.SimpleEntry<TypeDef, Boolean>(classDef, isClass);
-        if (!hasDefinition(key)) {
-            DEFINITIONS.put(key, newDef);
+        AbstractMap.SimpleEntry<TypeDef, Boolean> newDef = new AbstractMap.SimpleEntry<>(classDef, isClass);
+        String defKey = unifyKey(key);
+        if (!hasDefinition(defKey)) {
+            DEFINITIONS.put(defKey, newDef);
         } else {
-            DEFINITIONS.replace(key, newDef);
+            DEFINITIONS.replace(defKey, newDef);
         }
     }
 
     public static void addOneOf(String key) {
-        ONE_OF_SET.put(key, null);
+        ONE_OF_SET.put(unifyKey(key), null);
     }
 
-    public static void addOneOf(String fileName, Schema oneOf) {
+    public static void addOneOf(Schema oneOf) {
+        String fileName = CodeGenerator.getInputFileName();
         String className;
         if (oneOf.hasTitle()) {
             className = capitalize(getCamelCaseName(oneOf.getTitle()));
@@ -123,5 +121,12 @@ public class DefinitionsAggregator {
     public static void clearAllDefinitions() {
         DEFINITIONS.clear();
         ONE_OF_SET.clear();
+    }
+
+    private static String unifyKey(String key) {
+        if (!key.contains("$defs")) {
+            return key;
+        }
+        return key.replace("$defs", "definitions");
     }
 }

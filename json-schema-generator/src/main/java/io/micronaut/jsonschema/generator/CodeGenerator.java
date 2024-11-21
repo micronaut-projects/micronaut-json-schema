@@ -206,7 +206,7 @@ public final class CodeGenerator {
                     }
                     addOneOf(ref);
                 } else {
-                    addOneOf(inputFileName, oneOf);
+                    addOneOf(oneOf);
                 }
             });
         }
@@ -265,7 +265,8 @@ public final class CodeGenerator {
                 });
         }
         for (Map.Entry<String, Schema> oneOf : getOneOfsToGenerate()) {
-            generateFromSchemaMap(oneOf.getValue(), outputPath, packageName, oneOf.getKey());
+            String className = oneOf.getKey().substring(oneOf.getKey().lastIndexOf('/') + 1);
+            generateFromSchemaMap(oneOf.getValue(), outputPath, packageName, className);
             generatedClassCount.getAndIncrement();
         }
         return generatedClassCount.get();
@@ -283,8 +284,7 @@ public final class CodeGenerator {
             if (jsonSchema.isEnum()) {
                 type = ObjectType.ENUM;
             } else if (jsonSchema.hasOneOf()) {
-                // top level = superclass
-                // TODO add a isClass() method to schema
+                // top level -> superclass
                 if (jsonSchema.hasProperties() || jsonSchema.hasType() || jsonSchema.hasAllOf()) {
                     type = ObjectType.CLASS;
                 } else {

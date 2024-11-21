@@ -8,11 +8,11 @@
     "fruits": {
       "type": "array",
       "items": {
-        "$ref": "fruit.schema.json#/definitions/fruit"
+        "$ref": "fruit.schema.json#/$defs/fruit"
       }
     },
     "favouriteFruit": {
-      "$ref": "fruit.schema.json#/definitions/fruit"
+      "$ref": "fruit.schema.json#/$defs/fruit"
     },
     "vegetables": {
       "type": "array",

@@ -8,11 +8,11 @@
     "fruits": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/fruit"
+        "$ref": "#/$defs/fruit"
       }
     }
   },
-  "definitions": {
+  "$defs": {
     "fruit": {
       "type": "object",
       "required": ["fruitName", "fruitColor", "fruitTaste"],
