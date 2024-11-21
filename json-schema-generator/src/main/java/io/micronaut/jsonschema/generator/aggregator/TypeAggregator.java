@@ -58,11 +58,10 @@ public class TypeAggregator {
     private static final Map<String, TypeDef> TYPE_MAP = CollectionUtils.mapOf(new Object[]{
         "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN, "array", TypeDef.of(List.class),
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
-        "number", ClassTypeDef.of(Float.class), "null", TypeDef.OBJECT});
+        "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
 
     public static TypeDef getTypeDefFromJson(Schema schema) {
         var type = schema.getType() != null ? schema.getType().get(0) : Schema.Type.OBJECT;
-
         TypeDef typeDef;
         if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
             var format = schema.getFormat();
@@ -84,6 +83,12 @@ public class TypeAggregator {
                 ref = CodeGenerator.getInputFileName() + ref;
             }
             typeDef = getDefinitionType(ref);
+        } else if (type.equals(Schema.Type.NUMBER) && schema.getPattern() != null) {
+            if (schema.getPattern().contains(".")) {
+                typeDef = ClassTypeDef.of(Float.class);
+            } else {
+                typeDef = ClassTypeDef.of(Integer.class);
+            }
         } else {
             typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
         }

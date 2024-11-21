@@ -116,20 +116,32 @@ public class AnnotationsAggregator {
                 .builder(ClassTypeDef.of(PATTERN_ANN))
                 .addMember("regexp", value).build());
         }
-        if (schema.getPattern() != null && propertyType.equals(ClassTypeDef.of(Float.class))) {
+        if (schema.getPattern() != null &&
+            (propertyType.equals(ClassTypeDef.of(Float.class))
+                || propertyType.equals(ClassTypeDef.of(Integer.class)))) {
             var pattern = schema.getPattern();
             switch (pattern) {
-                case "^[1-9][0-9]*$", "^\\d*\\.?\\d+$" -> // positive
+                case "^[1-9][0-9]*$" -> // positive int
+                    annotations.add(AnnotationDef
+                        .builder(ClassTypeDef.of(MIN_ANN))
+                        .addMember("value", 1)
+                        .build());
+                case "^\\d*\\.?\\d+$" -> // positive decimal
                     annotations.add(AnnotationDef
                         .builder(ClassTypeDef.of(DECIMAL_MIN_ANN))
                         .addMember("value", "" + EXCLUSIVE_DELTA_DOUBLE)
                         .build());
-                case "^[0-9]*$", "^[0]|([1-9][0-9]*)$" -> // positive or zero
+                case "^[0-9]*$", "^[0]|([1-9][0-9]*)$" -> // positive or zero int
                     annotations.add(AnnotationDef
                         .builder(ClassTypeDef.of(MIN_ANN))
                         .addMember("value", 0)
                         .build());
-                case "^-\\d*\\.?\\d+$", "^-\\d+$" -> // negative
+                case "^-\\d+$", "^-[1-9][0-9]*$" -> // negative int
+                    annotations.add(AnnotationDef
+                        .builder(ClassTypeDef.of(MAX_ANN))
+                        .addMember("value", 0)
+                        .build());
+                case "^-\\d*\\.?\\d+$", "^-[1-9][0-9]*\\.?[0-9]+$" -> // negative decimal
                     annotations.add(AnnotationDef
                         .builder(ClassTypeDef.of(DECIMAL_MAX_ANN))
                         .addMember("value", "" + (0.0 -  EXCLUSIVE_DELTA_DOUBLE))
@@ -140,7 +152,6 @@ public class AnnotationsAggregator {
                         .addMember("value", 0)
                         .build());
                 case "^[0]|[-+]?[1-9][0-9]*$" -> {
-                    //TODO make integer
                     break;
                 }
                 default -> System.err.println("Unsupported validation pattern for number: " + pattern);

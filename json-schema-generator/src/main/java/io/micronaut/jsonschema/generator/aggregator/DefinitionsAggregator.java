@@ -82,7 +82,9 @@ public class DefinitionsAggregator {
     public static void addDefinition(String key, Schema definition) {
         var typeDef = getTypeDefFromJson(definition);
         assert typeDef != null;
-        boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING) && !typeDef.equals(ClassTypeDef.of(Float.class));
+        boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING)
+            && !typeDef.equals(ClassTypeDef.of(Float.class))
+            && !typeDef.equals(ClassTypeDef.of(Integer.class));
         if (isClass) {
             typeDef = ClassTypeDef.of(capitalize(key.substring(key.lastIndexOf('/') + 1)));
         }
