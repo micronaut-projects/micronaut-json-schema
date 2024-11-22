@@ -151,6 +151,56 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         }""".stripIndent().trim()
     }
 
+    void testAllOf() {
+        when:
+        var content = generateTypeAndGetContent("Llama3", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/llama.schema.json",
+          "title":"Llama3",
+          "description":"A llama. <4>",
+          "type":["object"],
+          "properties":{
+            "name":{
+              "description":"The name",
+              "type":"string",
+              "minLength":1
+            }
+          },
+          "allOf": [
+            {
+              "properties": {
+                "foo": { "type": "string" }
+              },
+              "required": [ "foo" ]
+            },
+            {
+              "properties": {
+                "bar": {
+                  "type": "number",
+                  "allOf": [
+                    { "minimum": 18 }
+                  ]
+                }
+              },
+              "required": [ "bar" ]
+            }
+          ],
+          "required": ["name"]
+        }
+        ''')
+
+        then:
+        content == """
+        @Serdeable
+        public record Llama3(
+            @NotNull @Size(min = 1) String name,
+            @NotNull String foo,
+            @NotNull @DecimalMin("18") float bar
+        ) {
+        }""".stripIndent().trim()
+    }
+
     void testRecordNamingGeneration() {
         when:
         var type = generateType("MyLlamaNumberOne", '''

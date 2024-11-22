@@ -407,7 +407,11 @@ public final class Schema {
     }
 
     public Schema setRequired(List<String> required) {
-        this.required = required;
+        if (this.required != null && !this.required.isEmpty()) {
+            this.required.addAll(required);
+        } else {
+            this.required = required;
+        }
         return this;
     }
 
@@ -463,6 +467,7 @@ public final class Schema {
 
     public Schema setAllOf(List<Schema> allOf) {
         this.allOf = allOf;
+        mergeAllOf();
         return this;
     }
 
@@ -476,6 +481,11 @@ public final class Schema {
 
     public boolean hasAllOf() {
         return allOf != null;
+    }
+
+    public void mergeAllOf() {
+        var thisAllOff = this.allOf;
+        thisAllOff.forEach(this::merge);
     }
 
     public List<Schema> getAnyOf() {
@@ -708,16 +718,13 @@ public final class Schema {
             if (this.items == null) {
                 this.items = other.items;
             } else {
-                this.items.merge(other.items); // Assuming there's a merge method for Schema
+                this.items.merge(other.items);
             }
         }
 
         // Merge properties
         if (other.properties != null) {
-            if (this.properties == null) {
-                this.properties = new HashMap<>();
-            }
-            this.properties.putAll(other.properties);
+            other.properties.forEach(this::putProperty);
         }
 
         // Merge defaultValue
@@ -807,7 +814,7 @@ public final class Schema {
             if (this.contains == null) {
                 this.contains = other.contains;
             } else {
-                this.contains.merge(other.contains); // Assuming there's a merge method for Schema
+                this.contains.merge(other.contains);
             }
         }
 
@@ -818,7 +825,7 @@ public final class Schema {
             }
             for (String requiredItem : other.required) {
                 if (!this.required.contains(requiredItem)) {
-                    this.required.add(requiredItem);
+                    this.addRequired(requiredItem);
                 }
             }
         }
@@ -828,7 +835,7 @@ public final class Schema {
             if (this.additionalProperties == null) {
                 this.additionalProperties = other.additionalProperties;
             } else {
-                this.additionalProperties.merge(other.additionalProperties); // Assuming there's a merge method for Schema
+                this.additionalProperties.merge(other.additionalProperties);
             }
         }
 
@@ -861,7 +868,7 @@ public final class Schema {
             if (this.not == null) {
                 this.not = other.not;
             } else {
-                this.not.merge(other.not); // Assuming there's a merge method for Schema
+                this.not.merge(other.not);
             }
         }
         return this;

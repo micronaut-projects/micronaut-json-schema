@@ -429,10 +429,6 @@ public final class CodeGenerator {
             builder.addJavadoc(jsonSchema.getDescription());
         }
 
-        if (jsonSchema.hasAllOf()) {
-            // merge "all of" schemas
-            jsonSchema.getAllOf().forEach(jsonSchema::merge);
-        }
         if (jsonSchema.hasProperties()) {
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();
             jsonSchema.getProperties().forEach((key, value) -> addField(
