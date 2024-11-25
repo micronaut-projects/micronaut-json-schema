@@ -35,6 +35,22 @@ def foodGenerator = tasks.register("generateFood", BeanGeneratorTask) {
     packageName.convention("io.micronaut.jsonschema.generator.food")
 }
 
+def githubGenerator = tasks.register("generateGithub", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/github-workflow.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.github")
+}
+
+def fhirGenerator = tasks.register("generateFhir", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/fhir.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.fhir")
+}
+
 sourceSets {
     main {
         java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))

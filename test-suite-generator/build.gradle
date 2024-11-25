@@ -33,6 +33,12 @@ tasks.named("generateAnimals") {
 tasks.named("generateFood") {
 }
 
+tasks.named("generateGithub") {
+}
+
+tasks.named("generateFhir") {
+}
+
 tasks.withType(Checkstyle).configureEach {
     enabled = false
 }
