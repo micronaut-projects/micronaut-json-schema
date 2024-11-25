@@ -192,6 +192,35 @@ public class TypeAggregator {
         return camelCaseString.toString();
     }
 
+    public static String unicodeToString(String input) {
+        StringBuilder newName = new StringBuilder();
+        for (Character c : input.toCharArray()) {
+            if (!Character.isLetter(c)) {
+                String charName = Character.getName(c);
+                newName.append(' ')
+                    .append(charName, 0, charName.lastIndexOf(' '))
+                    .append(' ');
+            } else {
+                newName.append(Character.toUpperCase(c));
+            }
+        }
+        String cleanedInput = newName.toString().replaceAll("[-_]", " ")
+            .replaceAll("[^a-zA-Z0-9 ]", "")
+            .trim();
+
+        return cleanedInput.replaceAll(" ", "_");
+    }
+
+    public static boolean isOnlyLetters(String input) {
+        boolean isLetters = true;
+        for (Character c : input.toCharArray()) {
+            if (!Character.isLetter(c)) {
+                isLetters = false;
+            }
+        }
+        return isLetters;
+    }
+
     public static String getFileName(Schema schema, Optional<String> topLevelName, VisitorContext.Language language) {
         String fileName;
         if (topLevelName.isPresent() && !topLevelName.get().isEmpty()) {

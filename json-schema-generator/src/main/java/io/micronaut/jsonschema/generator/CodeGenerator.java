@@ -326,18 +326,32 @@ public final class CodeGenerator {
             .addModifiers(Modifier.PUBLIC);
         boolean isComplexEnum = false;
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
+        LinkedHashMap<String, String> enumValues = new LinkedHashMap<>();
         for (Object anEnum : jsonSchema.getEnumValues()) {
-            String constName = getConstantName(anEnum.toString());
-            if (constName.equals(anEnum.toString())) {
-                enumBuilder.addEnumConstant(constName);
+            String enumConst = anEnum.toString();
+            String constName;
+            if (isOnlyLetters(enumConst)) {
+                constName = getConstantName(enumConst);
             } else {
-                enumBuilder.addEnumConstant(constName, ExpressionDef.constant(anEnum.toString()));
-                cases.put(ExpressionDef.constant(anEnum.toString()), new VariableDef.Constant(TypeDef.THIS, constName));
+                constName = unicodeToString(enumConst);
+            }
+            enumValues.put(constName, enumConst);
+            if (!constName.equals(enumConst)) {
                 isComplexEnum = true;
             }
         }
-        cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
+        boolean finalIsComplexEnum = isComplexEnum;
+        enumValues.forEach((constName, enumConst) -> {
+            if (!finalIsComplexEnum) {
+                enumBuilder.addEnumConstant(constName);
+            } else {
+                enumBuilder.addEnumConstant(constName, ExpressionDef.constant(enumConst));
+                cases.put(ExpressionDef.constant(enumConst), new VariableDef.Constant(TypeDef.THIS, constName));
+            }
+        });
+
         if (isComplexEnum) {
+            cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
             enumBuilder.addField(FieldDef.builder("name")
                     .ofType(TypeDef.STRING)
                     .addModifiers(Modifier.PUBLIC)
