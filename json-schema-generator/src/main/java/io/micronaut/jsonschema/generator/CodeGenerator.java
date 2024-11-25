@@ -444,7 +444,7 @@ public final class CodeGenerator {
 
     private void addFields(Schema jsonSchema, ObjectDefBuilder builder) {
         if (jsonSchema.hasDescription()) {
-            builder.addJavadoc(jsonSchema.getDescription());
+            builder.addJavadoc(getJavadoc(jsonSchema.getDescription()));
         }
 
         if (jsonSchema.hasProperties()) {
@@ -512,19 +512,16 @@ public final class CodeGenerator {
         if (schema.isEnum()) {
             propertyType = getEnumType(objectBuilder, name, schema);
         }
-
+        AnnotationsAggregator.addAnnotations(propertyDef, schema, propertyType, isRequired);
         if  (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, propertyName, schema);
-            propertyDef.ofType(propertyType);
-            AnnotationsAggregator.addAnnotations(propertyDef, schema, TypeDef.of(List.class), isRequired);
-        } else {
-            propertyDef.ofType(propertyType);
-            AnnotationsAggregator.addAnnotations(propertyDef, schema, propertyType, isRequired);
         }
+        propertyDef.ofType(propertyType);
+        // TODO: if propertyType == Object then create inner type
 
         // add javadoc
         if (schema.hasDescription()) {
-            propertyDef.addJavadoc(schema.getDescription());
+            propertyDef.addJavadoc(getJavadoc(schema.getDescription()));
         }
 
         PropertyDef property = propertyDef.build();
@@ -559,6 +556,20 @@ public final class CodeGenerator {
             .toList();
         AnnotationDef jsonSubTypes = AnnotationDef.builder(JsonSubTypes.class).addMember("value", subTypeList).build();
         objectBuilder.addAnnotation(jsonSubTypes);
+    }
+
+    private String getJavadoc(String description) {
+        if (description == null) {
+            return "";
+        }
+        return description
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("&", "&amp;")
+            .replaceAll("'", "&apos;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("\n", "<br>")
+            .trim();
     }
 
     private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {

@@ -84,7 +84,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
           "$schema":"https://json-schema.org/draft/2020-12/schema",
           "$id":"https://example.com/schemas/llama.schema.json",
           "title":"Llama",
-          "description":"A llama. <4>",
+          "description":"A llama.",
           "type":["object"],
           "properties":{
             "age":{

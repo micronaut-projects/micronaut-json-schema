@@ -48,3 +48,7 @@ sourceSets {
         java.srcDir('src/test/java')
     }
 }
+
+javadoc {
+    options.encoding = 'UTF-8'
+}
