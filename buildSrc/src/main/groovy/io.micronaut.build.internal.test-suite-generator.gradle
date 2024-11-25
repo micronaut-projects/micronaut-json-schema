@@ -55,6 +55,8 @@ sourceSets {
     main {
         java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(foodGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(githubGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(fhirGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
     }
 }
 

@@ -12,7 +12,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         {
           "$schema":"https://json-schema.org/draft/2020-12/schema",
           "$id":"https://example.com/schemas/status.schema.json",
-          "title":"Status",
+          "description":"Status für mich",
           "type": "string",
           "enum": [
              "active",

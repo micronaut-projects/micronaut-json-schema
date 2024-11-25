@@ -3,6 +3,7 @@ package io.micronaut.jsonschema.generator.animals;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,7 +13,7 @@ public class GenerationTest {
     @Test
     void githubGenerator() throws IOException {
         Path outputPath = Paths.get("build/generated/jsonSchema/java/main");
-        String packageName = "io.micronaut.jsonschema.generator.github".replace(".", "/");
+        String packageName = "io.micronaut.jsonschema.generator.github".replace('.', File.separatorChar);
         Path expectedFolderPath = outputPath.resolve(packageName);
 
         Assertions.assertTrue(Files.exists(outputPath), "Output folder path does not exist.");
@@ -26,13 +27,13 @@ public class GenerationTest {
         } catch (IOException e) {
             Assertions.fail("Failed to list files in the folder: " + e.getMessage());
         }
-        Assertions.assertEquals(12, generatedFiles);
+        Assertions.assertEquals(8, generatedFiles);
     }
 
     @Test
     void fhirGenerator() throws IOException {
         Path outputPath = Paths.get("build/generated/jsonSchema/java/main");
-        String packageName = "io.micronaut.jsonschema.generator.fhir".replace(".", "/");
+        String packageName = "io.micronaut.jsonschema.generator.fhir".replace('.', File.separatorChar);
         Path expectedFolderPath = outputPath.resolve(packageName);
 
         Assertions.assertTrue(Files.exists(expectedFolderPath), "Expected folder path does not exist.");

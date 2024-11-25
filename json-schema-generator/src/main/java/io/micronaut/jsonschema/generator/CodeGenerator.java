@@ -274,9 +274,7 @@ public final class CodeGenerator {
     private File generateFromSchemaMap(Schema jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
         try {
             String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName), language);
-            File outputFile = getOutputFile(outputPath, packageName, decidedFileName);
-            String simpleName = outputFile.getName().substring(0, outputFile.getName().lastIndexOf('.'));
-            String builderClassName = packageName + "." + simpleName;
+            String simpleName = decidedFileName.substring(0, decidedFileName.lastIndexOf('.'));
 
             // decide type of generated object
             boolean hasOverLimitParameters = jsonSchema.hasProperties() && jsonSchema.getProperties().size() > 255;
@@ -298,12 +296,15 @@ public final class CodeGenerator {
                 return null;
             }
 
+            File outputFile = getOutputFile(outputPath, packageName, decidedFileName);
+            String builderClassName = packageName + "." + simpleName;
             try (FileWriter writer = new FileWriter(outputFile)) {
                 ObjectDef objectDef = switch (type) {
                     case ENUM -> buildEnum(jsonSchema, builderClassName);
                     case CLASS -> buildClass(jsonSchema, builderClassName);
                     case INTERFACE -> buildInterface(jsonSchema, builderClassName);
-                    default -> buildRecord(jsonSchema, builderClassName);
+                    case RECORD -> buildRecord(jsonSchema, builderClassName);
+                    default -> null;
                 };
                 sourceGenerator.write(objectDef, writer);
             }
