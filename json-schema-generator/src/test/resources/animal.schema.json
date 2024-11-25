@@ -120,7 +120,7 @@
           "description": "A list of the fish's aquarium friends.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Fish"
+            "$ref": "#"
           }
         }
       },

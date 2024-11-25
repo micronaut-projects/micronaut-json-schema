@@ -291,8 +291,10 @@ public final class CodeGenerator {
                 }
             } else if (isInheriting(simpleName)) {
                 type = ObjectType.CLASS;
-            } else {
+            } else if (getTypeDefFromJson(jsonSchema).equals(TypeDef.OBJECT)) {
                 type = ObjectType.RECORD;
+            } else {
+                return null;
             }
 
             try (FileWriter writer = new FileWriter(outputFile)) {

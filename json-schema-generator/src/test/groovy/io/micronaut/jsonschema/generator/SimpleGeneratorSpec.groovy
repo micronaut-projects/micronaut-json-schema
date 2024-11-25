@@ -1,5 +1,9 @@
 package io.micronaut.jsonschema.generator
 
+import io.micronaut.inject.visitor.VisitorContext
+
+import java.nio.file.Path
+
 class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testEnumGeneration() {
@@ -49,6 +53,30 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         }""".stripIndent().trim()
     }
 
+    void testArrayGeneration() {
+        when:
+        CodeGenerator generator = new CodeGenerator(VisitorContext.Language.JAVA)
+
+        Path outputPath = new File("output").toPath() // Define the base output path
+        String packageName = "com.example.project"; // Example package name
+        String fileName = "ArrayObject";
+        var jsonSchema = '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/status.schema.json",
+          "title":"ArrayObject",
+          "type": "array",
+          "items": {
+            "$ref": "string"
+          }
+        }
+        ''';
+        File generated = generator.generate(new ByteArrayInputStream(jsonSchema.getBytes()), outputPath, packageName, fileName)
+
+        then:
+        generated == null
+    }
+
     void testRecordGeneration() {
         when:
         var content = generateTypeAndGetContent("Llama", '''
@@ -89,6 +117,47 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             @NotNull @Min(0) int age,
             @NotNull @Size(min = 1) String name,
             List<@DecimalMin(\"0.0\") Float> hours
+        ) {
+        }""".stripIndent().trim()
+    }
+
+    void testRecordGeneration2() {
+        when:
+        var content = generateTypeAndGetContent("Llama", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/llama.schema.json",
+          "title":"Llama",
+          "description":"A llama. <4>",
+          "type":["object"],
+          "properties":{
+            "age":{
+              "description":"The age",
+              "type":["integer"],
+              "minimum":0
+            },
+            "name":{
+              "description":"This",
+              "$ref": "#"
+            },
+            "hours":{
+              "description":"Happy hours",
+              "type":"array",
+              "items": {
+                "$ref": "#"
+              }
+            }
+          }
+        }
+        ''')
+
+        then:
+        content == """
+        @Serdeable
+        public record Llama(
+            @Min(0) int age,
+            Llama name,
+            List<Llama> hours
         ) {
         }""".stripIndent().trim()
     }

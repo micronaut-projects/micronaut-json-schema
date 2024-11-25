@@ -44,6 +44,7 @@ import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.getDefinitionType;
+import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
 import static java.lang.String.join;
 
 /**
@@ -79,7 +80,9 @@ public class TypeAggregator {
             }
         } else if (schema.has$ref()) {
             String ref = schema.get$ref();
-            if (ref.indexOf("#") == 0) {
+            if (ref.equals(THIS_SCHEMA_REF)) {
+                return TypeDef.THIS;
+            } else if (ref.indexOf("#") == 0) {
                 ref = CodeGenerator.getInputFileName() + ref;
             }
             typeDef = getDefinitionType(ref);
