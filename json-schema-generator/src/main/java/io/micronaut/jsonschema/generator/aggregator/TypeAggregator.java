@@ -198,7 +198,7 @@ public class TypeAggregator {
             if (!Character.isLetter(c)) {
                 String charName = Character.getName(c);
                 newName.append(' ')
-                    .append(charName, 0, charName.lastIndexOf(' '))
+                    .append(charName, 0, charName.lastIndexOf(' ') != -1 ? charName.lastIndexOf(' ') : charName.length())
                     .append(' ');
             } else {
                 newName.append(Character.toUpperCase(c));
@@ -214,7 +214,7 @@ public class TypeAggregator {
     public static boolean isOnlyLetters(String input) {
         boolean isLetters = true;
         for (Character c : input.toCharArray()) {
-            if (!Character.isLetter(c)) {
+            if (!Character.isLetter(c) && !Character.isWhitespace(c)) {
                 isLetters = false;
             }
         }

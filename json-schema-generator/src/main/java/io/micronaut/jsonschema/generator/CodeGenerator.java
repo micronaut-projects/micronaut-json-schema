@@ -279,6 +279,7 @@ public final class CodeGenerator {
             String builderClassName = packageName + "." + simpleName;
 
             // decide type of generated object
+            boolean hasOverLimitParameters = jsonSchema.hasProperties() && jsonSchema.getProperties().size() > 255;
             ObjectType type;
             if (jsonSchema.isEnum()) {
                 type = ObjectType.ENUM;
@@ -289,7 +290,7 @@ public final class CodeGenerator {
                 } else {
                     type = ObjectType.INTERFACE;
                 }
-            } else if (isInheriting(simpleName)) {
+            } else if (isInheriting(simpleName) || hasOverLimitParameters) {
                 type = ObjectType.CLASS;
             } else if (getTypeDefFromJson(jsonSchema).equals(TypeDef.OBJECT)) {
                 type = ObjectType.RECORD;
