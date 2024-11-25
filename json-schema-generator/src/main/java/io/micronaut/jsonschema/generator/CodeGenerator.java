@@ -378,7 +378,7 @@ public final class CodeGenerator {
         return enumBuilder.build();
     }
 
-    private RecordDef buildRecord(Schema jsonSchema, String builderClassName) throws IOException {
+    private RecordDef buildRecord(Schema jsonSchema, String builderClassName) {
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
@@ -387,7 +387,7 @@ public final class CodeGenerator {
         return objectBuilder.build();
     }
 
-    private ClassDef buildClass(Schema jsonSchema, String builderClassName) throws IOException {
+    private ClassDef buildClass(Schema jsonSchema, String builderClassName) {
         ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
@@ -424,7 +424,7 @@ public final class CodeGenerator {
         return objectBuilder.build();
     }
 
-    private InterfaceDef buildInterface(Schema jsonSchema, String builderClassName) throws IOException {
+    private InterfaceDef buildInterface(Schema jsonSchema, String builderClassName) {
         InterfaceDef.InterfaceDefBuilder objectBuilder = InterfaceDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
@@ -516,8 +516,18 @@ public final class CodeGenerator {
         if  (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, propertyName, schema);
         }
+        if (propertyType.equals(TypeDef.OBJECT)) {
+            boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
+            ObjectDef builder;
+            if (hasOverLimitParameters) {
+                builder = buildClass(schema, capitalize(name));
+            } else {
+                builder = buildRecord(schema, capitalize(name));
+            }
+            objectBuilder.addInnerType(builder);
+            propertyType = ClassTypeDef.of(builder.getName());
+        }
         propertyDef.ofType(propertyType);
-        // TODO: if propertyType == Object then create inner type
 
         // add javadoc
         if (schema.hasDescription()) {

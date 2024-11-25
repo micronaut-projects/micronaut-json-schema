@@ -121,7 +121,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         }""".stripIndent().trim()
     }
 
-    void testRecordGeneration2() {
+    void testRecordGenerationWithRecursion() {
         when:
         var content = generateTypeAndGetContent("Llama", '''
         {
@@ -160,6 +160,98 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             List<Llama> hours
         ) {
         }""".stripIndent().trim()
+    }
+
+    void testRecordGenerationWithInnerRecord() {
+        when:
+        var content = generateTypeAndGetContent("Default", '''
+        {
+          "title":"Default",
+          "description":"A record with inner record.",
+          "type":"object",
+          "properties":{
+            "age":{
+              "description":"The age",
+              "type":["integer"],
+              "minimum":0
+            },
+            "defaults": {
+              "type": "object",
+              "properties": {
+                "run": {
+                  "type": "object",
+                  "properties": {
+                    "shell": {
+                      "type": "string",
+                      "enum": ["bash", "pwsh", "python", "sh", "cmd", "powershell"]
+                    },
+                    "working-directory": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z]*"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+        ''')
+
+        then:
+        content == """
+        @Serdeable
+        public record Default(
+            @Min(0) int age,
+            Defaults defaults
+        ) {
+          @Serdeable
+          public record Defaults(
+              Run run
+          ) {
+            @Serdeable
+            public record Run(
+                Shell shell,
+                @JsonProperty("working-directory") @Pattern(regexp = "^[a-zA-Z]*") String workingDirectory
+            ) {
+              public enum Shell {
+
+                BASH("bash"),
+                PWSH("pwsh"),
+                PYTHON("python"),
+                SH("sh"),
+                CMD("cmd"),
+                POWERSHELL("powershell");
+
+                public String name;
+
+                private Shell(String name) {
+                  this.name = name;
+                }
+
+                @JsonValue
+                public String getName() {
+                  return this.name;
+                }
+
+                @JsonCreator
+                public static Shell statusOf(String name) {
+                  return switch (name) {
+                        case "bash" -> BASH;
+                        case "pwsh" -> PWSH;
+                        case "python" -> PYTHON;
+                        case "sh" -> SH;
+                        case "cmd" -> CMD;
+                        case "powershell" -> POWERSHELL;
+                        default -> null;
+                      };
+                }
+              }
+            }
+          }
+        }
+        """.stripIndent().trim()
     }
 
     void testAdditionalProperties() {
