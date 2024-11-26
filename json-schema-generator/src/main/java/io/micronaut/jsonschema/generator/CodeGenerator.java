@@ -190,7 +190,7 @@ public final class CodeGenerator {
         String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
         String finalSchemaName = capitalize(getCamelCaseName(schemaName));
 
-        addDefinition(inputFileName + "#/" + schemaName, jsonSchema);
+        addDefinition(inputFileName + "#/" + finalSchemaName, jsonSchema);
         // save all definition and oneOf types
         if (jsonSchema.hasOneOf()) {
             jsonSchema.getOneOf().forEach(oneOf -> {
