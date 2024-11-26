@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.*;
@@ -125,6 +127,7 @@ public final class CodeGenerator {
     public int generate(InputStream inputStream, String schemaFileName, Path outputPath, String packageName) throws IOException {
         var jsonSchema = getJsonSchema(inputStream, null);
         inputFileName = schemaFileName;
+        assert jsonSchema != null;
         saveDefinitions(jsonSchema);
         int generatedCount = generateDefinitions(jsonSchema, outputPath, packageName);
         clearAllDefinitions();
@@ -142,6 +145,7 @@ public final class CodeGenerator {
     public int generate(File jsonFileLocation, Path outputPath, String packageName) throws IOException {
         var jsonSchema = getJsonSchema(null, jsonFileLocation);
         inputFileName = jsonFileLocation.getName();
+        assert jsonSchema != null;
         saveDefinitions(jsonSchema);
         int generatedCount = generateDefinitions(jsonSchema, outputPath, packageName);
         clearAllDefinitions();
@@ -149,51 +153,43 @@ public final class CodeGenerator {
     }
 
     /**
-     * A method for creating multiple objects (class, record, interface) from a json schema.
+     * A method for creating multiple objects (class, record, interface) from a folder of JSON Schema.
      *
      * @param jsonFolderLocation The input folder location of json schemas
      * @param outputPath The output path for the output file
      * @param packageName The package name for the output file
      */
-    public void generate(Path jsonFolderLocation, Path outputPath, String packageName) {
-        try {
-            HashMap<Schema, String> schemas = new HashMap<>();
-            // Walk through the directory to find all json files
-            Files.walk(jsonFolderLocation)
-                .filter(file -> file.toString().endsWith(".schema.json")) // Filter to only JSON schema files
-                .forEach(file -> {
-                    try {
-                        // Read content of each JSON file
-                        var jsonSchema = getJsonSchema(null, file.toFile());
-                        inputFileName = file.getFileName().toString();
-                        schemas.put(jsonSchema, inputFileName);
-                        saveDefinitions(jsonSchema);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-            schemas.forEach((jsonSchema, fileName) -> {
-                    try {
-                        inputFileName = fileName;
-                        generateDefinitions(jsonSchema, outputPath, packageName);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-
-            clearAllDefinitions();
+    public void generate(Path jsonFolderLocation, Path outputPath, String packageName) throws IOException {
+        HashMap<Schema, String> schemas = new HashMap<>();
+        // Walk through the directory to find all json files
+        try (Stream<Path> paths = Files.walk(jsonFolderLocation).filter(file -> file.toString().endsWith(".schema.json"))) {
+            paths.forEach(path -> {
+                // Read content of each JSON file
+                var jsonSchema = getJsonSchema(null, path.toFile());
+                assert jsonSchema != null;
+                inputFileName = path.toString().substring(jsonFolderLocation.toString().length() + 1);
+                schemas.put(jsonSchema, inputFileName);
+                saveDefinitions(jsonSchema);
+            });
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new FileSystemException(jsonFolderLocation.toString());
         }
+
+        schemas.forEach((jsonSchema, fileName) -> {
+            try {
+                inputFileName = fileName;
+                generateDefinitions(jsonSchema, outputPath, packageName);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        clearAllDefinitions();
     }
 
-    private void saveDefinitions(Schema jsonSchema) throws IOException {
-        String schemaName;
-        if (jsonSchema.hasTitle()) {
-            schemaName = capitalize(getCamelCaseName(jsonSchema.getTitle()));
-        } else {
-            schemaName = capitalize(getCamelCaseName(inputFileName.substring(0, inputFileName.indexOf('.'))));
-        }
+    private void saveDefinitions(Schema jsonSchema) {
+        String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
+        String finalSchemaName = capitalize(getCamelCaseName(schemaName));
+
         addDefinition(inputFileName + "#/" + schemaName, jsonSchema);
         // save all definition and oneOf types
         if (jsonSchema.hasOneOf()) {
@@ -216,7 +212,7 @@ public final class CodeGenerator {
             definitions.forEach((key, value) -> {
                 if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
                     // WARNING: assumes the same interface as top level schema
-                    addDefinition(inputFileName + "#/definitions/" + key, getDefinitionType(inputFileName + "#/" + schemaName), true);
+                    addDefinition(inputFileName + "#/definitions/" + key, getDefinitionType(inputFileName + "#/" + finalSchemaName), true);
                 } else if (value.hasOneOf()) {
                     // inner oneOf's are treated as objects
                     addDefinition(inputFileName + "#/definitions/" + key, TypeDef.OBJECT, true);
@@ -569,7 +565,7 @@ public final class CodeGenerator {
     }
 
     private String getJavadoc(String description) {
-        if (description == null) {
+        if (description.isBlank()) {
             return "";
         }
         return description

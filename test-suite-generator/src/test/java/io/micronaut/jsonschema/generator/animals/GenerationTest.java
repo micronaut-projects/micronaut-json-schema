@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 
 public class GenerationTest {
     @Test
-    void githubGenerator() throws IOException {
+    void githubGenerator() {
         Path outputPath = Paths.get("build/generated/jsonSchema/java/main");
         String packageName = "io.micronaut.jsonschema.generator.github".replace('.', File.separatorChar);
         Path expectedFolderPath = outputPath.resolve(packageName);
@@ -31,7 +31,7 @@ public class GenerationTest {
     }
 
     @Test
-    void fhirGenerator() throws IOException {
+    void fhirGenerator() {
         Path outputPath = Paths.get("build/generated/jsonSchema/java/main");
         String packageName = "io.micronaut.jsonschema.generator.fhir".replace('.', File.separatorChar);
         Path expectedFolderPath = outputPath.resolve(packageName);

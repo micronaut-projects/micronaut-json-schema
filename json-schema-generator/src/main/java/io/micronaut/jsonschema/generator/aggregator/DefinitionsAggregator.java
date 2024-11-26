@@ -108,12 +108,8 @@ public class DefinitionsAggregator {
 
     public static void addOneOf(Schema oneOf) {
         String fileName = CodeGenerator.getInputFileName();
-        String className;
-        if (oneOf.hasTitle()) {
-            className = capitalize(getCamelCaseName(oneOf.getTitle()));
-        } else {
-            className = "Option" + ONE_OF_SET.size();
-        }
+        String className = (oneOf.hasTitle()) ? capitalize(getCamelCaseName(oneOf.getTitle())) : "Option" + ONE_OF_SET.size();
+
         ONE_OF_SET.put(fileName + "#/oneOf/" + className, oneOf);
         addDefinition(fileName + "#/oneOf/" + className, ClassTypeDef.of(capitalize(className)), true);
     }

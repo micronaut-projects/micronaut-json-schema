@@ -98,13 +98,17 @@ public class TypeAggregator {
         return typeDef;
     }
 
-    public static Schema getJsonSchema(InputStream inputStream, File schemaFile) throws IOException {
+    public static Schema getJsonSchema(InputStream inputStream, File schemaFile) {
         ObjectMapper jsonMapper = JsonSchemaMapperFactory.createMapper();
-        if (inputStream != null) {
-            String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            return jsonMapper.readValue(jsonString, Schema.class);
-        } else if (schemaFile != null) {
-            return jsonMapper.readValue(schemaFile, Schema.class);
+        try {
+            if (inputStream != null) {
+                String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                return jsonMapper.readValue(jsonString, Schema.class);
+            } else if (schemaFile != null) {
+                return jsonMapper.readValue(schemaFile, Schema.class);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return null;
     }
