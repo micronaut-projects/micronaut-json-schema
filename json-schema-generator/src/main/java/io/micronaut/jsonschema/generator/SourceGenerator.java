@@ -26,6 +26,8 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
+import io.micronaut.jsonschema.generator.utils.GeneratorContext;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.serde.annotation.Serdeable;
 import io.micronaut.sourcegen.generator.SourceGenerators;
@@ -51,7 +53,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.GeneratorContext.*;
+import static io.micronaut.jsonschema.generator.utils.FileProcessor.getJsonSchema;
+import static io.micronaut.jsonschema.generator.utils.FileProcessor.getOutputFile;
+import static io.micronaut.jsonschema.generator.utils.GeneratorContext.*;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
 
 /**
@@ -105,7 +109,7 @@ public final class SourceGenerator {
         if (outputFileName.contains(".")) {
             outputFileName = outputFileName.substring(0, outputFileName.lastIndexOf('.'));
         }
-        return generateFromSchemaMap(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
+        return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
     }
 
     /**
@@ -122,7 +126,7 @@ public final class SourceGenerator {
             outputFileName = outputFileName.substring(0, outputFileName.lastIndexOf('.'));
         }
         inputFileName = jsonFile.getName();
-        return generateFromSchemaMap(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
+        return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
     }
 
     /**
@@ -243,7 +247,7 @@ public final class SourceGenerator {
         String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
         schemaName = capitalize(getCamelCaseName(schemaName));
 
-        generateFromSchemaMap(jsonSchema, outputPath, packageName, schemaName);
+        generateFromSchema(jsonSchema, outputPath, packageName, schemaName);
         generatedClassCount.getAndIncrement();
 
         // generate classes in definitions and oneOfs
@@ -259,7 +263,7 @@ public final class SourceGenerator {
                 }).forEach(definition -> {
                     try {
                         var className = capitalize(getCamelCaseName(definition.getKey()));
-                        generateFromSchemaMap(definition.getValue(), outputPath, packageName, className);
+                        generateFromSchema(definition.getValue(), outputPath, packageName, className);
                         generatedClassCount.getAndIncrement();
                     } catch (IOException e) {
                         throw new RuntimeException(e);
@@ -268,13 +272,13 @@ public final class SourceGenerator {
         }
         for (Map.Entry<String, Schema> oneOf : getOneOfsToGenerate()) {
             String className = oneOf.getKey().substring(oneOf.getKey().lastIndexOf('/') + 1);
-            generateFromSchemaMap(oneOf.getValue(), outputPath, packageName, className);
+            generateFromSchema(oneOf.getValue(), outputPath, packageName, className);
             generatedClassCount.getAndIncrement();
         }
         return generatedClassCount.get();
     }
 
-    private File generateFromSchemaMap(Schema jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
+    private File generateFromSchema(Schema jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
         try {
             String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName), language);
             String simpleName = decidedFileName.substring(0, decidedFileName.lastIndexOf('.'));
@@ -356,7 +360,6 @@ public final class SourceGenerator {
         });
 
         if (isComplexEnum) {
-            cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
             enumBuilder.addField(FieldDef.builder("name")
                     .ofType(TypeDef.STRING)
                     .addModifiers(Modifier.PUBLIC)
@@ -374,7 +377,7 @@ public final class SourceGenerator {
                     .returns(TypeDef.THIS)
                     .addParameter("name", TypeDef.STRING)
                     .build((aThis, parameters) ->
-                        parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases).returning()
+                        parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases, ExpressionDef.nullValue()).returning()
                     ));
         }
         addFields(jsonSchema, enumBuilder);
