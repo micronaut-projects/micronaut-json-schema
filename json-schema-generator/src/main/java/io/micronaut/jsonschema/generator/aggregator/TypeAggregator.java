@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.visitor.VisitorContext;
-import io.micronaut.jsonschema.generator.CodeGenerator;
+import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
@@ -43,7 +43,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.getDefinitionType;
+import static io.micronaut.jsonschema.generator.GeneratorContext.getDefinitionType;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
 import static java.lang.String.join;
 
@@ -83,7 +83,7 @@ public class TypeAggregator {
             if (ref.equals(THIS_SCHEMA_REF)) {
                 return TypeDef.THIS;
             } else if (ref.indexOf("#") == 0) {
-                ref = CodeGenerator.getInputFileName() + ref;
+                ref = SourceGenerator.getInputFileName() + ref;
             }
             typeDef = getDefinitionType(ref);
         } else if (type.equals(Schema.Type.NUMBER) && schema.getPattern() != null) {

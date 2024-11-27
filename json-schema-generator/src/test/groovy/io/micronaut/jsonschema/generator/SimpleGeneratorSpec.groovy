@@ -55,7 +55,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testArrayGeneration() {
         when:
-        CodeGenerator generator = new CodeGenerator(VisitorContext.Language.JAVA)
+        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA)
 
         Path outputPath = new File("output").toPath() // Define the base output path
         String packageName = "com.example.project"; // Example package name
@@ -71,7 +71,10 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
           }
         }
         ''';
-        File generated = generator.generate(new ByteArrayInputStream(jsonSchema.getBytes()), outputPath, packageName, fileName)
+        File generated = generator.generate(
+                new SourceGeneratorConfig(outputPath, packageName),
+                new ByteArrayInputStream(jsonSchema.getBytes()),
+                fileName)
 
         then:
         generated == null

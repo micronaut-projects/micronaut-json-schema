@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.aggregator;
+package io.micronaut.jsonschema.generator;
 
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.generator.CodeGenerator;
+import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
@@ -41,7 +41,7 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
  */
 @Internal
 @Singleton
-public class DefinitionsAggregator {
+public class GeneratorContext {
     private static final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private static final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
 
@@ -70,8 +70,8 @@ public class DefinitionsAggregator {
     }
 
     public static boolean isInheriting(String className) {
-        String key = CodeGenerator.getInputFileName() + "#/oneOf/" + className;
-        String keyRef = CodeGenerator.getInputFileName() + "#/definitions/" + className;
+        String key = SourceGenerator.getInputFileName() + "#/oneOf/" + className;
+        String keyRef = SourceGenerator.getInputFileName() + "#/definitions/" + className;
         return ONE_OF_SET.containsKey(key) || ONE_OF_SET.containsKey(keyRef);
     }
 
@@ -107,7 +107,7 @@ public class DefinitionsAggregator {
     }
 
     public static void addOneOf(Schema oneOf) {
-        String fileName = CodeGenerator.getInputFileName();
+        String fileName = SourceGenerator.getInputFileName();
         String className = (oneOf.hasTitle()) ? capitalize(getCamelCaseName(oneOf.getTitle())) : "Option" + ONE_OF_SET.size();
 
         ONE_OF_SET.put(fileName + "#/oneOf/" + className, oneOf);

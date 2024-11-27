@@ -26,10 +26,8 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
-import io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.serde.annotation.Serdeable;
-import io.micronaut.sourcegen.generator.SourceGenerator;
 import io.micronaut.sourcegen.generator.SourceGenerators;
 import io.micronaut.sourcegen.model.*;
 
@@ -53,26 +51,39 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.aggregator.DefinitionsAggregator.*;
+import static io.micronaut.jsonschema.generator.GeneratorContext.*;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
 
 /**
- * A generator to create Java Beans from Json Schema.
+ * A source generator to create source files from Json Schema.
  *
  * @author Elif Kurtay
- * @since 1.2
+ * @since 1.3
  */
 @Internal
-public final class CodeGenerator {
+public final class SourceGenerator {
 
     private static String inputFileName = "";
 
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
-    private final SourceGenerator sourceGenerator;
+    private final io.micronaut.sourcegen.generator.SourceGenerator sourceGenerator;
     private final VisitorContext.Language language;
     private String discriminatorProperty = "";
 
-    public CodeGenerator(VisitorContext.Language language) {
+    /**
+     * Constructs a new {@link SourceGenerator} instance based on the provided programming language.
+     * <p>
+     * This constructor attempts to find a corresponding {@link io.micronaut.sourcegen.generator.SourceGenerator} implementation
+     * for the given programming language. If no such implementation is found, a {@link RuntimeException}
+     * is thrown.
+     * </p>
+     *
+     * @param language The {@link VisitorContext.Language} representing the target programming language
+     *                 for which the source generator is to be created. This argument cannot be {@code null}.
+     * @throws RuntimeException if no matching source generator is found for the provided language.
+     *                          The exception message will indicate the language for which no generator was found.
+     */
+    public SourceGenerator(VisitorContext.Language language) {
         sourceGenerator = SourceGenerators.findByLanguage(language).orElse(null);
         if (sourceGenerator == null) {
             throw new RuntimeException("No source generator found for language " + language);
@@ -83,53 +94,51 @@ public final class CodeGenerator {
     /**
      * A method for creating a single record from a json schema. Used mainly in testing.
      *
-     * @param inputStream The input stream of a json schema
-     * @param outputPath The output path for the output file
-     * @param packageName The package name for the output file
-     * @param fileName The fileName for the output file
+     * @param config            The SourceGeneratorConfig
+     * @param inputStream       The input stream of a json schema
+     * @param outputFileName    The fileName for the output file
      * @return The generated file
      */
-    public File generate(InputStream inputStream, Path outputPath, String packageName, String fileName) throws IOException {
+    public File generate(SourceGeneratorConfig config, InputStream inputStream, String outputFileName) throws IOException {
         Schema jsonSchema = getJsonSchema(inputStream, null);
         inputFileName = "InputStream.schema.json";
-        if (fileName.contains(".")) {
-            fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+        if (outputFileName.contains(".")) {
+            outputFileName = outputFileName.substring(0, outputFileName.lastIndexOf('.'));
         }
-        return generateFromSchemaMap(jsonSchema, outputPath, packageName, fileName);
+        return generateFromSchemaMap(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
     }
 
     /**
      * A method for creating a single record from a json schema.
      *
-     * @param jsonFileLocation The input file location of a json schema
-     * @param outputPath       The output path for the output file
-     * @param packageName      The package name for the output file
-     * @param fileName         The fileName for the output file
+     * @param config           The SourceGeneratorConfig
+     * @param jsonFile         The input file location of a json schema
+     * @param outputFileName   The outputFileName for the output file
+     * @return The generated file
      */
-    public void generate(File jsonFileLocation, Path outputPath, String packageName, String fileName) throws IOException {
-        var jsonSchema = getJsonSchema(null, jsonFileLocation);
-        if (fileName.contains(".")) {
-            fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+    public File generate(SourceGeneratorConfig config, File jsonFile, String outputFileName) throws IOException {
+        var jsonSchema = getJsonSchema(null, jsonFile);
+        if (outputFileName.contains(".")) {
+            outputFileName = outputFileName.substring(0, outputFileName.lastIndexOf('.'));
         }
-        inputFileName = jsonFileLocation.getName();
-        generateFromSchemaMap(jsonSchema, outputPath, packageName, fileName);
+        inputFileName = jsonFile.getName();
+        return generateFromSchemaMap(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
     }
 
     /**
      * A method for creating multiple objects (class, record, interface) from a json schema.
      *
-     * @param inputStream The input stream of a json schema
-     * @param schemaFileName The schema file's name
-     * @param outputPath The output path for the output file
-     * @param packageName The package name for the output file
+     * @param config            The SourceGeneratorConfig
+     * @param schemaFileName    The schema file's name
+     * @param inputStream       The input stream of a json schema
      * @return The number of generated files
      */
-    public int generate(InputStream inputStream, String schemaFileName, Path outputPath, String packageName) throws IOException {
+    public int generate(SourceGeneratorConfig config, String schemaFileName, InputStream inputStream) throws IOException {
         var jsonSchema = getJsonSchema(inputStream, null);
         inputFileName = schemaFileName;
         assert jsonSchema != null;
         saveDefinitions(jsonSchema);
-        int generatedCount = generateDefinitions(jsonSchema, outputPath, packageName);
+        int generatedCount = generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
         clearAllDefinitions();
         return generatedCount;
     }
@@ -137,17 +146,16 @@ public final class CodeGenerator {
     /**
      * A method for creating multiple objects (class, record, interface) from a json schema.
      *
-     * @param jsonFileLocation The input file location of a json schema
-     * @param outputPath The output path for the output file
-     * @param packageName The package name for the output file
+     * @param config   The SourceGeneratorConfig
+     * @param jsonFile The input file location of a json schema
      * @return The number of generated files
      */
-    public int generate(File jsonFileLocation, Path outputPath, String packageName) throws IOException {
-        var jsonSchema = getJsonSchema(null, jsonFileLocation);
-        inputFileName = jsonFileLocation.getName();
+    public int generate(SourceGeneratorConfig config, File jsonFile) throws IOException {
+        var jsonSchema = getJsonSchema(null, jsonFile);
+        inputFileName = jsonFile.getName();
         assert jsonSchema != null;
         saveDefinitions(jsonSchema);
-        int generatedCount = generateDefinitions(jsonSchema, outputPath, packageName);
+        int generatedCount = generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
         clearAllDefinitions();
         return generatedCount;
     }
@@ -155,30 +163,29 @@ public final class CodeGenerator {
     /**
      * A method for creating multiple objects (class, record, interface) from a folder of JSON Schema.
      *
-     * @param jsonFolderLocation The input folder location of json schemas
-     * @param outputPath The output path for the output file
-     * @param packageName The package name for the output file
+     * @param config     The SourceGeneratorConfig
+     * @param jsonFolder The input folder location of json schemas
      */
-    public void generate(Path jsonFolderLocation, Path outputPath, String packageName) throws IOException {
+    public void generate(SourceGeneratorConfig config, Path jsonFolder) throws IOException {
         HashMap<Schema, String> schemas = new HashMap<>();
         // Walk through the directory to find all json files
-        try (Stream<Path> paths = Files.walk(jsonFolderLocation).filter(file -> file.toString().endsWith(".schema.json"))) {
+        try (Stream<Path> paths = Files.walk(jsonFolder).filter(file -> file.toString().endsWith(".schema.json"))) {
             paths.forEach(path -> {
                 // Read content of each JSON file
                 var jsonSchema = getJsonSchema(null, path.toFile());
                 assert jsonSchema != null;
-                inputFileName = path.toString().substring(jsonFolderLocation.toString().length() + 1);
+                inputFileName = path.toString().substring(jsonFolder.toString().length() + 1);
                 schemas.put(jsonSchema, inputFileName);
                 saveDefinitions(jsonSchema);
             });
         } catch (IOException e) {
-            throw new FileSystemException(jsonFolderLocation.toString());
+            throw new FileSystemException(jsonFolder.toString());
         }
 
         schemas.forEach((jsonSchema, fileName) -> {
             try {
                 inputFileName = fileName;
-                generateDefinitions(jsonSchema, outputPath, packageName);
+                generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -226,7 +233,7 @@ public final class CodeGenerator {
                     addDefinition(inputFileName + "#/definitions/" + key, value);
                 }
             });
-            referencedDefinitions.forEach(DefinitionsAggregator::addDefinition);
+            referencedDefinitions.forEach(GeneratorContext::addDefinition);
         }
     }
 

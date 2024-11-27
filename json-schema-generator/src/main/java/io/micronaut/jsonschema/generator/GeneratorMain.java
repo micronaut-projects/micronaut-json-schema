@@ -23,7 +23,7 @@ import java.nio.file.Paths;
 
 /**
  * An entry point to be used in tests, to simulate
- * what the Code Generation from Json Schema plugin would do.
+ * what the Source Generation from Json Schema plugin would do.
  *
  * @version 1.3
  * @author Elif Kurtay
@@ -36,6 +36,7 @@ public class GeneratorMain {
      * @param args The argument array, consisting of:
      *     <ol>
      *         <li>Input jsonfile location.</li>
+ *             <li>Input Path to folder of json schema.</li>
      *         <li>The generation language.</li>
      *         <li>The output path and package name.</li>
      *         <li>An optional file name in case there is only one output file desired.</li>
@@ -44,21 +45,24 @@ public class GeneratorMain {
      * @throws IOException In case definition file path is incorrect.
      */
     public static void main(String[] args) throws IOException {
+        var jsonFileName = args[0];
+        var inputFolder = args[1];
         var lang = VisitorContext.Language.valueOf(args[2].toUpperCase());
         var outputPath = Paths.get(args[3]);
         var outputPackageName = args[4];
+        var config = new SourceGeneratorConfig(outputPath, outputPackageName);
         var fileName = args[5];
 
-        var generator = new CodeGenerator(lang);
-        if (args[1].isEmpty()) {
-            var jsonFile = new File(args[0].substring(5));
+        var generator = new SourceGenerator(lang);
+        if (inputFolder.isEmpty()) {
+            var jsonFile = new File(jsonFileName.substring(5));
             if (fileName.isEmpty()) {
-                generator.generate(jsonFile, outputPath, outputPackageName);
+                generator.generate(config, jsonFile);
             } else {
-                generator.generate(jsonFile, outputPath, outputPackageName, fileName);
+                generator.generate(config, jsonFile, fileName);
             }
         } else {
-            generator.generate(Paths.get(args[1]), outputPath, outputPackageName);
+            generator.generate(config, Paths.get(inputFolder));
         }
     }
 }
