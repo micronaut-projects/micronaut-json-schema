@@ -51,6 +51,10 @@ public abstract class BeanGeneratorTask extends DefaultTask {
     @Classpath
     public abstract ConfigurableFileCollection getClasspath();
 
+    @Input
+    @Optional
+    public abstract Property<String> getJsonURL();
+
     @InputFile
     @Optional
     @PathSensitive(PathSensitivity.NONE)
@@ -87,10 +91,11 @@ public abstract class BeanGeneratorTask extends DefaultTask {
     public void execute() throws IOException {
         var generatedSourcesDir = getGeneratedSourcesDirectory().get().getAsFile();
         var lang = getLanguage().getOrElse("java");
+        String jsonURL = getJsonURL().isPresent() ? getJsonURL().get() : "";
         String jsonFile = getJsonFile().isPresent() ? getJsonFile().get().getAsFile().toURI().toString() : "";
         String inputPath = getInputDirectory().isPresent() ? getInputDirectory().get().getAsFile().getAbsolutePath() : "";
-        if (jsonFile.isEmpty() && inputPath.isEmpty()) {
-            throw new TaskInstantiationException("One of the arguments needs to be provided: jsonFile or inputDirectory.");
+        if (jsonURL.isBlank() && jsonFile.isBlank() && inputPath.isBlank()) {
+            throw new TaskInstantiationException("One of the arguments needs to be provided: jsonURL, jsonFile or inputDirectory.");
         }
 
         Files.createDirectories(generatedSourcesDir.toPath());
@@ -98,6 +103,7 @@ public abstract class BeanGeneratorTask extends DefaultTask {
             javaexec.setClasspath(getClasspath());
             javaexec.getMainClass().set("io.micronaut.jsonschema.generator.GeneratorMain");
             var args = new ArrayList<String>();
+            args.add(jsonURL);
             args.add(jsonFile);
             args.add(inputPath);
             args.add(lang.toUpperCase());

@@ -1,3 +1,5 @@
+import io.micronaut.build.internal.generator.BeanGeneratorTask
+
 plugins {
     id("io.micronaut.build.internal.json-schema-module")
     id("io.micronaut.build.internal.test-suite-generator")
@@ -27,6 +29,38 @@ dependencies {
     testRuntimeOnly(libs.junit.jupiter.engine)
 }
 
+def beanGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/animal.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.animals")
+}
+
+def foodGenerator = tasks.register("generateFood", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    inputDirectory.convention(layout.projectDirectory.dir("src/test/resources/food"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.food")
+}
+
+def githubGenerator = tasks.register("generateGithub", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/github-workflow.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.github")
+}
+
+def fhirGenerator = tasks.register("generateFhir", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/fhir.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.fhir")
+}
+
 tasks.named("generateAnimals") {
 }
 
@@ -46,6 +80,10 @@ tasks.withType(Checkstyle).configureEach {
 sourceSets {
     test {
         java.srcDir('src/test/java')
+        java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(foodGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(githubGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(fhirGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
     }
 }
 

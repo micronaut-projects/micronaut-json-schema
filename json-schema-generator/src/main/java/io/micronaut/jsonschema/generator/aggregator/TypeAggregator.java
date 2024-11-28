@@ -16,23 +16,16 @@
 package io.micronaut.jsonschema.generator.aggregator;
 
 import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.SourceGenerator;
-import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
 
 import javax.lang.model.SourceVersion;
 import io.micronaut.jsonschema.model.Schema;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -43,7 +36,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.GeneratorContext.getDefinitionType;
+import static io.micronaut.jsonschema.generator.utils.GeneratorContext.getDefinitionType;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
 import static java.lang.String.join;
 
@@ -95,38 +88,10 @@ public class TypeAggregator {
         } else {
             typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
         }
+        if (typeDef == null) {
+            throw new IllegalArgumentException("Unsupported type: " + type);
+        }
         return typeDef;
-    }
-
-    public static Schema getJsonSchema(InputStream inputStream, File schemaFile) {
-        ObjectMapper jsonMapper = JsonSchemaMapperFactory.createMapper();
-        try {
-            if (inputStream != null) {
-                String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-                return jsonMapper.readValue(jsonString, Schema.class);
-            } else if (schemaFile != null) {
-                return jsonMapper.readValue(schemaFile, Schema.class);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return null;
-    }
-
-    public static File getOutputFile(Path outputPath, String packageName, String fileName) throws IOException {
-        // Create full path
-        String packagePath = packageName.replace('.', File.separatorChar);
-        Path fullPath = outputPath.resolve(packagePath).resolve(fileName);
-
-        // Create directories if they do not exist
-        File outputFile = fullPath.toFile();
-        if (!outputFile.getParentFile().exists()) {
-            outputFile.getParentFile().mkdirs();
-        }
-        if (!outputFile.exists() && !outputFile.createNewFile()) {
-            throw new IOException("Could not create file " + outputFile.getAbsolutePath());
-        }
-        return outputFile;
     }
 
     public static String getConstantName(String input) {

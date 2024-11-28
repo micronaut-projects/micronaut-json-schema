@@ -16,9 +16,11 @@
 package io.micronaut.jsonschema.generator;
 
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -35,6 +37,7 @@ public class GeneratorMain {
      *
      * @param args The argument array, consisting of:
      *     <ol>
+ *             <li>URL of input jsonfile.</li>
      *         <li>Input jsonfile location.</li>
  *             <li>Input Path to folder of json schema.</li>
      *         <li>The generation language.</li>
@@ -45,24 +48,25 @@ public class GeneratorMain {
      * @throws IOException In case definition file path is incorrect.
      */
     public static void main(String[] args) throws IOException {
-        var jsonFileName = args[0];
-        var inputFolder = args[1];
-        var lang = VisitorContext.Language.valueOf(args[2].toUpperCase());
-        var outputPath = Paths.get(args[3]);
-        var outputPackageName = args[4];
-        var config = new SourceGeneratorConfig(outputPath, outputPackageName);
-        var fileName = args[5];
+        String jsonURL = args[0];
+        File jsonFile = null;
+        if (!args[1].isBlank()) {
+            jsonFile = new File(args[1].substring(5));
+        }
+        Path inputFolder = null;
+        if (!args[2].isBlank()) {
+            inputFolder = Paths.get(args[2]);
+        }
+        var lang = VisitorContext.Language.valueOf(args[3].toUpperCase());
+        Path outputPath = Paths.get(args[4]);
+        String outputPackageName = args[5];
+        String outputFileName = args[6];
+        var config = new SourceGeneratorConfig(null,
+            jsonURL, jsonFile, inputFolder, outputPath,
+            outputPackageName, outputFileName);
+
 
         var generator = new SourceGenerator(lang);
-        if (inputFolder.isEmpty()) {
-            var jsonFile = new File(jsonFileName.substring(5));
-            if (fileName.isEmpty()) {
-                generator.generate(config, jsonFile);
-            } else {
-                generator.generate(config, jsonFile, fileName);
-            }
-        } else {
-            generator.generate(config, Paths.get(inputFolder));
-        }
+        generator.generate(config);
     }
 }

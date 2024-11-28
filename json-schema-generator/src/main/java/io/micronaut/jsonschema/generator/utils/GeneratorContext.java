@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator;
+package io.micronaut.jsonschema.generator.utils;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;
@@ -33,11 +34,11 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 
 /**
  * An aggregator for storing and accessing definitions and oneOf relations from json schema.
- * Saves a map of definition reference to TypeDef, Boolean (boolean value is true if the type is a class/interface object.
+ * Saves a map of definition reference to TypeDef, Boolean (boolean value is true if the type is a class/interface object).
  * Saves a map of oneOf objects to keep in track on inheriting objects.
  *
  * @author Elif Kurtay
- * @since 1.2
+ * @since 1.3
  */
 @Internal
 @Singleton
@@ -50,7 +51,7 @@ public class GeneratorContext {
         if (hasDefinition(defKey)) {
             return DEFINITIONS.get(defKey).getKey();
         }
-        return null;
+        throw new IllegalArgumentException("Definition not found: " + key);
     }
 
     public static Map.Entry<TypeDef, Boolean> getDefinition(String key) {

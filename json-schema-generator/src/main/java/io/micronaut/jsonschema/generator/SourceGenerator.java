@@ -37,7 +37,6 @@ import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,87 +95,59 @@ public final class SourceGenerator {
     }
 
     /**
-     * A method for creating a single record from a json schema. Used mainly in testing.
+     * Generates source code from JSON schema files based on the provided configuration.
+     * <p>
+     * This method first checks if an {@code inputFolder} is specified in the configuration. If the
+     * {@code inputFolder} is provided, it processes all JSON Schema in the folder to generate source code.
+     * If {@code inputFolder} is {@code null}, it attempts to retrieve the JSON schema from the specified
+     * {@code inputStream}, {@code jsonUrl}, or {@code jsonFile} in the configuration and generates code from the schema.
+     * </p>
+     * <p>
+     * If the {@code outputFileName} exists, the method generates a single source file from the schema with that file name.
+     * Otherwise, the method generates all objects defined in the schema inside the specified {@code outputPath}
+     * (and {@code outputPackageName} if available).
+     * </p>
      *
-     * @param config            The SourceGeneratorConfig
-     * @param inputStream       The input stream of a json schema
-     * @param outputFileName    The fileName for the output file
-     * @return The generated file
+     * @param config The {@link SourceGeneratorConfig} object that contains the configuration for source code generation,
+     *               including input folder, JSON schema URL, output path, output package name, and output file name.
+     * @return The top level schema's File if generated, null otherwise.
+     * @throws IOException If an I/O error occurs during file or directory creation, or if an error occurs while reading or writing files.
      */
-    public File generate(SourceGeneratorConfig config, InputStream inputStream, String outputFileName) throws IOException {
-        Schema jsonSchema = getJsonSchema(inputStream, null);
-        inputFileName = "InputStream.schema.json";
-        if (outputFileName.contains(".")) {
-            outputFileName = outputFileName.substring(0, outputFileName.lastIndexOf('.'));
+    public File generate(SourceGeneratorConfig config) throws IOException {
+        if (config.inputFolder() != null) {
+            generateFolder(config);
+        } else {
+            Schema jsonSchema = getJsonSchema(config);
+            assert jsonSchema != null;
+            inputFileName = config.getInputName();
+            if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
+                var outputFileName = config.outputFileName();
+                if (config.outputFileName().contains(".")) { // remove extension from file name
+                    outputFileName = config.outputFileName().substring(0, config.outputFileName().indexOf('.'));
+                }
+                return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
+            } else {
+                saveDefinitions(jsonSchema);
+                generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+                clearAllDefinitions();
+            }
         }
-        return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
-    }
-
-    /**
-     * A method for creating a single record from a json schema.
-     *
-     * @param config           The SourceGeneratorConfig
-     * @param jsonFile         The input file location of a json schema
-     * @param outputFileName   The outputFileName for the output file
-     * @return The generated file
-     */
-    public File generate(SourceGeneratorConfig config, File jsonFile, String outputFileName) throws IOException {
-        var jsonSchema = getJsonSchema(null, jsonFile);
-        if (outputFileName.contains(".")) {
-            outputFileName = outputFileName.substring(0, outputFileName.lastIndexOf('.'));
-        }
-        inputFileName = jsonFile.getName();
-        return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
-    }
-
-    /**
-     * A method for creating multiple objects (class, record, interface) from a json schema.
-     *
-     * @param config            The SourceGeneratorConfig
-     * @param schemaFileName    The schema file's name
-     * @param inputStream       The input stream of a json schema
-     * @return The number of generated files
-     */
-    public int generate(SourceGeneratorConfig config, String schemaFileName, InputStream inputStream) throws IOException {
-        var jsonSchema = getJsonSchema(inputStream, null);
-        inputFileName = schemaFileName;
-        assert jsonSchema != null;
-        saveDefinitions(jsonSchema);
-        int generatedCount = generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
-        clearAllDefinitions();
-        return generatedCount;
-    }
-
-    /**
-     * A method for creating multiple objects (class, record, interface) from a json schema.
-     *
-     * @param config   The SourceGeneratorConfig
-     * @param jsonFile The input file location of a json schema
-     * @return The number of generated files
-     */
-    public int generate(SourceGeneratorConfig config, File jsonFile) throws IOException {
-        var jsonSchema = getJsonSchema(null, jsonFile);
-        inputFileName = jsonFile.getName();
-        assert jsonSchema != null;
-        saveDefinitions(jsonSchema);
-        int generatedCount = generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
-        clearAllDefinitions();
-        return generatedCount;
+        return null;
     }
 
     /**
      * A method for creating multiple objects (class, record, interface) from a folder of JSON Schema.
      *
      * @param config     The SourceGeneratorConfig
-     * @param jsonFolder The input folder location of json schemas
      */
-    public void generate(SourceGeneratorConfig config, Path jsonFolder) throws IOException {
+    public void generateFolder(SourceGeneratorConfig config) throws IOException {
         HashMap<Schema, String> schemas = new HashMap<>();
+        Path jsonFolder =  config.inputFolder();
         // Walk through the directory to find all json files
         try (Stream<Path> paths = Files.walk(jsonFolder).filter(file -> file.toString().endsWith(".schema.json"))) {
             paths.forEach(path -> {
                 // Read content of each JSON file
-                var jsonSchema = getJsonSchema(null, path.toFile());
+                var jsonSchema = getJsonSchema(path.toFile());
                 assert jsonSchema != null;
                 inputFileName = path.toString().substring(jsonFolder.toString().length() + 1);
                 schemas.put(jsonSchema, inputFileName);

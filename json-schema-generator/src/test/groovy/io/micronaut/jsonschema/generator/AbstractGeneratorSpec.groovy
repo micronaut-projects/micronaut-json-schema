@@ -7,6 +7,7 @@ import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.body.RecordDeclaration
 import com.github.javaparser.ast.body.TypeDeclaration
 import io.micronaut.inject.visitor.VisitorContext
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig
 import spock.lang.Specification
 
 import java.nio.file.Path
@@ -20,10 +21,9 @@ class AbstractGeneratorSpec extends Specification {
         String packageName = "com.example.project"; // Example package name
         String fileName = className;
 
-        File generated = generator.generate(
-                new SourceGeneratorConfig(outputPath, packageName),
-                new ByteArrayInputStream(jsonSchema.getBytes()),
-                fileName)
+        File generated = generator.generate(new SourceGeneratorConfig(
+                new ByteArrayInputStream(jsonSchema.getBytes()), null, null,
+                null, outputPath, packageName, fileName))
 
         try {
             ParserConfiguration configuration = new ParserConfiguration()
