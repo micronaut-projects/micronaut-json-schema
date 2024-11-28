@@ -48,7 +48,7 @@ def foodGenerator = tasks.register("generateFood", BeanGeneratorTask) {
 def githubGenerator = tasks.register("generateGithub", BeanGeneratorTask) {
     language = "java"
     classpath.from(configurations.beanGenerator)
-    jsonFile.convention(layout.projectDirectory.file("src/test/resources/github-workflow.schema.json"))
+    jsonURL.convention("https://json.schemastore.org/github-workflow.json")
     outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
     packageName.convention("io.micronaut.jsonschema.generator.github")
 }
@@ -56,7 +56,7 @@ def githubGenerator = tasks.register("generateGithub", BeanGeneratorTask) {
 def fhirGenerator = tasks.register("generateFhir", BeanGeneratorTask) {
     language = "java"
     classpath.from(configurations.beanGenerator)
-    jsonFile.convention(layout.projectDirectory.file("src/test/resources/fhir.schema.json"))
+    jsonURL.convention("https://www.hl7.org/fhir/fhir.schema.json")
     outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
     packageName.convention("io.micronaut.jsonschema.generator.fhir")
 }

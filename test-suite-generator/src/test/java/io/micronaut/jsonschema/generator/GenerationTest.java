@@ -1,4 +1,4 @@
-package io.micronaut.jsonschema.generator.animals;
+package io.micronaut.jsonschema.generator;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ public class GenerationTest {
         } catch (IOException e) {
             Assertions.fail("Failed to list files in the folder: " + e.getMessage());
         }
-        Assertions.assertEquals(864, generatedFiles);
+        Assertions.assertTrue(generatedFiles > 800);
 
         // Assert that the expected files exist
         String[] expectedFileNames = {

@@ -26,6 +26,7 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
+import io.micronaut.jsonschema.generator.utils.FileProcessor;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.model.Schema;
@@ -66,7 +67,7 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
 @Internal
 public final class SourceGenerator {
 
-    private static String inputFileName = "";
+    private static String inputFileName = null;
 
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
     private final io.micronaut.sourcegen.generator.SourceGenerator sourceGenerator;
@@ -119,7 +120,7 @@ public final class SourceGenerator {
         } else {
             Schema jsonSchema = getJsonSchema(config);
             assert jsonSchema != null;
-            inputFileName = config.getInputName();
+            inputFileName = getInputFileName() != null ? getInputFileName() : config.getInputName();
             if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
                 var outputFileName = config.outputFileName();
                 if (config.outputFileName().contains(".")) { // remove extension from file name
@@ -140,7 +141,7 @@ public final class SourceGenerator {
      *
      * @param config     The SourceGeneratorConfig
      */
-    public void generateFolder(SourceGeneratorConfig config) throws IOException {
+    private void generateFolder(SourceGeneratorConfig config) throws IOException {
         HashMap<Schema, String> schemas = new HashMap<>();
         Path jsonFolder =  config.inputFolder();
         // Walk through the directory to find all json files
@@ -588,5 +589,17 @@ public final class SourceGenerator {
 
     public static String getInputFileName() {
         return inputFileName;
+    }
+
+    public static void setInputFileName(String inputFileName) {
+        SourceGenerator.inputFileName = inputFileName;
+    }
+
+    public static List<String> getAllowedUrlPatterns() {
+        return FileProcessor.getAllowedUrlPatterns();
+    }
+
+    public static void setAllowedUrlPatterns(List<String> allowedUrlPatterns) {
+        FileProcessor.setAllowedUrlPatterns(allowedUrlPatterns);
     }
 }
