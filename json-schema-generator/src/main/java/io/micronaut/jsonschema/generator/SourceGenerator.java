@@ -332,6 +332,7 @@ public final class SourceGenerator {
         });
 
         if (isComplexEnum) {
+            cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
             enumBuilder.addField(FieldDef.builder("name")
                     .ofType(TypeDef.STRING)
                     .addModifiers(Modifier.PUBLIC)
@@ -349,7 +350,7 @@ public final class SourceGenerator {
                     .returns(TypeDef.THIS)
                     .addParameter("name", TypeDef.STRING)
                     .build((aThis, parameters) ->
-                        parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases, ExpressionDef.nullValue()).returning()
+                        parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases).returning()
                     ));
         }
         addFields(jsonSchema, enumBuilder);

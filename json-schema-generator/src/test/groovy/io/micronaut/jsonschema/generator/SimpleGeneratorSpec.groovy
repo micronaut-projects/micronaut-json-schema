@@ -307,7 +307,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
           @JsonAnySetter
           public void setOtherField(String name, String value) {
-            if (unknownFields==null) {
+            if (unknownFields == null) {
               unknownFields = new java.util.HashMap();
             }
             unknownFields.put(name, value);
