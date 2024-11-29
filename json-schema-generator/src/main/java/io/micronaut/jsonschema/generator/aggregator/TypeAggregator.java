@@ -20,11 +20,14 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.SourceGenerator;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
 
 import javax.lang.model.SourceVersion;
 import io.micronaut.jsonschema.model.Schema;
+
+import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -36,7 +39,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
+import static io.micronaut.jsonschema.generator.utils.FileProcessor.isValidUrl;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.getDefinitionType;
+import static io.micronaut.jsonschema.generator.utils.GeneratorContext.hasDefinition;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
 import static java.lang.String.join;
 
@@ -47,7 +52,7 @@ import static java.lang.String.join;
  * @since 1.2
  */
 @Internal
-public class TypeAggregator {
+public final class TypeAggregator {
 
     private static final Map<String, TypeDef> TYPE_MAP = CollectionUtils.mapOf(new Object[]{
         "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN, "array", TypeDef.of(List.class),
@@ -57,6 +62,14 @@ public class TypeAggregator {
     public static TypeDef getTypeDefFromJson(Schema schema) {
         var type = schema.getType() != null ? schema.getType().get(0) : Schema.Type.OBJECT;
         TypeDef typeDef;
+        if (schema.hasOneOf()) {
+            // inner oneOf's are treated as objects
+            return TypeDef.OBJECT;
+        } else if (schema.hasAnyOf()) {
+            // strategy: pick first
+            var firstType = schema.getAnyOf().get(0);
+            return getTypeDefFromJson(firstType);
+        }
         if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
             var format = schema.getFormat();
             switch (format) {
@@ -71,20 +84,32 @@ public class TypeAggregator {
                 // missing: web hostname, uri-reference, uri-template, regex
                 default: typeDef = TypeDef.STRING;
             }
-        } else if (schema.has$ref()) {
-            String ref = schema.get$ref();
-            if (ref.equals(THIS_SCHEMA_REF)) {
-                return TypeDef.THIS;
-            } else if (ref.indexOf("#") == 0) {
-                ref = SourceGenerator.getInputFileName() + ref;
-            }
-            typeDef = getDefinitionType(ref);
         } else if (type.equals(Schema.Type.NUMBER) && schema.getPattern() != null) {
             if (schema.getPattern().contains(".")) {
                 typeDef = ClassTypeDef.of(Float.class);
             } else {
                 typeDef = ClassTypeDef.of(Integer.class);
             }
+        } else if (schema.has$ref()) {
+            String ref = schema.get$ref();
+            if (ref.equals(THIS_SCHEMA_REF)) {
+                return TypeDef.THIS;
+            } else if (ref.indexOf("#") == 0) {
+                ref = SourceGenerator.getInputFileName() + ref;
+            } else {
+                var location = ref.substring(0, ref.indexOf("#"));
+                if (!hasDefinition(ref) && isValidUrl(location)) {
+                    try {
+                        var generator = new SourceGenerator(SourceGenerator.getLanguage());
+                        generator.generate(
+                            new SourceGeneratorConfig(null, location, null, null,
+                                generator.getOutputPath(), generator.getOutputPackageName(), null));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            typeDef = getDefinitionType(ref);
         } else {
             typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
         }

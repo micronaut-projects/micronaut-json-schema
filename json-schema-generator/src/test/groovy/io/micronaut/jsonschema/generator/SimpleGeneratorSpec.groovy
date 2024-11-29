@@ -239,7 +239,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
                 }
 
                 @JsonCreator
-                public static Shell statusOf(String name) {
+                public static Run.Shell statusOf(String name) {
                   return switch (name) {
                         case "bash" -> BASH;
                         case "pwsh" -> PWSH;
@@ -307,7 +307,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
           @JsonAnySetter
           public void setOtherField(String name, String value) {
-            if (unknownFields == null) {
+            if (unknownFields==null) {
               unknownFields = new java.util.HashMap();
             }
             unknownFields.put(name, value);

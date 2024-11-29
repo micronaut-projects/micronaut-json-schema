@@ -103,7 +103,7 @@ public class FileProcessor {
      * @param fileUrl The URL to validate.
      * @return true if the URL matches at least one allowed pattern and ends with ".json", false otherwise.
      */
-    private static boolean isValidUrl(String fileUrl) {
+    public static boolean isValidUrl(String fileUrl) {
         // Check if the URL ends with .json
         if (!fileUrl.endsWith(".json")) {
             return false;

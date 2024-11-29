@@ -61,6 +61,16 @@ def fhirGenerator = tasks.register("generateFhir", BeanGeneratorTask) {
     packageName.convention("io.micronaut.jsonschema.generator.fhir")
 }
 
+def wordPressGenerator = tasks.register("generateWordPress", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonURL.convention("https://raw.githubusercontent.com/WordPress/gutenberg/trunk/schemas/json/block.json")
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.wordpress")
+}
+
+
+
 tasks.named("generateAnimals") {
 }
 
@@ -71,6 +81,9 @@ tasks.named("generateGithub") {
 }
 
 tasks.named("generateFhir") {
+}
+
+tasks.named("generateWordPress") {
 }
 
 tasks.withType(Checkstyle).configureEach {
@@ -84,6 +97,7 @@ sourceSets {
         java.srcDir(foodGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(githubGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(fhirGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(wordPressGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
     }
 }
 

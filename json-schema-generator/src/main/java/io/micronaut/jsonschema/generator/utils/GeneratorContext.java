@@ -21,7 +21,6 @@ import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
-import jakarta.inject.Singleton;
 
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -41,8 +40,7 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
  * @since 1.3
  */
 @Internal
-@Singleton
-public class GeneratorContext {
+public final class GeneratorContext {
     private static final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private static final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
 

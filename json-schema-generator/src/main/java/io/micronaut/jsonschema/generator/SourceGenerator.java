@@ -46,10 +46,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
@@ -68,10 +66,12 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
 public final class SourceGenerator {
 
     private static String inputFileName = null;
+    private static VisitorContext.Language language;
+    private static Path outputPath;
+    private static String outputPackageName;
 
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
     private final io.micronaut.sourcegen.generator.SourceGenerator sourceGenerator;
-    private final VisitorContext.Language language;
     private String discriminatorProperty = "";
 
     /**
@@ -92,7 +92,7 @@ public final class SourceGenerator {
         if (sourceGenerator == null) {
             throw new RuntimeException("No source generator found for language " + language);
         }
-        this.language = language;
+        SourceGenerator.language = language;
     }
 
     /**
@@ -115,6 +115,8 @@ public final class SourceGenerator {
      * @throws IOException If an I/O error occurs during file or directory creation, or if an error occurs while reading or writing files.
      */
     public File generate(SourceGeneratorConfig config) throws IOException {
+        outputPath = config.outputPath();
+        outputPackageName = config.outputPackageName();
         if (config.inputFolder() != null) {
             generateFolder(config);
         } else {
@@ -193,16 +195,14 @@ public final class SourceGenerator {
             Map<String, Schema> definitions = jsonSchema.get$defs();
 
             definitions.forEach((key, value) -> {
-                if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
+                if (key.equals("//")) {
+                    jsonSchema.setDescription(String.valueOf(value));
+                } else if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
                     // WARNING: assumes the same interface as top level schema
                     addDefinition(inputFileName + "#/definitions/" + key, getDefinitionType(inputFileName + "#/" + finalSchemaName), true);
                 } else if (value.hasOneOf()) {
                     // inner oneOf's are treated as objects
                     addDefinition(inputFileName + "#/definitions/" + key, TypeDef.OBJECT, true);
-                } else if (value.hasAnyOf()) {
-                    // strategy: pick first
-                    var firstType = value.getAnyOf().get(0);
-                    addDefinition(inputFileName + "#/definitions/" + key, firstType);
                 } else if (value.has$ref()) {
                     referencedDefinitions.put(inputFileName + "#/definitions/" + key, value);
                 } else {
@@ -213,14 +213,12 @@ public final class SourceGenerator {
         }
     }
 
-    private int generateDefinitions(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
-        AtomicInteger generatedClassCount = new AtomicInteger();
+    private void generateDefinitions(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
         // generate top level schema
         String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
         schemaName = capitalize(getCamelCaseName(schemaName));
 
         generateFromSchema(jsonSchema, outputPath, packageName, schemaName);
-        generatedClassCount.getAndIncrement();
 
         // generate classes in definitions and oneOfs
         if (jsonSchema.has$defs()) {
@@ -231,12 +229,15 @@ public final class SourceGenerator {
                     if (definition.getValue().hasOneOf()) {
                         return false;
                     }
-                    return Objects.requireNonNull(getDefinition(inputFileName + "#/definitions/" + definition.getKey())).getValue();
+                    var def = getDefinition(inputFileName + "#/definitions/" + definition.getKey());
+                    if (def == null) {
+                        return false;
+                    }
+                    return def.getValue();
                 }).forEach(definition -> {
                     try {
-                        var className = capitalize(getCamelCaseName(definition.getKey()));
+                        var className = capitalize(getCamelCaseName(definition.getKey()).replaceAll("[-_]", ""));
                         generateFromSchema(definition.getValue(), outputPath, packageName, className);
-                        generatedClassCount.getAndIncrement();
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -245,9 +246,7 @@ public final class SourceGenerator {
         for (Map.Entry<String, Schema> oneOf : getOneOfsToGenerate()) {
             String className = oneOf.getKey().substring(oneOf.getKey().lastIndexOf('/') + 1);
             generateFromSchema(oneOf.getValue(), outputPath, packageName, className);
-            generatedClassCount.getAndIncrement();
         }
-        return generatedClassCount.get();
     }
 
     private File generateFromSchema(Schema jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
@@ -332,7 +331,7 @@ public final class SourceGenerator {
         });
 
         if (isComplexEnum) {
-            cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
+            // cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
             enumBuilder.addField(FieldDef.builder("name")
                     .ofType(TypeDef.STRING)
                     .addModifiers(Modifier.PUBLIC)
@@ -350,7 +349,7 @@ public final class SourceGenerator {
                     .returns(TypeDef.THIS)
                     .addParameter("name", TypeDef.STRING)
                     .build((aThis, parameters) ->
-                        parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases).returning()
+                        parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases, ExpressionDef.nullValue()).returning()
                     ));
         }
         addFields(jsonSchema, enumBuilder);
@@ -496,9 +495,10 @@ public final class SourceGenerator {
             propertyType = getListTypeDef(objectBuilder, propertyName, schema);
         }
         if (propertyType.equals(TypeDef.OBJECT)) {
+            // inner type
             boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
             ObjectDef builder;
-            if (hasOverLimitParameters) {
+            if (hasOverLimitParameters || schema.hasAdditionalProperties()) {
                 builder = buildClass(schema, capitalize(name));
             } else {
                 builder = buildRecord(schema, capitalize(name));
@@ -602,5 +602,17 @@ public final class SourceGenerator {
 
     public static void setAllowedUrlPatterns(List<String> allowedUrlPatterns) {
         FileProcessor.setAllowedUrlPatterns(allowedUrlPatterns);
+    }
+
+    public static Path getOutputPath() {
+        return outputPath;
+    }
+
+    public static String getOutputPackageName() {
+        return outputPackageName;
+    }
+
+    public static VisitorContext.Language getLanguage() {
+        return language;
     }
 }

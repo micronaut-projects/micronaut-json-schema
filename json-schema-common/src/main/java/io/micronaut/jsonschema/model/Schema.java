@@ -437,7 +437,7 @@ public final class Schema {
     }
 
     public boolean hasAdditionalProperties() {
-        return additionalProperties != null;
+        return additionalProperties != null && !additionalProperties.equals(FALSE);
     }
 
     public List<Schema> getOneOf() {
