@@ -154,7 +154,7 @@ public final class Schema {
     }
 
     public boolean hasType() {
-        return type != null;
+        return type != null && !type.isEmpty();
     }
 
     public String getFormat() {

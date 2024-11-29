@@ -60,7 +60,12 @@ public final class TypeAggregator {
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
 
     public static TypeDef getTypeDefFromJson(Schema schema) {
-        var type = schema.getType() != null ? schema.getType().get(0) : Schema.Type.OBJECT;
+        if (schema.hasType() && schema.getType().size() > 1) {
+            System.err.println("Only one type is allowed per schema. " +
+                "In case of multiple types, the variable is generated as a java.lang.Object.");
+            return TypeDef.OBJECT;
+        }
+        var type = schema.hasType() ? schema.getType().get(0) : Schema.Type.OBJECT;
         TypeDef typeDef;
         if (schema.hasOneOf()) {
             // inner oneOf's are treated as objects
