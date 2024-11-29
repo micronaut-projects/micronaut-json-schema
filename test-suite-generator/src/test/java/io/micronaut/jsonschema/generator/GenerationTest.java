@@ -52,6 +52,7 @@ public class GenerationTest {
         String[] expectedFileNames = {
             "Fhir.java",
             "Account.java",
+            "Dosage_DoseAndRate.java",
             "BackboneType.java",
             "Xhtml.java"
         };

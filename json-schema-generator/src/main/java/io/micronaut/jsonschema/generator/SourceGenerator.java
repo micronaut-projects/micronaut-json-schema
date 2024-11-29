@@ -236,7 +236,7 @@ public final class SourceGenerator {
                     return def.getValue();
                 }).forEach(definition -> {
                     try {
-                        var className = capitalize(getCamelCaseName(definition.getKey()).replaceAll("[-_]", ""));
+                        var className = capitalize(getCamelCaseName(definition.getKey()));
                         generateFromSchema(definition.getValue(), outputPath, packageName, className);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
