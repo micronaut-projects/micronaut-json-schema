@@ -70,7 +70,7 @@ public final class GeneratorContext {
 
     public static boolean isInheriting(String className) {
         String key = SourceGenerator.getInputFileName() + "#/oneOf/" + className;
-        String keyRef = SourceGenerator.getInputFileName() + "#/definitions/" + className;
+        String keyRef = SourceGenerator.getInputFileName() + "#/$defs/" + className;
         return ONE_OF_SET.containsKey(key) || ONE_OF_SET.containsKey(keyRef);
     }
 
@@ -79,7 +79,8 @@ public final class GeneratorContext {
         assert typeDef != null;
         boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING)
             && !typeDef.equals(ClassTypeDef.of(Float.class))
-            && !typeDef.equals(ClassTypeDef.of(Integer.class));
+            && !typeDef.equals(ClassTypeDef.of(Integer.class))
+            && !typeDef.equals(TypeDef.of(List.class));
         if (isClass) {
             typeDef = ClassTypeDef.of(capitalize(key.substring(key.lastIndexOf('/') + 1)));
         }
@@ -119,9 +120,9 @@ public final class GeneratorContext {
     }
 
     private static String unifyKey(String key) {
-        if (!key.contains("$defs")) {
+        if (!key.contains("definitions")) {
             return key;
         }
-        return key.replace("$defs", "definitions");
+        return key.replace("definitions", "$defs");
     }
 }

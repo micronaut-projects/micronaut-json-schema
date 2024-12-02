@@ -18,7 +18,6 @@ package io.micronaut.jsonschema.generator.aggregator;
 import com.fasterxml.jackson.core.JsonPointer;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
-import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.sourcegen.model.ClassTypeDef;
@@ -40,16 +39,18 @@ import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.utils.FileProcessor.isValidUrl;
+import static io.micronaut.jsonschema.generator.utils.GeneratorContext.addDefinition;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.getDefinitionType;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.hasDefinition;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
+import static io.micronaut.jsonschema.model.Schema.Type.NULL;
 import static java.lang.String.join;
 
 /**
  * An aggregator for deducing type information from json schema.
  *
  * @author Elif Kurtay
- * @since 1.2
+ * @since 1.3
  */
 @Internal
 public final class TypeAggregator {
@@ -61,9 +62,15 @@ public final class TypeAggregator {
 
     public static TypeDef getTypeDefFromJson(Schema schema) {
         if (schema.hasType() && schema.getType().size() > 1) {
-            System.err.println("Only one type is allowed per schema. " +
-                "In case of multiple types, the variable is generated as a java.lang.Object.");
-            return TypeDef.OBJECT;
+            if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
+                var typeList = schema.getType();
+                typeList.remove(NULL);
+                schema.setType(typeList);
+            } else {
+                System.err.println("Only one type is allowed per schema. " +
+                    "In case of multiple types, the variable is generated as a java.lang.Object.");
+                return TypeDef.OBJECT;
+            }
         }
         var type = schema.hasType() ? schema.getType().get(0) : Schema.Type.OBJECT;
         TypeDef typeDef;
@@ -71,9 +78,11 @@ public final class TypeAggregator {
             // inner oneOf's are treated as objects
             return TypeDef.OBJECT;
         } else if (schema.hasAnyOf()) {
-            // strategy: pick first
-            var firstType = schema.getAnyOf().get(0);
-            return getTypeDefFromJson(firstType);
+            Schema chosenFromAnyOf = chooseFromAnyOf(schema.getAnyOf());
+            if (chosenFromAnyOf == null) {
+                return TypeDef.OBJECT;
+            }
+            return getTypeDefFromJson(chosenFromAnyOf);
         }
         if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
             var format = schema.getFormat();
@@ -101,17 +110,22 @@ public final class TypeAggregator {
                 return TypeDef.THIS;
             } else if (ref.indexOf("#") == 0) {
                 ref = SourceGenerator.getInputFileName() + ref;
-            } else {
-                var location = ref.substring(0, ref.indexOf("#"));
-                if (!hasDefinition(ref) && isValidUrl(location)) {
-                    try {
-                        var generator = new SourceGenerator(SourceGenerator.getLanguage());
-                        generator.generate(
-                            new SourceGeneratorConfig(null, location, null, null,
-                                generator.getOutputPath(), generator.getOutputPackageName(), null));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            }
+            var location = ref.substring(0, ref.indexOf("#"));
+            var originalFileName = SourceGenerator.getInputFileName();
+            if (!hasDefinition(ref) && location.equals(originalFileName)) {
+                // when definition is in the same file but not yet reached, put a mock to be replaced later
+                addDefinition(ref, TypeDef.OBJECT, false);
+            } else if (!hasDefinition(ref) && isValidUrl(location)) {
+                try {
+                    var generator = new SourceGenerator(SourceGenerator.getLanguage());
+                    SourceGenerator.setInputFileName(location);
+                    generator.generate(
+                        new SourceGeneratorConfig(null, location, null, null,
+                            SourceGenerator.getOutputPath(), SourceGenerator.getOutputPackageName(), null));
+                    SourceGenerator.setInputFileName(originalFileName);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
             typeDef = getDefinitionType(ref);
@@ -122,6 +136,47 @@ public final class TypeAggregator {
             throw new IllegalArgumentException("Unsupported type: " + type);
         }
         return typeDef;
+    }
+
+    /**
+     * The strategy to choose from an anyOf keyword in Json Schema.
+     * Needs improvement.
+     * Current strategy:
+     *  if empty, return null,
+     *  if single schema, return that schema,
+     *  if 2 schema but one has type "NULL", return the non-null schema
+     *  if all schemas has the same type, merge all schemas and return
+     *  else return empty Object schema.
+     *
+     * @param schemas List of Schemas in the anyOf keyword
+     * @return chosen Schema
+     */
+    private static Schema chooseFromAnyOf(List<Schema> schemas) {
+        if (schemas.isEmpty()) {
+            return null;
+        } else if (schemas.size() == 1) {
+            return schemas.get(0);
+        } else if (schemas.size() == 2) {
+            var nullSchema = new Schema();
+            nullSchema.setType(List.of(Schema.Type.NULL));
+            if (schemas.contains(nullSchema)) {
+                schemas.remove(nullSchema);
+                return schemas.get(0);
+            }
+        }
+        boolean sameType = true;
+        for (var i = 0; i < schemas.size() - 1; i++) {
+            if (schemas.get(i).hasType() && !schemas.get(i).getType().equals(schemas.get(i + 1).getType())) {
+                sameType = false;
+            }
+            schemas.get(i + 1).merge(schemas.get(i));
+        }
+        if (sameType) {
+            return schemas.get(schemas.size() - 1);
+        }
+        var objectSchema = new Schema();
+        objectSchema.setType(List.of(Schema.Type.OBJECT));
+        return objectSchema;
     }
 
     public static String getConstantName(String input) {
@@ -220,7 +275,7 @@ public final class TypeAggregator {
         return isLetters;
     }
 
-    public static String getFileName(Schema schema, Optional<String> topLevelName, VisitorContext.Language language) {
+    public static String getFileName(Schema schema, Optional<String> topLevelName) {
         String fileName;
         if (topLevelName.isPresent() && !topLevelName.get().isEmpty()) {
             fileName = topLevelName.get();
@@ -230,7 +285,7 @@ public final class TypeAggregator {
             fileName = "SchemaFile"; // default
         }
 
-        switch (language) {
+        switch (SourceGenerator.getLanguage()) {
             case KOTLIN: fileName += ".kt"; break;
             case GROOVY: fileName += ".groovy"; break;
             default: fileName += ".java"; break;

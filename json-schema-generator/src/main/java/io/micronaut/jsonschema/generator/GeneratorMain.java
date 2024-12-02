@@ -48,6 +48,9 @@ public class GeneratorMain {
      * @throws IOException In case definition file path is incorrect.
      */
     public static void main(String[] args) throws IOException {
+        if (args.length != 7) {
+            throw new IllegalArgumentException("Invalid number of arguments.");
+        }
         String jsonURL = args[0];
         File jsonFile = null;
         if (!args[1].isBlank()) {
@@ -64,7 +67,6 @@ public class GeneratorMain {
         var config = new SourceGeneratorConfig(null,
             jsonURL, jsonFile, inputFolder, outputPath,
             outputPackageName, outputFileName);
-
 
         var generator = new SourceGenerator(lang);
         generator.generate(config);

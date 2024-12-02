@@ -69,6 +69,13 @@ def wordPressGenerator = tasks.register("generateWordPress", BeanGeneratorTask) 
     packageName.convention("io.micronaut.jsonschema.generator.wordpress")
 }
 
+def refGenerator = tasks.register("generateRef", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    inputDirectory.convention(layout.projectDirectory.dir("src/test/resources/ref"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.ref")
+}
 
 
 tasks.named("generateAnimals") {
@@ -86,6 +93,9 @@ tasks.named("generateFhir") {
 tasks.named("generateWordPress") {
 }
 
+tasks.named("generateRef") {
+}
+
 tasks.withType(Checkstyle).configureEach {
     enabled = false
 }
@@ -98,6 +108,7 @@ sourceSets {
         java.srcDir(githubGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(fhirGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(wordPressGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(refGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
     }
 }
 

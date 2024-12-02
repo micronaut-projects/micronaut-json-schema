@@ -52,7 +52,7 @@ public class FileProcessor {
             } else if (config.jsonFile() != null) {
                 return jsonMapper.readValue(config.jsonFile(), Schema.class);
             } else {
-                throw new RuntimeException("Missing required config.jsonUrl() or config.inputStream()");
+                throw new RuntimeException("Missing required config.jsonUrl(), config.inputStream(), or config.jsonFile().");
             }
         } catch (InterruptedException | IOException e) {
             throw new RuntimeException(e);
@@ -83,7 +83,7 @@ public class FileProcessor {
     public static InputStream downloadAsStream(String fileUrl) throws IOException, InterruptedException {
         // Verify that the URL matches at least one of the allowed patterns and ends with ".json"
         if (!isValidUrl(fileUrl)) {
-            throw new IllegalArgumentException("URL does not match any of the allowed patterns or does not end with .json.");
+            throw new IllegalArgumentException("URL does not match any of the allowed patterns or does not starts with https:// and end with .json.");
         }
 
         // Create HTTP client and request
@@ -106,6 +106,11 @@ public class FileProcessor {
     public static boolean isValidUrl(String fileUrl) {
         // Check if the URL ends with .json
         if (!fileUrl.endsWith(".json")) {
+            return false;
+        }
+
+        // Check if the URL starts with http safe
+        if (!fileUrl.startsWith("https://")) {
             return false;
         }
 

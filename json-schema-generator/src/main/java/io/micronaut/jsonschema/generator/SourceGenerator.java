@@ -111,7 +111,7 @@ public final class SourceGenerator {
      *
      * @param config The {@link SourceGeneratorConfig} object that contains the configuration for source code generation,
      *               including input folder, JSON schema URL, output path, output package name, and output file name.
-     * @return The top level schema's File if generated, null otherwise.
+     * @return The top level schema's generated File when a single input is given, null otherwise.
      * @throws IOException If an I/O error occurs during file or directory creation, or if an error occurs while reading or writing files.
      */
     public File generate(SourceGeneratorConfig config) throws IOException {
@@ -123,16 +123,19 @@ public final class SourceGenerator {
             Schema jsonSchema = getJsonSchema(config);
             assert jsonSchema != null;
             inputFileName = getInputFileName() != null ? getInputFileName() : config.getInputName();
+            // single java object is generated
             if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
                 var outputFileName = config.outputFileName();
-                if (config.outputFileName().contains(".")) { // remove extension from file name
-                    outputFileName = config.outputFileName().substring(0, config.outputFileName().indexOf('.'));
+                // remove extension from file name if there is
+                if (config.outputFileName().contains(".")) {
+                    outputFileName = outputFileName.substring(0, outputFileName.indexOf('.'));
                 }
                 return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
             } else {
                 saveDefinitions(jsonSchema);
-                generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
-                clearAllDefinitions();
+                File topLevel = generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+                //clearAllDefinitions();
+                return topLevel;
             }
         }
         return null;
@@ -175,7 +178,6 @@ public final class SourceGenerator {
         String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
         String finalSchemaName = capitalize(getCamelCaseName(schemaName));
 
-        addDefinition(inputFileName + "#/" + finalSchemaName, jsonSchema);
         // save all definition and oneOf types
         if (jsonSchema.hasOneOf()) {
             jsonSchema.getOneOf().forEach(oneOf -> {
@@ -199,26 +201,27 @@ public final class SourceGenerator {
                     jsonSchema.setDescription(String.valueOf(value));
                 } else if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
                     // WARNING: assumes the same interface as top level schema
-                    addDefinition(inputFileName + "#/definitions/" + key, getDefinitionType(inputFileName + "#/" + finalSchemaName), true);
+                    addDefinition(inputFileName + "#/$defs/" + key, TypeDef.THIS, true);
                 } else if (value.hasOneOf()) {
                     // inner oneOf's are treated as objects
-                    addDefinition(inputFileName + "#/definitions/" + key, TypeDef.OBJECT, true);
+                    addDefinition(inputFileName + "#/$defs/" + key, TypeDef.OBJECT, true);
                 } else if (value.has$ref()) {
-                    referencedDefinitions.put(inputFileName + "#/definitions/" + key, value);
+                    referencedDefinitions.put(inputFileName + "#/$defs/" + key, value);
                 } else {
-                    addDefinition(inputFileName + "#/definitions/" + key, value);
+                    addDefinition(inputFileName + "#/$defs/" + key, value);
                 }
             });
             referencedDefinitions.forEach(GeneratorContext::addDefinition);
         }
+        addDefinition(inputFileName + "#/" + finalSchemaName, jsonSchema);
     }
 
-    private void generateDefinitions(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
+    private File generateDefinitions(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
         // generate top level schema
         String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
         schemaName = capitalize(getCamelCaseName(schemaName));
 
-        generateFromSchema(jsonSchema, outputPath, packageName, schemaName);
+        File topLevelObject = generateFromSchema(jsonSchema, outputPath, packageName, schemaName);
 
         // generate classes in definitions and oneOfs
         if (jsonSchema.has$defs()) {
@@ -229,7 +232,7 @@ public final class SourceGenerator {
                     if (definition.getValue().hasOneOf()) {
                         return false;
                     }
-                    var def = getDefinition(inputFileName + "#/definitions/" + definition.getKey());
+                    var def = getDefinition(inputFileName + "#/$defs/" + definition.getKey());
                     if (def == null) {
                         return false;
                     }
@@ -247,11 +250,12 @@ public final class SourceGenerator {
             String className = oneOf.getKey().substring(oneOf.getKey().lastIndexOf('/') + 1);
             generateFromSchema(oneOf.getValue(), outputPath, packageName, className);
         }
+        return topLevelObject;
     }
 
     private File generateFromSchema(Schema jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
         try {
-            String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName), language);
+            String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName));
             String simpleName = decidedFileName.substring(0, decidedFileName.lastIndexOf('.'));
 
             // decide type of generated object
@@ -282,7 +286,7 @@ public final class SourceGenerator {
                     case CLASS -> buildClass(jsonSchema, builderClassName);
                     case INTERFACE -> buildInterface(jsonSchema, builderClassName);
                     case RECORD -> buildRecord(jsonSchema, builderClassName);
-                    default -> null;
+                    default -> throw new IllegalStateException("Unexpected enum type: " + type);
                 };
                 sourceGenerator.write(objectDef, writer);
             }
@@ -492,13 +496,12 @@ public final class SourceGenerator {
         }
         AnnotationsAggregator.addAnnotations(propertyDef, schema, propertyType, isRequired);
         if  (propertyType.equals(TypeDef.of(List.class))) {
-            propertyType = getListTypeDef(objectBuilder, propertyName, schema);
+            propertyType = getListTypeDef(objectBuilder, name, schema);
         }
-        if (propertyType.equals(TypeDef.OBJECT)) {
+        if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             // inner type
-            boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
             ObjectDef builder;
-            if (hasOverLimitParameters || schema.hasAdditionalProperties()) {
+            if (schema.getProperties().size() > 255 || schema.hasAdditionalProperties() || schema.hasConstValue()) {
                 builder = buildClass(schema, capitalize(name));
             } else {
                 builder = buildRecord(schema, capitalize(name));
