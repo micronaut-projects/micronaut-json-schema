@@ -38,9 +38,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName;
 import static io.micronaut.jsonschema.generator.utils.FileProcessor.isValidUrl;
-import static io.micronaut.jsonschema.generator.utils.GeneratorContext.addDefinition;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.getDefinitionType;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.hasDefinition;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
@@ -114,7 +112,7 @@ public final class TypeAggregator {
             }
             var location = ref.substring(0, ref.indexOf("#"));
             var originalFileName = SourceGenerator.getInputFileName();
-            if (!hasDefinition(ref) && isValidUrl(location)) {
+            if (!hasDefinition(ref) && isValidUrl(location) && !location.equals(originalFileName)) {
                 try {
                     var generator = new SourceGenerator(SourceGenerator.getLanguage());
                     SourceGenerator.setInputFileName(location);
@@ -165,6 +163,8 @@ public final class TypeAggregator {
         boolean sameType = true;
         for (var i = 0; i < schemas.size() - 1; i++) {
             if (schemas.get(i).hasType() && !schemas.get(i).getType().equals(schemas.get(i + 1).getType())) {
+                sameType = false;
+            } else if (!schemas.get(i).hasType() || !schemas.get(i + 1).hasType()) {
                 sameType = false;
             }
             schemas.get(i + 1).merge(schemas.get(i));

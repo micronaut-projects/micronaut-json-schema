@@ -27,7 +27,6 @@ import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.generator.utils.FileProcessor;
-import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.serde.annotation.Serdeable;
@@ -135,7 +134,6 @@ public final class SourceGenerator {
             } else {
                 saveDefinitions(jsonSchema);
                 File topLevel = generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
-                //clearAllDefinitions();
                 return topLevel;
             }
         }
@@ -172,7 +170,6 @@ public final class SourceGenerator {
                 throw new RuntimeException(e);
             }
         });
-        clearAllDefinitions();
     }
 
     private void saveDefinitions(Schema jsonSchema) {
