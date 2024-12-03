@@ -26,7 +26,8 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
-import io.micronaut.jsonschema.generator.utils.FileProcessor;
+import io.micronaut.jsonschema.generator.loaders.FileLoader;
+import io.micronaut.jsonschema.generator.loaders.FileProcessor;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.serde.annotation.Serdeable;
@@ -50,8 +51,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.utils.FileProcessor.getJsonSchema;
-import static io.micronaut.jsonschema.generator.utils.FileProcessor.getOutputFile;
+import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getJsonSchema;
+import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getOutputFile;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.*;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
 import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
@@ -133,8 +134,7 @@ public final class SourceGenerator {
                 return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
             } else {
                 saveDefinitions(jsonSchema);
-                File topLevel = generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
-                return topLevel;
+                return generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
             }
         }
         return null;
@@ -152,7 +152,7 @@ public final class SourceGenerator {
         try (Stream<Path> paths = Files.walk(jsonFolder).filter(file -> file.toString().endsWith(".schema.json"))) {
             paths.forEach(path -> {
                 // Read content of each JSON file
-                var jsonSchema = getJsonSchema(path.toFile());
+                var jsonSchema = new FileLoader(path.toFile()).load();
                 assert jsonSchema != null;
                 inputFileName = path.toString().substring(jsonFolder.toString().length() + 1);
                 schemas.put(jsonSchema, inputFileName);

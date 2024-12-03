@@ -38,7 +38,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.utils.FileProcessor.isValidUrl;
+import static io.micronaut.jsonschema.generator.loaders.FileProcessor.isValidUrl;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.getDefinitionType;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.hasDefinition;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;

@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.utils;
+package io.micronaut.jsonschema.generator.loaders;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.model.Schema;
-import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +25,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -39,36 +37,31 @@ public class FileProcessor {
         "^https://.*/.*.json"
     );
 
+    /**
+     * Loads a JSON schema based on the configuration.
+     * This method determines the appropriate {@link SchemaLoader} based on the configuration settings
+     * and delegates the task of loading the JSON schema from the correct source (URL, file, or input stream).
+     *
+     * @param config the configuration that provides the source for the JSON schema (URL, file, or input stream)
+     * @return a {@link Schema} object representing the loaded JSON schema
+     * @throws RuntimeException if no valid source is found in the configuration or if there is an error loading the schema
+     */
     public static Schema getJsonSchema(SourceGeneratorConfig config) {
-        ObjectMapper jsonMapper = JsonSchemaMapperFactory.createMapper();
         try {
-            if ((config.jsonUrl() != null && !config.jsonUrl().isBlank()) || config.inputStream() != null) {
-                var inputStream = config.inputStream();
-                if (inputStream == null) {
-                    inputStream = downloadAsStream(config.jsonUrl());
-                }
-                String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-                return jsonMapper.readValue(jsonString, Schema.class);
+            SchemaLoader loader = null;
+            if (config.inputStream() != null) {
+                loader = new StreamLoader(config.inputStream());
+            } else if (config.jsonUrl() != null && !config.jsonUrl().isBlank()) {
+                loader = new UrlLoader(config.jsonUrl());
             } else if (config.jsonFile() != null) {
-                return jsonMapper.readValue(config.jsonFile(), Schema.class);
+                loader = new FileLoader(config.jsonFile());
             } else {
                 throw new RuntimeException("Missing required config.jsonUrl(), config.inputStream(), or config.jsonFile().");
             }
-        } catch (InterruptedException | IOException e) {
-            throw new RuntimeException(e);
+            return loader.load();
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Error loading JSON schema", e);
         }
-    }
-
-    public static Schema getJsonSchema(File schemaFile) {
-        ObjectMapper jsonMapper = JsonSchemaMapperFactory.createMapper();
-        try {
-            if (schemaFile != null) {
-                return jsonMapper.readValue(schemaFile, Schema.class);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return null;
     }
 
     /**
