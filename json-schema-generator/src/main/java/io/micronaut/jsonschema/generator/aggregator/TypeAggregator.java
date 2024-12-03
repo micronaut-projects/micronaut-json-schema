@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
+import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName;
 import static io.micronaut.jsonschema.generator.utils.FileProcessor.isValidUrl;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.addDefinition;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.getDefinitionType;
@@ -113,10 +114,7 @@ public final class TypeAggregator {
             }
             var location = ref.substring(0, ref.indexOf("#"));
             var originalFileName = SourceGenerator.getInputFileName();
-            if (!hasDefinition(ref) && location.equals(originalFileName)) {
-                // when definition is in the same file but not yet reached, put a mock to be replaced later
-                addDefinition(ref, TypeDef.OBJECT, false);
-            } else if (!hasDefinition(ref) && isValidUrl(location)) {
+            if (!hasDefinition(ref) && isValidUrl(location)) {
                 try {
                     var generator = new SourceGenerator(SourceGenerator.getLanguage());
                     SourceGenerator.setInputFileName(location);

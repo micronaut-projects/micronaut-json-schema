@@ -48,6 +48,7 @@ public final class Schema {
 
     public static final String THIS_SCHEMA_REF = "#";
     public static final String DEF_SCHEMA_REF_PREFIX = "#/$defs/";
+    public static final String ONE_OF_SCHEMA_REF_PREFIX = "#/oneOf/";
 
     private String $schema;
     private String $id;

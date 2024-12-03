@@ -27,7 +27,7 @@ public class GenerationTest {
         } catch (IOException e) {
             Assertions.fail("Failed to list files in the folder: " + e.getMessage());
         }
-        Assertions.assertEquals(8, generatedFiles);
+        Assertions.assertEquals(10, generatedFiles);
     }
 
     @Test

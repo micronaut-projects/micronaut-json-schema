@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.generator.utils;
 
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;
@@ -24,12 +23,16 @@ import io.micronaut.sourcegen.model.TypeDef;
 
 import java.util.AbstractMap;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
+import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getCamelCaseName;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTypeDefFromJson;
+import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
+import static io.micronaut.jsonschema.model.Schema.ONE_OF_SCHEMA_REF_PREFIX;
 
 /**
  * An aggregator for storing and accessing definitions and oneOf relations from json schema.
@@ -42,22 +45,23 @@ import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTyp
 @Internal
 public final class GeneratorContext {
     private static final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
+    private static final HashMap<String, LinkedList<String>> TEMP_DEFINITIONS = new HashMap<>();
     private static final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
 
-    public static TypeDef getDefinitionType(String key) {
-        String defKey = unifyKey(key);
-        if (hasDefinition(defKey)) {
-            return DEFINITIONS.get(defKey).getKey();
-        }
-        throw new IllegalArgumentException("Definition not found: " + key);
+    public static boolean isDefinitionClass(String key) {
+        return getDefinition(key).getValue();
     }
 
-    public static Map.Entry<TypeDef, Boolean> getDefinition(String key) {
+    public static TypeDef getDefinitionType(String key) {
+        return getDefinition(key).getKey();
+    }
+
+    private static Map.Entry<TypeDef, Boolean> getDefinition(String key) {
         String defKey = unifyKey(key);
         if (hasDefinition(defKey)) {
             return DEFINITIONS.get(defKey);
         }
-        return null;
+        throw new IllegalArgumentException("Definition not found: " + key);
     }
 
     public static List<Map.Entry<String, Schema>> getOneOfsToGenerate() {
@@ -69,27 +73,42 @@ public final class GeneratorContext {
     }
 
     public static boolean isInheriting(String className) {
-        String key = SourceGenerator.getInputFileName() + "#/oneOf/" + className;
-        String keyRef = SourceGenerator.getInputFileName() + "#/$defs/" + className;
+        String key = getInputFileName() + ONE_OF_SCHEMA_REF_PREFIX + className;
+        String keyRef = getInputFileName() + DEF_SCHEMA_REF_PREFIX + className;
         return ONE_OF_SET.containsKey(key) || ONE_OF_SET.containsKey(keyRef);
     }
 
     public static void addDefinition(String key, Schema definition) {
-        var typeDef = getTypeDefFromJson(definition);
-        assert typeDef != null;
-        boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING)
-            && !typeDef.equals(ClassTypeDef.of(Float.class))
-            && !typeDef.equals(ClassTypeDef.of(Integer.class))
-            && !typeDef.equals(TypeDef.of(List.class));
-        if (isClass) {
-            typeDef = ClassTypeDef.of(capitalize(key.substring(key.lastIndexOf('/') + 1)));
+        String unifiedKey = unifyKey(key);
+        if (definition.hasOneOf()) {
+            // inner oneOf's are treated as objects
+            // assuming single inheritance at the top level, skips any other oneOf
+            addDefinition(unifiedKey, TypeDef.OBJECT, definition.hasProperties());
+        } else if (definition.has$ref()) {
+            var referredKey = unifyKey(getInputFileName() + definition.get$ref());
+            if (!hasDefinition(referredKey)) {
+                addTempDefinition(unifiedKey, referredKey);
+            } else {
+                var entry = getDefinition(referredKey);
+                addDefinition(unifiedKey, entry.getKey(), entry.getValue());
+            }
+        } else {
+            var typeDef = getTypeDefFromJson(definition);
+            assert typeDef != null;
+            boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING)
+                && !typeDef.equals(ClassTypeDef.of(Float.class))
+                && !typeDef.equals(ClassTypeDef.of(Integer.class))
+                && !typeDef.equals(TypeDef.of(List.class));
+            if (isClass) {
+                typeDef = ClassTypeDef.of(capitalize(unifiedKey.substring(unifiedKey.lastIndexOf('/') + 1)));
+            }
+            // add annotations to type
+            var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef);
+            if (!annotations.isEmpty()) {
+                typeDef = typeDef.annotated(annotations);
+            }
+            addDefinition(unifiedKey, typeDef, isClass);
         }
-        // add annotations to type
-        var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef);
-        if (!annotations.isEmpty()) {
-            typeDef = typeDef.annotated(annotations);
-        }
-        addDefinition(unifyKey(key), typeDef, isClass);
     }
 
     public static void addDefinition(String key, TypeDef classDef, boolean isClass) {
@@ -100,6 +119,24 @@ public final class GeneratorContext {
         } else {
             DEFINITIONS.replace(defKey, newDef);
         }
+        // update previous definitions that pointed to the current reference
+        if (TEMP_DEFINITIONS.containsKey(defKey)) {
+            TEMP_DEFINITIONS.get(defKey).forEach(ref -> {
+                DEFINITIONS.put(ref, newDef);
+            });
+        }
+    }
+
+    public static void addTempDefinition(String referringDef, String ref) {
+        String referringKey = unifyKey(referringDef);
+        String referredKey = unifyKey(ref);
+        if (TEMP_DEFINITIONS.containsKey(referredKey)) {
+            var tempList = TEMP_DEFINITIONS.get(referredKey);
+            tempList.add(referringKey);
+            TEMP_DEFINITIONS.replace(referredKey, tempList);
+        } else {
+            TEMP_DEFINITIONS.put(referredKey, new LinkedList<>(List.of(referringKey)));
+        }
     }
 
     public static void addOneOf(String key) {
@@ -107,11 +144,11 @@ public final class GeneratorContext {
     }
 
     public static void addOneOf(Schema oneOf) {
-        String fileName = SourceGenerator.getInputFileName();
+        String fileName = getInputFileName();
         String className = (oneOf.hasTitle()) ? capitalize(getCamelCaseName(oneOf.getTitle())) : "Option" + ONE_OF_SET.size();
 
-        ONE_OF_SET.put(fileName + "#/oneOf/" + className, oneOf);
-        addDefinition(fileName + "#/oneOf/" + className, ClassTypeDef.of(capitalize(className)), true);
+        ONE_OF_SET.put(fileName + ONE_OF_SCHEMA_REF_PREFIX + className, oneOf);
+        addDefinition(fileName + ONE_OF_SCHEMA_REF_PREFIX + className, ClassTypeDef.of(capitalize(className)), true);
     }
 
     public static void clearAllDefinitions() {
@@ -120,9 +157,9 @@ public final class GeneratorContext {
     }
 
     private static String unifyKey(String key) {
-        if (!key.contains("definitions")) {
+        if (!key.contains("#/definitions/")) {
             return key;
         }
-        return key.replace("definitions", "$defs");
+        return key.replace("#/definitions/", DEF_SCHEMA_REF_PREFIX);
     }
 }

@@ -55,6 +55,7 @@ import static io.micronaut.jsonschema.generator.utils.FileProcessor.getJsonSchem
 import static io.micronaut.jsonschema.generator.utils.FileProcessor.getOutputFile;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.*;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
+import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
 
 /**
  * A source generator to create source files from Json Schema.
@@ -193,25 +194,20 @@ public final class SourceGenerator {
             });
         }
         if (jsonSchema.has$defs()) {
-            Map<String, Schema> referencedDefinitions = new LinkedHashMap<>();
-            Map<String, Schema> definitions = jsonSchema.get$defs();
-
-            definitions.forEach((key, value) -> {
+            jsonSchema.get$defs().forEach((key, value) -> {
                 if (key.equals("//")) {
-                    jsonSchema.setDescription(String.valueOf(value));
+                    if (!jsonSchema.hasDescription()) {
+                        jsonSchema.setDescription(String.valueOf(value));
+                    } else {
+                        jsonSchema.setDescription(jsonSchema.getDescription() + "<br>" + value);
+                    }
                 } else if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
                     // WARNING: assumes the same interface as top level schema
-                    addDefinition(inputFileName + "#/$defs/" + key, TypeDef.THIS, true);
-                } else if (value.hasOneOf()) {
-                    // inner oneOf's are treated as objects
-                    addDefinition(inputFileName + "#/$defs/" + key, TypeDef.OBJECT, true);
-                } else if (value.has$ref()) {
-                    referencedDefinitions.put(inputFileName + "#/$defs/" + key, value);
+                    addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, TypeDef.THIS, true);
                 } else {
-                    addDefinition(inputFileName + "#/$defs/" + key, value);
+                    addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, value);
                 }
             });
-            referencedDefinitions.forEach(GeneratorContext::addDefinition);
         }
         addDefinition(inputFileName + "#/" + finalSchemaName, jsonSchema);
     }
@@ -227,17 +223,8 @@ public final class SourceGenerator {
         if (jsonSchema.has$defs()) {
             jsonSchema.get$defs().entrySet()
                 .stream()
-                .filter(definition -> {
-                    // assuming single inheritance at the top level, skips any other oneOf
-                    if (definition.getValue().hasOneOf()) {
-                        return false;
-                    }
-                    var def = getDefinition(inputFileName + "#/$defs/" + definition.getKey());
-                    if (def == null) {
-                        return false;
-                    }
-                    return def.getValue();
-                }).forEach(definition -> {
+                .filter(definition -> !definition.getKey().equals("//") && isDefinitionClass(inputFileName + DEF_SCHEMA_REF_PREFIX + definition.getKey()))
+                .forEach(definition -> {
                     try {
                         var className = capitalize(getCamelCaseName(definition.getKey()));
                         generateFromSchema(definition.getValue(), outputPath, packageName, className);
