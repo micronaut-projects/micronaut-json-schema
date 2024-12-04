@@ -24,9 +24,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getClassName;
-import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getPropertyName;
 
 public class FileProcessor {
 

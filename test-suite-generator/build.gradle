@@ -21,6 +21,7 @@ dependencies {
     testImplementation(mn.micronaut.inject.groovy.test)
     testImplementation(mn.micronaut.inject.java.test)
     testImplementation(mn.micronaut.inject)
+    testImplementation(mnSerde.micronaut.serde.processor)
     testImplementation(mnValidation.micronaut.validation)
     testImplementation(mnTest.micronaut.test.junit5)
     testImplementation(libs.junit.jupiter.api)

@@ -62,7 +62,6 @@ public class UrlLoader implements SchemaLoader {
         }
     }
 
-
     /**
      * Downloads a file from the given URL as an InputStream, verifying the URL against
      * a list of allowed patterns before attempting the download. The URL must end with ".json".

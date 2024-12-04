@@ -475,7 +475,7 @@ public final class SourceGenerator {
                                 new VariableDef.Local("unknownFields", type);
 
                             return StatementDef.multi(
-                                unknownField.isNull().asConditionIf(unknownField.assign(ClassTypeDef.of(HashMap.class).instantiate())),
+                                unknownField.ifNull(unknownField.assign(ClassTypeDef.of(HashMap.class).instantiate())),
                                 unknownField.invoke("put", mapType, parameters));
                         }));
             }
