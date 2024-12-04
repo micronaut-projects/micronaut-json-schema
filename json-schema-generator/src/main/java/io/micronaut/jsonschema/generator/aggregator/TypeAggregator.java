@@ -34,11 +34,9 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
-import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.loaders.FileProcessor.isValidUrl;
+import static io.micronaut.jsonschema.generator.loaders.UrlLoader.isValidUrl;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.getDefinitionType;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.hasDefinition;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
@@ -271,23 +269,5 @@ public final class TypeAggregator {
             }
         }
         return isLetters;
-    }
-
-    public static String getFileName(Schema schema, Optional<String> topLevelName) {
-        String fileName;
-        if (topLevelName.isPresent() && !topLevelName.get().isEmpty()) {
-            fileName = topLevelName.get();
-        } else if (schema.hasTitle()) {
-            fileName = capitalize(getCamelCaseName(schema.getTitle()));
-        } else {
-            fileName = "SchemaFile"; // default
-        }
-
-        switch (SourceGenerator.getLanguage()) {
-            case KOTLIN: fileName += ".kt"; break;
-            case GROOVY: fileName += ".groovy"; break;
-            default: fileName += ".java"; break;
-        }
-        return fileName;
     }
 }

@@ -27,7 +27,6 @@ import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.generator.loaders.FileLoader;
-import io.micronaut.jsonschema.generator.loaders.FileProcessor;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.serde.annotation.Serdeable;
@@ -51,6 +50,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
+import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getFileName;
 import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getJsonSchema;
 import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getOutputFile;
 import static io.micronaut.jsonschema.generator.utils.GeneratorContext.*;
@@ -581,14 +581,6 @@ public final class SourceGenerator {
 
     public static void setInputFileName(String inputFileName) {
         SourceGenerator.inputFileName = inputFileName;
-    }
-
-    public static List<String> getAllowedUrlPatterns() {
-        return FileProcessor.getAllowedUrlPatterns();
-    }
-
-    public static void setAllowedUrlPatterns(List<String> allowedUrlPatterns) {
-        FileProcessor.setAllowedUrlPatterns(allowedUrlPatterns);
     }
 
     public static Path getOutputPath() {
