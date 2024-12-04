@@ -27,6 +27,7 @@ import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.generator.loaders.FileLoader;
+import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.serde.annotation.Serdeable;
@@ -53,7 +54,6 @@ import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getFileName;
 import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getJsonSchema;
 import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getOutputFile;
-import static io.micronaut.jsonschema.generator.utils.GeneratorContext.*;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
 import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
 
@@ -73,6 +73,7 @@ public final class SourceGenerator {
 
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
     private final io.micronaut.sourcegen.generator.SourceGenerator sourceGenerator;
+    private final GeneratorContext context;
     private String discriminatorProperty = "";
 
     /**
@@ -89,11 +90,30 @@ public final class SourceGenerator {
      *                          The exception message will indicate the language for which no generator was found.
      */
     public SourceGenerator(VisitorContext.Language language) {
+        this(language, new GeneratorContext());
+    }
+
+    /**
+     * Constructs a new {@link SourceGenerator} instance based on the provided programming language and the generation context.
+     * <p>
+     * This constructor attempts to find a corresponding {@link io.micronaut.sourcegen.generator.SourceGenerator} implementation
+     * for the given programming language. If no such implementation is found, a {@link RuntimeException}
+     * is thrown.
+     * </p>
+     *
+     * @param language The {@link VisitorContext.Language} representing the target programming language
+     *                 for which the source generator is to be created. This argument cannot be {@code null}.
+     * @param context The {@link GeneratorContext} representing the already existing context of generation.
+     * @throws RuntimeException if no matching source generator is found for the provided language.
+     *                          The exception message will indicate the language for which no generator was found.
+     */
+    public SourceGenerator(VisitorContext.Language language, GeneratorContext context) {
         sourceGenerator = SourceGenerators.findByLanguage(language).orElse(null);
         if (sourceGenerator == null) {
             throw new RuntimeException("No source generator found for language " + language);
         }
         SourceGenerator.language = language;
+        this.context = context;
     }
 
     /**
@@ -184,9 +204,9 @@ public final class SourceGenerator {
                     if (ref.indexOf("#") == 0) {
                         ref = inputFileName + ref;
                     }
-                    addOneOf(ref);
+                    context.addOneOf(ref);
                 } else {
-                    addOneOf(oneOf);
+                    context.addOneOf(oneOf);
                 }
             });
         }
@@ -200,13 +220,13 @@ public final class SourceGenerator {
                     }
                 } else if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
                     // WARNING: assumes the same interface as top level schema
-                    addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, TypeDef.THIS, true);
+                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, TypeDef.THIS, true);
                 } else {
-                    addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, value);
+                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, value);
                 }
             });
         }
-        addDefinition(inputFileName + "#/" + finalSchemaName, jsonSchema);
+        context.addDefinition(inputFileName + "#/" + finalSchemaName, jsonSchema);
     }
 
     private File generateDefinitions(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
@@ -220,7 +240,7 @@ public final class SourceGenerator {
         if (jsonSchema.has$defs()) {
             jsonSchema.get$defs().entrySet()
                 .stream()
-                .filter(definition -> !definition.getKey().equals("//") && isDefinitionClass(inputFileName + DEF_SCHEMA_REF_PREFIX + definition.getKey()))
+                .filter(definition -> !definition.getKey().equals("//") && context.isDefinitionClass(inputFileName + DEF_SCHEMA_REF_PREFIX + definition.getKey()))
                 .forEach(definition -> {
                     try {
                         var className = capitalize(getCamelCaseName(definition.getKey()));
@@ -230,7 +250,7 @@ public final class SourceGenerator {
                     }
                 });
         }
-        for (Map.Entry<String, Schema> oneOf : getOneOfsToGenerate()) {
+        for (Map.Entry<String, Schema> oneOf : context.getOneOfsToGenerate()) {
             String className = oneOf.getKey().substring(oneOf.getKey().lastIndexOf('/') + 1);
             generateFromSchema(oneOf.getValue(), outputPath, packageName, className);
         }
@@ -254,9 +274,9 @@ public final class SourceGenerator {
                 } else {
                     type = ObjectType.INTERFACE;
                 }
-            } else if (isInheriting(simpleName) || hasOverLimitParameters) {
+            } else if (context.isInheriting(simpleName) || hasOverLimitParameters) {
                 type = ObjectType.CLASS;
-            } else if (getTypeDefFromJson(jsonSchema).equals(TypeDef.OBJECT)) {
+            } else if (getTypeDefFromJson(jsonSchema, context).equals(TypeDef.OBJECT)) {
                 type = ObjectType.RECORD;
             } else {
                 return null;
@@ -278,9 +298,9 @@ public final class SourceGenerator {
             // add definition of superclass only after generation is complete!
             if (jsonSchema.hasOneOf()) {
                 if (type == ObjectType.CLASS) {
-                    addDefinition(inputFileName + "/superClass", ClassTypeDef.of(simpleName), true);
+                    context.addDefinition(inputFileName + "/superClass", ClassTypeDef.of(simpleName), true);
                 } else if (type == ObjectType.INTERFACE) {
-                    addDefinition(inputFileName + "/superInterface", ClassTypeDef.of(simpleName), true);
+                    context.addDefinition(inputFileName + "/superInterface", ClassTypeDef.of(simpleName), true);
                 }
             }
             return outputFile;
@@ -358,11 +378,11 @@ public final class SourceGenerator {
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(Serdeable.class);
 
-        if (hasDefinition(inputFileName + "/superClass")) {
-            var superClass = getDefinitionType(inputFileName + "/superClass");
+        if (context.hasDefinition(inputFileName + "/superClass")) {
+            var superClass = context.getDefinitionType(inputFileName + "/superClass");
             objectBuilder.superclass((ClassTypeDef) superClass);
-        } else if (hasDefinition(inputFileName + "/superInterface")) {
-            var superInterface = getDefinitionType(inputFileName + "/superInterface");
+        } else if (context.hasDefinition(inputFileName + "/superInterface")) {
+            var superInterface = context.getDefinitionType(inputFileName + "/superInterface");
             objectBuilder.addSuperinterface(superInterface);
         } else {
             // top level class
@@ -427,7 +447,7 @@ public final class SourceGenerator {
                 if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
                     mapType = TypeDef.OBJECT;
                 } else {
-                    mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties());
+                    mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
                 }
                 TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
                 builder.addProperty(PropertyDef.builder("unknownFields")
@@ -474,7 +494,7 @@ public final class SourceGenerator {
         }
 
         // add type info and type validation annotations
-        TypeDef propertyType = getTypeDefFromJson(schema);
+        TypeDef propertyType = getTypeDefFromJson(schema, context);
         if (schema.isEnum()) {
             propertyType = getEnumType(objectBuilder, name, schema);
         }
@@ -526,7 +546,7 @@ public final class SourceGenerator {
             .stream()
             .map(entry -> AnnotationDef
                 .builder(JsonSubTypes.Type.class)
-                .addMember("value", getDefinitionType(inputFileName + entry.getValue()))
+                .addMember("value", context.getDefinitionType(inputFileName + entry.getValue()))
                 .addMember("name", entry.getKey())
                 .build())
             .toList();
@@ -560,7 +580,7 @@ public final class SourceGenerator {
             return TypeDef.OBJECT;
         }
 
-        TypeDef propertyType = getTypeDefFromJson(items);
+        TypeDef propertyType = getTypeDefFromJson(items, context);
         if (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, propertyName, items);
         } else if (items.isEnum()) {

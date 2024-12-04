@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonPointer;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.jsonschema.generator.SourceGenerator;
+import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
@@ -37,8 +38,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static io.micronaut.jsonschema.generator.loaders.UrlLoader.isValidUrl;
-import static io.micronaut.jsonschema.generator.utils.GeneratorContext.getDefinitionType;
-import static io.micronaut.jsonschema.generator.utils.GeneratorContext.hasDefinition;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
 import static io.micronaut.jsonschema.model.Schema.Type.NULL;
 import static java.lang.String.join;
@@ -57,7 +56,7 @@ public final class TypeAggregator {
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
 
-    public static TypeDef getTypeDefFromJson(Schema schema) {
+    public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
         if (schema.hasType() && schema.getType().size() > 1) {
             if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
                 var typeList = schema.getType();
@@ -79,7 +78,7 @@ public final class TypeAggregator {
             if (chosenFromAnyOf == null) {
                 return TypeDef.OBJECT;
             }
-            return getTypeDefFromJson(chosenFromAnyOf);
+            return getTypeDefFromJson(chosenFromAnyOf, context);
         }
         if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
             var format = schema.getFormat();
@@ -110,9 +109,9 @@ public final class TypeAggregator {
             }
             var location = ref.substring(0, ref.indexOf("#"));
             var originalFileName = SourceGenerator.getInputFileName();
-            if (!hasDefinition(ref) && isValidUrl(location) && !location.equals(originalFileName)) {
+            if (!context.hasDefinition(ref) && isValidUrl(location) && !location.equals(originalFileName)) {
                 try {
-                    var generator = new SourceGenerator(SourceGenerator.getLanguage());
+                    var generator = new SourceGenerator(SourceGenerator.getLanguage(), context);
                     SourceGenerator.setInputFileName(location);
                     generator.generate(
                         new SourceGeneratorConfig(null, location, null, null,
@@ -122,7 +121,7 @@ public final class TypeAggregator {
                     e.printStackTrace();
                 }
             }
-            typeDef = getDefinitionType(ref);
+            typeDef = context.getDefinitionType(ref);
         } else {
             typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
         }

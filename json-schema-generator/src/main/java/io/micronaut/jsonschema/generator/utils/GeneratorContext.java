@@ -44,19 +44,19 @@ import static io.micronaut.jsonschema.model.Schema.ONE_OF_SCHEMA_REF_PREFIX;
  */
 @Internal
 public final class GeneratorContext {
-    private static final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
-    private static final HashMap<String, LinkedList<String>> TEMP_DEFINITIONS = new HashMap<>();
-    private static final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
+    private final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
+    private final HashMap<String, LinkedList<String>> TEMP_DEFINITIONS = new HashMap<>();
+    private final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
 
-    public static boolean isDefinitionClass(String key) {
+    public boolean isDefinitionClass(String key) {
         return getDefinition(key).getValue();
     }
 
-    public static TypeDef getDefinitionType(String key) {
+    public TypeDef getDefinitionType(String key) {
         return getDefinition(key).getKey();
     }
 
-    private static Map.Entry<TypeDef, Boolean> getDefinition(String key) {
+    private Map.Entry<TypeDef, Boolean> getDefinition(String key) {
         String defKey = unifyKey(key);
         if (hasDefinition(defKey)) {
             return DEFINITIONS.get(defKey);
@@ -64,21 +64,21 @@ public final class GeneratorContext {
         throw new IllegalArgumentException("Definition not found: " + key);
     }
 
-    public static List<Map.Entry<String, Schema>> getOneOfsToGenerate() {
+    public List<Map.Entry<String, Schema>> getOneOfsToGenerate() {
         return ONE_OF_SET.entrySet().stream().filter(entry -> entry.getValue() != null).toList();
     }
 
-    public static boolean hasDefinition(String key) {
+    public boolean hasDefinition(String key) {
         return DEFINITIONS.containsKey(key);
     }
 
-    public static boolean isInheriting(String className) {
+    public boolean isInheriting(String className) {
         String key = getInputFileName() + ONE_OF_SCHEMA_REF_PREFIX + className;
         String keyRef = getInputFileName() + DEF_SCHEMA_REF_PREFIX + className;
         return ONE_OF_SET.containsKey(key) || ONE_OF_SET.containsKey(keyRef);
     }
 
-    public static void addDefinition(String key, Schema definition) {
+    public void addDefinition(String key, Schema definition) {
         String unifiedKey = unifyKey(key);
         if (definition.hasOneOf()) {
             // inner oneOf's are treated as objects
@@ -93,7 +93,7 @@ public final class GeneratorContext {
                 addDefinition(unifiedKey, entry.getKey(), entry.getValue());
             }
         } else {
-            var typeDef = getTypeDefFromJson(definition);
+            var typeDef = getTypeDefFromJson(definition, this);
             assert typeDef != null;
             boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING)
                 && !typeDef.equals(ClassTypeDef.of(Float.class))
@@ -111,7 +111,7 @@ public final class GeneratorContext {
         }
     }
 
-    public static void addDefinition(String key, TypeDef classDef, boolean isClass) {
+    public void addDefinition(String key, TypeDef classDef, boolean isClass) {
         AbstractMap.SimpleEntry<TypeDef, Boolean> newDef = new AbstractMap.SimpleEntry<>(classDef, isClass);
         String defKey = unifyKey(key);
         if (!hasDefinition(defKey)) {
@@ -127,7 +127,7 @@ public final class GeneratorContext {
         }
     }
 
-    public static void addTempDefinition(String referringDef, String ref) {
+    public void addTempDefinition(String referringDef, String ref) {
         String referringKey = unifyKey(referringDef);
         String referredKey = unifyKey(ref);
         if (TEMP_DEFINITIONS.containsKey(referredKey)) {
@@ -139,11 +139,11 @@ public final class GeneratorContext {
         }
     }
 
-    public static void addOneOf(String key) {
+    public void addOneOf(String key) {
         ONE_OF_SET.put(unifyKey(key), null);
     }
 
-    public static void addOneOf(Schema oneOf) {
+    public void addOneOf(Schema oneOf) {
         String fileName = getInputFileName();
         String className = (oneOf.hasTitle()) ? capitalize(getCamelCaseName(oneOf.getTitle())) : "Option" + ONE_OF_SET.size();
 
@@ -151,12 +151,13 @@ public final class GeneratorContext {
         addDefinition(fileName + ONE_OF_SCHEMA_REF_PREFIX + className, ClassTypeDef.of(capitalize(className)), true);
     }
 
-    public static void clearAllDefinitions() {
+    public void clearAllDefinitions() {
         DEFINITIONS.clear();
         ONE_OF_SET.clear();
+        TEMP_DEFINITIONS.clear();
     }
 
-    private static String unifyKey(String key) {
+    private String unifyKey(String key) {
         if (!key.contains("#/definitions/")) {
             return key;
         }
