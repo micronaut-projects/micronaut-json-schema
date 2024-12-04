@@ -194,7 +194,7 @@ public final class SourceGenerator {
 
     private void saveDefinitions(Schema jsonSchema) {
         String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
-        String finalSchemaName = capitalize(getCamelCaseName(schemaName));
+        String finalSchemaName = getClassName(schemaName);
 
         // save all definition and oneOf types
         if (jsonSchema.hasOneOf()) {
@@ -232,7 +232,7 @@ public final class SourceGenerator {
     private File generateDefinitions(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
         // generate top level schema
         String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
-        schemaName = capitalize(getCamelCaseName(schemaName));
+        schemaName = getClassName(schemaName);
 
         File topLevelObject = generateFromSchema(jsonSchema, outputPath, packageName, schemaName);
 
@@ -243,7 +243,7 @@ public final class SourceGenerator {
                 .filter(definition -> !definition.getKey().equals("//") && context.isDefinitionClass(inputFileName + DEF_SCHEMA_REF_PREFIX + definition.getKey()))
                 .forEach(definition -> {
                     try {
-                        var className = capitalize(getCamelCaseName(definition.getKey()));
+                        var className = getClassName(definition.getKey());
                         generateFromSchema(definition.getValue(), outputPath, packageName, className);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
@@ -486,7 +486,7 @@ public final class SourceGenerator {
         if (propertyName.equals(discriminatorProperty)) {
             return;
         }
-        String name = getCamelCaseName(propertyName);
+        String name = getPropertyName(propertyName);
         PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name);
         if (!name.equals(propertyName)) {
             AnnotationDef annotationDef = AnnotationDef.builder(JsonProperty.class).addMember("value", propertyName).build();

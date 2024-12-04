@@ -25,7 +25,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getCamelCaseName;
+import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getClassName;
+import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getPropertyName;
 
 public class FileProcessor {
 
@@ -90,8 +91,11 @@ public class FileProcessor {
         String fileName;
         if (topLevelName.isPresent() && !topLevelName.get().isEmpty()) {
             fileName = topLevelName.get();
+            if (fileName.contains("http")) {
+                fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
+            }
         } else if (schema.hasTitle()) {
-            fileName = capitalize(getCamelCaseName(schema.getTitle()));
+            fileName = getClassName(schema.getTitle());
         } else {
             fileName = "SchemaFile"; // default
         }

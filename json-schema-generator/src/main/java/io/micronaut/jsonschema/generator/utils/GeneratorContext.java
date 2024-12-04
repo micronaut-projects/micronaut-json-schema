@@ -27,9 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName;
-import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getCamelCaseName;
+import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getClassName;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getTypeDefFromJson;
 import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
 import static io.micronaut.jsonschema.model.Schema.ONE_OF_SCHEMA_REF_PREFIX;
@@ -100,7 +99,7 @@ public final class GeneratorContext {
                 && !typeDef.equals(ClassTypeDef.of(Integer.class))
                 && !typeDef.equals(TypeDef.of(List.class));
             if (isClass) {
-                typeDef = ClassTypeDef.of(capitalize(unifiedKey.substring(unifiedKey.lastIndexOf('/') + 1)));
+                typeDef = ClassTypeDef.of(getClassName(unifiedKey.substring(unifiedKey.lastIndexOf('/') + 1)));
             }
             // add annotations to type
             var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef);
@@ -145,13 +144,13 @@ public final class GeneratorContext {
 
     public void addOneOf(Schema oneOf) {
         String fileName = getInputFileName();
-        String className = (oneOf.hasTitle()) ? capitalize(getCamelCaseName(oneOf.getTitle())) : "Option" + ONE_OF_SET.size();
+        String className = (oneOf.hasTitle()) ? getClassName(oneOf.getTitle()) : "Option" + ONE_OF_SET.size();
 
         ONE_OF_SET.put(fileName + ONE_OF_SCHEMA_REF_PREFIX + className, oneOf);
-        addDefinition(fileName + ONE_OF_SCHEMA_REF_PREFIX + className, ClassTypeDef.of(capitalize(className)), true);
+        addDefinition(fileName + ONE_OF_SCHEMA_REF_PREFIX + className, ClassTypeDef.of(getClassName(className)), true);
     }
 
-    public void clearAllDefinitions() {
+    public void clearAll() {
         DEFINITIONS.clear();
         ONE_OF_SET.clear();
         TEMP_DEFINITIONS.clear();

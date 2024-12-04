@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.loaders.UrlLoader.isValidUrl;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
 import static io.micronaut.jsonschema.model.Schema.Type.NULL;
@@ -203,7 +204,15 @@ public final class TypeAggregator {
         }
     }
 
-    public static String getCamelCaseName(String input) {
+    public static String getClassName(String input) {
+        var identifier = getPropertyName(input);
+        while (!Character.isLetter(identifier.charAt(0))) {
+            identifier = identifier.substring(1);
+        }
+        return capitalize(identifier);
+    }
+
+    public static String getPropertyName(String input) {
         if (SourceVersion.isName(input)) {
             return input;
         }
