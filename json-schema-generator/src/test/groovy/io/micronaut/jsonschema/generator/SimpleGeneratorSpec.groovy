@@ -25,6 +25,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
         then:
         content == """
+        @Serdeable
         public enum Status {
 
           ACTIVE("active"),
@@ -218,6 +219,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
                 Shell shell,
                 @JsonProperty("working-directory") @Pattern(regexp = "^[a-zA-Z]*") String workingDirectory
             ) {
+              @Serdeable
               public enum Shell {
 
                 BASH("bash"),

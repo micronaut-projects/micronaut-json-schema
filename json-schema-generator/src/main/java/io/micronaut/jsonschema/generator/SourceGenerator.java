@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.annotation.Introspected;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
@@ -311,7 +312,8 @@ public final class SourceGenerator {
 
     public EnumDef buildEnum(Schema jsonSchema, String builderClassName) {
         EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(builderClassName)
-            .addModifiers(Modifier.PUBLIC);
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Serdeable.class);
         boolean isComplexEnum = false;
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
         LinkedHashMap<String, String> enumValues = new LinkedHashMap<>();
@@ -376,6 +378,10 @@ public final class SourceGenerator {
     private ClassDef buildClass(Schema jsonSchema, String builderClassName) {
         ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(
+                AnnotationDef.builder(Introspected.class)
+                    .addMember("accessKind", List.of(Introspected.AccessKind.FIELD, Introspected.AccessKind.METHOD))
+                    .build())
             .addAnnotation(Serdeable.class);
 
         if (context.hasDefinition(inputFileName + "/superClass")) {
@@ -400,11 +406,12 @@ public final class SourceGenerator {
 
             Map<String, Schema> properties = jsonSchema.getProperties();
             if (properties.containsKey(discriminatorProperty)) {
-                objectBuilder.addField(FieldDef.builder(discriminatorProperty)
-                    .ofType(TypeDef.STRING)
-                    .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                    .initializer(ExpressionDef.constant(properties.get(discriminatorProperty).getConstValue()))
-                    .build());
+                objectBuilder.addField(
+                    FieldDef.builder(discriminatorProperty)
+                        .ofType(TypeDef.STRING)
+                        .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                        .initializer(ExpressionDef.constant(properties.get(discriminatorProperty).getConstValue()))
+                        .build());
             }
         }
         return objectBuilder.build();
@@ -502,6 +509,7 @@ public final class SourceGenerator {
         if  (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, name, schema);
         }
+        // TODO: add check for object inside parameterized/list types
         if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             // inner type
             ObjectDef builder;

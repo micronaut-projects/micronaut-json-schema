@@ -1,8 +1,11 @@
 package io.micronaut.jsonschema.serialization;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.micronaut.jsonschema.Status;
 import io.micronaut.jsonschema.generator.animals.Animal;
 import io.micronaut.jsonschema.generator.animals.Cat;
+import io.micronaut.jsonschema.generator.animals.Dog;
+import io.micronaut.jsonschema.generator.ref.Achievement;
 import io.micronaut.serde.ObjectMapper;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import org.junit.jupiter.api.Test;
@@ -17,18 +20,80 @@ public class SerializationTest {
 
     @Test
     void testSerializeGeneratedCat(ObjectMapper objectMapper) throws IOException {
-        var animal = jsonMapper.readValue("""
+        // put const fields at last
+        String inputData = """
             {
               "id": "0x",
               "birthdate": "2000-01-01",
               "name": "Micronaut",
-              "resourceType": "Cat",
-              "hasMate": true
+              "hasMate": true,
+              "resourceType": "Cat"
             }
-            """, Animal.class);
+            """.replaceAll("\\s", "");
+        var animal = jsonMapper.readValue(inputData, Animal.class);
         assertEquals(Cat.class, animal.getClass());
         Cat cat = (Cat) animal;
         String result = objectMapper.writeValueAsString(cat);
-        assertEquals("{\"id\":\"0x\",\"birthdate\":\"2000-01-01\",\"name\":\"Micronaut\",\"hasMate\":true}", result);
+        assertEquals(inputData, result);
+    }
+
+    @Test
+    void testSerializeGeneratedEnum(ObjectMapper objectMapper) throws IOException {
+        // TODO: fix
+        String inputData = "\"active\"";
+        var obj = jsonMapper.readValue(inputData, Status.class);
+        String result = objectMapper.writeValueAsString(obj);
+        assertEquals(inputData, result);
+    }
+
+    @Test
+    void testSerializeGeneratedInnerEnum(ObjectMapper objectMapper) throws IOException {
+        // TODO: fix
+        String inputData = """
+            {
+              "Type": "award",
+              "Title": "This is title",
+              "Date": "2000-01-01",
+              "Website": "www.website.com",
+              "Summary": "Summary of something"
+            }
+            """.replaceAll("\\s", "");
+        var obj = jsonMapper.readValue(inputData, Achievement.class);
+
+        String result = objectMapper.writeValueAsString(obj);
+        assertEquals(inputData, result);
+    }
+
+    @Test
+    void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws IOException {
+        String inputData = """
+            {
+              "id": "0x",
+              "birthdate": "2000-01-01",
+              "name": "Micronaut",
+              "nickname": "Goodie",
+              "enemies": [
+              {
+                  "id": "1x",
+                  "birthdate": "2000-01-01",
+                  "name": "Pegasus",
+                  "hasMate": false,
+                  "resourceType": "Cat"
+              }, {
+                  "id": "2x",
+                  "birthdate": "2000-01-01",
+                  "name": "Micro-Pego",
+                  "hasMate": false,
+                  "resourceType": "Cat"
+              }],
+              "ownerName": "Owner",
+              "hasMate": true,
+              "resourceType": "Dog"
+            }
+            """.replaceAll("\\s", "");
+        var dog = jsonMapper.readValue(inputData, Dog.class);
+
+        String result = objectMapper.writeValueAsString(dog);
+        assertEquals(inputData, result);
     }
 }
