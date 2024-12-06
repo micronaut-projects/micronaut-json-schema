@@ -92,7 +92,6 @@
         },
         "hasMate": {
           "description": "True when the dog has found their mate.",
-          "$ref": "#/definitions/boolean",
           "const": true
         },
         "nickname" : {

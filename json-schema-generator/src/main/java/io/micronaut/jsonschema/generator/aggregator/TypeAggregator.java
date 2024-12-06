@@ -83,18 +83,18 @@ public final class TypeAggregator {
         }
         if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
             var format = schema.getFormat();
-            switch (format) {
-                case "date": typeDef = ClassTypeDef.of(LocalDate.class); break;
-                case "date-time", "time": typeDef = ClassTypeDef.of(ZonedDateTime.class); break;
-                case "duration": typeDef = ClassTypeDef.of(Duration.class); break;
-                case "ipv4": typeDef = ClassTypeDef.of(java.net.Inet4Address.class); break;
-                case "ipv6": typeDef = ClassTypeDef.of(java.net.Inet6Address.class); break;
-                case "uuid": typeDef = ClassTypeDef.of(UUID.class); break;
-                case "uri", "iri": typeDef = ClassTypeDef.of(URI.class); break;
-                case "json-pointer": typeDef = ClassTypeDef.of(JsonPointer.class); break;
+            typeDef = switch (format) {
+                case "date" -> ClassTypeDef.of(LocalDate.class);
+                case "date-time", "time" -> ClassTypeDef.of(ZonedDateTime.class);
+                case "duration" -> ClassTypeDef.of(Duration.class);
+                case "ipv4" -> ClassTypeDef.of(java.net.Inet4Address.class);
+                case "ipv6" -> ClassTypeDef.of(java.net.Inet6Address.class);
+                case "uuid" -> ClassTypeDef.of(UUID.class);
+                case "uri", "iri" -> ClassTypeDef.of(URI.class);
+                case "json-pointer" -> ClassTypeDef.of(JsonPointer.class);
                 // missing: web hostname, uri-reference, uri-template, regex
-                default: typeDef = TypeDef.STRING;
-            }
+                default -> TypeDef.STRING;
+            };
         } else if (type.equals(Schema.Type.NUMBER) && schema.getPattern() != null) {
             if (schema.getPattern().contains(".")) {
                 typeDef = ClassTypeDef.of(Float.class);
@@ -119,7 +119,7 @@ public final class TypeAggregator {
                             SourceGenerator.getOutputPath(), SourceGenerator.getOutputPackageName(), null));
                     SourceGenerator.setInputFileName(originalFileName);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
             }
             typeDef = context.getDefinitionType(ref);
@@ -193,14 +193,14 @@ public final class TypeAggregator {
         try {
             // Check if the input is acceptable
             if (words.length == 0 || words[0].isEmpty()) {
-                throw new IllegalArgumentException("The enum constant name is not an acceptable identifier name.");
+                throw new IllegalArgumentException();
             }
             for (int i = 0; i < words.length; i++) {
                 words[i] = words[i].toUpperCase();
             }
             return join("_", words);
         } catch (IllegalArgumentException e) {
-            throw e;
+            throw new IllegalArgumentException("The enum constant name is not an acceptable identifier name.");
         }
     }
 

@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.core.annotation.Introspected;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
@@ -378,10 +377,6 @@ public final class SourceGenerator {
     private ClassDef buildClass(Schema jsonSchema, String builderClassName) {
         ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(
-                AnnotationDef.builder(Introspected.class)
-                    .addMember("accessKind", List.of(Introspected.AccessKind.FIELD, Introspected.AccessKind.METHOD))
-                    .build())
             .addAnnotation(Serdeable.class);
 
         if (context.hasDefinition(inputFileName + "/superClass")) {
@@ -457,10 +452,16 @@ public final class SourceGenerator {
                     mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
                 }
                 TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
-                builder.addProperty(PropertyDef.builder("unknownFields")
+                if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
+                    classDefBuilder.addField(FieldDef.builder("unknownFields")
                         .ofType(type)
                         .build());
-                builder.addMethod(MethodDef.builder("otherFields")
+                } else {
+                    builder.addProperty(PropertyDef.builder("unknownFields")
+                        .ofType(type)
+                        .build());
+                }
+                builder.addMethod(MethodDef.builder("getUnknownFields")
                         .addModifiers(Modifier.PUBLIC)
                         .returns(type)
                         .addAnnotation(JsonAnyGetter.class)
@@ -470,7 +471,7 @@ public final class SourceGenerator {
                             }
                             return new VariableDef.Local("unknownFields", type).returning();
                         }));
-                builder.addMethod(MethodDef.builder("setOtherField")
+                builder.addMethod(MethodDef.builder("setUnknownFields")
                         .addModifiers(Modifier.PUBLIC)
                         .returns(TypeDef.VOID)
                         .addAnnotation(JsonAnySetter.class)
@@ -509,17 +510,9 @@ public final class SourceGenerator {
         if  (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, name, schema);
         }
-        // TODO: add check for object inside parameterized/list types
+
         if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
-            // inner type
-            ObjectDef builder;
-            if (schema.getProperties().size() > 255 || schema.hasAdditionalProperties() || schema.hasConstValue()) {
-                builder = buildClass(schema, capitalize(name));
-            } else {
-                builder = buildRecord(schema, capitalize(name));
-            }
-            objectBuilder.addInnerType(builder);
-            propertyType = ClassTypeDef.of(builder.getName());
+            propertyType = buildInnerType(objectBuilder, propertyName, schema);
         }
         propertyDef.ofType(propertyType);
 
@@ -530,14 +523,18 @@ public final class SourceGenerator {
 
         PropertyDef property = propertyDef.build();
         // transfer to field if it is const and class builder
-        if (schema.hasConstValue() && objectBuilder instanceof ClassDef.ClassDefBuilder) {
+        if (schema.hasConstValue() && objectBuilder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
             FieldDef.FieldDefBuilder fieldDefBuilder = FieldDef.builder(name)
                 .ofType(property.getType())
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .initializer(ExpressionDef.constant(schema.getConstValue()));
             property.getAnnotations().forEach(fieldDefBuilder::addAnnotation);
             property.getJavadoc().forEach(fieldDefBuilder::addJavadoc);
-            ((ClassDef.ClassDefBuilder) objectBuilder).addField(fieldDefBuilder.build());
+            FieldDef fieldDef = fieldDefBuilder.build();
+            classDefBuilder
+                .addField(fieldDef)
+                .addMethod(MethodDef.builder("get" + capitalize(name))
+                    .build(((aThis, methodParameters) -> aThis.field(fieldDef).returning())));
             return;
         }
         objectBuilder.addProperty(property);
@@ -597,10 +594,26 @@ public final class SourceGenerator {
             propertyType = primitive.wrapperType();
         }
 
+        if (propertyType.equals(TypeDef.OBJECT) && items.hasProperties()) {
+            propertyType = buildInnerType(objectBuilder, propertyName, items);
+        }
+
         var annotations = AnnotationsAggregator.getAnnotations(items, propertyType);
         return TypeDef.parameterized(
             (schema.isUniqueItems() != null && schema.isUniqueItems()) ? Set.class : List.class,
             propertyType.annotated(annotations));
+    }
+
+    private TypeDef buildInnerType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
+        // inner type
+        ObjectDef builder;
+        if (schema.getProperties().size() > 255 || schema.hasAdditionalProperties() || schema.hasConstValue()) {
+            builder = buildClass(schema, capitalize(propertyName));
+        } else {
+            builder = buildRecord(schema, capitalize(propertyName));
+        }
+        objectBuilder.addInnerType(builder);
+        return ClassTypeDef.of(builder.getName());
     }
 
     public static String getInputFileName() {

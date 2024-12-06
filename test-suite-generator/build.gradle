@@ -16,6 +16,7 @@ dependencies {
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testAnnotationProcessor(mn.micronaut.inject.java.test)
+    testAnnotationProcessor(mnSerde.micronaut.serde.processor)
 
     testImplementation(mn.micronaut.inject.kotlin.test)
     testImplementation(mn.micronaut.inject.groovy.test)

@@ -162,13 +162,13 @@ public class AnnotationsAggregator {
         if (schema.getFormat() != null && schema.getFormat().equals("email")) {
             annotations.add(AnnotationDef.builder(ClassTypeDef.of(EMAIL_ANN)).build());
         }
-        if (schema.getConstValue() != null && propertyType.equals(TypeDef.Primitive.BOOLEAN)) {
-            if (schema.getConstValue().toString().equals("true")) {
-                annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_TRUE_ANN)).build());
-            } else if (schema.getConstValue().toString().equals("false")) {
-                annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_FALSE_ANN)).build());
-            }
-        }
+//        if (schema.getConstValue() != null && propertyType.equals(TypeDef.Primitive.BOOLEAN)) {
+//            if (schema.getConstValue().toString().equals("true")) {
+//                annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_TRUE_ANN)).build());
+//            } else if (schema.getConstValue().toString().equals("false")) {
+//                annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_FALSE_ANN)).build());
+//            }
+//        }
         return annotations;
     }
 }

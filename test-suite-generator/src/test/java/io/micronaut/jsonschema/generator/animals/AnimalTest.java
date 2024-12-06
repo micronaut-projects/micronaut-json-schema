@@ -96,7 +96,7 @@ public class AnimalTest {
         assertEquals(true, dog.hasMate);
         assertEquals("Dog", dog.resourceType);
         assertEquals("Goodie", dog.getNickname());
-        assertEquals("Owner", dog.getUnknownFields().get("ownerName"));
+        assertEquals("Owner", dog.getUnknownFields().getOrDefault("ownerName", ""));
         assertEquals(2, dog.getEnemies().size());
     }
 
@@ -132,7 +132,7 @@ public class AnimalTest {
         assertEquals("2000-01-01", fish.getBirthdate());
         assertEquals("Micronaut", fish.getName());
         assertEquals("Fish", fish.resourceType);
-        assertEquals("Owner", fish.otherFields().get("ownerName"));
+        assertEquals("Owner", fish.getUnknownFields().get("ownerName"));
         assertEquals(2, fish.getFriends().size());
     }
 

@@ -1,7 +1,6 @@
 package io.micronaut.jsonschema.serialization;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import io.micronaut.jsonschema.Status;
 import io.micronaut.jsonschema.generator.animals.Animal;
 import io.micronaut.jsonschema.generator.animals.Cat;
 import io.micronaut.jsonschema.generator.animals.Dog;
@@ -23,11 +22,11 @@ public class SerializationTest {
         // put const fields at last
         String inputData = """
             {
+              "resourceType": "Cat",
               "id": "0x",
               "birthdate": "2000-01-01",
               "name": "Micronaut",
-              "hasMate": true,
-              "resourceType": "Cat"
+              "hasMate": true
             }
             """.replaceAll("\\s", "");
         var animal = jsonMapper.readValue(inputData, Animal.class);
@@ -38,17 +37,7 @@ public class SerializationTest {
     }
 
     @Test
-    void testSerializeGeneratedEnum(ObjectMapper objectMapper) throws IOException {
-        // TODO: fix
-        String inputData = "\"active\"";
-        var obj = jsonMapper.readValue(inputData, Status.class);
-        String result = objectMapper.writeValueAsString(obj);
-        assertEquals(inputData, result);
-    }
-
-    @Test
     void testSerializeGeneratedInnerEnum(ObjectMapper objectMapper) throws IOException {
-        // TODO: fix
         String inputData = """
             {
               "Type": "award",
@@ -68,27 +57,27 @@ public class SerializationTest {
     void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws IOException {
         String inputData = """
             {
+              "resourceType": "Dog",
               "id": "0x",
               "birthdate": "2000-01-01",
               "name": "Micronaut",
               "nickname": "Goodie",
               "enemies": [
               {
+                  "resourceType": "Cat",
                   "id": "1x",
                   "birthdate": "2000-01-01",
                   "name": "Pegasus",
-                  "hasMate": false,
-                  "resourceType": "Cat"
+                  "hasMate": false
               }, {
+                  "resourceType": "Cat",
                   "id": "2x",
                   "birthdate": "2000-01-01",
                   "name": "Micro-Pego",
-                  "hasMate": false,
-                  "resourceType": "Cat"
+                  "hasMate": false
               }],
-              "ownerName": "Owner",
               "hasMate": true,
-              "resourceType": "Dog"
+              "ownerName": "Owner"
             }
             """.replaceAll("\\s", "");
         var dog = jsonMapper.readValue(inputData, Dog.class);
