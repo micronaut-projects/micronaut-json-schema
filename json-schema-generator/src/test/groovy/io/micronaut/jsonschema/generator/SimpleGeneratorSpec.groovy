@@ -303,12 +303,12 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             HashMap<String, String> unknownFields
         ) {
           @JsonAnyGetter
-          public HashMap<String, String> otherFields() {
+          public HashMap<String, String> getUnknownFields() {
             return unknownFields;
           }
 
           @JsonAnySetter
-          public void setOtherField(String name, String value) {
+          public void setUnknownFields(String name, String value) {
             if (unknownFields==null) {
               unknownFields = new java.util.HashMap();
             }
