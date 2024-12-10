@@ -54,9 +54,7 @@ public final class Schema {
     private String $id;
     private String $ref;
 
-    private Schema discriminator;
-    private String propertyName;
-    private HashMap<String, String> mapping;
+    private SchemaDiscriminator discriminator;
 
     @JsonProperty("$defs")
     @JsonAlias("definitions")
@@ -97,9 +95,17 @@ public final class Schema {
     private Integer maxItems;
     private Integer minItems;
     private Boolean uniqueItems;
+
+    /**
+     * The "contains" keyword ensures that at least one element in an array is valid
+     * against the specified sub-schema. If "minContains" is 0, the array is valid
+     * even if no elements match.
+     *
+     * @see <a href="https://json-schema.org/understanding-json-schema/reference/array#contains/">JSON Schema</a> for more details.
+     */
+    private Schema contains;
     private Integer maxContains;
     private Integer minContains;
-    private Schema contains;
 
     private List<String> required;
 
@@ -559,32 +565,16 @@ public final class Schema {
         return $defs != null;
     }
 
-    public Schema getDiscriminator() {
+    public SchemaDiscriminator getDiscriminator() {
         return discriminator;
     }
 
-    public void setDiscriminator(Schema discriminator) {
+    public void setDiscriminator(SchemaDiscriminator discriminator) {
         this.discriminator = discriminator;
     }
 
     public boolean hasDiscriminator() {
         return discriminator != null;
-    }
-
-    public String getPropertyName() {
-        return propertyName;
-    }
-
-    public void setPropertyName(String propertyName) {
-        this.propertyName = propertyName;
-    }
-
-    public HashMap<String, String> getMapping() {
-        return mapping;
-    }
-
-    public void setMapping(HashMap<String, String> mapping) {
-        this.mapping = mapping;
     }
 
     public static Schema string() {
@@ -624,6 +614,21 @@ public final class Schema {
         return this;
     }
 
+    /**
+     * Merges the properties of the current schema with those of another schema.
+     * This method combines various attributes such as `$schema`, `$id`, `$ref`,
+     * discriminator, $defs, titles, types, constraints, and validation rules
+     * (e.g., `allOf`, `anyOf`, `oneOf`) from the provided schema into the current schema.
+     *
+     * If a property exists in both schemas, the value from the provided schema (`other`)
+     * is merged or replaces the existing value in the current schema based on the type
+     * of the property. In cases where collections are involved, unique values are added.
+     *
+     * The method is mainly used for merging the schemas inside an `allOf` into one.
+     *
+     * @param other the schema to merge with the current schema
+     * @return the current schema with merged properties
+     */
     public Schema merge(Schema other) {
         if (other == null) {
             return this;
@@ -645,21 +650,8 @@ public final class Schema {
             if (this.discriminator == null) {
                 this.discriminator = other.discriminator;
             } else {
-                this.discriminator.merge(other.discriminator);
+                this.discriminator = this.discriminator.merge(other.discriminator);
             }
-        }
-
-        // Merge propertyName
-        if (other.propertyName != null) {
-            this.propertyName = other.propertyName;
-        }
-
-        // Merge mapping
-        if (other.mapping != null) {
-            if (this.mapping == null) {
-                this.mapping = new HashMap<>();
-            }
-            this.mapping.putAll(other.mapping);
         }
 
         // Merge $defs
@@ -903,6 +895,37 @@ public final class Schema {
         @JsonCreator
         static Type fromString(String value) {
             return valueOf(value.toUpperCase(Locale.ENGLISH));
+        }
+    }
+
+    /**
+     * Discriminator defines a property that can be used to distinguish between schemas that are defined as subtypes in code. It is not a standard JSON schema annotation, but is commonly used because it is defined in OpenAPI.
+     *
+     * @see <a href="https://swagger.io/specification/#discriminator-object">OpenAPI Discriminator Object</a>
+     * @param propertyName The discriminator property name
+     * @param mapping The mapping between property value and Java schemas, where the map value is a JSON Schema reference
+     */
+    public record SchemaDiscriminator(
+        String propertyName,
+        Map<String, String> mapping
+    ) {
+        // returns a new SchemaDiscriminator by merging two.
+        public SchemaDiscriminator merge(SchemaDiscriminator other) {
+            String mergedPropertyName = propertyName;
+            // Merge propertyName
+            if (other.propertyName != null) {
+                mergedPropertyName = other.propertyName;
+            }
+
+            Map<String, String> mergedMapping = mapping;
+            // Merge mapping
+            if (other.mapping != null) {
+                if (mapping == null) {
+                    mergedMapping = new HashMap<>();
+                }
+                mergedMapping.putAll(other.mapping);
+            }
+            return new SchemaDiscriminator(mergedPropertyName, mergedMapping);
         }
     }
 

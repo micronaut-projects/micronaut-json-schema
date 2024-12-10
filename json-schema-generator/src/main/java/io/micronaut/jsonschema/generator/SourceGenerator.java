@@ -263,7 +263,6 @@ public final class SourceGenerator {
             String simpleName = decidedFileName.substring(0, decidedFileName.lastIndexOf('.'));
 
             // decide type of generated object
-            boolean hasOverLimitParameters = jsonSchema.hasProperties() && jsonSchema.getProperties().size() > 255;
             ObjectType type;
             if (jsonSchema.isEnum()) {
                 type = ObjectType.ENUM;
@@ -274,7 +273,7 @@ public final class SourceGenerator {
                 } else {
                     type = ObjectType.INTERFACE;
                 }
-            } else if (context.isInheriting(simpleName) || hasOverLimitParameters) {
+            } else if (context.isInheriting(simpleName) || shouldBeAClass(jsonSchema)) {
                 type = ObjectType.CLASS;
             } else if (getTypeDefFromJson(jsonSchema, context).equals(TypeDef.OBJECT)) {
                 type = ObjectType.RECORD;
@@ -445,49 +444,53 @@ public final class SourceGenerator {
             ));
 
             if (jsonSchema.hasAdditionalProperties() && !jsonSchema.getAdditionalProperties().equals(Schema.FALSE)) {
-                TypeDef mapType;
-                if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
-                    mapType = TypeDef.OBJECT;
-                } else {
-                    mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
-                }
-                TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
-                if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
-                    classDefBuilder.addField(FieldDef.builder("unknownFields")
-                        .ofType(type)
-                        .build());
-                } else {
-                    builder.addProperty(PropertyDef.builder("unknownFields")
-                        .ofType(type)
-                        .build());
-                }
-                builder.addMethod(MethodDef.builder("getUnknownFields")
-                        .addModifiers(Modifier.PUBLIC)
-                        .returns(type)
-                        .addAnnotation(JsonAnyGetter.class)
-                        .build((aThis, parameters) -> {
-                            if (builder instanceof ClassDef.ClassDefBuilder) {
-                                return aThis.field("unknownFields", type).returning();
-                            }
-                            return new VariableDef.Local("unknownFields", type).returning();
-                        }));
-                builder.addMethod(MethodDef.builder("setUnknownFields")
-                        .addModifiers(Modifier.PUBLIC)
-                        .returns(TypeDef.VOID)
-                        .addAnnotation(JsonAnySetter.class)
-                        .addParameter("name", TypeDef.STRING)
-                        .addParameter("value", mapType)
-                        .build((aThis, parameters) -> {
-                            var unknownField = (builder instanceof ClassDef.ClassDefBuilder) ?
-                                aThis.field("unknownFields", type) :
-                                new VariableDef.Local("unknownFields", type);
-
-                            return StatementDef.multi(
-                                unknownField.ifNull(unknownField.assign(ClassTypeDef.of(HashMap.class).instantiate())),
-                                unknownField.invoke("put", mapType, parameters));
-                        }));
+                addAdditionalField(jsonSchema, builder);
             }
         }
+    }
+
+    private void addAdditionalField(Schema jsonSchema, ObjectDefBuilder builder) {
+        TypeDef mapType;
+        if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
+            mapType = TypeDef.OBJECT;
+        } else {
+            mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
+        }
+        TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
+        if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
+            classDefBuilder.addField(FieldDef.builder("unknownFields")
+                .ofType(type)
+                .build());
+        } else {
+            builder.addProperty(PropertyDef.builder("unknownFields")
+                .ofType(type)
+                .build());
+        }
+        builder.addMethod(MethodDef.builder("getUnknownFields")
+                .addModifiers(Modifier.PUBLIC)
+                .returns(type)
+                .addAnnotation(JsonAnyGetter.class)
+                .build((aThis, parameters) -> {
+                    if (builder instanceof ClassDef.ClassDefBuilder) {
+                        return aThis.field("unknownFields", type).returning();
+                    }
+                    return new VariableDef.Local("unknownFields", type).returning();
+                }));
+        builder.addMethod(MethodDef.builder("setUnknownFields")
+                .addModifiers(Modifier.PUBLIC)
+                .returns(TypeDef.VOID)
+                .addAnnotation(JsonAnySetter.class)
+                .addParameter("name", TypeDef.STRING)
+                .addParameter("value", mapType)
+                .build((aThis, parameters) -> {
+                    var unknownField = (builder instanceof ClassDef.ClassDefBuilder) ?
+                        aThis.field("unknownFields", type) :
+                        new VariableDef.Local("unknownFields", type);
+
+                    return StatementDef.multi(
+                        unknownField.ifNull(unknownField.assign(ClassTypeDef.of(HashMap.class).instantiate())),
+                        unknownField.invoke("put", mapType, parameters));
+                }));
     }
 
     private void addField(ObjectDefBuilder objectBuilder, String propertyName, Schema schema, boolean isRequired) {
@@ -545,9 +548,9 @@ public final class SourceGenerator {
             return;
         }
         var discriminator = jsonSchema.getDiscriminator();
-        discriminatorProperty = discriminator.getPropertyName();
+        discriminatorProperty = discriminator.propertyName();
 
-        List<AnnotationDef> subTypeList = discriminator.getMapping().entrySet()
+        List<AnnotationDef> subTypeList = discriminator.mapping().entrySet()
             .stream()
             .map(entry -> AnnotationDef
                 .builder(JsonSubTypes.Type.class)
@@ -607,13 +610,18 @@ public final class SourceGenerator {
     private TypeDef buildInnerType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         // inner type
         ObjectDef builder;
-        if (schema.getProperties().size() > 255 || schema.hasAdditionalProperties() || schema.hasConstValue()) {
+        if (shouldBeAClass(schema)) {
             builder = buildClass(schema, capitalize(propertyName));
         } else {
             builder = buildRecord(schema, capitalize(propertyName));
         }
         objectBuilder.addInnerType(builder);
         return ClassTypeDef.of(builder.getName());
+    }
+
+    private boolean shouldBeAClass(Schema schema) {
+        boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
+        return hasOverLimitParameters || schema.hasAdditionalProperties() || schema.hasConstValue();
     }
 
     public static String getInputFileName() {

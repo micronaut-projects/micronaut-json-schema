@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.generator;
 
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.loaders.UrlLoader;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
@@ -23,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,6 +33,7 @@ import java.util.List;
  * @version 1.3
  * @author Elif Kurtay
  */
+@Internal
 public class GeneratorMain {
 
     /**
@@ -52,7 +53,7 @@ public class GeneratorMain {
      */
     public static void main(String[] args) throws IOException {
         if (args.length != 8) {
-            throw new IllegalArgumentException("Invalid number of arguments.");
+            throw new IllegalStateException("Invalid number of arguments.");
         }
         String jsonURL = args[0];
         File jsonFile = null;

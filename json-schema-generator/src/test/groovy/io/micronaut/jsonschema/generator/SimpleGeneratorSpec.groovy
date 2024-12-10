@@ -296,25 +296,68 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         content == """
         @Serdeable
-        public record Llama2(
-            @NotNull @Min(0) int age,
-            @NotNull @Size(min = 1) String name,
-            List<@DecimalMin(\"0.0\") Float> hours,
-            HashMap<String, String> unknownFields
-        ) {
+        public class Llama2 {
+          /**
+           * The age
+           */
+          @NotNull
+          @Min(0)
+          private int age;
+
+          /**
+           * The name
+           */
+          @NotNull
+          @Size(
+              min = 1
+          )
+          private String name;
+
+          /**
+           * Happy hours
+           */
+          private List<@DecimalMin("0.0") Float> hours;
+
+          HashMap<String, String> unknownFields;
+
+          int getAge() {
+            return this.age;
+          }
+
+          void setAge(int age) {
+            this.age = age;
+          }
+
+          String getName() {
+            return this.name;
+          }
+
+          void setName(String name) {
+            this.name = name;
+          }
+
+          List<@DecimalMin("0.0") Float> getHours() {
+            return this.hours;
+          }
+
+          void setHours(List<@DecimalMin("0.0") Float> hours) {
+            this.hours = hours;
+          }
+
           @JsonAnyGetter
           public HashMap<String, String> getUnknownFields() {
-            return unknownFields;
+            return this.unknownFields;
           }
 
           @JsonAnySetter
           public void setUnknownFields(String name, String value) {
-            if (unknownFields==null) {
-              unknownFields = new java.util.HashMap();
+            if (this.unknownFields==null) {
+              this.unknownFields = new java.util.HashMap();
             }
-            unknownFields.put(name, value);
+            this.unknownFields.put(name, value);
           }
-        }""".stripIndent().trim()
+        }
+        """.stripIndent().trim()
     }
 
     void testAllOf() {

@@ -57,6 +57,27 @@ public final class TypeAggregator {
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
 
+    /**
+     * Extracts a Java type definition ({@code TypeDef}) from a given JSON schema.
+     * This method analyzes the schema's type, format, and other properties to determine
+     * the appropriate Java type representation, handling multiple special cases such as
+     * type combinations, format-specific mappings, references, and "oneOf"/"anyOf" schemas.
+     *
+     * If the schema defines multiple types, the method defaults to `java.lang.Object`.
+     * For specific formats like "date-time" or "uuid", the method maps to appropriate
+     * Java classes such as `ZonedDateTime` or `UUID`. Additionally, schema references (`$ref`)
+     * are resolved, potentially triggering the generation of new schema definitions.
+     *
+     * The method also handles special cases for numerical types with patterns and
+     * handles the "oneOf" and "anyOf" schema keywords by recursively determining
+     * the appropriate type from the valid options.
+     *
+     * @param schema the JSON schema to be converted into a Java type definition
+     * @param context the generator context, which holds existing type definitions and supports
+     *                the resolution of schema references
+     * @return the corresponding {@code TypeDef} representing the schema as a Java type
+     * @throws IllegalArgumentException if the schema's type is unsupported or invalid
+     */
     public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
         if (schema.hasType() && schema.getType().size() > 1) {
             if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
