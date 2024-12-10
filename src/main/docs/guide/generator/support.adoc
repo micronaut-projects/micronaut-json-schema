@@ -1,0 +1,64 @@
+The following JSON schema keywords are processed by the generation:
+
+[cols="2,1,4", options="header"]
+|===
+| JSON Schema keyword | Supported | Notes or Limitations
+| `$id` | ✅ |
+| `$schema` | ✅ |
+| `type` | ✅ | Accepted type keywords are: `array`, `boolean`, `null`, `number`, `integer`, `object`, and `string`. Type keyword can accept an array of type values. However, in case of more than one non-null type, the generated type will be a `java.lang.Object` or an equivalent in the language of choice.
+| `title` | ✅ |
+| `description` | ✅ |
+| `properties` | ✅ |
+| `$comment` | ❌ |
+| `$ref` | ✅ | Self, local, remote, and url references are accepted. However, for remote references, the generation needs to be given the top local input directory during configuration.
+| `$dynamicRef` | ❌ |
+| `$defs` | ✅ | The `definitions` keyword is also accepted.
+| `format` | ✅ | Teh closest existing class is decided as the type of object when the format is given. For example, for a `""type": "string", "format": "date""` schema, a `LocalDate` object is created in Java. Supported format keywords are: `date`, `date-time`, `time`, `duration`, `ipv4`, `ipv6`, `uuid`, `uri`, `iri`, and `json-pointer`.
+| `const` | ✅ |
+| `enum` | ✅ |
+| `items` | ✅ |
+| `oneOf` | ✅ | Only a top level `oneOf` relation is processed as an inheritance relation. In case there are primitive types included, they are discarded. A `oneOf` keyword given inside properties or definitions are discarded. The type of any discarded relation will be `java.lang.Object` or an equivalent in the language of choice.
+| `allOf` | ✅ |
+| `anyOf` | ✅ | The strategy to choose from an anyOf keyword: if empty, return null; if single schema, return that schema; if there are two schema but one has type "NULL", return the non-null schema; if all schemas has the same type, merge all schemas and return; else return empty Object schema.
+| `discriminator`, `propertyName`, `mapping` | ✅ | These keywords are not actually part of JSON schema, but is commonly used (with `oneOf`). It is defined as part of a similar https://swagger.io/docs/specification/v3_0/data-models/inheritance-and-polymorphism/#discriminator[specification].
+| `additionalProperties` | ✅ |
+| `patternProperties` | ❌ |
+| `unevaluatedProperties` | ❌ |
+| `defaultValue` | ❌ |
+| `deprecated` | ❌ |
+| `readOnly` | ❌ |
+| `writeOnly` | ❌ |
+| `examples` | ❌ |
+| `not` | ❌ |
+| `if-then-else` | ❌ |
+|===
+
+NOTE: The source code generation decides which object type to use for representing the schema depending on the schema's values. An interface is created to represent a `oneOf` relation. An enum class is created when the `enum` keyword is used. A class object is created when it belongs to an inheritance, has too many properties for a record (255+), has `const` properties, or has additional properties. In the remaining cases of an object with properties, a record is created.
+
+The validation conditions are kept on the generated beans through `jakarta.validation.constraints` annotations. Below is a list of JSON schema validation keywords that are supported and their corresponding annotations:
+[cols="2,1,2, 2", options="header"]
+|===
+| Validation keywords | Supported | Annotation equivalent | Notes
+| `required` | ✅ | `NotNull` |
+| `dependentRequired` | ❌ | |
+| `nullable` | ✅ | `jakarta.annotation.Nullable` |
+| `multipleOf` | ❌ | |
+| `minimum` | ✅ | `Min` or `DecimalMin` | Depends on whether the type is an integer or a floating point number.
+| `maximum` | ✅ | `Max` or `DecimalMax` | Depends on whether the type is an integer or a floating point number.
+| `exclusiveMinimum` | ✅ | `Min` or `DecimalMin` | Depends on whether the type is an integer or a floating point number.
+| `exclusiveMaximum` | ✅ | `Max` or `DecimalMax` | Depends on whether the type is an integer or a floating point number.
+| `maxLength` | ✅ | `Size` |
+| `minLength` | ✅ | `Size` |
+| `maxItems` | ✅ | `Size` |
+| `minItems` | ✅ | `Size` |
+| `uniqueItems` | ✅ | | When true, generates a Set object instead of the default List object.
+| `maxContains` | ✅ | `Size` |
+| `minContains` | ✅ | `Size` |
+| `contains` | ✅ | | This keyword is processed only when the `items` keyword for an `array` is not found. Unlike the JSON schema description, the `contains` keyword will be validated against all items in the array.
+| `pattern` | ✅ | `Pattern` | Supported fully with strings and has limited support with numerical types. Pattern information on numerical types can help decide on whether the value is positive, zero, and/or negative.
+| `email` | ✅ | `Email` | `format`'s `email` keyword.
+| `prefixItems` | ❌ | |
+| `propertyNames` | ❌ | |
+| `minProperties` | ❌ | |
+| `maxProperties` | ❌ | |
+|===

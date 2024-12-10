@@ -11,5 +11,5 @@ For the previous class, the following file will be created on the classpath: `ME
 
 [source,json]
 ----
-include::../../../../json-schema-validation/src/test/resources/expected-rwblackbird.json[]
+include::json-schema-validation/src/test/resources/expected-rwblackbird.json[]
 ----

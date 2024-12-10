@@ -1,0 +1,50 @@
+The source generation from JSON schema can also be used during run-time with the `io.micronaut.jsonschema.generator` package. The following code snippet shows how `SourceGenerator` object can be used to generate beans of your desired language from JSON schema.
+
+[source,java]
+----
+// create a generator with your chosen language
+var javaGenerator = new SourceGenerator(VisitorContext.Language.JAVA);
+
+// Optional: can configure accepted URL references
+UrlLoader.setAllowedUrlPatterns(List.of("^https://.*/.*.schema.json$"));
+
+// Optional: set up input file name
+String schemaFileName = "example.schema.json";
+SourceGenerator.setInputFileName(schemaFileName);
+
+Path outputPath = Paths.get("output"); // Define the base output path
+String packageName = "com.example.temp"; // Example package name
+var config = new SourceGeneratorConfig(
+    null, "https://www.jsonschemastore.org/example/temp.schema.json",
+    null, null,
+    outputPath, packageName, null);
+
+javaGenerator.generate(config);
+----
+
+<1> Setting up `allowedUrlPatterns` would provide a check for all URL references inside the schema.
+<2> The input file name does not need to be specified. It is usually extracted from the given URL, file, or folder. This name might be used while deciding on the same of the top level schema if there is no `title` available in the schema.
+<3> Calling the ``SoruceGenerator``'s `generate(SourceGeneratorConfig config)` function will generate beans inside the given config's output location. The function will return the generated File object of the top level schema when there is a single input schema. Otherwise (a folder of schemas), the function would return null regardless of generation completion status.
+
+The `SourceGeneratorConfig` values are similar to that of `BeanGeneratorTask`'s configuration explained in the previous section. There are explained below in order:
+
+[cols="2", options="header"]
+|===
+| Option | Description
+| `inputStream`
+| Loads a valid JSON schema from given InputStream.
+| `jsonURL`
+| Loads a valid JSON schema from the given input URL.
+| `jsonFile`
+| Loads a valid JSON schema from the given input File.
+| `inputFolder`
+| Loads all valid JSON schemas from the given input folder.
+| `outputPath`
+| The path where source files are generated.
+| `outputPackageName`
+| The package name of the generated source files.
+| `outputFileName`
+| The file name of the generated source file. This field is taken into account when there is only one bean generated. If not specified, schema's title or schema file's name is considered for the generated file.
+|===
+
+<1> It is important to note that one of input options (`inputStream`, `jsonURL`, `jsonFile`, and `inputFile`) must be stated. In case multiple inputs are given, only one will be accepted following the order: `inputFolder`, `inputStream`, `jsonURL`, and `jsonFile`.

@@ -1,0 +1,1 @@
+This section explains the processes involved for generating source code of beans from JSON schema.

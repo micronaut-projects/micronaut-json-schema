@@ -20,6 +20,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
@@ -39,6 +40,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The task for code generation from json schema plugin.
@@ -72,11 +74,17 @@ public abstract class BeanGeneratorTask extends DefaultTask {
     public abstract DirectoryProperty getOutputDirectory();
 
     @Input
+    @Optional
     public abstract Property<String> getPackageName();
 
     @Input
     @Optional
-    public abstract Property<String> getFileName();
+    public abstract Property<String> getOutputFileName();
+
+    @Input
+    @Optional
+    public abstract ListProperty<String> getAcceptedUrlPatterns();
+
 
     @Internal
     public Provider<Directory> getGeneratedSourcesDirectory() {
@@ -108,8 +116,9 @@ public abstract class BeanGeneratorTask extends DefaultTask {
             args.add(inputPath);
             args.add(lang.toUpperCase());
             args.add(getGeneratedSourcesDirectory().get().getAsFile().getAbsolutePath());
-            args.add(getPackageName().get());
-            args.add(getFileName().getOrElse(""));
+            args.add(getPackageName().getOrElse(""));
+            args.add(getOutputFileName().getOrElse(""));
+            args.add(getAcceptedUrlPatterns().getOrElse(List.of("")).toString());
             javaexec.args(args);
         });
     }

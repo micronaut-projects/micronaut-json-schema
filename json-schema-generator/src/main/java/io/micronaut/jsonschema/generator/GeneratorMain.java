@@ -16,12 +16,15 @@
 package io.micronaut.jsonschema.generator;
 
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.jsonschema.generator.loaders.UrlLoader;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * An entry point to be used in tests, to simulate
@@ -36,19 +39,19 @@ public class GeneratorMain {
      * The main executable.
      *
      * @param args The argument array, consisting of:
-     *     <ol>
- *             <li>URL of input jsonfile.</li>
-     *         <li>Input jsonfile location.</li>
- *             <li>Input Path to folder of json schema.</li>
-     *         <li>The generation language.</li>
-     *         <li>The output path and package name.</li>
-     *         <li>An optional file name in case there is only one output file desired.</li>
-     *     </ol>
-     *
+     *             <ol>
+     *                 <li>URL of input jsonfile.</li>
+     *                 <li>Input jsonfile location.</li>
+     *                 <li>Input Path to folder of json schema.</li>
+     *                 <li>The generation language.</li>
+     *                 <li>The output path and package name.</li>
+     *                 <li>An optional file name in case there is only one output file desired.</li>
+     *                 <li>An optional List of String that has allowed URL patterns that are accepted for the references inside the schema</li>
+     *             </ol>
      * @throws IOException In case definition file path is incorrect.
      */
     public static void main(String[] args) throws IOException {
-        if (args.length != 7) {
+        if (args.length != 8) {
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
         String jsonURL = args[0];
@@ -68,7 +71,29 @@ public class GeneratorMain {
             jsonURL, jsonFile, inputFolder, outputPath,
             outputPackageName, outputFileName);
 
+        var allowedUrlPatterns = parseListOfAllowedUrlPatterns(args[7]);
+        if (!allowedUrlPatterns.isEmpty()) {
+            UrlLoader.setAllowedUrlPatterns(allowedUrlPatterns);
+        }
         var generator = new SourceGenerator(lang);
         generator.generate(config);
     }
+
+    private static List<String> parseListOfAllowedUrlPatterns(String input) {
+        // Remove the square brackets and extra spaces
+        input = input.trim();
+        if (input.startsWith("[") && input.endsWith("]")) {
+            input = input.substring(1, input.length() - 1).trim();
+        }
+
+        // Handle empty list (i.e., "[]")
+        if (input.isEmpty()) {
+            return List.of();
+        }
+
+        // Split the string by commas and remove extra spaces around each element
+        String[] elements = input.split("\\s*,\\s*");
+        return List.of(elements);
+    }
 }
+
