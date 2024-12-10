@@ -7,8 +7,14 @@ include::test-suite-generator/src/test/resources/animal.schema.json[]
 
 The following test example shows how the `JsonMapper` can map the JSON data to the best fitting/correct class in the inheritance relation even though only the interface is given to the function.
 
-snippet::io.micronaut.jsonschema.generator.animals.AnimalTest[tags=mapp]
+[source,java]
+----
+include::test-suite-generator/src/test/java/io/micronaut/jsonschema/generator/animals/AnimalTest.java[tags=mapp,indent=0]
+----
 
 The following test showcases that the generated beans can be re-serialized into the same JSON Schema.
 
-snippet::io.micronaut.jsonschema.generator.serialization.SerializationTest[tags=serialization]
+[source,java]
+----
+include::test-suite-generator/src/test/java/io/micronaut/jsonschema/serialization/SerializationTest.java[tags=serialization,indent=0]
+----
