@@ -41,6 +41,7 @@ public class AnimalTest {
         assertEquals("Micronaut", animal.getName());
     }
 
+    // tag::mapp[]
     @Test
     public void mapCat() throws JsonProcessingException {
         var animal = jsonMapper.readValue("""
@@ -61,6 +62,7 @@ public class AnimalTest {
         assertEquals(true, cat.getHasMate());
         assertEquals("Cat", cat.resourceType);
     }
+    // end::mapp[]
 
     @Test
     public void mapDog() throws JsonProcessingException {

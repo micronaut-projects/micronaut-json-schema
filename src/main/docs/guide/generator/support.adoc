@@ -56,7 +56,7 @@ The validation conditions are kept on the generated beans through `jakarta.valid
 | `minContains` | ✅ | `Size` |
 | `contains` | ✅ | | This keyword is processed only when the `items` keyword for an `array` is not found. Unlike the JSON schema description, the `contains` keyword will be validated against all items in the array.
 | `pattern` | ✅ | `Pattern` | Supported fully with strings and has limited support with numerical types. Pattern information on numerical types can help decide on whether the value is positive, zero, and/or negative.
-| `email` | ✅ | `Email` | `format`'s `email` keyword.
+| `email` | ✅ | `Email` | `format\'s email` keyword.
 | `prefixItems` | ❌ | |
 | `propertyNames` | ❌ | |
 | `minProperties` | ❌ | |

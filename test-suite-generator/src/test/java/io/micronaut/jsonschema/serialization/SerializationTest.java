@@ -15,6 +15,7 @@ import static org.junit.Assert.assertEquals;
 
 @MicronautTest
 public class SerializationTest {
+
     JsonMapper jsonMapper = new JsonMapper();
 
     @Test
@@ -53,6 +54,7 @@ public class SerializationTest {
         assertEquals(inputData, result);
     }
 
+    // tag::serialization[]
     @Test
     void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws IOException {
         String inputData = """
@@ -85,4 +87,5 @@ public class SerializationTest {
         String result = objectMapper.writeValueAsString(dog);
         assertEquals(inputData, result);
     }
+    // end::serialization[]
 }
