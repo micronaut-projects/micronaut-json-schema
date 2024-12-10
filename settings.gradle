@@ -27,7 +27,7 @@ include 'json-schema-common'
 include 'json-schema-processor'
 include 'json-schema-generator'
 include 'test-suite'
-include 'test-suite-generator'
+include 'test-suite-generator-java'
 include 'test-suite-groovy'
 include 'test-suite-kotlin'
 

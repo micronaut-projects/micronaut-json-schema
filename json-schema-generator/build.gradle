@@ -13,7 +13,6 @@ dependencies {
 
     api(projects.micronautJsonSchemaAnnotations)
     api(projects.micronautJsonSchemaCommon)
-    api(mn.jackson.databind)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testImplementation(mn.micronaut.inject)

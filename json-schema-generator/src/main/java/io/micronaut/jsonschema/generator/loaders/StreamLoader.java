@@ -41,9 +41,10 @@ public class StreamLoader implements SchemaLoader {
     public Schema load() {
         try {
             String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            inputStream.close();
             return JSON_MAPPER.readValue(jsonString, Schema.class);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to load schema from input stream ", e);
         }
     }
 }

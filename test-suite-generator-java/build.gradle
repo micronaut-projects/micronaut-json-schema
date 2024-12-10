@@ -2,7 +2,7 @@ import io.micronaut.build.internal.generator.BeanGeneratorTask
 
 plugins {
     id("io.micronaut.build.internal.json-schema-module")
-    id("io.micronaut.build.internal.test-suite-generator")
+    id("io.micronaut.build.internal.test-suite-generator-java")
 }
 
 dependencies {

@@ -300,18 +300,12 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
           /**
            * The age
            */
-          @NotNull
-          @Min(0)
-          private int age;
+          private @NotNull @Min(0) int age;
 
           /**
            * The name
            */
-          @NotNull
-          @Size(
-              min = 1
-          )
-          private String name;
+          private @NotNull @Size(min = 1) String name;
 
           /**
            * Happy hours
@@ -320,19 +314,19 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
           HashMap<String, String> unknownFields;
 
-          int getAge() {
+          @NotNull @Min(0) int getAge() {
             return this.age;
           }
 
-          void setAge(int age) {
+          void setAge(@NotNull @Min(0) int age) {
             this.age = age;
           }
 
-          String getName() {
+          @NotNull @Size(min = 1) String getName() {
             return this.name;
           }
 
-          void setName(String name) {
+          void setName(@NotNull @Size(min = 1) String name) {
             this.name = name;
           }
 
@@ -356,8 +350,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             }
             this.unknownFields.put(name, value);
           }
-        }
-        """.stripIndent().trim()
+        }""".stripIndent().trim()
     }
 
     void testAllOf() {

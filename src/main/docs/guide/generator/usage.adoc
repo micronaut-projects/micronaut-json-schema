@@ -1,4 +1,4 @@
-The source generation from JSON schema can also be used during run-time with the `io.micronaut.jsonschema.generator` package. The following code snippet shows how `SourceGenerator` object can be used to generate beans of your desired language from JSON schema.
+The source generation from JSON schema can also be used during run-time with the api:jsonschema.generator[] package. The following code snippet shows how `SourceGenerator` object can be used to generate beans of your desired language from JSON schema.
 
 [source,java]
 ----
@@ -24,7 +24,7 @@ javaGenerator.generate(config);
 
 <1> Setting up `allowedUrlPatterns` would provide a check for all URL references inside the schema.
 <2> The input file name does not need to be specified. It is usually extracted from the given URL, file, or folder. This name might be used while deciding on the same of the top level schema if there is no `title` available in the schema.
-<3> Calling the ``SoruceGenerator``'s `generate(SourceGeneratorConfig config)` function will generate beans inside the given config's output location. The function will return the generated File object of the top level schema when there is a single input schema. Otherwise (a folder of schemas), the function would return null regardless of generation completion status.
+<3> Calling the ``SourceGenerator``'s `generate(SourceGeneratorConfig config)` function will generate beans inside the given config's output location. The function will return the generated File object of the top level schema when there is a single input schema. Otherwise (a folder of schemas), the function would return null regardless of generation completion status.
 
 The `SourceGeneratorConfig` values are similar to that of `BeanGeneratorTask`'s configuration explained in the previous section. There are explained below in order:
 

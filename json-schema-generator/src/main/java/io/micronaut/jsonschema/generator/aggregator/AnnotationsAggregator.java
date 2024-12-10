@@ -19,7 +19,6 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.AnnotationDef;
 import io.micronaut.sourcegen.model.ClassTypeDef;
-import io.micronaut.sourcegen.model.PropertyDef;
 import io.micronaut.sourcegen.model.TypeDef;
 
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ public class AnnotationsAggregator {
 
     private static final String NULLABLE_ANN = "jakarta.annotation.Nullable";
     private static final String JAKARTA_VALIDATION_PREFIX = "jakarta.validation.constraints.";
-    private static final String NOT_NULL_ANN = JAKARTA_VALIDATION_PREFIX + "NotNull";
+    public static final String NOT_NULL_ANN = JAKARTA_VALIDATION_PREFIX + "NotNull";
     private static final String ASSERT_FALSE_ANN = JAKARTA_VALIDATION_PREFIX + "AssertFalse";
     private static final String ASSERT_TRUE_ANN = JAKARTA_VALIDATION_PREFIX + "AssertTrue";
     private static final String SIZE_ANN = JAKARTA_VALIDATION_PREFIX + "Size";
@@ -49,19 +48,15 @@ public class AnnotationsAggregator {
     private static final int EXCLUSIVE_DELTA_INT = 1;
     private static final double EXCLUSIVE_DELTA_DOUBLE = 0.001;
 
-    public static void addAnnotations(PropertyDef.PropertyDefBuilder propertyDef, Schema schema, TypeDef propertyType, boolean isRequired) {
-        if (isRequired) {
-            propertyDef.addAnnotation(NOT_NULL_ANN);
-        }
-        getAnnotations(schema, propertyType).forEach(propertyDef::addAnnotation);
-    }
-
-    public static List<AnnotationDef> getAnnotations(Schema schema, TypeDef propertyType) {
+    public static List<AnnotationDef> getAnnotations(Schema schema, TypeDef propertyType, boolean required) {
         List<AnnotationDef> annotations = new ArrayList<>();
         boolean isFloat = propertyType.equals(TypeDef.Primitive.FLOAT) || propertyType.equals(ClassTypeDef.of(Float.class));
         var minAnn = isFloat ? DECIMAL_MIN_ANN : MIN_ANN;
         var maxAnn = isFloat ? DECIMAL_MAX_ANN : MAX_ANN;
 
+        if (required) {
+            annotations.add(AnnotationDef.builder(ClassTypeDef.of(NOT_NULL_ANN)).build());
+        }
         if (schema.isNullable() != null) {
             var nullableAnn = schema.isNullable() ? NULLABLE_ANN : NOT_NULL_ANN;
             annotations.add(AnnotationDef.builder(ClassTypeDef.of(nullableAnn)).build());

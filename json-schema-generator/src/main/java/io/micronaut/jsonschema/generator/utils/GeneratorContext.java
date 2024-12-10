@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.generator.utils;
 
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
@@ -92,6 +91,7 @@ public final class GeneratorContext {
                 addDefinition(unifiedKey, entry.getKey(), entry.getValue());
             }
         } else {
+            // TODO: call getPropertyType, github ex: PermissionEvent enum written as string
             var typeDef = getTypeDefFromJson(definition, this);
             assert typeDef != null;
             boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING)
@@ -101,11 +101,11 @@ public final class GeneratorContext {
             if (isClass) {
                 typeDef = ClassTypeDef.of(getClassName(unifiedKey.substring(unifiedKey.lastIndexOf('/') + 1)));
             }
-            // add annotations to type
-            var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef);
-            if (!annotations.isEmpty()) {
-                typeDef = typeDef.annotated(annotations);
-            }
+            // TODO: why? add annotations to type
+//            var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef, false);
+//            if (!annotations.isEmpty()) {
+//                typeDef = typeDef.annotated(annotations);
+//            }
             addDefinition(unifiedKey, typeDef, isClass);
         }
     }
