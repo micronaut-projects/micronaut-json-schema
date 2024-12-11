@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.utils;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getClassName;
@@ -91,7 +93,6 @@ public final class GeneratorContext {
                 addDefinition(unifiedKey, entry.getKey(), entry.getValue());
             }
         } else {
-            // TODO: call getPropertyType, github ex: PermissionEvent enum written as string
             var typeDef = getTypeDefFromJson(definition, this);
             assert typeDef != null;
             boolean isClass = !typeDef.isPrimitive() && !typeDef.equals(TypeDef.STRING)
@@ -99,15 +100,40 @@ public final class GeneratorContext {
                 && !typeDef.equals(ClassTypeDef.of(Integer.class))
                 && !typeDef.equals(TypeDef.of(List.class));
             if (isClass) {
+                // classes get generated later
                 typeDef = ClassTypeDef.of(getClassName(unifiedKey.substring(unifiedKey.lastIndexOf('/') + 1)));
+            } else if (typeDef.equals(TypeDef.of(List.class))) {
+                typeDef = getListTypeDef(definition, typeDef);
             }
-            // TODO: why? add annotations to type
-//            var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef, false);
-//            if (!annotations.isEmpty()) {
-//                typeDef = typeDef.annotated(annotations);
-//            }
+            var annotations = AnnotationsAggregator.getAnnotations(definition, typeDef, false);
+            if (!annotations.isEmpty()) {
+                typeDef = typeDef.annotated(annotations);
+            }
             addDefinition(unifiedKey, typeDef, isClass);
         }
+    }
+
+    private TypeDef getListTypeDef(Schema definition, TypeDef typeDef) {
+        Schema items = definition.getItems() != null ? definition.getItems() : definition.getContains();
+        TypeDef innerType;
+        if (items == null) {
+            return TypeDef.OBJECT;
+        } else {
+            innerType = getTypeDefFromJson(items, this);
+            if (innerType instanceof TypeDef.Primitive primitive) {
+                innerType = primitive.wrapperType();
+            } else if (innerType.equals(TypeDef.of(List.class))) {
+                innerType = getListTypeDef(items, innerType);
+            }
+        }
+        var annotations = AnnotationsAggregator.getAnnotations(items, innerType, false);
+        if (!annotations.isEmpty()) {
+            innerType = innerType.annotated(annotations);
+        }
+        typeDef = TypeDef.parameterized(
+            (definition.isUniqueItems() != null && definition.isUniqueItems()) ? Set.class : List.class,
+            innerType);
+        return typeDef;
     }
 
     public void addDefinition(String key, TypeDef classDef, boolean isClass) {

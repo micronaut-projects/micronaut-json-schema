@@ -33,7 +33,7 @@ public class GenerationTest {
         } catch (IOException e) {
             Assertions.fail("Failed to list files in the folder: " + e.getMessage());
         }
-        Assertions.assertEquals(10, generatedFiles);
+        Assertions.assertEquals(14, generatedFiles);
     }
 
     @Test
@@ -97,7 +97,7 @@ public class GenerationTest {
         } catch (IOException e) {
             Assertions.fail("Failed to list files in the folder: " + e.getMessage());
         }
-        Assertions.assertEquals(30, generatedFiles);
+        Assertions.assertEquals(32, generatedFiles);
 
         // Assert that the expected files exist
         String[] expectedFileNames = {

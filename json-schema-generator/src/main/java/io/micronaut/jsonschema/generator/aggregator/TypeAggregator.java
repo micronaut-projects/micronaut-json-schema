@@ -79,6 +79,17 @@ public final class TypeAggregator {
      * @throws IllegalArgumentException if the schema's type is unsupported or invalid
      */
     public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
+        // check oneOf, anyOf (allOf is already merged into during mapping)
+        if (schema.hasOneOf()) {
+            // inner oneOf's are treated as objects
+            return TypeDef.OBJECT;
+        } else if (schema.hasAnyOf()) {
+            return chooseFromAnyOf(schema.getAnyOf(), context);
+        } else if (schema.isEnum()) {
+            return TypeDef.OBJECT;
+        }
+
+        // check for "type"
         if (schema.hasType() && schema.getType().size() > 1) {
             if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
                 var typeList = schema.getType();
@@ -92,16 +103,6 @@ public final class TypeAggregator {
         }
         var type = schema.hasType() ? schema.getType().get(0) : Schema.Type.OBJECT;
         TypeDef typeDef;
-        if (schema.hasOneOf()) {
-            // inner oneOf's are treated as objects
-            return TypeDef.OBJECT;
-        } else if (schema.hasAnyOf()) {
-            Schema chosenFromAnyOf = chooseFromAnyOf(schema.getAnyOf());
-            if (chosenFromAnyOf == null) {
-                return TypeDef.OBJECT;
-            }
-            return getTypeDefFromJson(chosenFromAnyOf, context);
-        }
         if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
             var format = schema.getFormat();
             typeDef = switch (format) {
@@ -147,6 +148,7 @@ public final class TypeAggregator {
         } else {
             typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
         }
+        // throw an error in case there is an unknown type
         if (typeDef == null) {
             throw new IllegalArgumentException("Unsupported type: " + type);
         }
@@ -166,17 +168,17 @@ public final class TypeAggregator {
      * @param schemas List of Schemas in the anyOf keyword
      * @return chosen Schema
      */
-    private static Schema chooseFromAnyOf(List<Schema> schemas) {
+    private static TypeDef chooseFromAnyOf(List<Schema> schemas, GeneratorContext context) {
         if (schemas.isEmpty()) {
             return null;
         } else if (schemas.size() == 1) {
-            return schemas.get(0);
+            return getTypeDefFromJson(schemas.get(0), context);
         } else if (schemas.size() == 2) {
             var nullSchema = new Schema();
             nullSchema.setType(List.of(Schema.Type.NULL));
             if (schemas.contains(nullSchema)) {
                 schemas.remove(nullSchema);
-                return schemas.get(0);
+                return getTypeDefFromJson(schemas.get(0), context);
             }
         }
         boolean sameType = true;
@@ -186,14 +188,12 @@ public final class TypeAggregator {
             } else if (!schemas.get(i).hasType() || !schemas.get(i + 1).hasType()) {
                 sameType = false;
             }
-            schemas.get(i + 1).merge(schemas.get(i));
         }
         if (sameType) {
-            return schemas.get(schemas.size() - 1);
+            var type = schemas.get(0).getType().get(0);
+            return TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
         }
-        var objectSchema = new Schema();
-        objectSchema.setType(List.of(Schema.Type.OBJECT));
-        return objectSchema;
+        return TypeDef.OBJECT;
     }
 
     public static String getConstantName(String input) {

@@ -507,7 +507,9 @@ public final class SourceGenerator {
         TypeDef propertyType = getPropertyType(objectBuilder, schema, name);
         // add annotations
         var annotations = AnnotationsAggregator.getAnnotations(schema, propertyType, isRequired);
-        propertyType = propertyType.annotated(annotations);
+        if (!annotations.isEmpty()) {
+            propertyType = propertyType.annotated(annotations);
+        }
         propertyDef.ofType(propertyType);
 
         // add javadoc
@@ -539,16 +541,11 @@ public final class SourceGenerator {
         TypeDef propertyType = getTypeDefFromJson(schema, context);
         if (schema.isEnum()) {
             propertyType = getEnumType(objectBuilder, name, schema);
-        }
-
-        if  (propertyType.equals(TypeDef.of(List.class))) {
+        } else if  (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, name, schema);
-        }
-
-        if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
+        } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
         }
-
         return propertyType;
     }
 
