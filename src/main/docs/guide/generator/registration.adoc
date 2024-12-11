@@ -1,12 +1,4 @@
-The build time generation is configured with the `BeanGeneratorTask`. The following code snippet shows an example configuration for generating schemas inside an input folder called `ref`:
-
-++++
-include::src/main/docs/guide/generator/BeanTaskRegistration.html[]
-++++
-
-<1> The source directory needs to be added to where the generated files are desired to be referenced.
-
-With the previous configuration, all existing JSON Schema files inside the given `input directory` will be generated inside the specified `output directory` under the `package name`.
+The Gradle and Maven build configurations will be added here shortly.
 
 All the supported configuration options are:
 
