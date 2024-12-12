@@ -32,20 +32,20 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
           IN_PROGRESS("in progress"),
           DELETED("deleted");
 
-          public String name;
+          public String value;
 
-          private Status(String name) {
-            this.name = name;
+          private Status(String value) {
+            this.value = value;
           }
 
           @JsonValue
-          public String getName() {
-            return this.name;
+          public String getValue() {
+            return this.value;
           }
 
           @JsonCreator
-          public static Status statusOf(String name) {
-            return switch (name) {
+          public static Status statusOf(String value) {
+            return switch (value) {
                   case "active" -> ACTIVE;
                   case "in progress" -> IN_PROGRESS;
                   case "deleted" -> DELETED;
@@ -229,20 +229,20 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
                 CMD("cmd"),
                 POWERSHELL("powershell");
 
-                public String name;
+                public String value;
 
-                private Shell(String name) {
-                  this.name = name;
+                private Shell(String value) {
+                  this.value = value;
                 }
 
                 @JsonValue
-                public String getName() {
-                  return this.name;
+                public String getValue() {
+                  return this.value;
                 }
 
                 @JsonCreator
-                public static Run.Shell statusOf(String name) {
-                  return switch (name) {
+                public static Run.Shell statusOf(String value) {
+                  return switch (value) {
                         case "bash" -> BASH;
                         case "pwsh" -> PWSH;
                         case "python" -> PYTHON;
@@ -255,8 +255,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
               }
             }
           }
-        }
-        """.stripIndent().trim()
+        }""".stripIndent().trim()
     }
 
     void testAdditionalProperties() {

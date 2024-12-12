@@ -114,4 +114,24 @@ public class GenerationTest {
         var cheatpath = new Cheatsheet.Cheatpaths("name", "path", Set.of("tag"), true);
         assertNotNull(cheatpath);
     }
+
+    @Test
+    void wordPressGenerator() {
+        Path outputPath = Paths.get("build/generated/jsonSchema/java/main");
+        String packageName = "io.micronaut.jsonschema.generator.wordpress".replace('.', File.separatorChar);
+        Path expectedFolderPath = outputPath.resolve(packageName);
+
+        Assertions.assertTrue(Files.exists(outputPath), "Output folder path does not exist.");
+        Assertions.assertTrue(Files.exists(expectedFolderPath), "Expected folder path does not exist.");
+        long generatedFiles = 0;
+        try {
+            // Count the number of files (not directories) in the folder
+            generatedFiles = Files.list(expectedFolderPath)
+                .filter(Files::isRegularFile)
+                .count();
+        } catch (IOException e) {
+            Assertions.fail("Failed to list files in the folder: " + e.getMessage());
+        }
+        Assertions.assertEquals(1, generatedFiles);
+    }
 }

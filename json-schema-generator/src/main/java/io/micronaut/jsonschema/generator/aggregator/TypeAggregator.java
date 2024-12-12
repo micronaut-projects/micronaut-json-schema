@@ -52,7 +52,7 @@ import static java.lang.String.join;
 @Internal
 public final class TypeAggregator {
 
-    private static final Map<String, TypeDef> TYPE_MAP = CollectionUtils.mapOf(new Object[]{
+    public static final Map<String, TypeDef> TYPE_MAP = CollectionUtils.mapOf(new Object[]{
         "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN, "array", TypeDef.of(List.class),
         "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
         "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});

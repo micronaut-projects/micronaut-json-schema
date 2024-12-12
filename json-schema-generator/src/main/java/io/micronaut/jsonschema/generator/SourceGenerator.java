@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -314,7 +315,8 @@ public final class SourceGenerator {
             .addAnnotation(Serdeable.class);
         boolean isComplexEnum = false;
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
-        LinkedHashMap<String, String> enumValues = new LinkedHashMap<>();
+        LinkedHashMap<String, Object> enumValues = new LinkedHashMap<>();
+        int counter = 0; // for naming same const's
         for (Object anEnum : jsonSchema.getEnumValues()) {
             String enumConst = anEnum.toString();
             String constName;
@@ -323,8 +325,13 @@ public final class SourceGenerator {
             } else {
                 constName = unicodeToString(enumConst);
             }
-            enumValues.put(constName, enumConst);
-            if (!constName.equals(enumConst)) {
+            // an all number constants can have the same unicode name
+            if (enumValues.containsKey(constName)) {
+                ++counter;
+                constName += "_" + counter;
+            }
+            enumValues.put(constName, anEnum);
+            if (!constName.equals(anEnum)) {
                 isComplexEnum = true;
             }
         }
@@ -339,25 +346,38 @@ public final class SourceGenerator {
         });
 
         if (isComplexEnum) {
-            // cases.put(ExpressionDef.nullValue(), ExpressionDef.nullValue());
-            enumBuilder.addField(FieldDef.builder("name")
-                    .ofType(TypeDef.STRING)
+            // check for default value
+            ExpressionDef defaultValue;
+            if (jsonSchema.hasDefaultValue() && enumValues.containsValue(jsonSchema.getDefaultValue())) {
+                defaultValue = cases.get(ExpressionDef.constant(jsonSchema.getDefaultValue()));
+            } else {
+                defaultValue = ExpressionDef.nullValue();
+            }
+            // get enum value TypeDef
+            Schema.Type valueType = jsonSchema.hasType() ? jsonSchema.getType().get(0) : Schema.Type.STRING;
+            if (valueType.equals(Schema.Type.NULL)) {
+                valueType = Schema.Type.STRING;
+            }
+            TypeDef valueTypeDef = TYPE_MAP.get(valueType.toString().toLowerCase(Locale.ENGLISH));
+            // add constructor field and methods
+            enumBuilder.addField(FieldDef.builder("value")
+                    .ofType(valueTypeDef)
                     .addModifiers(Modifier.PUBLIC)
                     .build())
                 .addAllFieldsConstructor(Modifier.PRIVATE)
-                .addMethod(MethodDef.builder("getName")
+                .addMethod(MethodDef.builder("getValue")
                     .addModifiers(Modifier.PUBLIC)
                     .addAnnotation(JsonValue.class)
-                    .returns(TypeDef.STRING)
+                    .returns(valueTypeDef)
                     .build((aThis, parameters) ->
-                        aThis.field("name", TypeDef.STRING).returning()))
+                        aThis.field("value", valueTypeDef).returning()))
                 .addMethod(MethodDef.builder("statusOf")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .addAnnotation(JsonCreator.class)
                     .returns(TypeDef.THIS)
-                    .addParameter("name", TypeDef.STRING)
+                    .addParameter("value", valueTypeDef)
                     .build((aThis, parameters) ->
-                        parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases, ExpressionDef.nullValue()).returning()
+                        parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases, defaultValue).returning()
                     ));
         }
         addFields(jsonSchema, enumBuilder);

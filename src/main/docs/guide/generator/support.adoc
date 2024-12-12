@@ -24,7 +24,7 @@ The following JSON schema keywords are processed by the generation:
 | `additionalProperties` | ✅ |
 | `patternProperties` | ❌ |
 | `unevaluatedProperties` | ❌ |
-| `defaultValue` | ❌ |
+| `defaultValue`, `default` | ❌ | Even though default values are generally discarded, they are supported in `enum` types.
 | `deprecated` | ❌ |
 | `readOnly` | ❌ |
 | `writeOnly` | ❌ |

@@ -64,7 +64,7 @@ public class FoodTest {
         assertEquals(3, food.fruits().fruits().size());
         assertEquals(1, food.vegetables().size());
 
-        assertEquals("sweet", food.favouriteFruit().fruitTaste().getName());
+        assertEquals("sweet", food.favouriteFruit().fruitTaste().getValue());
         assertEquals(Fruit.FruitTaste.statusOf("sour"), Fruit.FruitTaste.SOUR);
         assertNull(Fruit.FruitTaste.statusOf("umami"));
     }

@@ -75,6 +75,8 @@ public final class Schema {
     private Schema items;
     private Map<String, Schema> properties;
 
+    @JsonProperty("defaultValue")
+    @JsonAlias("default")
     private Object defaultValue;
     private Boolean nullable;
     private Boolean deprecated;
@@ -236,6 +238,10 @@ public final class Schema {
     public Schema setDefaultValue(Object defaultValue) {
         this.defaultValue = defaultValue;
         return this;
+    }
+
+    public boolean hasDefaultValue() {
+        return defaultValue != null;
     }
 
     public Boolean isNullable() {
