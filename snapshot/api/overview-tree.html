@@ -51,6 +51,10 @@ loadScripts(document, 'script');</script>
 <span class="package-hierarchy-label">Package Hierarchies:</span>
 <ul class="horizontal">
 <li><a href="io/micronaut/jsonschema/package-tree.html">io.micronaut.jsonschema</a>, </li>
+<li><a href="io/micronaut/jsonschema/generator/package-tree.html">io.micronaut.jsonschema.generator</a>, </li>
+<li><a href="io/micronaut/jsonschema/generator/aggregator/package-tree.html">io.micronaut.jsonschema.generator.aggregator</a>, </li>
+<li><a href="io/micronaut/jsonschema/generator/loaders/package-tree.html">io.micronaut.jsonschema.generator.loaders</a>, </li>
+<li><a href="io/micronaut/jsonschema/generator/utils/package-tree.html">io.micronaut.jsonschema.generator.utils</a>, </li>
 <li><a href="io/micronaut/jsonschema/model/package-tree.html">io.micronaut.jsonschema.model</a>, </li>
 <li><a href="io/micronaut/jsonschema/serialization/package-tree.html">io.micronaut.jsonschema.serialization</a>, </li>
 <li><a href="io/micronaut/jsonschema/validation/package-tree.html">io.micronaut.jsonschema.validation</a>, </li>
@@ -64,7 +68,12 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" class="type-name-link external-link" title="class or interface in java.lang">Object</a>
 <ul>
+<li class="circle">io.micronaut.jsonschema.generator.aggregator.<a href="io/micronaut/jsonschema/generator/aggregator/AnnotationsAggregator.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.aggregator">AnnotationsAggregator</a></li>
 <li class="circle">io.micronaut.jsonschema.visitor.aggregator.<a href="io/micronaut/jsonschema/visitor/aggregator/DocumentationInfoAggregator.html" class="type-name-link" title="class in io.micronaut.jsonschema.visitor.aggregator">DocumentationInfoAggregator</a> (implements io.micronaut.jsonschema.visitor.aggregator.<a href="io/micronaut/jsonschema/visitor/aggregator/SchemaInfoAggregator.html" title="interface in io.micronaut.jsonschema.visitor.aggregator">SchemaInfoAggregator</a>)</li>
+<li class="circle">io.micronaut.jsonschema.generator.loaders.<a href="io/micronaut/jsonschema/generator/loaders/FileLoader.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.loaders">FileLoader</a> (implements io.micronaut.jsonschema.generator.loaders.<a href="io/micronaut/jsonschema/generator/loaders/SchemaLoader.html" title="interface in io.micronaut.jsonschema.generator.loaders">SchemaLoader</a>)</li>
+<li class="circle">io.micronaut.jsonschema.generator.loaders.<a href="io/micronaut/jsonschema/generator/loaders/FileProcessor.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.loaders">FileProcessor</a></li>
+<li class="circle">io.micronaut.jsonschema.generator.utils.<a href="io/micronaut/jsonschema/generator/utils/GeneratorContext.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.utils">GeneratorContext</a></li>
+<li class="circle">io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/GeneratorMain.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator">GeneratorMain</a></li>
 <li class="circle">io.micronaut.jsonschema.visitor.aggregator.<a href="io/micronaut/jsonschema/visitor/aggregator/JacksonInfoAggregator.html" class="type-name-link" title="class in io.micronaut.jsonschema.visitor.aggregator">JacksonInfoAggregator</a> (implements io.micronaut.jsonschema.visitor.aggregator.<a href="io/micronaut/jsonschema/visitor/aggregator/SchemaInfoAggregator.html" title="interface in io.micronaut.jsonschema.visitor.aggregator">SchemaInfoAggregator</a>)</li>
 <li class="circle">io.micronaut.jsonschema.serialization.<a href="io/micronaut/jsonschema/serialization/JsonSchemaMapperFactory.html" class="type-name-link" title="class in io.micronaut.jsonschema.serialization">JsonSchemaMapperFactory</a></li>
 <li class="circle">io.micronaut.jsonschema.visitor.<a href="io/micronaut/jsonschema/visitor/JsonSchemaVisitor.html" class="type-name-link" title="class in io.micronaut.jsonschema.visitor">JsonSchemaVisitor</a> (implements io.micronaut.inject.visitor.TypeElementVisitor&lt;C,<wbr>E&gt;)</li>
@@ -73,9 +82,15 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">io.micronaut.jsonschema.visitor.context.<a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.html" class="type-name-link" title="class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext</a></li>
 <li class="circle">io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html" class="type-name-link" title="class in io.micronaut.jsonschema.validation">JsonSchemaValidatorConfiguration</a></li>
+<li class="circle">io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.SchemaDiscriminator.html" class="type-name-link" title="class in io.micronaut.jsonschema.model">Schema.SchemaDiscriminator</a></li>
+<li class="circle">io.micronaut.jsonschema.generator.utils.<a href="io/micronaut/jsonschema/generator/utils/SourceGeneratorConfig.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig</a></li>
 </ul>
 </li>
 <li class="circle">io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" class="type-name-link" title="class in io.micronaut.jsonschema.model">Schema</a></li>
+<li class="circle">io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SourceGenerator.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator">SourceGenerator</a></li>
+<li class="circle">io.micronaut.jsonschema.generator.loaders.<a href="io/micronaut/jsonschema/generator/loaders/StreamLoader.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.loaders">StreamLoader</a> (implements io.micronaut.jsonschema.generator.loaders.<a href="io/micronaut/jsonschema/generator/loaders/SchemaLoader.html" title="interface in io.micronaut.jsonschema.generator.loaders">SchemaLoader</a>)</li>
+<li class="circle">io.micronaut.jsonschema.generator.aggregator.<a href="io/micronaut/jsonschema/generator/aggregator/TypeAggregator.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.aggregator">TypeAggregator</a></li>
+<li class="circle">io.micronaut.jsonschema.generator.loaders.<a href="io/micronaut/jsonschema/generator/loaders/UrlLoader.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.loaders">UrlLoader</a> (implements io.micronaut.jsonschema.generator.loaders.<a href="io/micronaut/jsonschema/generator/loaders/SchemaLoader.html" title="interface in io.micronaut.jsonschema.generator.loaders">SchemaLoader</a>)</li>
 <li class="circle">io.micronaut.jsonschema.visitor.aggregator.<a href="io/micronaut/jsonschema/visitor/aggregator/ValidationInfoAggregator.html" class="type-name-link" title="class in io.micronaut.jsonschema.visitor.aggregator">ValidationInfoAggregator</a> (implements io.micronaut.jsonschema.visitor.aggregator.<a href="io/micronaut/jsonschema/visitor/aggregator/SchemaInfoAggregator.html" title="interface in io.micronaut.jsonschema.visitor.aggregator">SchemaInfoAggregator</a>)</li>
 <li class="circle">io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" class="type-name-link" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a> (implements io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a>)</li>
 </ul>
@@ -87,6 +102,7 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/JsonSchemaValidator.html" class="type-name-link" title="interface in io.micronaut.jsonschema.validation">JsonSchemaValidator</a></li>
 <li class="circle">io.micronaut.jsonschema.visitor.aggregator.<a href="io/micronaut/jsonschema/visitor/aggregator/SchemaInfoAggregator.html" class="type-name-link" title="interface in io.micronaut.jsonschema.visitor.aggregator">SchemaInfoAggregator</a></li>
+<li class="circle">io.micronaut.jsonschema.generator.loaders.<a href="io/micronaut/jsonschema/generator/loaders/SchemaLoader.html" class="type-name-link" title="interface in io.micronaut.jsonschema.generator.loaders">SchemaLoader</a></li>
 <li class="circle">io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessage.html" class="type-name-link" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></li>
 </ul>
 </section>
