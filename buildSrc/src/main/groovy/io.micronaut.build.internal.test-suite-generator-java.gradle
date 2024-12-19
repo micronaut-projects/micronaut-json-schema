@@ -1,0 +1,18 @@
+plugins {
+    id("io.micronaut.build.internal.json-schema-base")
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    beanGenerator {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+dependencies {
+    beanGenerator(project(":micronaut-json-schema-generator"))
+}

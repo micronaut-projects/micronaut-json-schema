@@ -1,0 +1,32 @@
+<div class="listingblock multi-language-sample">
+    <div class="content">
+        <pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="gradle">
+// Configuring the Bean Generator
+configurations {
+    beanGenerator {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+// Define a BeanGeneratorTask
+def refGenerator = tasks.register("generateRef", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    inputDirectory.convention(layout.projectDirectory.dir("src/test/resources/ref"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.ref")
+}
+
+// Configure the task
+tasks.named("generateRef") {
+}
+
+// Add source directory
+sourceSets {
+    test {
+        java.srcDir(refGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+    }
+}</code></pre>
+    </div>
+</div>

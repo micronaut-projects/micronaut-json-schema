@@ -1,0 +1,119 @@
+import io.micronaut.build.internal.generator.BeanGeneratorTask
+
+plugins {
+    id("io.micronaut.build.internal.json-schema-module")
+    id("io.micronaut.build.internal.test-suite-generator-java")
+}
+
+dependencies {
+    compileOnly(mn.micronaut.core.processor)
+
+    implementation(projects.micronautJsonSchemaGenerator)
+    implementation(mnSerde.micronaut.serde.jackson)
+    implementation(mnValidation.validation)
+
+    api(projects.micronautJsonSchemaAnnotations)
+
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testAnnotationProcessor(mn.micronaut.inject.java.test)
+    testAnnotationProcessor(mnSerde.micronaut.serde.processor)
+
+    testImplementation(mn.micronaut.inject.kotlin.test)
+    testImplementation(mn.micronaut.inject.groovy.test)
+    testImplementation(mn.micronaut.inject.java.test)
+    testImplementation(mn.micronaut.inject)
+    testImplementation(mnSerde.micronaut.serde.processor)
+    testImplementation(mnValidation.micronaut.validation)
+    testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.junit.jupiter.params)
+
+    testRuntimeOnly(libs.junit.jupiter.engine)
+}
+
+def beanGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/animal.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.animals")
+}
+
+def foodGenerator = tasks.register("generateFood", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    inputDirectory.convention(layout.projectDirectory.dir("src/test/resources/food"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.food")
+}
+
+def githubGenerator = tasks.register("generateGithub", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonURL.convention("https://json.schemastore.org/github-workflow.json")
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.github")
+}
+
+def fhirGenerator = tasks.register("generateFhir", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonURL.convention("https://www.hl7.org/fhir/fhir.schema.json")
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.fhir")
+}
+
+def wordPressGenerator = tasks.register("generateWordPress", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonURL.convention("https://raw.githubusercontent.com/WordPress/gutenberg/trunk/schemas/json/block.json")
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.wordpress")
+}
+
+def refGenerator = tasks.register("generateRef", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    inputDirectory.convention(layout.projectDirectory.dir("src/test/resources/ref"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.ref")
+}
+
+
+tasks.named("generateAnimals") {
+}
+
+tasks.named("generateFood") {
+}
+
+tasks.named("generateGithub") {
+}
+
+tasks.named("generateFhir") {
+}
+
+tasks.named("generateWordPress") {
+}
+
+tasks.named("generateRef") {
+}
+
+tasks.withType(Checkstyle).configureEach {
+    enabled = false
+}
+
+sourceSets {
+    test {
+        java.srcDir('src/test/java')
+        java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(foodGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(githubGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(fhirGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(wordPressGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(refGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+    }
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+}

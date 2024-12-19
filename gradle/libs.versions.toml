@@ -21,12 +21,15 @@ micronaut-docs = "2.0.0"
 micronaut-logging = "1.5.0"
 micronaut-serde = "2.12.0"
 micronaut-test = "4.4.0"
+micronaut-sourcegen = "1.5.0"
 micronaut-validation = "4.8.0"
+micronaut-serialization = "2.12.0"
 groovy = "4.0.18"
 managed-json-schema-validator = "1.5.4"
 kotlin = "1.9.25"
 ksp = "1.9.25-1.0.20"
 spock = "2.3-groovy-4.0"
+java-parser = "3.26.2"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
@@ -34,8 +37,12 @@ micronaut-logging = { module = "io.micronaut.logging:micronaut-logging-bom", ver
 micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.ref = "micronaut-serde" }
 micronaut-test = { module = "io.micronaut.test:micronaut-test-bom", version.ref = "micronaut-test" }
 micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-bom", version.ref = "micronaut-validation" }
+micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
+micronaut-serialization = { module = "io.micronaut.serialization:micronaut-serialization-bom", version.ref = "micronaut-serialization" }
 
 managed-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "managed-json-schema-validator" }
+
+java-parser = { module = "com.github.javaparser:javaparser-core", version.ref = "java-parser" }
 
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }

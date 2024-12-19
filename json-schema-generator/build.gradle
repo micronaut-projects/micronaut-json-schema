@@ -1,0 +1,25 @@
+plugins {
+    id("io.micronaut.build.internal.json-schema-module")
+}
+
+dependencies {
+    compileOnly(mn.micronaut.core.processor)
+
+    implementation(mnSourcegen.micronaut.sourcegen.model)
+    implementation(mnSourcegen.micronaut.sourcegen.generator)
+    implementation(mnSourcegen.micronaut.sourcegen.generator.java)
+    implementation(mnSourcegen.micronaut.sourcegen.annotations)
+    implementation(mnSerde.micronaut.serde.jackson)
+
+    api(projects.micronautJsonSchemaAnnotations)
+    api(projects.micronautJsonSchemaCommon)
+
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testImplementation(mn.micronaut.inject)
+    testImplementation(libs.java.parser)
+    testImplementation(mnValidation.micronaut.validation)
+    testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.junit.jupiter.engine)
+}
+

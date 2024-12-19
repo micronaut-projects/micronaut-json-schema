@@ -1,0 +1,1 @@
+This section explains the processes involved for creating JSON schema from Beans.

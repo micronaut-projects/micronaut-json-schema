@@ -1,0 +1,28 @@
+The Gradle and Maven build configurations will be added here shortly.
+
+All the supported configuration options are:
+
+[cols="2", options="header"]
+|===
+| Option | Description
+| `language`
+| Set the language of generation for the beans. This is an optional field. Defaults to JAVA. Micronaut SourceGen module is used for generation and thus available generation languages are given https://micronaut-projects.github.io/micronaut-sourcegen/1.4.1/guide/#introduction[here].
+| `classpath`
+| Classpath is taken from the gradle configurations for the task. This is a mandatory field.
+| `jsonURL`
+| Loads a valid JSON schema from the given input URL. This is an optional field.
+| `jsonFile`
+| Loads a valid JSON schema from the given input File. This is an optional field.
+| `inputDirectory`
+| Loads all valid JSON schemas from the given input folder. This is an optional field.
+| `outputDirectory`
+| The path where source files are generated. This is a mandatory field.
+| `packageName`
+| The package name of the generated source files. This is an optional field.
+| `outputFileName`
+| The file name of the generated source file. This field is taken into account when there is only one bean generated. If not specified, schema's title or schema file's name is considered for the generated file. This is an optional field.
+| `acceptedUrlPatterns`
+| A String list that has allowed URL patterns that are accepted for the references inside the schema. This is an optional field. The default pattern is `"^https://.*/.*.json"`.
+|===
+
+<1> It is important to note that all three input options (`jsonURL`, `jsonFile`, and `inputDirectory`) are optional but at least one must be stated. In case multiple inputs are given, only one will be accepted following the order: `inputDirectory`, `jsonURL`, and `jsonFile`.

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import io.micronaut.core.annotation.Internal;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -47,10 +48,13 @@ public final class Schema {
 
     public static final String THIS_SCHEMA_REF = "#";
     public static final String DEF_SCHEMA_REF_PREFIX = "#/$defs/";
+    public static final String ONE_OF_SCHEMA_REF_PREFIX = "#/oneOf/";
 
     private String $schema;
     private String $id;
     private String $ref;
+
+    private SchemaDiscriminator discriminator;
 
     @JsonProperty("$defs")
     @JsonAlias("definitions")
@@ -71,7 +75,10 @@ public final class Schema {
     private Schema items;
     private Map<String, Schema> properties;
 
+    @JsonProperty("defaultValue")
+    @JsonAlias("default")
     private Object defaultValue;
+    private Boolean nullable;
     private Boolean deprecated;
     private Boolean readOnly;
     private Boolean writeOnly;
@@ -90,15 +97,25 @@ public final class Schema {
     private Integer maxItems;
     private Integer minItems;
     private Boolean uniqueItems;
+
+    /**
+     * The "contains" keyword ensures that at least one element in an array is valid
+     * against the specified sub-schema. If "minContains" is 0, the array is valid
+     * even if no elements match.
+     *
+     * @see <a href="https://json-schema.org/understanding-json-schema/reference/array#contains/">JSON Schema</a> for more details.
+     */
+    private Schema contains;
     private Integer maxContains;
     private Integer minContains;
-    private List<Object> contains;
 
     private List<String> required;
 
     private Schema additionalProperties;
 
     private List<Schema> oneOf;
+    private List<Schema> allOf;
+    private List<Schema> anyOf;
 
     private Schema not;
 
@@ -111,6 +128,10 @@ public final class Schema {
         return this;
     }
 
+    public boolean hasTitle() {
+        return title != null;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -118,6 +139,10 @@ public final class Schema {
     public Schema setDescription(String description) {
         this.description = description;
         return this;
+    }
+
+    public boolean hasDescription() {
+        return description != null;
     }
 
     public List<Type> getType() {
@@ -135,6 +160,10 @@ public final class Schema {
         }
         this.type.add(type);
         return this;
+    }
+
+    public boolean hasType() {
+        return type != null && !type.isEmpty();
     }
 
     public String getFormat() {
@@ -155,6 +184,10 @@ public final class Schema {
         return this;
     }
 
+    public boolean hasConstValue() {
+        return constValue != null;
+    }
+
     public List<Object> getEnumValues() {
         return enumValues;
     }
@@ -162,6 +195,10 @@ public final class Schema {
     public Schema setEnumValues(List<Object> enumValues) {
         this.enumValues = enumValues;
         return this;
+    }
+
+    public boolean isEnum() {
+        return enumValues != null;
     }
 
     public Schema getItems() {
@@ -190,12 +227,29 @@ public final class Schema {
         return this;
     }
 
+    public boolean hasProperties() {
+        return properties != null;
+    }
+
     public Object getDefaultValue() {
         return defaultValue;
     }
 
     public Schema setDefaultValue(Object defaultValue) {
         this.defaultValue = defaultValue;
+        return this;
+    }
+
+    public boolean hasDefaultValue() {
+        return defaultValue != null;
+    }
+
+    public Boolean isNullable() {
+        return nullable;
+    }
+
+    public Schema setNullable(boolean nullable) {
+        this.nullable = nullable;
         return this;
     }
 
@@ -352,11 +406,11 @@ public final class Schema {
         return this;
     }
 
-    public List<Object> getContains() {
+    public Schema getContains() {
         return contains;
     }
 
-    public Schema setContains(List<Object> contains) {
+    public Schema setContains(Schema contains) {
         this.contains = contains;
         return this;
     }
@@ -366,7 +420,11 @@ public final class Schema {
     }
 
     public Schema setRequired(List<String> required) {
-        this.required = required;
+        if (this.required != null && !this.required.isEmpty()) {
+            this.required.addAll(required);
+        } else {
+            this.required = required;
+        }
         return this;
     }
 
@@ -378,6 +436,10 @@ public final class Schema {
         return this;
     }
 
+    public boolean hasRequired() {
+        return required != null && !required.isEmpty();
+    }
+
     public Schema getAdditionalProperties() {
         return additionalProperties;
     }
@@ -385,6 +447,10 @@ public final class Schema {
     public Schema setAdditionalProperties(Schema additionalProperties) {
         this.additionalProperties = additionalProperties;
         return this;
+    }
+
+    public boolean hasAdditionalProperties() {
+        return additionalProperties != null && !additionalProperties.equals(FALSE);
     }
 
     public List<Schema> getOneOf() {
@@ -402,6 +468,58 @@ public final class Schema {
         }
         oneOf.add(one);
         return this;
+    }
+
+    public boolean hasOneOf() {
+        return oneOf != null;
+    }
+
+    public List<Schema> getAllOf() {
+        return allOf;
+    }
+
+    public Schema setAllOf(List<Schema> allOf) {
+        this.allOf = allOf;
+        mergeAllOf();
+        return this;
+    }
+
+    public Schema addAllOf(Schema one) {
+        if (allOf == null) {
+            allOf = new ArrayList<>();
+        }
+        allOf.add(one);
+        return this;
+    }
+
+    public boolean hasAllOf() {
+        return allOf != null;
+    }
+
+    public void mergeAllOf() {
+        var thisAllOff = this.allOf;
+        thisAllOff.forEach(this::merge);
+    }
+
+    public List<Schema> getAnyOf() {
+        return anyOf;
+    }
+
+    public Schema setAnyOf(List<Schema> anyOf) {
+        this.anyOf = anyOf;
+        return this;
+    }
+
+    public Schema addAnyOf(Schema one) {
+        if (anyOf == null) {
+            anyOf = new ArrayList<>();
+        }
+        anyOf.add(one);
+        return this;
+    }
+
+    public boolean hasAnyOf() {
+        return anyOf != null;
     }
 
     public String get$schema() {
@@ -431,6 +549,10 @@ public final class Schema {
         return this;
     }
 
+    public boolean has$ref() {
+        return $ref != null;
+    }
+
     public Map<String, Schema> get$defs() {
         return $defs;
     }
@@ -443,6 +565,22 @@ public final class Schema {
     public Schema put$def(String key, Schema $def) {
         $defs.put(key, $def);
         return this;
+    }
+
+    public boolean has$defs() {
+        return $defs != null;
+    }
+
+    public SchemaDiscriminator getDiscriminator() {
+        return discriminator;
+    }
+
+    public void setDiscriminator(SchemaDiscriminator discriminator) {
+        this.discriminator = discriminator;
+    }
+
+    public boolean hasDiscriminator() {
+        return discriminator != null;
     }
 
     public static Schema string() {
@@ -483,6 +621,260 @@ public final class Schema {
     }
 
     /**
+     * Merges the properties of the current schema with those of another schema.
+     * This method combines various attributes such as `$schema`, `$id`, `$ref`,
+     * discriminator, $defs, titles, types, constraints, and validation rules
+     * (e.g., `allOf`, `anyOf`, `oneOf`) from the provided schema into the current schema.
+     *
+     * If a property exists in both schemas, the value from the provided schema (`other`)
+     * is merged or replaces the existing value in the current schema based on the type
+     * of the property. In cases where collections are involved, unique values are added.
+     *
+     * The method is mainly used for merging the schemas inside an `allOf` into one.
+     *
+     * @param other the schema to merge with the current schema
+     * @return the current schema with merged properties
+     */
+    public Schema merge(Schema other) {
+        if (other == null) {
+            return this;
+        }
+
+        // Merge basic properties
+        if (other.$schema != null) {
+            this.$schema = other.$schema;
+        }
+        if (other.$id != null) {
+            this.$id = other.$id;
+        }
+        if (other.$ref != null) {
+            this.$ref = other.$ref;
+        }
+
+        // Merge discriminator
+        if (other.discriminator != null) {
+            if (this.discriminator == null) {
+                this.discriminator = other.discriminator;
+            } else {
+                this.discriminator = this.discriminator.merge(other.discriminator);
+            }
+        }
+
+        // Merge $defs
+        if (other.$defs != null) {
+            if (this.$defs == null) {
+                this.$defs = new HashMap<>();
+            }
+            this.$defs.putAll(other.$defs);
+        }
+
+        // Merge title
+        if (other.title != null) {
+            this.title = other.title;
+        }
+
+        // Merge description
+        if (other.description != null) {
+            this.description = other.description;
+        }
+
+        // Merge types
+        if (other.type != null) {
+            if (this.type == null) {
+                this.type = new ArrayList<>();
+            }
+            for (Type typeItem : other.type) {
+                if (!this.type.contains(typeItem)) {
+                    this.type.add(typeItem);
+                }
+            }
+        }
+
+        // Merge format
+        if (other.format != null) {
+            this.format = other.format;
+        }
+
+        // Merge constValue
+        if (other.constValue != null) {
+            this.constValue = other.constValue;
+        }
+
+        // Merge enumValues
+        if (other.enumValues != null) {
+            if (this.enumValues == null) {
+                this.enumValues = new ArrayList<>();
+            }
+            for (Object enumItem : other.enumValues) {
+                if (!this.enumValues.contains(enumItem)) {
+                    this.enumValues.add(enumItem);
+                }
+            }
+        }
+
+        // Merge items
+        if (other.items != null) {
+            if (this.items == null) {
+                this.items = other.items;
+            } else {
+                this.items.merge(other.items);
+            }
+        }
+
+        // Merge properties
+        if (other.properties != null) {
+            other.properties.forEach(this::putProperty);
+        }
+
+        // Merge defaultValue
+        if (other.defaultValue != null) {
+            this.defaultValue = other.defaultValue;
+        }
+
+        // Merge nullable
+        if (other.nullable != null) {
+            this.nullable = other.nullable;
+        }
+
+        // Merge deprecated
+        if (other.deprecated != null) {
+            this.deprecated = other.deprecated;
+        }
+
+        // Merge readOnly
+        if (other.readOnly != null) {
+            this.readOnly = other.readOnly;
+        }
+
+        // Merge writeOnly
+        if (other.writeOnly != null) {
+            this.writeOnly = other.writeOnly;
+        }
+
+        // Merge examples
+        if (other.examples != null) {
+            if (this.examples == null) {
+                this.examples = new ArrayList<>();
+            }
+            for (Object example : other.examples) {
+                if (!this.examples.contains(example)) {
+                    this.examples.add(example);
+                }
+            }
+        }
+
+        // Merge numerical constraints
+        if (other.multipleOf != null) {
+            this.multipleOf = other.multipleOf;
+        }
+        if (other.maximum != null) {
+            this.maximum = other.maximum;
+        }
+        if (other.minimum != null) {
+            this.minimum = other.minimum;
+        }
+        if (other.exclusiveMaximum != null) {
+            this.exclusiveMaximum = other.exclusiveMaximum;
+        }
+        if (other.exclusiveMinimum != null) {
+            this.exclusiveMinimum = other.exclusiveMinimum;
+        }
+
+        // Merge length constraints
+        if (other.maxLength != null) {
+            this.maxLength = other.maxLength;
+        }
+        if (other.minLength != null) {
+            this.minLength = other.minLength;
+        }
+        if (other.pattern != null) {
+            this.pattern = other.pattern;
+        }
+
+        // Merge item count constraints
+        if (other.maxItems != null) {
+            this.maxItems = other.maxItems;
+        }
+        if (other.minItems != null) {
+            this.minItems = other.minItems;
+        }
+        if (other.uniqueItems != null) {
+            this.uniqueItems = other.uniqueItems;
+        }
+        if (other.maxContains != null) {
+            this.maxContains = other.maxContains;
+        }
+        if (other.minContains != null) {
+            this.minContains = other.minContains;
+        }
+
+        // Merge contains
+        if (other.contains != null) {
+            if (this.contains == null) {
+                this.contains = other.contains;
+            } else {
+                this.contains.merge(other.contains);
+            }
+        }
+
+        // Merge required
+        if (other.required != null) {
+            if (this.required == null) {
+                this.required = new ArrayList<>();
+            }
+            for (String requiredItem : other.required) {
+                if (!this.required.contains(requiredItem)) {
+                    this.addRequired(requiredItem);
+                }
+            }
+        }
+
+        // Merge additionalProperties
+        if (other.additionalProperties != null) {
+            if (this.additionalProperties == null) {
+                this.additionalProperties = other.additionalProperties;
+            } else {
+                this.additionalProperties.merge(other.additionalProperties);
+            }
+        }
+
+        // Merge oneOf
+        if (other.oneOf != null) {
+            if (this.oneOf == null) {
+                this.oneOf = new ArrayList<>();
+            }
+            this.oneOf.addAll(other.oneOf);
+        }
+
+        // Merge allOf
+        if (other.allOf != null) {
+            if (this.allOf == null) {
+                this.allOf = new ArrayList<>();
+            }
+            this.allOf.addAll(other.allOf);
+        }
+
+        // Merge anyOf
+        if (other.anyOf != null) {
+            if (this.anyOf == null) {
+                this.anyOf = new ArrayList<>();
+            }
+            this.anyOf.addAll(other.anyOf);
+        }
+
+        // Merge not
+        if (other.not != null) {
+            if (this.not == null) {
+                this.not = other.not;
+            } else {
+                this.not.merge(other.not);
+            }
+        }
+        return this;
+    }
+
+
+    /**
      * The type of schema exactly matching a primitive JSON type.
      */
     public enum Type {
@@ -509,6 +901,37 @@ public final class Schema {
         @JsonCreator
         static Type fromString(String value) {
             return valueOf(value.toUpperCase(Locale.ENGLISH));
+        }
+    }
+
+    /**
+     * Discriminator defines a property that can be used to distinguish between schemas that are defined as subtypes in code. It is not a standard JSON schema annotation, but is commonly used because it is defined in OpenAPI.
+     *
+     * @see <a href="https://swagger.io/specification/#discriminator-object">OpenAPI Discriminator Object</a>
+     * @param propertyName The discriminator property name
+     * @param mapping The mapping between property value and Java schemas, where the map value is a JSON Schema reference
+     */
+    public record SchemaDiscriminator(
+        String propertyName,
+        Map<String, String> mapping
+    ) {
+        // returns a new SchemaDiscriminator by merging two.
+        public SchemaDiscriminator merge(SchemaDiscriminator other) {
+            String mergedPropertyName = propertyName;
+            // Merge propertyName
+            if (other.propertyName != null) {
+                mergedPropertyName = other.propertyName;
+            }
+
+            Map<String, String> mergedMapping = mapping;
+            // Merge mapping
+            if (other.mapping != null) {
+                if (mapping == null) {
+                    mergedMapping = new HashMap<>();
+                }
+                mergedMapping.putAll(other.mapping);
+            }
+            return new SchemaDiscriminator(mergedPropertyName, mergedMapping);
         }
     }
 

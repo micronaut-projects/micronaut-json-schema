@@ -8,6 +8,14 @@ pluginManagement {
 plugins {
     id 'io.micronaut.build.shared.settings' version '7.2.3'
 }
+
+dependencyResolutionManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 
 rootProject.name = 'json-schema-parent'
@@ -17,7 +25,9 @@ include 'json-schema-bom'
 include 'json-schema-annotations'
 include 'json-schema-common'
 include 'json-schema-processor'
+include 'json-schema-generator'
 include 'test-suite'
+include 'test-suite-generator-java'
 include 'test-suite-groovy'
 include 'test-suite-kotlin'
 
@@ -28,4 +38,5 @@ micronautBuild {
     importMicronautCatalog()
     importMicronautCatalog('micronaut-validation')
     importMicronautCatalog('micronaut-serde')
+    importMicronautCatalog('micronaut-sourcegen')
 }
