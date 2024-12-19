@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.generator.loaders;
 
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.model.Schema;
@@ -26,6 +27,7 @@ import java.util.Optional;
 
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getClassName;
 
+@Internal
 public class FileProcessor {
 
     /**

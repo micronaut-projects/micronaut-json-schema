@@ -71,7 +71,7 @@ public class UrlLoader implements SchemaLoader {
      * @throws IOException If the URL does not match any of the allowed patterns or does not end with ".json",
      *                   or if an error occurs during download.
      */
-    public static InputStream downloadAsStream(String fileUrl) throws IOException, InterruptedException {
+    private static InputStream downloadAsStream(String fileUrl) throws IOException, InterruptedException {
         // Verify that the URL matches at least one of the allowed patterns and ends with ".json"
         if (!isValidUrl(fileUrl)) {
             throw new IllegalArgumentException("URL does not match any of the allowed patterns or does not starts with https:// and end with .json.");
