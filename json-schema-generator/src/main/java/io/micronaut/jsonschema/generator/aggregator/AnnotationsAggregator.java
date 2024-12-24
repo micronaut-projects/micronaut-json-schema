@@ -15,7 +15,11 @@
  */
 package io.micronaut.jsonschema.generator.aggregator;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.jsonschema.generator.SourceGenerator;
+import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.AnnotationDef;
 import io.micronaut.sourcegen.model.ClassTypeDef;
@@ -23,15 +27,29 @@ import io.micronaut.sourcegen.model.TypeDef;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName;
 
 /**
  * An aggregator for adding annotation information from json schema.
  *
  * @author Elif Kurtay
- * @since 1.2
+ * @since 1.3
  */
 @Internal
 public class AnnotationsAggregator {
+    private static final String JACKSON_VALIDATION_PREFIX = "com.fasterxml.jackson.annotation.";
+    public static final String JSON_ANY_GETTER_ANN = JACKSON_VALIDATION_PREFIX + "JsonAnyGetter";
+    public static final String JSON_ANY_SETTER_ANN = JACKSON_VALIDATION_PREFIX + "JsonAnySetter";
+    public static final String JSON_CREATOR_ANN = JACKSON_VALIDATION_PREFIX + "JsonCreator";
+    public static final String JSON_VALUE_ANN = JACKSON_VALIDATION_PREFIX + "JsonValue";
+    private static final String JSON_PROPERTY_ANN = JACKSON_VALIDATION_PREFIX + "JsonProperty";
+    private static final String JSON_SUB_TYPES_ANN = JACKSON_VALIDATION_PREFIX + "JsonSubTypes";
+    private static final String JSON_SUB_TYPES_TYPE_ANN = JSON_SUB_TYPES_ANN + ".Type";
+    private static final String JSON_TYPE_INFO_ANN = JACKSON_VALIDATION_PREFIX + "JsonTypeInfo";
+
+    public static final String SERDEABLE_ANN = "io.micronaut.serde.annotation.Serdeable";
 
     private static final String NULLABLE_ANN = "jakarta.annotation.Nullable";
     private static final String JAKARTA_VALIDATION_PREFIX = "jakarta.validation.constraints.";
@@ -47,6 +65,33 @@ public class AnnotationsAggregator {
     private static final String EMAIL_ANN = JAKARTA_VALIDATION_PREFIX + "Email";
     private static final int EXCLUSIVE_DELTA_INT = 1;
     private static final double EXCLUSIVE_DELTA_DOUBLE = 0.001;
+
+    public static AnnotationDef getJsonTypeInfoAnn(String propertyName) {
+        return AnnotationDef.builder(ClassTypeDef.of(JSON_TYPE_INFO_ANN))
+            .addMember("use", JsonTypeInfo.Id.NAME)
+            .addMember("property", propertyName)
+            .build();
+    }
+
+    public static AnnotationDef getJsonPropertyAnn(String propertyName) {
+        return AnnotationDef.builder(ClassTypeDef.of(JSON_PROPERTY_ANN))
+            .addMember("value", propertyName)
+            .build();
+    }
+
+    public static AnnotationDef getJsonSubTypesAnn(Map<String, String> mapping, GeneratorContext context) {
+        List<AnnotationDef> subTypeList = mapping.entrySet()
+            .stream()
+            .map(entry -> AnnotationDef
+                .builder(ClassTypeDef.of(JSON_SUB_TYPES_TYPE_ANN))
+                .addMember("value", context.getDefinitionType(getInputFileName() + entry.getValue()))
+                .addMember("name", entry.getKey())
+                .build())
+            .toList();
+        return AnnotationDef.builder(ClassTypeDef.of(JSON_SUB_TYPES_ANN))
+            .addMember("value", subTypeList)
+            .build();
+    }
 
     public static List<AnnotationDef> getAnnotations(Schema schema, TypeDef propertyType, boolean required) {
         List<AnnotationDef> annotations = new ArrayList<>();
@@ -109,6 +154,9 @@ public class AnnotationsAggregator {
         }
         if (schema.getPattern() != null && propertyType.equals(TypeDef.STRING)) {
             var value = schema.getPattern();
+            if (SourceGenerator.getLanguage().equals(VisitorContext.Language.GROOVY)) {
+                value = value.replaceAll("\\$", "");
+            }
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(PATTERN_ANN))
                 .addMember("regexp", value).build());
