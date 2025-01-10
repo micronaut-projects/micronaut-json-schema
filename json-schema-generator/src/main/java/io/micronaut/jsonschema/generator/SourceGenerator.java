@@ -76,13 +76,13 @@ public final class SourceGenerator {
      * is thrown.
      * </p>
      *
-     * @param language The {@link VisitorContext.Language} representing the target programming language
+     * @param lang The String representing the target programming language
      *                 for which the source generator is to be created. This argument cannot be {@code null}.
      * @throws RuntimeException if no matching source generator is found for the provided language.
      *                          The exception message will indicate the language for which no generator was found.
      */
-    public SourceGenerator(VisitorContext.Language language) {
-        this(language, new GeneratorContext());
+    public SourceGenerator(String lang) {
+        this(VisitorContext.Language.valueOf(lang.toUpperCase()), new GeneratorContext());
     }
 
     /**

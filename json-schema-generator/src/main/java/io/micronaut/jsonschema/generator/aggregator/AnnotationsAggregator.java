@@ -39,6 +39,7 @@ import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName
  */
 @Internal
 public class AnnotationsAggregator {
+    public static final String SERDEABLE_ANN = "io.micronaut.serde.annotation.Serdeable";
     private static final String JACKSON_VALIDATION_PREFIX = "com.fasterxml.jackson.annotation.";
     public static final String JSON_ANY_GETTER_ANN = JACKSON_VALIDATION_PREFIX + "JsonAnyGetter";
     public static final String JSON_ANY_SETTER_ANN = JACKSON_VALIDATION_PREFIX + "JsonAnySetter";
@@ -48,8 +49,6 @@ public class AnnotationsAggregator {
     private static final String JSON_SUB_TYPES_ANN = JACKSON_VALIDATION_PREFIX + "JsonSubTypes";
     private static final String JSON_SUB_TYPES_TYPE_ANN = JSON_SUB_TYPES_ANN + ".Type";
     private static final String JSON_TYPE_INFO_ANN = JACKSON_VALIDATION_PREFIX + "JsonTypeInfo";
-
-    public static final String SERDEABLE_ANN = "io.micronaut.serde.annotation.Serdeable";
 
     private static final String NULLABLE_ANN = "jakarta.annotation.Nullable";
     private static final String JAKARTA_VALIDATION_PREFIX = "jakarta.validation.constraints.";
