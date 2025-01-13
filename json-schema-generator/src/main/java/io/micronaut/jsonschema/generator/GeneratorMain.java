@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.generator;
 
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.loaders.UrlLoader;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 
@@ -64,7 +63,7 @@ public class GeneratorMain {
         if (!args[2].isBlank()) {
             inputFolder = Paths.get(args[2]);
         }
-        var lang = VisitorContext.Language.valueOf(args[3].toUpperCase());
+        var lang = args[3].toUpperCase();
         Path outputPath = Paths.get(args[4]);
         String outputPackageName = args[5];
         String outputFileName = args[6];

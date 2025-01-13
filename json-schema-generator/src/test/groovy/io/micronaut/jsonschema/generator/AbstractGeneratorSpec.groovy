@@ -15,7 +15,7 @@ import java.nio.file.Path
 class AbstractGeneratorSpec extends Specification {
 
     TypeDeclaration generateType(String className, String jsonSchema) {
-        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA)
+        SourceGenerator generator = new SourceGenerator("java")
 
         Path outputPath = new File("output").toPath() // Define the base output path
         String packageName = "com.example.project"; // Example package name
