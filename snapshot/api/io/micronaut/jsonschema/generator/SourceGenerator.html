@@ -96,14 +96,14 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.micronaut.inject.visitor.VisitorContext.Language)" class="member-name-link">SourceGenerator</a><wbr>(io.micronaut.inject.visitor.VisitorContext.Language&nbsp;language)</code></div>
-<div class="col-last even-row-color">
-<div class="block">Constructs a new <a href="SourceGenerator.html" title="class in io.micronaut.jsonschema.generator"><code>SourceGenerator</code></a> instance based on the provided programming language.</div>
-</div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.micronaut.inject.visitor.VisitorContext.Language,io.micronaut.jsonschema.generator.utils.GeneratorContext)" class="member-name-link">SourceGenerator</a><wbr>(io.micronaut.inject.visitor.VisitorContext.Language&nbsp;language,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.micronaut.inject.visitor.VisitorContext.Language,io.micronaut.jsonschema.generator.utils.GeneratorContext)" class="member-name-link">SourceGenerator</a><wbr>(io.micronaut.inject.visitor.VisitorContext.Language&nbsp;language,
  <a href="utils/GeneratorContext.html" title="class in io.micronaut.jsonschema.generator.utils">GeneratorContext</a>&nbsp;context)</code></div>
-<div class="col-last odd-row-color">
+<div class="col-last even-row-color">
 <div class="block">Constructs a new <a href="SourceGenerator.html" title="class in io.micronaut.jsonschema.generator"><code>SourceGenerator</code></a> instance based on the provided programming language and the generation context.</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">SourceGenerator</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;lang)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Constructs a new <a href="SourceGenerator.html" title="class in io.micronaut.jsonschema.generator"><code>SourceGenerator</code></a> instance based on the provided programming language.</div>
 </div>
 </div>
 </section>
@@ -161,9 +161,9 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(io.micronaut.inject.visitor.VisitorContext.Language)">
+<section class="detail" id="&lt;init&gt;(java.lang.String)">
 <h3>SourceGenerator</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">SourceGenerator</span><wbr><span class="parameters">(io.micronaut.inject.visitor.VisitorContext.Language&nbsp;language)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">SourceGenerator</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;lang)</span></div>
 <div class="block">Constructs a new <a href="SourceGenerator.html" title="class in io.micronaut.jsonschema.generator"><code>SourceGenerator</code></a> instance based on the provided programming language.
  <p>
  This constructor attempts to find a corresponding <code>SourceGenerator</code> implementation
@@ -172,7 +172,7 @@ loadScripts(document, 'script');</script>
  </p></div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>language</code> - The <code>VisitorContext.Language</code> representing the target programming language
+<dd><code>lang</code> - The String representing the target programming language
                  for which the source generator is to be created. This argument cannot be <code>null</code>.</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/RuntimeException.html" title="class or interface in java.lang" class="external-link">RuntimeException</a></code> - if no matching source generator is found for the provided language.

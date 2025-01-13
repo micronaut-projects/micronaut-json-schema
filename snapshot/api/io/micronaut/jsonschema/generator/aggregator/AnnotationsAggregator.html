@@ -81,7 +81,7 @@ loadScripts(document, 'script');</script>
 <div class="block">An aggregator for adding annotation information from json schema.</div>
 <dl class="notes">
 <dt>Since:</dt>
-<dd>1.2</dd>
+<dd>1.3</dd>
 <dt>Author:</dt>
 <dd>Elif Kurtay</dd>
 </dl>
@@ -98,8 +98,23 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Field</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color"><code><a href="#JSON_ANY_GETTER_ANN" class="member-name-link">JSON_ANY_GETTER_ANN</a></code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#JSON_ANY_SETTER_ANN" class="member-name-link">JSON_ANY_SETTER_ANN</a></code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color"><code><a href="#JSON_CREATOR_ANN" class="member-name-link">JSON_CREATOR_ANN</a></code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#JSON_VALUE_ANN" class="member-name-link">JSON_VALUE_ANN</a></code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color"><code><a href="#NOT_NULL_ANN" class="member-name-link">NOT_NULL_ANN</a></code></div>
 <div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#SERDEABLE_ANN" class="member-name-link">SERDEABLE_ANN</a></code></div>
+<div class="col-last odd-row-color">&nbsp;</div>
 </div>
 </section>
 </li>
@@ -132,6 +147,16 @@ loadScripts(document, 'script');</script>
  io.micronaut.sourcegen.model.TypeDef&nbsp;propertyType,
  boolean&nbsp;required)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static io.micronaut.sourcegen.model.AnnotationDef</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getJsonPropertyAnn(java.lang.String)" class="member-name-link">getJsonPropertyAnn</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;propertyName)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static io.micronaut.sourcegen.model.AnnotationDef</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getJsonSubTypesAnn(java.util.Map,io.micronaut.jsonschema.generator.utils.GeneratorContext)" class="member-name-link">getJsonSubTypesAnn</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;mapping,
+ <a href="../utils/GeneratorContext.html" title="class in io.micronaut.jsonschema.generator.utils">GeneratorContext</a>&nbsp;context)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static io.micronaut.sourcegen.model.AnnotationDef</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getJsonTypeInfoAnn(java.lang.String)" class="member-name-link">getJsonTypeInfoAnn</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;propertyName)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -149,6 +174,76 @@ loadScripts(document, 'script');</script>
 <section class="field-details" id="field-detail">
 <h2>Field Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="SERDEABLE_ANN">
+<h3>SERDEABLE_ANN</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">SERDEABLE_ANN</span></div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="../../../../../constant-values.html#io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator.SERDEABLE_ANN">Constant Field Values</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="JSON_ANY_GETTER_ANN">
+<h3>JSON_ANY_GETTER_ANN</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">JSON_ANY_GETTER_ANN</span></div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="../../../../../constant-values.html#io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator.JSON_ANY_GETTER_ANN">Constant Field Values</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="JSON_ANY_SETTER_ANN">
+<h3>JSON_ANY_SETTER_ANN</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">JSON_ANY_SETTER_ANN</span></div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="../../../../../constant-values.html#io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator.JSON_ANY_SETTER_ANN">Constant Field Values</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="JSON_CREATOR_ANN">
+<h3>JSON_CREATOR_ANN</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">JSON_CREATOR_ANN</span></div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="../../../../../constant-values.html#io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator.JSON_CREATOR_ANN">Constant Field Values</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="JSON_VALUE_ANN">
+<h3>JSON_VALUE_ANN</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">JSON_VALUE_ANN</span></div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="../../../../../constant-values.html#io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator.JSON_VALUE_ANN">Constant Field Values</a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
 <li>
 <section class="detail" id="NOT_NULL_ANN">
 <h3>NOT_NULL_ANN</h3>
@@ -185,6 +280,25 @@ loadScripts(document, 'script');</script>
 <section class="method-details" id="method-detail">
 <h2>Method Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="getJsonTypeInfoAnn(java.lang.String)">
+<h3>getJsonTypeInfoAnn</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">io.micronaut.sourcegen.model.AnnotationDef</span>&nbsp;<span class="element-name">getJsonTypeInfoAnn</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;propertyName)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getJsonPropertyAnn(java.lang.String)">
+<h3>getJsonPropertyAnn</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">io.micronaut.sourcegen.model.AnnotationDef</span>&nbsp;<span class="element-name">getJsonPropertyAnn</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;propertyName)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="getJsonSubTypesAnn(java.util.Map,io.micronaut.jsonschema.generator.utils.GeneratorContext)">
+<h3>getJsonSubTypesAnn</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">io.micronaut.sourcegen.model.AnnotationDef</span>&nbsp;<span class="element-name">getJsonSubTypesAnn</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;mapping,
+ <a href="../utils/GeneratorContext.html" title="class in io.micronaut.jsonschema.generator.utils">GeneratorContext</a>&nbsp;context)</span></div>
+</section>
+</li>
 <li>
 <section class="detail" id="getAnnotations(io.micronaut.jsonschema.model.Schema,io.micronaut.sourcegen.model.TypeDef,boolean)">
 <h3>getAnnotations</h3>
