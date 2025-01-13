@@ -1,0 +1,26 @@
+plugins {
+    id("io.micronaut.build.internal.json-schema-module")
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly(mn.micronaut.core.processor)
+
+    implementation(projects.micronautJsonSchemaGenerator)
+    implementation(mnSerde.micronaut.serde.jackson)
+    implementation(mnValidation.validation)
+
+    api(projects.micronautJsonSchemaAnnotations)
+    api(projects.micronautJsonSchemaCommon)
+
+    testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(libs.junit.jupiter.api)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+}
+
+test {
+    useJUnitPlatform()
+}
