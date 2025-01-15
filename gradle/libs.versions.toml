@@ -30,6 +30,7 @@ kotlin = "1.9.25"
 ksp = "1.9.25-1.0.20"
 spock = "2.3-groovy-4.0"
 java-parser = "3.26.3"
+sonatype-scan = "3.0.0"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
@@ -47,6 +48,8 @@ java-parser = { module = "com.github.javaparser:javaparser-core", version.ref = 
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
+sonatype-scan = { module = "org.sonatype.gradle.plugins:scan-gradle-plugin", version.ref = "sonatype-scan" }
+
 [bundles]
 
 [plugins]
