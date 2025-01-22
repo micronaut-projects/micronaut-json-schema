@@ -15,13 +15,6 @@
  */
 package io.micronaut.jsonschema.generator;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonValue;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
@@ -30,7 +23,6 @@ import io.micronaut.jsonschema.generator.loaders.FileLoader;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.model.Schema;
-import io.micronaut.serde.annotation.Serdeable;
 import io.micronaut.sourcegen.generator.SourceGenerators;
 import io.micronaut.sourcegen.model.*;
 
@@ -52,9 +44,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getFileName;
-import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getJsonSchema;
-import static io.micronaut.jsonschema.generator.loaders.FileProcessor.getOutputFile;
+import static io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator.*;
+import static io.micronaut.jsonschema.generator.loaders.FileProcessor.*;
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.*;
 import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
 
@@ -85,13 +76,13 @@ public final class SourceGenerator {
      * is thrown.
      * </p>
      *
-     * @param language The {@link VisitorContext.Language} representing the target programming language
+     * @param lang The String representing the target programming language
      *                 for which the source generator is to be created. This argument cannot be {@code null}.
      * @throws RuntimeException if no matching source generator is found for the provided language.
      *                          The exception message will indicate the language for which no generator was found.
      */
-    public SourceGenerator(VisitorContext.Language language) {
-        this(language, new GeneratorContext());
+    public SourceGenerator(String lang) {
+        this(VisitorContext.Language.valueOf(lang.toUpperCase()), new GeneratorContext());
     }
 
     /**
@@ -312,7 +303,7 @@ public final class SourceGenerator {
     public EnumDef buildEnum(Schema jsonSchema, String builderClassName) {
         EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(Serdeable.class);
+            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
         boolean isComplexEnum = false;
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
         LinkedHashMap<String, Object> enumValues = new LinkedHashMap<>();
@@ -367,13 +358,13 @@ public final class SourceGenerator {
                 .addAllFieldsConstructor(Modifier.PRIVATE)
                 .addMethod(MethodDef.builder("getValue")
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(JsonValue.class)
+                    .addAnnotation(ClassTypeDef.of(JSON_VALUE_ANN))
                     .returns(valueTypeDef)
                     .build((aThis, parameters) ->
                         aThis.field("value", valueTypeDef).returning()))
                 .addMethod(MethodDef.builder("statusOf")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                    .addAnnotation(JsonCreator.class)
+                    .addAnnotation(ClassTypeDef.of(JSON_CREATOR_ANN))
                     .returns(TypeDef.THIS)
                     .addParameter("value", valueTypeDef)
                     .build((aThis, parameters) ->
@@ -387,7 +378,7 @@ public final class SourceGenerator {
     private RecordDef buildRecord(Schema jsonSchema, String builderClassName) {
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(Serdeable.class);
+            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
 
         addFields(jsonSchema, objectBuilder);
         return objectBuilder.build();
@@ -396,7 +387,7 @@ public final class SourceGenerator {
     private ClassDef buildClass(Schema jsonSchema, String builderClassName) {
         ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(Serdeable.class);
+            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
 
         if (context.hasDefinition(inputFileName + "/superClass")) {
             var superClass = context.getDefinitionType(inputFileName + "/superClass");
@@ -412,11 +403,7 @@ public final class SourceGenerator {
         addFields(jsonSchema, objectBuilder);
 
         if (!discriminatorProperty.isBlank()) {
-            AnnotationDef jsonTypeInfo = AnnotationDef.builder(JsonTypeInfo.class)
-                .addMember("use", JsonTypeInfo.Id.NAME)
-                .addMember("property", discriminatorProperty)
-                .build();
-            objectBuilder.addAnnotation(jsonTypeInfo);
+            objectBuilder.addAnnotation(getJsonTypeInfoAnn(discriminatorProperty));
 
             Map<String, Schema> properties = jsonSchema.getProperties();
             if (properties.containsKey(discriminatorProperty)) {
@@ -434,16 +421,12 @@ public final class SourceGenerator {
     private InterfaceDef buildInterface(Schema jsonSchema, String builderClassName) {
         InterfaceDef.InterfaceDefBuilder objectBuilder = InterfaceDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(Serdeable.class);
+            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
         if (jsonSchema.hasDiscriminator()) {
             // top level interface
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
             if (!discriminatorProperty.isBlank()) {
-                AnnotationDef jsonTypeInfo = AnnotationDef.builder(JsonTypeInfo.class)
-                    .addMember("use", JsonTypeInfo.Id.NAME)
-                    .addMember("property", discriminatorProperty)
-                    .build();
-                objectBuilder.addAnnotation(jsonTypeInfo);
+                objectBuilder.addAnnotation(getJsonTypeInfoAnn(discriminatorProperty));
             }
         }
         return objectBuilder.build();
@@ -489,7 +472,7 @@ public final class SourceGenerator {
         builder.addMethod(MethodDef.builder("getUnknownFields")
                 .addModifiers(Modifier.PUBLIC)
                 .returns(type)
-                .addAnnotation(JsonAnyGetter.class)
+                .addAnnotation(ClassTypeDef.of(JSON_ANY_GETTER_ANN))
                 .build((aThis, parameters) -> {
                     if (builder instanceof ClassDef.ClassDefBuilder) {
                         return aThis.field("unknownFields", type).returning();
@@ -499,7 +482,7 @@ public final class SourceGenerator {
         builder.addMethod(MethodDef.builder("setUnknownFields")
                 .addModifiers(Modifier.PUBLIC)
                 .returns(TypeDef.VOID)
-                .addAnnotation(JsonAnySetter.class)
+                .addAnnotation(ClassTypeDef.of(JSON_ANY_SETTER_ANN))
                 .addParameter("name", TypeDef.STRING)
                 .addParameter("value", mapType)
                 .build((aThis, parameters) -> {
@@ -520,8 +503,7 @@ public final class SourceGenerator {
         String name = getPropertyName(propertyName);
         PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name);
         if (!name.equals(propertyName)) {
-            AnnotationDef annotationDef = AnnotationDef.builder(JsonProperty.class).addMember("value", propertyName).build();
-            propertyDef.addAnnotation(annotationDef);
+            propertyDef.addAnnotation(getJsonPropertyAnn(propertyName));
         }
 
         TypeDef propertyType = getPropertyType(objectBuilder, schema, name);
@@ -575,17 +557,7 @@ public final class SourceGenerator {
         }
         var discriminator = jsonSchema.getDiscriminator();
         discriminatorProperty = discriminator.propertyName();
-
-        List<AnnotationDef> subTypeList = discriminator.mapping().entrySet()
-            .stream()
-            .map(entry -> AnnotationDef
-                .builder(JsonSubTypes.Type.class)
-                .addMember("value", context.getDefinitionType(inputFileName + entry.getValue()))
-                .addMember("name", entry.getKey())
-                .build())
-            .toList();
-        AnnotationDef jsonSubTypes = AnnotationDef.builder(JsonSubTypes.class).addMember("value", subTypeList).build();
-        objectBuilder.addAnnotation(jsonSubTypes);
+        objectBuilder.addAnnotation(getJsonSubTypesAnn(discriminator.mapping(), context));
     }
 
     private String getJavadoc(String description) {

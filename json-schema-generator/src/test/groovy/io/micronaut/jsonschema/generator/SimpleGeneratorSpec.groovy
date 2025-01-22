@@ -57,7 +57,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testArrayGeneration() {
         when:
-        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA)
+        SourceGenerator generator = new SourceGenerator("java")
 
         Path outputPath = new File("output").toPath() // Define the base output path
         String packageName = "com.example.project"; // Example package name
