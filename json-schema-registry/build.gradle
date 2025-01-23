@@ -1,5 +1,16 @@
 plugins {
     id("io.micronaut.build.internal.json-schema-module")
+    id("io.micronaut.minimal.application")
+    id("io.micronaut.openapi")
+}
+
+micronaut {
+    runtime "netty"
+    testRuntime "junit5"
+    openapi {
+        server(file("registry.json")) {
+        }
+    }
 }
 
 repositories {
@@ -12,6 +23,7 @@ dependencies {
     implementation(projects.micronautJsonSchemaGenerator)
     implementation(mnSerde.micronaut.serde.jackson)
     implementation(mnValidation.validation)
+    implementation("io.micronaut.security:micronaut-security")
 
     api(projects.micronautJsonSchemaAnnotations)
     api(projects.micronautJsonSchemaCommon)
