@@ -74,7 +74,7 @@ public class UrlLoader implements SchemaLoader {
     private static InputStream downloadAsStream(String fileUrl) throws IOException, InterruptedException {
         // Verify that the URL matches at least one of the allowed patterns and ends with ".json"
         if (!isValidUrl(fileUrl)) {
-            throw new IllegalArgumentException("URL does not match any of the allowed patterns or does not starts with https:// and end with .json.");
+            throw new IllegalArgumentException("URL does not match any of the allowed patterns.");
         }
 
         // Create HTTP client and request
@@ -89,22 +89,12 @@ public class UrlLoader implements SchemaLoader {
     }
 
     /**
-     * Validates if the provided URL matches any of the allowed patterns and ends with ".json".
+     * Validates if the provided URL matches any of the allowed patterns.
      *
      * @param fileUrl The URL to validate.
-     * @return true if the URL matches at least one allowed pattern and ends with ".json", false otherwise.
+     * @return true if the URL matches at least one allowed pattern, false otherwise.
      */
     public static boolean isValidUrl(String fileUrl) {
-        // Check if the URL ends with .json
-        if (!fileUrl.endsWith(".json")) {
-            return false;
-        }
-
-        // Check if the URL starts with http safe
-        if (!fileUrl.startsWith("https://")) {
-            return false;
-        }
-
         // Check if the URL matches any of the allowed patterns
         for (String pattern : UrlLoader.allowedUrlPatterns) {
             Pattern compiledPattern = Pattern.compile(pattern);
