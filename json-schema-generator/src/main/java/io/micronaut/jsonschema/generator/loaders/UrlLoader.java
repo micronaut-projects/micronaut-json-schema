@@ -24,6 +24,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -114,7 +116,15 @@ public class UrlLoader implements SchemaLoader {
         UrlLoader.allowedUrlPatterns = allowedUrlPatterns;
     }
 
-    public static void addAllowedUrlPatterns(String allowedUrlPattern) {
-        UrlLoader.allowedUrlPatterns.add(allowedUrlPattern);
+    public static void addAllowedUrlPattern(String allowedUrlPattern) {
+        List<String> current = new ArrayList<>(UrlLoader.allowedUrlPatterns);
+        current.add(allowedUrlPattern);
+        UrlLoader.allowedUrlPatterns = current;
+    }
+
+    public static void addAllowedUrlPatterns(List<String> allowedUrlPatterns) {
+        List<String> current = new ArrayList<>(UrlLoader.allowedUrlPatterns);
+        current.addAll(allowedUrlPatterns);
+        UrlLoader.allowedUrlPatterns = current;
     }
 }
