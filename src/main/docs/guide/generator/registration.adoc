@@ -1,5 +1,3 @@
-The Gradle and Maven build configurations will be added here shortly.
-
 All the supported configuration options are:
 
 [cols="2", options="header"]
