@@ -5,12 +5,6 @@ plugins {
     id("io.micronaut.build.internal.test-suite-generator-java")
 }
 
-micronautBuild {
-    binaryCompatibility {
-        enabledAfter("1.4.0")
-    }
-}
-
 dependencies {
     compileOnly(mn.micronaut.core.processor)
 
