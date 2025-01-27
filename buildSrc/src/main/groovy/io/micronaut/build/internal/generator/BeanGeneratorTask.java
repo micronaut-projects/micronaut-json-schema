@@ -89,11 +89,11 @@ public abstract class BeanGeneratorTask extends DefaultTask {
     @Internal
     public Provider<Directory> getGeneratedSourcesDirectory() {
         String lang = getLanguage().get().toUpperCase();
-        var langPath = switch (lang) {
-            case "JAVA" -> "java/main";
-            case "KOTLIN" -> "kotlin/main";
-            case "GROOVY" -> "groovy/main";
-            default -> "main";
+        var langPath = "src/main/" + switch (lang) {
+            case "JAVA" -> "java";
+            case "KOTLIN" -> "kotlin";
+            case "GROOVY" -> "groovy";
+            default -> "";
         };
         return getOutputDirectory().dir(langPath);
     }

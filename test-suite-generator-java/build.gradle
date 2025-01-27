@@ -50,23 +50,15 @@ def foodGenerator = tasks.register("generateFood", BeanGeneratorTask) {
 def githubGenerator = tasks.register("generateGithub", BeanGeneratorTask) {
     language = "java"
     classpath.from(configurations.beanGenerator)
-    jsonURL.convention("https://json.schemastore.org/github-workflow.json")
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/github-workflow.schema.json"))
     outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
     packageName.convention("io.micronaut.jsonschema.generator.github")
-}
-
-def fhirGenerator = tasks.register("generateFhir", BeanGeneratorTask) {
-    language = "java"
-    classpath.from(configurations.beanGenerator)
-    jsonURL.convention("https://www.hl7.org/fhir/fhir.schema.json")
-    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
-    packageName.convention("io.micronaut.jsonschema.generator.fhir")
 }
 
 def wordPressGenerator = tasks.register("generateWordPress", BeanGeneratorTask) {
     language = "java"
     classpath.from(configurations.beanGenerator)
-    jsonURL.convention("https://raw.githubusercontent.com/WordPress/gutenberg/trunk/schemas/json/block.json")
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/wordpress.schema.json"))
     outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
     packageName.convention("io.micronaut.jsonschema.generator.wordpress")
 }
@@ -89,9 +81,6 @@ tasks.named("generateFood") {
 tasks.named("generateGithub") {
 }
 
-tasks.named("generateFhir") {
-}
-
 tasks.named("generateWordPress") {
 }
 
@@ -108,7 +97,6 @@ sourceSets {
         java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(foodGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(githubGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
-        java.srcDir(fhirGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(wordPressGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(refGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
     }

@@ -73,7 +73,7 @@ public class GeneratorMain {
 
         var allowedUrlPatterns = parseListOfAllowedUrlPatterns(args[7]);
         if (!allowedUrlPatterns.isEmpty()) {
-            UrlLoader.setAllowedUrlPatterns(allowedUrlPatterns);
+            UrlLoader.addAllowedUrlPatterns(allowedUrlPatterns);
         }
         var generator = new SourceGenerator(lang);
         generator.generate(config);

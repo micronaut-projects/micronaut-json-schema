@@ -1,10 +1,12 @@
-In order to create JSON Schema from beans, add Micronaut JSON Schema processor to the annotation processor scope of your build configuration:
+In order to create JSON Schema from beans, add Micronaut JSON Schema processor to the annotation processor scope of your build configuration,
 
 dependency:micronaut-json-schema-processor[scope="annotationProcessor", groupId="io.micronaut.jsonschema"]
 
-and the Micronaut JSON Schema Annotations dependency to compile classpath
+and the Micronaut JSON Schema Annotations dependency to compile classpath:
 dependency:micronaut-json-schema-annotations[groupId="io.micronaut.jsonschema"]
 
-In order to create beans from JSON Schema, add Micronaut JSON Schema generator dependency to compile classpath
+In order to create beans from JSON Schema, add Micronaut JSON Schema generator dependency to compile classpath:
 dependency:micronaut-json-schema-generator[groupId="io.micronaut.jsonschema"]
+
+NOTE: The Generator module can also be directly used with the Micronaut's https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#[Gradle] and https://micronaut-projects.github.io/micronaut-maven-plugin/latest/[Maven] Plugins.
 

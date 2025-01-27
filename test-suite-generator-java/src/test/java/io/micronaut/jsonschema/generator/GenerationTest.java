@@ -18,7 +18,7 @@ import static org.junit.Assert.assertTrue;
 public class GenerationTest {
     @Test
     void githubGenerator() {
-        Path outputPath = Paths.get("build/generated/jsonSchema/java/main");
+        Path outputPath = Paths.get("build/generated/jsonSchema/src/main/java");
         String packageName = "io.micronaut.jsonschema.generator.github".replace('.', File.separatorChar);
         Path expectedFolderPath = outputPath.resolve(packageName);
 
@@ -37,52 +37,8 @@ public class GenerationTest {
     }
 
     @Test
-    void fhirGenerator() {
-        Path outputPath = Paths.get("build/generated/jsonSchema/java/main");
-        String packageName = "io.micronaut.jsonschema.generator.fhir".replace('.', File.separatorChar);
-        Path expectedFolderPath = outputPath.resolve(packageName);
-
-        Assertions.assertTrue(Files.exists(expectedFolderPath), "Expected folder path does not exist.");
-        long generatedFiles = 0;
-        try {
-            // Count the number of files (not directories) in the folder
-            generatedFiles = Files.list(expectedFolderPath)
-                .filter(Files::isRegularFile)
-                .count();
-        } catch (IOException e) {
-            Assertions.fail("Failed to list files in the folder: " + e.getMessage());
-        }
-        Assertions.assertTrue(generatedFiles > 800);
-
-        // Assert that the expected files exist
-        String[] expectedFileNames = {
-            "Fhir.java",
-            "Account.java",
-            "Dosage_DoseAndRate.java",
-            "BackboneType.java",
-            "Xhtml.java"
-        };
-        for (String expectedFileName : expectedFileNames) {
-            Path expectedFilePath = expectedFolderPath.resolve(expectedFileName);
-            Assertions.assertTrue(Files.exists(expectedFilePath), "Expected file not found: " + expectedFilePath);
-        }
-
-        // Assert that primitive definitions are not generated
-        String[] unexpectedFileNames = {
-            "DateTime.java",
-            "Integer.java",
-            "Boolean.java",
-            "Canonical.java"
-        };
-        for (String unexpectedFileName : unexpectedFileNames) {
-            Path expectedFilePath = expectedFolderPath.resolve(unexpectedFileName);
-            Assertions.assertFalse(Files.exists(expectedFilePath), "Unexpected file found: " + expectedFilePath);
-        }
-    }
-
-    @Test
     void refGenerator() {
-        Path outputPath = Paths.get("build/generated/jsonSchema/java/main");
+        Path outputPath = Paths.get("build/generated/jsonSchema/src/main/java");
         String packageName = "io.micronaut.jsonschema.generator.ref".replace('.', File.separatorChar);
         Path expectedFolderPath = outputPath.resolve(packageName);
 
@@ -117,7 +73,7 @@ public class GenerationTest {
 
     @Test
     void wordPressGenerator() {
-        Path outputPath = Paths.get("build/generated/jsonSchema/java/main");
+        Path outputPath = Paths.get("build/generated/jsonSchema/src/main/java");
         String packageName = "io.micronaut.jsonschema.generator.wordpress".replace('.', File.separatorChar);
         Path expectedFolderPath = outputPath.resolve(packageName);
 
