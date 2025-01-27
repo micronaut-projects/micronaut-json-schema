@@ -163,7 +163,7 @@ JSON data consistency, validity and interoperability.</p>
 
 
 <div class="paragraph">
-<p>In order to create JSON Schema from beans, add Micronaut JSON Schema processor to the annotation processor scope of your build configuration:</p>
+<p>In order to create JSON Schema from beans, add Micronaut JSON Schema processor to the annotation processor scope of your build configuration,</p>
 </div>
 <div class="paragraph">
 <p>        <div class="listingblock multi-language-sample">
@@ -185,7 +185,7 @@ JSON data consistency, validity and interoperability.</p>
 </div></p>
 </div>
 <div class="paragraph">
-<p>and the Micronaut JSON Schema Annotations dependency to compile classpath
+<p>and the Micronaut JSON Schema Annotations dependency to compile classpath:
         <div class="listingblock multi-language-sample">
 <div class="title"></div>
 <div class="content">
@@ -202,7 +202,7 @@ JSON data consistency, validity and interoperability.</p>
 </div></p>
 </div>
 <div class="paragraph">
-<p>In order to create beans from JSON Schema, add Micronaut JSON Schema generator dependency to compile classpath
+<p>In order to create beans from JSON Schema, add Micronaut JSON Schema generator dependency to compile classpath:
         <div class="listingblock multi-language-sample">
 <div class="title"></div>
 <div class="content">
@@ -217,6 +217,18 @@ JSON data consistency, validity and interoperability.</p>
 &lt;/dependency&gt;</code></pre>
 </div>
 </div></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The Generator module can also be directly used with the Micronaut&#8217;s <a href="https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#">Gradle</a> and <a href="https://micronaut-projects.github.io/micronaut-maven-plugin/latest/">Maven</a> Plugins.
+</td>
+</tr>
+</table>
 </div>
 
 <h1 id="quickStart"><a class="anchor" href="#quickStart"></a>3 Quick Start</h1>
@@ -1085,6 +1097,18 @@ which allows defining custom filters.
 <div class="paragraph">
 <p>This section explains the processes involved for generating source code of beans from JSON schema.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The Generator module can also be directly used with the Micronaut&#8217;s <a href="https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#">Gradle</a> and <a href="https://micronaut-projects.github.io/micronaut-maven-plugin/latest/">Maven</a> Plugins. Please check out their respective documentations.
+</td>
+</tr>
+</table>
+</div>
 
 <h2 id="registration"><a class="anchor" href="#registration"></a>5.1 Build-time Generation Configuration</h2>
 
@@ -1095,9 +1119,6 @@ which allows defining custom filters.
 </div>
 
 
-<div class="paragraph">
-<p>The Gradle and Maven build configurations will be added here shortly.</p>
-</div>
 <div class="paragraph">
 <p>All the supported configuration options are:</p>
 </div>
@@ -1175,10 +1196,11 @@ which allows defining custom filters.
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// create a generator with your chosen language
-var javaGenerator = new SourceGenerator(VisitorContext.Language.JAVA);
+var javaGenerator = new SourceGenerator("JAVA");
 
 // Optional: can configure accepted URL references
 UrlLoader.setAllowedUrlPatterns(List.of("^https://.*/.*.schema.json$"));
+UrlLoader.addAllowedUrlPattern("^http://localhost:.*");
 
 // Optional: set up input file name
 String schemaFileName = "example.schema.json";
@@ -1186,10 +1208,11 @@ SourceGenerator.setInputFileName(schemaFileName);
 
 Path outputPath = Paths.get("output"); // Define the base output path
 String packageName = "com.example.temp"; // Example package name
-var config = new SourceGeneratorConfig(
-    null, "https://www.jsonschemastore.org/example/temp.schema.json",
-    null, null,
-    outputPath, packageName, null);
+SourceGeneratorConfig config = new SourceGeneratorConfigBuilder()
+                                    .withOutputFolder(outputPath)
+                                    .withOutputPackageName(packageName)
+                                    .withJsonUrl("https://www.jsonschemastore.org/example/temp.schema.json")
+                                    .build();
 
 javaGenerator.generate(config);</code></pre>
 </div>
@@ -1211,7 +1234,7 @@ javaGenerator.generate(config);</code></pre>
 </table>
 </div>
 <div class="paragraph">
-<p>The <code>SourceGeneratorConfig</code> values are similar to that of `BeanGeneratorTask&#8217;s configuration explained in the previous section. There are explained below in order:</p>
+<p>The <code>SourceGeneratorConfigBuilder</code> methods are similar to that of `BeanGeneratorTask&#8217;s configuration explained in the previous section. There are explained below:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -1226,31 +1249,31 @@ javaGenerator.generate(config);</code></pre>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>inputStream</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Loads a valid JSON schema from given InputStream.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>withInputStream(InputStream inputStream)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Loads a valid JSON schema from given an InputStream.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jsonURL</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>withJsonUrl(String jsonUrl)</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Loads a valid JSON schema from the given input URL.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>jsonFile</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>withJsonFile(File jsonFile)</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Loads a valid JSON schema from the given input File.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>inputFolder</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>withInputFolder(Path inputFolder)</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Loads all valid JSON schemas from the given input folder.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>outputPath</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>withOutputFolder(Path outputFolder)</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The path where source files are generated.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>outputPackageName</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>withOutputPackageName(String outputPackageName)</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The package name of the generated source files.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>outputFileName</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>withOutputFileName(String outputFileName)</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The file name of the generated source file. This field is taken into account when there is only one bean generated. If not specified, schema&#8217;s title or schema file&#8217;s name is considered for the generated file.</p></td>
 </tr>
 </tbody>
