@@ -1,0 +1,4 @@
+schema_registry:
+  url: "http://144.24.55.159:8081"
+  username: "user"
+  password: "password"

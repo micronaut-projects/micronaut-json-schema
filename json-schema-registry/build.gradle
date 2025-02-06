@@ -1,38 +1,29 @@
 plugins {
     id("io.micronaut.build.internal.json-schema-module")
-    id("io.micronaut.minimal.application")
-    id("io.micronaut.openapi")
-}
-
-micronaut {
-    runtime "netty"
-    testRuntime "junit5"
-    openapi {
-        server(file("registry.json")) {
-        }
-    }
-}
-
-repositories {
-    mavenCentral()
 }
 
 dependencies {
     compileOnly(mn.micronaut.core.processor)
+    implementation(mn.micronaut.http)
+    implementation(mn.micronaut.http.client)
+    api(mn.micronaut.inject)
 
-    implementation(projects.micronautJsonSchemaGenerator)
-    implementation(mnSerde.micronaut.serde.jackson)
-    implementation(mnValidation.validation)
-    implementation("io.micronaut.security:micronaut-security")
-
-    api(projects.micronautJsonSchemaAnnotations)
-    api(projects.micronautJsonSchemaCommon)
-
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testImplementation(mn.micronaut.inject)
+    testImplementation(mn.micronaut.jackson.databind)
+    testImplementation(mnValidation.validation)
     testImplementation(mnTest.micronaut.test.junit5)
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
 }
 
-test {
+
+tasks.test {
     useJUnitPlatform()
+}
+
+sourceSets {
+    test {
+        java.srcDir('src/test/java')
+    }
 }
