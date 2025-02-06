@@ -1,40 +1,47 @@
 package io.micronaut.jsonschema.registry;
 
-import io.micronaut.http.HttpRequest;
-import io.micronaut.http.client.HttpClient;
-import io.micronaut.http.client.annotation.Client;
-import io.micronaut.http.uri.UriBuilder;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import org.junit.jupiter.api.Test;
 
 import jakarta.inject.Inject;
 
-import java.net.URI;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @MicronautTest
 public class ConfluentClientTest {
 
     @Inject
-    @Client("http://144.24.55.159:8081")
-    HttpClient client; // (2)
+    ResourceLoader resourceLoader;
+
+    @Inject
+    SchemaRegistryClient schemaRegistryClient;
+
+    JsonMapper jsonMapper = new JsonMapper();
 
     @Test
-    void testConfluentResponse() {
+    void testSchemaRegistryClient() throws IOException {
         String subject = "human";
         String version = "latest";
-        URI url = UriBuilder.of("/subjects")
-            .path(subject)
-            .path("versions")
-            .path(version)
-            .build();
+        String schema = schemaRegistryClient.getWithSubjectAndVersion(subject, version);
 
-        HttpRequest<?> request = HttpRequest.GET(url);
-        //    .header("Content-Type", "application/vnd.schemaregistry.v1+json");
+        String expected = getExpectedResponse("human.schema.json");
+        Map<String, ?> mappedExpected = jsonMapper.readValue(expected, Map.class);
+        assertEquals(mappedExpected.get("schema").toString(), schema);
+    }
 
-        String response = client.toBlocking().retrieve(request);
-        assertEquals("""
-            {"subject":"human","version":1,"id":2,"schemaType":"JSON","schema":"{\\"$schema\\":\\"http://json-schema.org/draft-07/schema#\\",\\"type\\":\\"object\\",\\"properties\\":{\\"name\\":{\\"type\\":\\"string\\"}}}"}""", response);
+    private String getExpectedResponse(String filename) throws IOException {
+        Optional<InputStream> expectedOptional = resourceLoader.getResourceAsStream(filename);
+        assertTrue(expectedOptional.isPresent());
+        String expected = new String(expectedOptional.get().readAllBytes(), StandardCharsets.UTF_8);
+        return expected.replaceAll("\\s+", "").trim();
     }
 }

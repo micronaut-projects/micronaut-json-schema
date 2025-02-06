@@ -6,11 +6,11 @@ dependencies {
     compileOnly(mn.micronaut.core.processor)
     implementation(mn.micronaut.http)
     implementation(mn.micronaut.http.client)
+    implementation(mn.micronaut.jackson.databind)
     api(mn.micronaut.inject)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testImplementation(mn.micronaut.inject)
-    testImplementation(mn.micronaut.jackson.databind)
     testImplementation(mnValidation.validation)
     testImplementation(mnTest.micronaut.test.junit5)
     testImplementation(libs.junit.jupiter.api)

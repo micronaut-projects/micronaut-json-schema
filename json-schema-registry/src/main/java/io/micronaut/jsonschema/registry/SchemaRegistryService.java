@@ -24,18 +24,4 @@ public class SchemaRegistryService {
     public SchemaRegistryService(SchemaRegistryClient schemaRegistryClient) {
         this.schemaRegistryClient = schemaRegistryClient;
     }
-
-//    public void registerSchema(String subject, String schema) {
-//        int schemaId = schemaRegistryClient.registerSchema(subject, schema);
-//        System.out.println("Registered schema with ID: " + schemaId);
-//    }
-//
-//    public String getSchema(String subject, int version) {
-//        return schemaRegistryClient.getSchema(subject, version);
-//    }
-//
-//    public boolean checkSchemaCompatibility(String subject, String schema) {
-//        return schemaRegistryClient.checkCompatibility(subject, schema);
-//    }
-
 }
