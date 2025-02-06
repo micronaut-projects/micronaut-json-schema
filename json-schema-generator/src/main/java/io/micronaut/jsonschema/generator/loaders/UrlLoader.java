@@ -24,6 +24,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,7 +76,7 @@ public class UrlLoader implements SchemaLoader {
     private static InputStream downloadAsStream(String fileUrl) throws IOException, InterruptedException {
         // Verify that the URL matches at least one of the allowed patterns and ends with ".json"
         if (!isValidUrl(fileUrl)) {
-            throw new IllegalArgumentException("URL does not match any of the allowed patterns or does not starts with https:// and end with .json.");
+            throw new IllegalArgumentException("URL does not match any of the allowed patterns: " + allowedUrlPatterns);
         }
 
         // Create HTTP client and request
@@ -89,22 +91,12 @@ public class UrlLoader implements SchemaLoader {
     }
 
     /**
-     * Validates if the provided URL matches any of the allowed patterns and ends with ".json".
+     * Validates if the provided URL matches any of the allowed patterns.
      *
      * @param fileUrl The URL to validate.
-     * @return true if the URL matches at least one allowed pattern and ends with ".json", false otherwise.
+     * @return true if the URL matches at least one allowed pattern, false otherwise.
      */
     public static boolean isValidUrl(String fileUrl) {
-        // Check if the URL ends with .json
-        if (!fileUrl.endsWith(".json")) {
-            return false;
-        }
-
-        // Check if the URL starts with http safe
-        if (!fileUrl.startsWith("https://")) {
-            return false;
-        }
-
         // Check if the URL matches any of the allowed patterns
         for (String pattern : UrlLoader.allowedUrlPatterns) {
             Pattern compiledPattern = Pattern.compile(pattern);
@@ -124,7 +116,15 @@ public class UrlLoader implements SchemaLoader {
         UrlLoader.allowedUrlPatterns = allowedUrlPatterns;
     }
 
-    public static void addAllowedUrlPatterns(String allowedUrlPattern) {
-        UrlLoader.allowedUrlPatterns.add(allowedUrlPattern);
+    public static void addAllowedUrlPattern(String allowedUrlPattern) {
+        List<String> current = new ArrayList<>(UrlLoader.allowedUrlPatterns);
+        current.add(allowedUrlPattern);
+        UrlLoader.allowedUrlPatterns = current;
+    }
+
+    public static void addAllowedUrlPatterns(List<String> allowedUrlPatterns) {
+        List<String> current = new ArrayList<>(UrlLoader.allowedUrlPatterns);
+        current.addAll(allowedUrlPatterns);
+        UrlLoader.allowedUrlPatterns = current;
     }
 }

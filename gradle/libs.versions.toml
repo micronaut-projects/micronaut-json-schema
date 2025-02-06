@@ -16,13 +16,13 @@
 # a managed version (a version which alias starts with "managed-"
 
 [versions]
-micronaut = "4.7.11"
+micronaut = "4.7.13"
 micronaut-docs = "2.0.0"
 micronaut-logging = "1.5.1"
-micronaut-serde = "2.13.0"
+micronaut-serde = "2.13.1"
 micronaut-test = "4.6.2"
-micronaut-sourcegen = "1.5.5"
-micronaut-validation = "4.8.0"
+micronaut-sourcegen = "1.6.2"
+micronaut-validation = "4.8.1"
 micronaut-serialization = "2.12.0"
 groovy = "4.0.18"
 managed-json-schema-validator = "1.5.5"
@@ -30,6 +30,7 @@ kotlin = "1.9.25"
 ksp = "1.9.25-1.0.20"
 spock = "2.3-groovy-4.0"
 java-parser = "3.26.3"
+sonatype-scan = "3.0.0"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
@@ -47,6 +48,8 @@ java-parser = { module = "com.github.javaparser:javaparser-core", version.ref = 
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
+sonatype-scan = { module = "org.sonatype.gradle.plugins:scan-gradle-plugin", version.ref = "sonatype-scan" }
+
 [bundles]
 
 [plugins]
