@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.registry;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.micronaut.context.annotation.Property;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.client.HttpClient;
@@ -39,13 +40,12 @@ public class SchemaRegistryClient {
     private static final String HEADER_NAME = "Content-Type";
     private static final String HEADER_VALUE = "application/vnd.schemaregistry.v1+json";
 
+    private final SchemaRegistryConfig config;
     private final HttpClient client;
     private JsonMapper jsonMapper;
 
-    //@Property(name="schema_registry.url")
-    protected String schemaRegistryUrl = "http://144.24.55.159:8081";
-
-    public SchemaRegistryClient(@Client() HttpClient httpClient) {
+    public SchemaRegistryClient(SchemaRegistryConfig config, @Client HttpClient httpClient) {
+        this.config = config;
         this.client = httpClient;
         this.jsonMapper = new JsonMapper();
     }
@@ -82,7 +82,7 @@ public class SchemaRegistryClient {
      * @return The requested schema
      */
     public String getWithSubjectAndVersion(String subject, String version) {
-        URI url = UriBuilder.of(schemaRegistryUrl)
+        URI url = UriBuilder.of(config.getUrl())
             .path("subjects")
             .path(subject)
             .path("versions")
