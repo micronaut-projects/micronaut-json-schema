@@ -1,1 +1,3 @@
 This section explains the processes involved for generating source code of beans from JSON schema.
+
+NOTE: The Generator module can also be directly used with the Micronaut's https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#[Gradle] and https://micronaut-projects.github.io/micronaut-maven-plugin/latest/[Maven] Plugins. Please check out their respective documentations.

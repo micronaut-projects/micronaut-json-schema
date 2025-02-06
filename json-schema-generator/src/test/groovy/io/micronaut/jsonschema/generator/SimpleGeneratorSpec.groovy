@@ -1,9 +1,10 @@
 package io.micronaut.jsonschema.generator
 
-import io.micronaut.inject.visitor.VisitorContext
+import io.micronaut.jsonschema.generator.loaders.UrlLoader
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig
-
 import java.nio.file.Path
+
+import static io.micronaut.jsonschema.generator.loaders.UrlLoader.isValidUrl
 
 class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
@@ -344,7 +345,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
           @JsonAnySetter
           public void setUnknownFields(String name, String value) {
-            if (this.unknownFields==null) {
+            if (this.unknownFields == null) {
               this.unknownFields = new java.util.HashMap();
             }
             this.unknownFields.put(name, value);
@@ -500,4 +501,14 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'array'      |'{"type": "array", "items": {"type":"number"},"nullable": false}'| "@NotNull List<Float> array"
     }
 
+    void testUrlValidation() {
+        when:
+        var urlLocal = "http://localhost:8001/animal/schema"
+        var urlExternal = "https://json.schemastore.org/github-workflow.json"
+        UrlLoader.addAllowedUrlPattern("^http://localhost:.*")
+
+        then:
+        isValidUrl(urlExternal)
+        isValidUrl(urlLocal)
+    }
 }
