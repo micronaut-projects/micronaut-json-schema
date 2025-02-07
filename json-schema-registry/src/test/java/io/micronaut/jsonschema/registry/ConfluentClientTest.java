@@ -27,20 +27,21 @@ public class ConfluentClientTest {
     JsonMapper jsonMapper = new JsonMapper();
 
     @Test
-    void testSchemaRegistryClient() throws IOException {
+    void testSchemaRegistryController() throws IOException {
         Map<String, Object> items = new HashMap<>();
         items.put("registry.url", "http://144.24.55.159:8081");
+        items.put("registry.username", "micronaut");
+        items.put("registry.password", "test");
 
         ApplicationContext ctx = ApplicationContext.run(items);
-        SchemaRegistryClient schemaRegistryClient = ctx.getBean(SchemaRegistryClient.class);
-
+        SchemaRegistryController controller = ctx.getBean(SchemaRegistryController.class);
         String subject = "human";
         String version = "latest";
-        String schema = schemaRegistryClient.getWithSubjectAndVersion(subject, version);
+        RegistryResponse response = controller.getSubjectWithVersion(subject, version);
 
         String expected = getExpectedResponse("human.schema.json");
-        Map<String, ?> mappedExpected = jsonMapper.readValue(expected, Map.class);
-        assertEquals(mappedExpected.get("schema").toString(), schema);
+        RegistryResponse mappedExpected = jsonMapper.readValue(expected, RegistryResponse.class);
+        assertEquals(mappedExpected, response);
         ctx.close();
     }
 

@@ -24,15 +24,13 @@ import jakarta.validation.constraints.NotBlank;
 @ConfigurationProperties("registry")
 public class SchemaRegistryConfig {
     @NotBlank
-    private String url;
+    public String url;
+    @NotBlank
+    private String username;
+    @NotBlank
+    private String password;
 
     public SchemaRegistryConfig() {
-    }
-
-    public SchemaRegistryConfig(@Parameter String url) {
-        if (url != null) {
-            this.url = url;
-        }
     }
 
     public String getUrl() {
@@ -41,5 +39,21 @@ public class SchemaRegistryConfig {
 
     public void setUrl(String schemaRegistryUrl) {
         this.url = schemaRegistryUrl;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

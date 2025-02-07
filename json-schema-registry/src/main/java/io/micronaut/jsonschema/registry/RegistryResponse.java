@@ -15,13 +15,14 @@
  */
 package io.micronaut.jsonschema.registry;
 
-import jakarta.inject.Singleton;
+import io.micronaut.serde.annotation.Serdeable;
 
-@Singleton
-public class SchemaRegistryService {
-    private final SchemaRegistryClient schemaRegistryClient;
-
-    public SchemaRegistryService(SchemaRegistryClient schemaRegistryClient) {
-        this.schemaRegistryClient = schemaRegistryClient;
-    }
+@Serdeable
+public record RegistryResponse(
+    String subject,
+    int id,
+    int version,
+    String schemaType,
+    String schema
+) {
 }

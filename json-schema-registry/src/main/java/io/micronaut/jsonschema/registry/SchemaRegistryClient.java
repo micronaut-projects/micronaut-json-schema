@@ -15,18 +15,14 @@
  */
 package io.micronaut.jsonschema.registry;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.micronaut.context.annotation.Property;
-import io.micronaut.http.HttpRequest;
-import io.micronaut.http.HttpResponse;
-import io.micronaut.http.client.HttpClient;
+import io.micronaut.context.annotation.Requires;
+import io.micronaut.core.async.annotation.SingleResult;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Header;
+import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.client.annotation.Client;
-import io.micronaut.http.uri.UriBuilder;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.inject.Singleton;
-
-import java.net.URI;
-import java.util.HashMap;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * A client for the Confluent Schema Registry.
@@ -34,21 +30,11 @@ import java.util.HashMap;
  * @author Elif Kurtay
  * @since 1.5.0
  */
+@Client("${registry.url}")
+@Requires(beans = SchemaRegistryConfig.class)
+@Header(name = "Content-Type", value = "application/vnd.schemaregistry.v1+json")
 @Singleton
-public class SchemaRegistryClient {
-
-    private static final String HEADER_NAME = "Content-Type";
-    private static final String HEADER_VALUE = "application/vnd.schemaregistry.v1+json";
-
-    private final SchemaRegistryConfig config;
-    private final HttpClient client;
-    private JsonMapper jsonMapper;
-
-    public SchemaRegistryClient(SchemaRegistryConfig config, @Client HttpClient httpClient) {
-        this.config = config;
-        this.client = httpClient;
-        this.jsonMapper = new JsonMapper();
-    }
+public interface SchemaRegistryClient {
 
     /**
      * SCHEMAS -----------------------------------------------------------
@@ -74,35 +60,10 @@ public class SchemaRegistryClient {
      * - GET /subjects/(string: subject)/metadata
      */
 
-    /**
-     * Get a specific version of the schema registered under this subject.
-     *
-     * @param subject The subject (topic name, e.g., user-data)
-     * @param version  The version number or 'latest' as a string
-     * @return The requested schema
-     */
-    public String getWithSubjectAndVersion(String subject, String version) {
-        URI url = UriBuilder.of(config.getUrl())
-            .path("subjects")
-            .path(subject)
-            .path("versions")
-            .path(version)
-            .build();
-
-        HttpRequest<?> request = HttpRequest.GET(url);
-
-        HttpResponse<String> response = client.toBlocking().exchange(request, String.class);
-        if (response.getStatus().getCode() == 200) {
-            try {
-                HashMap<String,?> HashMappedResponse = jsonMapper.readValue(response.body(), HashMap.class);
-                return HashMappedResponse.get("schema").toString();
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            throw new RuntimeException("Error registering schema: " + response.getStatus());
-        }
-    }
+    @Get("/subjects/{subject}/versions/latest")
+    @SingleResult
+    RegistryResponse getSubjectWithVersion(@PathVariable @NotBlank String subject,
+                                           @Header String authorization);
 
     /**
      * MODE -----------------------------------------------------------
