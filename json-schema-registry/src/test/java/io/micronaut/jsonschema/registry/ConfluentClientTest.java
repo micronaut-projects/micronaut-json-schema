@@ -3,6 +3,7 @@ package io.micronaut.jsonschema.registry;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.jsonschema.registry.types.SubjectResponse;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import org.junit.jupiter.api.Test;
 
@@ -34,13 +35,13 @@ public class ConfluentClientTest {
         items.put("registry.password", "test");
 
         ApplicationContext ctx = ApplicationContext.run(items);
-        SchemaRegistryController controller = ctx.getBean(SchemaRegistryController.class);
+        SchemaRegistryClient client = ctx.getBean(SchemaRegistryClient.class);
         String subject = "human";
         String version = "latest";
-        RegistryResponse response = controller.getSubjectWithVersion(subject, version);
+        SubjectResponse response = client.getSubjectWithVersion(subject, version);
 
         String expected = getExpectedResponse("human.schema.json");
-        RegistryResponse mappedExpected = jsonMapper.readValue(expected, RegistryResponse.class);
+        SubjectResponse mappedExpected = jsonMapper.readValue(expected, SubjectResponse.class);
         assertEquals(mappedExpected, response);
         ctx.close();
     }

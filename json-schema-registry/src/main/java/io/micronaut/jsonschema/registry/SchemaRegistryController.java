@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.registry;
 
+import io.micronaut.jsonschema.registry.types.SubjectResponse;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -50,7 +51,9 @@ public class SchemaRegistryController {
      * @param version  The version number or 'latest' as a string
      * @return The requested schema
      */
-    public RegistryResponse getSubjectWithVersion(String subject, String version) {
-        return client.getSubjectWithVersion(subject, basicAuth);
+    public SubjectResponse getSubjectWithVersion(String subject, String version) {
+        return client.getSubjectWithVersion(subject, version);
     }
+
+
 }

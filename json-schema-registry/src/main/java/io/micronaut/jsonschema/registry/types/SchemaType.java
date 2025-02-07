@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.registry;
+package io.micronaut.jsonschema.registry.types;
 
 import io.micronaut.serde.annotation.Serdeable;
 
 @Serdeable
-public record RegistryResponse(
-    String subject,
-    int id,
-    int version,
-    String schemaType,
-    String schema
-) {
+public enum SchemaType {
+    AVRO,
+    JSON,
+    PROTOBUF
 }
