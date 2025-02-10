@@ -19,8 +19,6 @@ import io.micronaut.jsonschema.registry.types.SubjectResponse;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import java.util.Base64;
-
 /**
  * A controller for the Confluent Schema Registry Client.
  *
@@ -31,29 +29,11 @@ import java.util.Base64;
 public class SchemaRegistryController {
     private final SchemaRegistryClient client;
     private final SchemaRegistryConfig config;
-    private final String basicAuth;
 
     @Inject
     public SchemaRegistryController(SchemaRegistryClient client, SchemaRegistryConfig config) {
         this.client = client;
         this.config = config;
-        basicAuth = basicAuth();
     }
-
-    private String basicAuth() {
-        return "Basic " + Base64.getEncoder().encodeToString((config.getUsername() + ":" + config.getPassword()).getBytes());
-    }
-
-    /**
-     * Get a specific version of the schema registered under this subject.
-     *
-     * @param subject The subject (topic name, e.g., user-data)
-     * @param version  The version number or 'latest' as a string
-     * @return The requested schema
-     */
-    public SubjectResponse getSubjectWithVersion(String subject, String version) {
-        return client.getSubjectWithVersion(subject, version);
-    }
-
 
 }

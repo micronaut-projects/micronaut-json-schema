@@ -32,14 +32,6 @@ public class SchemaRegistryConfig {
     public SchemaRegistryConfig() {
     }
 
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String schemaRegistryUrl) {
-        this.url = schemaRegistryUrl;
-    }
-
     public String getUsername() {
         return username;
     }

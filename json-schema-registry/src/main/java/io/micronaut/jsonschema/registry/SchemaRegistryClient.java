@@ -27,7 +27,6 @@ import io.micronaut.http.annotation.Put;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.jsonschema.registry.types.CompatibilityResponse;
 import io.micronaut.jsonschema.registry.types.ModeResponse;
-import io.micronaut.jsonschema.registry.types.SchemaType;
 import io.micronaut.jsonschema.registry.types.SubjectResponse;
 import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
 import jakarta.inject.Singleton;
@@ -44,6 +43,7 @@ import java.util.List;
  */
 @Client(value = "${registry.url}")
 @Requires(beans = SchemaRegistryConfig.class)
+@Requires(property = "registry.url")
 @Header(name = "Content-Type", value = "application/vnd.schemaregistry.v1+json")
 @Singleton
 public interface SchemaRegistryClient {
@@ -58,22 +58,19 @@ public interface SchemaRegistryClient {
 
     @Get("/schemas/ids/{id}")
     @SingleResult
-    String getSchemaWithId(@PathVariable int id,
-                           @Header String authorization);
+    String getSchemaWithId(@PathVariable int id);
 
     @Get("/schemas/ids/{id}/schema")
     @SingleResult
-    String getSchemaStringWithId(@PathVariable int id,
-                           @Header String authorization);
+    String getSchemaStringWithId(@PathVariable int id);
 
     @Get("/schemas/ids/{id}/versions")
     @SingleResult
-    List<SubjectResponse> getSchemaVersionsWithId(@PathVariable int id,
-                                 @Header String authorization);
+    List<SubjectResponse> getSchemaVersionsWithId(@PathVariable int id);
 
     @Get("/schemas/types")
     @SingleResult
-    List<SchemaType> getSchemaTypes(@Header String authorization);
+    List<String> getSchemaTypes();
 
     /**
      * SUBJECTS -----------------------------------------------------------
@@ -91,18 +88,23 @@ public interface SchemaRegistryClient {
 
     @Get("/subjects")
     @SingleResult
-    List<String> getSubjects(@Header String authorization);
+    List<String> getSubjects();
 
     @Get("/subjects/{subject}/versions")
     @SingleResult
-    List<Integer> getSubjectVersions(@PathVariable String subject,
-                                    @Header String authorization);
+    List<Integer> getSubjectVersions(@PathVariable String subject);
 
     @Delete("/subjects/{subject}")
     @SingleResult
-    List<Integer> deleteSubject(@PathVariable String subject,
-                                     @Header String authorization);
+    List<Integer> deleteSubject(@PathVariable String subject);
 
+    /**
+     * Get a specific version of the schema registered under this subject.
+     *
+     * @param subject The subject (topic name, e.g., user-data)
+     * @param version  The version number or 'latest' as a string
+     * @return The requested schema
+     */
     @Get("/subjects/{subject}/versions/{version}")
     @SingleResult
     SubjectResponse getSubjectWithVersion(@PathVariable String subject,
@@ -111,37 +113,31 @@ public interface SchemaRegistryClient {
     @Get("/subjects/{subject}/versions/{version}/schema")
     @SingleResult
     String getSchemaWithSubjectAndVersion(@PathVariable String subject,
-                                   @PathVariable String version,
-                                   @Header String authorization);
+                                   @PathVariable String version);
 
     @Post("/subjects/{subject}/versions")
     @SingleResult
     HashMap<String, Integer> registerNewVersion(@PathVariable String subject,
-                               @Body SubjectRequestBody schemaBody,
-                               @Header String authorization);
+                               @Body SubjectRequestBody schemaBody);
 
     @Post("/subjects/{subject}")
     @SingleResult
     SubjectResponse createSubject(@PathVariable String subject,
-                                  @Body SubjectRequestBody schemaBody,
-                                  @Header String authorization);
+                                  @Body SubjectRequestBody schemaBody);
 
     @Delete("/subjects/{subject}/versions/{version}")
     @SingleResult
     int deleteSubjectVersion(@PathVariable String subject,
-                                          @PathVariable String version,
-                                          @Header String authorization);
+                                          @PathVariable String version);
 
     @Get("/subjects/{subject}/versions/{version}/referencedby")
     @SingleResult
     List<Integer> getSubjectVersionReferencedBy(@PathVariable String subject,
-                                               @PathVariable String version,
-                                               @Header String authorization);
+                                               @PathVariable String version);
 
     @Get("/subjects/{subject}/metadata")
     @SingleResult
-    SubjectResponse getSubjectMetadata(@PathVariable String subject,
-                                       @Header String authorization);
+    SubjectResponse getSubjectMetadata(@PathVariable String subject);
 
 
     /**
@@ -155,23 +151,23 @@ public interface SchemaRegistryClient {
 
     @Get("/mode")
     @SingleResult
-    ModeResponse getMode(@Header String authorization);
+    ModeResponse getMode();
 
     @Put("/mode")
     @SingleResult
-    ModeResponse setMode(@Body ModeResponse mode, @Header String authorization);
+    ModeResponse setMode(@Body ModeResponse mode);
 
     @Get("/mode/{subject}")
     @SingleResult
-    ModeResponse getModeForSubject(@PathVariable String subject, @Header String authorization);
+    ModeResponse getModeForSubject(@PathVariable String subject);
 
     @Put("/mode/{subject}")
     @SingleResult
-    ModeResponse setModeForSubject(@PathVariable String subject, @Body ModeResponse mode, @Header String authorization);
+    ModeResponse setModeForSubject(@PathVariable String subject, @Body ModeResponse mode);
 
     @Delete("/mode/{subject}")
     @SingleResult
-    ModeResponse deleteModeForSubject(@PathVariable String subject, @Header String authorization);
+    ModeResponse deleteModeForSubject(@PathVariable String subject);
 
 
     /**
@@ -184,14 +180,12 @@ public interface SchemaRegistryClient {
     @SingleResult
     CompatibilityResponse checkCompatibilityForSubjectVersion(@PathVariable String subject,
                                                               @PathVariable String version,
-                                                              @Body SubjectRequestBody compatibilityRequest,
-                                                              @Header String authorization);
+                                                              @Body SubjectRequestBody compatibilityRequest);
 
     @Post("/compatibility/subjects/{subject}/versions")
     @SingleResult
     CompatibilityResponse checkCompatibilityForSubject(@PathVariable String subject,
-                                        @Body SubjectRequestBody compatibilityRequest,
-                                        @Header String authorization);
+                                        @Body SubjectRequestBody compatibilityRequest);
 
     /**
      * CONFIG -----------------------------------------------------------
@@ -205,21 +199,21 @@ public interface SchemaRegistryClient {
 
     @Put("/config")
     @SingleResult
-    String setConfig(@Body String config, @Header String authorization);
+    String setConfig(@Body String config);
 
     @Get("/config")
     @SingleResult
-    String getConfig(@Header String authorization);
+    String getConfig();
 
     @Put("/config/{subject}")
     @SingleResult
-    String setConfigForSubject(@PathVariable String subject, @Body String config, @Header String authorization);
+    String setConfigForSubject(@PathVariable String subject, @Body String config);
 
     @Get("/config/{subject}")
     @SingleResult
-    String getConfigForSubject(@PathVariable String subject, @Header String authorization);
+    String getConfigForSubject(@PathVariable String subject);
 
     @Delete("/config/{subject}")
     @SingleResult
-    void deleteConfigForSubject(@PathVariable String subject, @Header String authorization);
+    void deleteConfigForSubject(@PathVariable String subject);
 }

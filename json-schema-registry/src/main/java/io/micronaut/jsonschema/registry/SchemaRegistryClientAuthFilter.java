@@ -20,14 +20,14 @@ import io.micronaut.http.MutableHttpRequest;
 import io.micronaut.http.annotation.ClientFilter;
 import io.micronaut.http.annotation.RequestFilter;
 
-@ClientFilter("${registry.url}/**")
+@ClientFilter("/**")
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = "registry.username")
 @Requires(property = "registry.password")
-public class SchemaRegistryClientFilter {
+public class SchemaRegistryClientAuthFilter {
     private final SchemaRegistryConfig config;
 
-    public SchemaRegistryClientFilter(SchemaRegistryConfig config) {
+    public SchemaRegistryClientAuthFilter(SchemaRegistryConfig config) {
         this.config = config;
     }
 

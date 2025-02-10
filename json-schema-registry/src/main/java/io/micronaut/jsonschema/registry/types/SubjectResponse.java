@@ -25,4 +25,9 @@ public record SubjectResponse(
     SchemaType schemaType,
     String schema
 ) {
+    public enum SchemaType {
+        AVRO,
+        JSON,
+        PROTOBUF
+    }
 }

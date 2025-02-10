@@ -34,4 +34,10 @@ public record SubjectRequestBody(
         String subject,
         String version) {
     }
+
+    public enum SchemaType {
+        AVRO,
+        JSON,
+        PROTOBUF
+    }
 }

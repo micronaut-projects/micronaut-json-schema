@@ -4,13 +4,15 @@ plugins {
 
 dependencies {
     compileOnly(mn.micronaut.core.processor)
+
     implementation(mn.micronaut.http)
     implementation(mn.micronaut.http.client)
     implementation(mn.micronaut.jackson.databind)
     implementation(mnSerde.micronaut.serde.jackson)
     implementation(mnValidation.validation)
 
-    api(mn.micronaut.inject)
+    annotationProcessor(mn.micronaut.http.validation)
+    annotationProcessor(mnSerde.micronaut.serde.processor)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testImplementation(mn.micronaut.inject)
