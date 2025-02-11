@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,7 +29,7 @@ public class ConfluentClientTest {
     JsonMapper jsonMapper = new JsonMapper();
 
     @Test
-    void testSchemaRegistryController() throws IOException {
+    void testGetSubjectWithVersion() throws IOException {
         Map<String, Object> items = new HashMap<>();
         items.put("registry.url", "http://144.24.55.159:8081");
         items.put("registry.username", "micronaut");
@@ -43,6 +44,41 @@ public class ConfluentClientTest {
         String expected = getExpectedResponse("human.schema.json");
         SubjectResponse mappedExpected = jsonMapper.readValue(expected, SubjectResponse.class);
         assertEquals(mappedExpected, response);
+        ctx.close();
+    }
+
+    @Test
+    void testGetSchemaWithSubjectAndVersion() throws IOException {
+        Map<String, Object> items = new HashMap<>();
+        items.put("registry.url", "http://144.24.55.159:8081");
+        items.put("registry.username", "micronaut");
+        items.put("registry.password", "test");
+
+        ApplicationContext ctx = ApplicationContext.run(items);
+        SchemaRegistryClient client = ctx.getBean(SchemaRegistryClient.class);
+        String subject = "human";
+        String version = "latest";
+        String response = client.getSchemaWithSubjectAndVersion(subject, version);
+
+        String expected = getExpectedResponse("human.schema.json");
+        SubjectResponse mappedExpected = jsonMapper.readValue(expected, SubjectResponse.class);
+        assertEquals(mappedExpected.schema(), response);
+        ctx.close();
+    }
+
+    @Test
+    void testGetSubjectVersions() throws IOException {
+        Map<String, Object> items = new HashMap<>();
+        items.put("registry.url", "http://144.24.55.159:8081");
+        items.put("registry.username", "micronaut");
+        items.put("registry.password", "test");
+
+        ApplicationContext ctx = ApplicationContext.run(items);
+        SchemaRegistryClient client = ctx.getBean(SchemaRegistryClient.class);
+        String subject = "human";
+        List<Integer> response = client.getSubjectVersions(subject);
+
+        assertEquals(List.of(1), response);
         ctx.close();
     }
 

@@ -36,7 +36,12 @@ import java.util.List;
 
 /**
  * A client for the Confluent Schema Registry.
- * TODO: create schema response?
+ *
+ * <p> Supports the operations defined in the
+ * <a href="https://docs.confluent.io/platform/current/schema-registry/develop/api.html">Schema Registry API</a>.
+ *
+ * <p> The client is configured with the {@link SchemaRegistryConfig} file for its host address
+ * and authentication. the configuration parameters are expected to be configured in the application context.
  *
  * @author Elif Kurtay
  * @since 1.5.0
@@ -48,52 +53,75 @@ import java.util.List;
 @Singleton
 public interface SchemaRegistryClient {
 
+//     SCHEMA OPERATIONS -----------------------------------------------------------
+
     /**
-     * SCHEMAS. -----------------------------------------------------------
-     * + GET /schemas/ids/{int: id}
-     * + GET /schemas/ids/{int: id}/schema
-     * + GET /schemas/types/
-     * + GET /schemas/ids/{int: id}/versions
+     * Get the schema string identified by the input ID.
+     *
+     * @param id The unique identifier of the schema
+     * @return The schema string identified by the input ID
      */
-
     @Get("/schemas/ids/{id}")
-    @SingleResult
-    String getSchemaWithId(@PathVariable int id);
-
-    @Get("/schemas/ids/{id}/schema")
     @SingleResult
     String getSchemaStringWithId(@PathVariable int id);
 
+    /**
+     * Retrieves only the schema identified by the input ID.
+     *
+     * @param id The unique identifier of the schema
+     * @return Schema identified by the ID
+     */
+    @Get("/schemas/ids/{id}/schema")
+    @SingleResult
+    String getSchemaWithId(@PathVariable int id);
+
+    /**
+     * Get the subject-version pairs identified by the input ID.
+     *
+     * @param id The unique identifier of the schema
+     * @return The subject-version pairs
+     */
     @Get("/schemas/ids/{id}/versions")
     @SingleResult
     List<SubjectResponse> getSchemaVersionsWithId(@PathVariable int id);
 
+    /**
+     * Get the schema types that are registered with Schema Registry.
+     *
+     * @return The list of schema types
+     */
     @Get("/schemas/types")
     @SingleResult
     List<String> getSchemaTypes();
 
-    /**
-     * SUBJECTS -----------------------------------------------------------
-     * + GET /subjects
-     * + GET /subjects/(string: subject)/versions
-     * + DELETE /subjects/(string: subject)
-     * + GET /subjects/(string: subject)/versions/(versionId: version)
-     * + GET /subjects/(string: subject)/versions/(versionId: version)/schema
-     * + POST /subjects/(string: subject)/versions
-     * + POST /subjects/(string: subject)
-     * + DELETE /subjects/(string: subject)/versions/(versionId: version)
-     * + GET /subjects/(string: subject)/versions/{versionId: version}/referencedby
-     * + GET /subjects/(string: subject)/metadata
-     */
 
+    // SUBJECTS -----------------------------------------------------------
+
+    /**
+     * Get the list of subjects that are registered with Schema Registry.
+     *
+     * @return The list of subject names
+     */
     @Get("/subjects")
     @SingleResult
     List<String> getSubjects();
 
+    /**
+     * Get the list of versions of the schema registered under this subject.
+     *
+     * @param subject The subject (topic name, e.g., user-data)
+     * @return The list of versions
+     */
     @Get("/subjects/{subject}/versions")
     @SingleResult
     List<Integer> getSubjectVersions(@PathVariable String subject);
 
+    /**
+     * Delete the subject and all its versions.
+     *
+     * @param subject The subject (topic name, e.g., user-data)
+     * @return The list of versions that were deleted
+     */
     @Delete("/subjects/{subject}")
     @SingleResult
     List<Integer> deleteSubject(@PathVariable String subject);
@@ -110,15 +138,31 @@ public interface SchemaRegistryClient {
     SubjectResponse getSubjectWithVersion(@PathVariable String subject,
                                           @PathVariable String version);
 
+    /**
+     * Get the schema string registered under this subject and version.
+     *
+     * @param subject The subject (topic name, e.g., user-data)
+     * @param version  The version number or 'latest' as a string
+     * @return The requested schema
+     */
     @Get("/subjects/{subject}/versions/{version}/schema")
     @SingleResult
     String getSchemaWithSubjectAndVersion(@PathVariable String subject,
                                    @PathVariable String version);
 
+    /**
+     * Register a new schema under the specified subject. (Essentially, create a new schema.)
+     * If successfully registered, this returns the unique identifier of this schema in the registry.
+     *
+     * @param subject The subject (topic name, e.g., user-data)
+     * @param schemaBody  The new schema wished to be registered in the form of {@link SubjectRequestBody}
+     * @return The globally unique identifier of the schema
+     */
     @Post("/subjects/{subject}/versions")
     @SingleResult
     HashMap<String, Integer> registerNewVersion(@PathVariable String subject,
                                @Body SubjectRequestBody schemaBody);
+
 
     @Post("/subjects/{subject}")
     @SingleResult
