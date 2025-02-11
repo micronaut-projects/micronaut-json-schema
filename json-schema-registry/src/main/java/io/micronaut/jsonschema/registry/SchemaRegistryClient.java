@@ -25,13 +25,10 @@ import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.client.annotation.Client;
-import io.micronaut.jsonschema.registry.types.CompatibilityResponse;
-import io.micronaut.jsonschema.registry.types.ModeResponse;
-import io.micronaut.jsonschema.registry.types.SubjectResponse;
+import io.micronaut.jsonschema.registry.types.Responses;
 import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
 import jakarta.inject.Singleton;
 
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -53,7 +50,7 @@ import java.util.List;
 @Singleton
 public interface SchemaRegistryClient {
 
-//     SCHEMA OPERATIONS -----------------------------------------------------------
+// SCHEMA OPERATIONS ---------------------------------------------------------------------------
 
     /**
      * Get the schema string identified by the input ID.
@@ -63,7 +60,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/schemas/ids/{id}")
     @SingleResult
-    String getSchemaStringWithId(@PathVariable int id);
+    Responses.Schema getSchemaWithId(@PathVariable int id);
 
     /**
      * Retrieves only the schema identified by the input ID.
@@ -73,7 +70,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/schemas/ids/{id}/schema")
     @SingleResult
-    String getSchemaWithId(@PathVariable int id);
+    String getSchemaStringWithId(@PathVariable int id);
 
     /**
      * Get the subject-version pairs identified by the input ID.
@@ -83,7 +80,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/schemas/ids/{id}/versions")
     @SingleResult
-    List<SubjectResponse> getSchemaVersionsWithId(@PathVariable int id);
+    List<Responses.SubjectVersion> getSchemaVersionsWithId(@PathVariable int id);
 
     /**
      * Get the schema types that are registered with Schema Registry.
@@ -92,10 +89,10 @@ public interface SchemaRegistryClient {
      */
     @Get("/schemas/types")
     @SingleResult
-    List<String> getSchemaTypes();
+    List<Responses.SchemaType> getSchemaTypes();
 
 
-    // SUBJECTS -----------------------------------------------------------
+    // SUBJECTS ------------------------------------------------------------------------------------
 
     /**
      * Get the list of subjects that are registered with Schema Registry.
@@ -135,15 +132,15 @@ public interface SchemaRegistryClient {
      */
     @Get("/subjects/{subject}/versions/{version}")
     @SingleResult
-    SubjectResponse getSubjectWithVersion(@PathVariable String subject,
-                                          @PathVariable String version);
+    Responses.Subject getSubjectWithVersion(@PathVariable String subject,
+                                            @PathVariable String version);
 
     /**
      * Get the schema string registered under this subject and version.
      *
      * @param subject The subject (topic name, e.g., user-data)
      * @param version  The version number or 'latest' as a string
-     * @return The requested schema
+     * @return The requested schema string (unescaped)
      */
     @Get("/subjects/{subject}/versions/{version}/schema")
     @SingleResult
@@ -160,104 +157,185 @@ public interface SchemaRegistryClient {
      */
     @Post("/subjects/{subject}/versions")
     @SingleResult
-    HashMap<String, Integer> registerNewVersion(@PathVariable String subject,
-                               @Body SubjectRequestBody schemaBody);
+    Responses.Id registerNewVersion(@PathVariable String subject,
+                                         @Body SubjectRequestBody schemaBody);
 
-
+    /**
+     * Checks if a schema has already been registered under the specified subject.
+     *
+     * @param subject Subject under which the schema will be registered
+     * @param schemaBody The new schema wished to be registered in the form of {@link SubjectRequestBody}
+     * @return the schema string along with its globally unique identifier, its version under this subject and the subject name.
+     */
     @Post("/subjects/{subject}")
     @SingleResult
-    SubjectResponse createSubject(@PathVariable String subject,
-                                  @Body SubjectRequestBody schemaBody);
+    Responses.Subject createSubject(@PathVariable String subject,
+                               @Body SubjectRequestBody schemaBody);
 
+    /**
+     * Deletes a specific version of the schema registered under this subject.
+     *
+     * @param subject Subject under which the schema is registered
+     * @param version The version number or 'latest' as a string
+     * @return The version number that was deleted
+     */
     @Delete("/subjects/{subject}/versions/{version}")
     @SingleResult
     int deleteSubjectVersion(@PathVariable String subject,
                                           @PathVariable String version);
 
+    /**
+     * Get the list of versions that reference this schema.
+     *
+     * @param subject Subject under which the schema is registered
+     * @param version The version number or 'latest' as a string
+     * @return The list of versions that reference this schema
+     */
     @Get("/subjects/{subject}/versions/{version}/referencedby")
     @SingleResult
     List<Integer> getSubjectVersionReferencedBy(@PathVariable String subject,
                                                @PathVariable String version);
 
+    /**
+     * Get the metadata for the specified subject.
+     *
+     * @param subject Subject under which the schema is registered
+     * @return The metadata for the specified subject
+     */
     @Get("/subjects/{subject}/metadata")
     @SingleResult
-    SubjectResponse getSubjectMetadata(@PathVariable String subject);
+    Responses.Subject getSubjectMetadata(@PathVariable String subject);
 
+    // MODE ----------------------------------------------------------------------------------------
 
     /**
-     * MODE -----------------------------------------------------------
-     * + GET /mode
-     * + PUT /mode
-     * + GET /mode/(string: subject)
-     * + PUT /mode/(string: subject)
-     * + DELETE /mode/(string: subject)
+     * Get the global compatibility mode.
+     *
+     * @return The global compatibility mode
      */
-
     @Get("/mode")
     @SingleResult
-    ModeResponse getMode();
+    Responses.Mode getMode();
 
+    /**
+     * Set the global compatibility mode.
+     *
+     * @param mode The new global compatibility mode
+     * @return The new global compatibility mode
+     */
     @Put("/mode")
     @SingleResult
-    ModeResponse setMode(@Body ModeResponse mode);
+    Responses.Mode setMode(@Body Responses.Mode mode);
 
+    /**
+     * Get the compatibility mode for the specified subject.
+     *
+     * @param subject Subject under which the schema is registered
+     * @return The compatibility mode for the specified subject
+     */
     @Get("/mode/{subject}")
     @SingleResult
-    ModeResponse getModeForSubject(@PathVariable String subject);
+    Responses.Mode getModeForSubject(@PathVariable String subject);
 
+    /**
+     * Set the compatibility mode for the specified subject.
+     *
+     * @param subject Subject under which the schema is registered
+     * @param mode The new compatibility mode for the specified subject
+     * @return The new compatibility mode for the specified subject
+     */
     @Put("/mode/{subject}")
     @SingleResult
-    ModeResponse setModeForSubject(@PathVariable String subject, @Body ModeResponse mode);
+    Responses.Mode setModeForSubject(@PathVariable String subject, @Body Responses.Mode mode);
 
+    /**
+     * Delete the compatibility mode for the specified subject.
+     *
+     * @param subject Subject under which the schema is registered
+     * @return The compatibility mode that was deleted
+     */
     @Delete("/mode/{subject}")
     @SingleResult
-    ModeResponse deleteModeForSubject(@PathVariable String subject);
+    Responses.Mode deleteModeForSubject(@PathVariable String subject);
 
+    // COMPATIBILITY ---------------------------------------------------------------------------
 
     /**
-     * COMPATIBILITY -----------------------------------------------------------
-     * - POST /compatibility/subjects/(string: subject)/versions/(versionId: version)
-     * - POST /compatibility/subjects/(string: subject)/versions
+     * Test input schema against a particular version of a subject’s schema for compatibility.
+     *
+     * @param subject Subject under which the schema is registered
+     * @param version The version number or 'latest' as a string
+     * @param compatibilityRequest The new schema wished to be registered in the form of {@link SubjectRequestBody}
+     * @return Whether the new schema is compatible with the specified subject and version
      */
-
     @Post("/compatibility/subjects/{subject}/versions/{version}")
     @SingleResult
-    CompatibilityResponse checkCompatibilityForSubjectVersion(@PathVariable String subject,
-                                                              @PathVariable String version,
-                                                              @Body SubjectRequestBody compatibilityRequest);
-
-    @Post("/compatibility/subjects/{subject}/versions")
-    @SingleResult
-    CompatibilityResponse checkCompatibilityForSubject(@PathVariable String subject,
-                                        @Body SubjectRequestBody compatibilityRequest);
+    Responses.Compatibility checkCompatibilityForSubjectVersion(@PathVariable String subject,
+                                                                @PathVariable String version,
+                                                                @Body SubjectRequestBody compatibilityRequest);
 
     /**
-     * CONFIG -----------------------------------------------------------
-     * TODO:
-     * - PUT /config
-     * - GET /config
-     * - PUT /config/(string: subject)
-     * - GET /config/(string: subject)
-     * - DELETE /config/(string: subject)
+     * Perform a compatibility check on the schema against one or more versions in the subject,
+     * depending on how the compatibility is set.
+     *
+     * @param subject Subject under which the schema is registered
+     * @param compatibilityRequest The new schema to be checked in the form of {@link SubjectRequestBody}
+     * @return Whether the new schema is compatible with the specified subject
      */
-
-    @Put("/config")
+    @Post("/compatibility/subjects/{subject}/versions")
     @SingleResult
-    String setConfig(@Body String config);
+    Responses.Compatibility checkCompatibilityForSubject(@PathVariable String subject,
+                                                         @Body SubjectRequestBody compatibilityRequest);
 
+    // CONFIG ----------------------------------------------------------------------------------
+
+    /**
+     * Get the global configuration.
+     *
+     * @return The global configuration
+     */
     @Get("/config")
     @SingleResult
-    String getConfig();
+    Responses.Config getConfig();
 
-    @Put("/config/{subject}")
+    /**
+     * Set the global configuration.
+     *
+     * @param config The new global configuration
+     * @return The new global configuration
+     */
+    @Put("/config")
     @SingleResult
-    String setConfigForSubject(@PathVariable String subject, @Body String config);
+    Responses.Config setConfig(@Body Responses.Config config);
 
+    /**
+     * Get the configuration for the specified subject.
+     *
+     * @param subject Subject under which the schema is registered
+     * @return The configuration for the specified subject
+     */
     @Get("/config/{subject}")
     @SingleResult
-    String getConfigForSubject(@PathVariable String subject);
+    Responses.Config getConfigForSubject(@PathVariable String subject);
 
+    /**
+     * Set the configuration for the specified subject.
+     *
+     * @param subject Subject under which the schema is registered
+     * @param config The new configuration for the specified subject
+     * @return The new configuration for the specified subject
+     */
+    @Put("/config/{subject}")
+    @SingleResult
+    Responses.Config setConfigForSubject(@PathVariable String subject, @Body Responses.Config config);
+
+    /**
+     * Delete the configuration for the specified subject.
+     *
+     * @param subject Subject under which the schema is registered
+     * @return The configuration that was deleted
+     */
     @Delete("/config/{subject}")
     @SingleResult
-    void deleteConfigForSubject(@PathVariable String subject);
+    Responses.Config deleteConfigForSubject(@PathVariable String subject);
 }

@@ -3,7 +3,7 @@ package io.micronaut.jsonschema.registry;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.core.io.ResourceLoader;
-import io.micronaut.jsonschema.registry.types.SubjectResponse;
+import io.micronaut.jsonschema.registry.types.Responses;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import org.junit.jupiter.api.Test;
 
@@ -39,10 +39,10 @@ public class ConfluentClientTest {
         SchemaRegistryClient client = ctx.getBean(SchemaRegistryClient.class);
         String subject = "human";
         String version = "latest";
-        SubjectResponse response = client.getSubjectWithVersion(subject, version);
+        Responses.Subject response = client.getSubjectWithVersion(subject, version);
 
         String expected = getExpectedResponse("human.schema.json");
-        SubjectResponse mappedExpected = jsonMapper.readValue(expected, SubjectResponse.class);
+        Responses.Subject mappedExpected = jsonMapper.readValue(expected, Responses.Subject.class);
         assertEquals(mappedExpected, response);
         ctx.close();
     }
@@ -61,7 +61,7 @@ public class ConfluentClientTest {
         String response = client.getSchemaWithSubjectAndVersion(subject, version);
 
         String expected = getExpectedResponse("human.schema.json");
-        SubjectResponse mappedExpected = jsonMapper.readValue(expected, SubjectResponse.class);
+        Responses.Subject mappedExpected = jsonMapper.readValue(expected, Responses.Subject.class);
         assertEquals(mappedExpected.schema(), response);
         ctx.close();
     }

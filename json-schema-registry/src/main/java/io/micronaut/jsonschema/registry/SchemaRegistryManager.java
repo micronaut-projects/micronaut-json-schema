@@ -16,9 +16,10 @@
 package io.micronaut.jsonschema.registry;
 
 import io.micronaut.context.annotation.Context;
+import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.beans.BeanIntrospector;
 import io.micronaut.jsonschema.GeneratedFromSchema;
-import io.micronaut.jsonschema.registry.types.SchemaType;
+import io.micronaut.jsonschema.registry.types.Responses;
 import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
 import jakarta.inject.Inject;
 
@@ -27,11 +28,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A controller for the Confluent Schema Registry Client.
+ * A manager for the Confluent Schema Registry Client.
  *
  * @author Elif Kurtay
  * @since 1.5.0
  */
+@Requires(beans = SchemaRegistryClient.class)
+@Requires(beans = SchemaRegistryConfig.class)
 @Context
 public class SchemaRegistryManager {
     private final SchemaRegistryClient client;
@@ -67,9 +70,12 @@ public class SchemaRegistryManager {
                 var responseSchemaString = client.getSchemaWithSubjectAndVersion(subjectName, "latest");
                 // compare local vs registry, if different, push to registry
                 if (!schemaString.equals(responseSchemaString)) {
-                    client.registerNewVersion(
+                    var response = client.registerNewVersion(
                         subjectName,
-                        new SubjectRequestBody(schemaString, SchemaType.JSON, null, null, null));
+                        new SubjectRequestBody(schemaString, Responses.SchemaType.JSON, null, null, null));
+                    if (response.id() == -1) {
+                        throw new RuntimeException("Error pushing schema to registry");
+                    }
                 }
             } catch (Exception e) {
                 throw new RuntimeException("Error pushing schema to registry", e);

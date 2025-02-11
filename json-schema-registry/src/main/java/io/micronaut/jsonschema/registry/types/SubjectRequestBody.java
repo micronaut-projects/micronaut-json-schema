@@ -24,7 +24,7 @@ import java.util.Set;
 @Serdeable
 public record SubjectRequestBody(
     String schema,
-    SchemaType schemaType,
+    Responses.SchemaType schemaType,
     List<ReferenceType> references,
     HashMap<String, String> metadata,
     Set<String> ruleSet
