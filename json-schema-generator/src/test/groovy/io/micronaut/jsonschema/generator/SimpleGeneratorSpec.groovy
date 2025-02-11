@@ -27,6 +27,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         content == """
         @Serdeable
+        @GeneratedFromSchema(
+            fileName = "test.schema.json"
+        )
         public enum Status {
 
           ACTIVE("active"),
@@ -118,6 +121,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         content == """
         @Serdeable
+        @GeneratedFromSchema(
+            fileName = "test.schema.json"
+        )
         public record Llama(
             @NotNull @Min(0) int age,
             @NotNull @Size(min = 1) String name,
@@ -159,6 +165,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         content == """
         @Serdeable
+        @GeneratedFromSchema(
+            fileName = "test.schema.json"
+        )
         public record Llama(
             @Min(0) int age,
             Llama name,
@@ -207,20 +216,32 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         content == """
         @Serdeable
+        @GeneratedFromSchema(
+            fileName = "test.schema.json"
+        )
         public record Default(
             @Min(0) int age,
             Defaults defaults
         ) {
           @Serdeable
+          @GeneratedFromSchema(
+              fileName = "test.schema.json"
+          )
           public record Defaults(
               Run run
           ) {
             @Serdeable
+            @GeneratedFromSchema(
+                fileName = "test.schema.json"
+            )
             public record Run(
                 Shell shell,
                 @JsonProperty("working-directory") @Pattern(regexp = "^[a-zA-Z]*") String workingDirectory
             ) {
               @Serdeable
+              @GeneratedFromSchema(
+                  fileName = "test.schema.json"
+              )
               public enum Shell {
 
                 BASH("bash"),
@@ -296,6 +317,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         content == """
         @Serdeable
+        @GeneratedFromSchema(
+            fileName = "test.schema.json"
+        )
         public class Llama2 {
           /**
            * The age
@@ -395,6 +419,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         content == """
         @Serdeable
+        @GeneratedFromSchema(
+            fileName = "test.schema.json"
+        )
         public record Llama3(
             @NotNull @Size(min = 1) String name,
             @NotNull String foo,

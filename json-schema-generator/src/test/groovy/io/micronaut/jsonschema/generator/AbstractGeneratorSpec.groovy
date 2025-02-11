@@ -16,6 +16,7 @@ class AbstractGeneratorSpec extends Specification {
 
     TypeDeclaration generateType(String className, String jsonSchema) {
         SourceGenerator generator = new SourceGenerator("java")
+        SourceGenerator.setInputFileName("test.schema.json")
 
         Path outputPath = new File("output").toPath() // Define the base output path
         String packageName = "com.example.project"; // Example package name

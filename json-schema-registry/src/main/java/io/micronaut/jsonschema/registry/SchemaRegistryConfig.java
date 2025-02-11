@@ -28,6 +28,7 @@ public class SchemaRegistryConfig {
     private String username;
     @NotBlank
     private String password;
+    private boolean pushToRegistryEnabled = true;
 
     public SchemaRegistryConfig() {
     }
@@ -46,5 +47,13 @@ public class SchemaRegistryConfig {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean isPushToRegistryEnabled() {
+        return pushToRegistryEnabled;
+    }
+
+    public void setPushToRegistryEnabled(boolean pushToRegistryEnabled) {
+        this.pushToRegistryEnabled = pushToRegistryEnabled;
     }
 }
