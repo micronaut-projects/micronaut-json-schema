@@ -28,7 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A manager for the Confluent Schema Registry Client.
+ * A manager for the Confluent SchemaJson Registry Client.
  *
  * @author Elif Kurtay
  * @since 1.5.0

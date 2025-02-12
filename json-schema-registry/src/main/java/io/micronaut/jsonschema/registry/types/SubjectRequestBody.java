@@ -15,20 +15,39 @@
  */
 package io.micronaut.jsonschema.registry.types;
 
+import io.micronaut.core.annotation.Introspected;
 import io.micronaut.serde.annotation.Serdeable;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+/**
+ * Represents a request body for a subject in the Schema Registry.
+ *
+ * @param schema The schema.
+ * @param schemaType The schema type.
+ * @param references The references.
+ * @param metadata The metadata.
+ * @param ruleSet The rule set.
+ */
 @Serdeable
+@Introspected
 public record SubjectRequestBody(
     String schema,
     Responses.SchemaType schemaType,
     List<ReferenceType> references,
-    HashMap<String, String> metadata,
+    Map<String, String> metadata,
     Set<String> ruleSet
 ) {
+    /**
+     * The reference type used in the schema registry.
+     *
+     * @param name The reference name.
+     * @param subject The subject name.
+     * @param version The subject version.
+     */
+    @Introspected
     public record ReferenceType(
         String name,
         String subject,

@@ -20,6 +20,12 @@ import io.micronaut.http.MutableHttpRequest;
 import io.micronaut.http.annotation.ClientFilter;
 import io.micronaut.http.annotation.RequestFilter;
 
+/**
+ * A client filter that adds basic auth to all requests.
+ *
+ * @since 1.4.0
+ * @author Elif Kurtay
+ */
 @ClientFilter("/**")
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = "registry.username")
@@ -31,6 +37,11 @@ public class SchemaRegistryClientAuthFilter {
         this.config = config;
     }
 
+    /**
+     * Do basic auth on all requests.
+     *
+     * @param request The request
+     */
     @RequestFilter
     public void doFilter(MutableHttpRequest<?> request) {
         request.basicAuth(config.getUsername(), config.getPassword());

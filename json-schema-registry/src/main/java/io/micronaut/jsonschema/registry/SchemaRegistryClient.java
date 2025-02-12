@@ -17,10 +17,11 @@ package io.micronaut.jsonschema.registry;
 
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.async.annotation.SingleResult;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
+import io.micronaut.http.annotation.Consumes;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Header;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
@@ -32,10 +33,10 @@ import jakarta.inject.Singleton;
 import java.util.List;
 
 /**
- * A client for the Confluent Schema Registry.
+ * A client for the Confluent SchemaJson Registry.
  *
  * <p> Supports the operations defined in the
- * <a href="https://docs.confluent.io/platform/current/schema-registry/develop/api.html">Schema Registry API</a>.
+ * <a href="https://docs.confluent.io/platform/current/schema-registry/develop/api.html">SchemaJson Registry API</a>.
  *
  * <p> The client is configured with the {@link SchemaRegistryConfig} file for its host address
  * and authentication. the configuration parameters are expected to be configured in the application context.
@@ -46,7 +47,8 @@ import java.util.List;
 @Client(value = "${registry.url}")
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = "registry.url")
-@Header(name = "Content-Type", value = "application/vnd.schemaregistry.v1+json")
+//@Header(name = "Content-Type", value = "application/vnd.schemaregistry.v1+json")
+@Consumes(MediaType.APPLICATION_JSON)
 @Singleton
 public interface SchemaRegistryClient {
 
@@ -60,13 +62,13 @@ public interface SchemaRegistryClient {
      */
     @Get("/schemas/ids/{id}")
     @SingleResult
-    Responses.Schema getSchemaWithId(@PathVariable int id);
+    Responses.SchemaJson getSchemaWithId(@PathVariable int id);
 
     /**
      * Retrieves only the schema identified by the input ID.
      *
      * @param id The unique identifier of the schema
-     * @return Schema identified by the ID
+     * @return SchemaJson identified by the ID
      */
     @Get("/schemas/ids/{id}/schema")
     @SingleResult
@@ -83,7 +85,7 @@ public interface SchemaRegistryClient {
     List<Responses.SubjectVersion> getSchemaVersionsWithId(@PathVariable int id);
 
     /**
-     * Get the schema types that are registered with Schema Registry.
+     * Get the schema types that are registered with SchemaJson Registry.
      *
      * @return The list of schema types
      */
@@ -95,7 +97,7 @@ public interface SchemaRegistryClient {
     // SUBJECTS ------------------------------------------------------------------------------------
 
     /**
-     * Get the list of subjects that are registered with Schema Registry.
+     * Get the list of subjects that are registered with SchemaJson Registry.
      *
      * @return The list of subject names
      */
@@ -169,7 +171,7 @@ public interface SchemaRegistryClient {
      */
     @Post("/subjects/{subject}")
     @SingleResult
-    Responses.Subject createSubject(@PathVariable String subject,
+    Responses.Subject checkSubject(@PathVariable String subject,
                                @Body SubjectRequestBody schemaBody);
 
     /**
@@ -261,10 +263,10 @@ public interface SchemaRegistryClient {
     // COMPATIBILITY ---------------------------------------------------------------------------
 
     /**
-     * Test input schema against a particular version of a subject’s schema for compatibility.
+     * Test input schema against a particular version of a subject&apos;s schema for compatibility.
      *
      * @param subject Subject under which the schema is registered
-     * @param version The version number or 'latest' as a string
+     * @param version The version number or &apos;latest&apos; as a string
      * @param compatibilityRequest The new schema wished to be registered in the form of {@link SubjectRequestBody}
      * @return Whether the new schema is compatible with the specified subject and version
      */

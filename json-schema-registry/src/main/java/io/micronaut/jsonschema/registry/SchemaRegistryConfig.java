@@ -19,11 +19,17 @@ import io.micronaut.context.annotation.ConfigurationProperties;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * Configuration for the schema registry.
+ *
+ * @since 1.5.0
+ * @author Elif Kurtay
+ */
 @Serdeable
 @ConfigurationProperties("registry")
 public class SchemaRegistryConfig {
     @NotBlank
-    public String url;
+    private String url;
     @NotBlank
     private String username;
     @NotBlank
@@ -33,26 +39,58 @@ public class SchemaRegistryConfig {
     public SchemaRegistryConfig() {
     }
 
+    /**
+     * @return The URL of the schema registry
+     */
+    public @NotBlank String getUrl() {
+        return url;
+    }
+
+    /**
+     * @param url The URL of the schema registry
+     */
+    public void setUrl(@NotBlank String url) {
+        this.url = url;
+    }
+
+    /**
+     * @return The username to authenticate with
+     */
     public String getUsername() {
         return username;
     }
 
+    /**
+     * @param username The username to authenticate with
+     */
     public void setUsername(String username) {
         this.username = username;
     }
 
+    /**
+     * @return The password to authenticate with
+     */
     public String getPassword() {
         return password;
     }
 
+    /**
+     * @param password The password to authenticate with
+     */
     public void setPassword(String password) {
         this.password = password;
     }
 
+    /**
+     * @return Whether to push to the registry
+     */
     public boolean isPushToRegistryEnabled() {
         return pushToRegistryEnabled;
     }
 
+    /**
+     * @param pushToRegistryEnabled Whether to push to the registry
+     */
     public void setPushToRegistryEnabled(boolean pushToRegistryEnabled) {
         this.pushToRegistryEnabled = pushToRegistryEnabled;
     }
