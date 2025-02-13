@@ -26,9 +26,11 @@ import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.client.annotation.Client;
+import io.micronaut.jsonschema.registry.auth.BasicAuth;
 import io.micronaut.jsonschema.registry.types.ConfigKeys;
 import io.micronaut.jsonschema.registry.types.Responses;
 import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
+import jakarta.inject.Singleton;
 
 import java.util.List;
 
@@ -48,6 +50,8 @@ import java.util.List;
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = ConfigKeys.ORIGIN)
 @Consumes(MediaType.APPLICATION_JSON)
+@BasicAuth
+@Singleton
 public interface SchemaRegistryClient {
 
 // SCHEMA OPERATIONS ---------------------------------------------------------------------------

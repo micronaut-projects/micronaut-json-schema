@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.registry.basicauth;
+package io.micronaut.jsonschema.registry.auth;
 
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.http.MutableHttpRequest;
@@ -32,13 +32,14 @@ import jakarta.inject.Singleton;
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = ConfigKeys.USERNAME)
 @Requires(property = ConfigKeys.PASSWORD)
+@Requires(property = ConfigKeys.BASIC_AUTH_ENABLED)
 @BasicAuth
 @Singleton
 @ClientFilter("/**")
-public class SchemaRegistryClientAuthFilter {
+public class SchemaRegistryClientBasicAuthFilter {
     private final SchemaRegistryConfig config;
 
-    public SchemaRegistryClientAuthFilter(SchemaRegistryConfig config) {
+    public SchemaRegistryClientBasicAuthFilter(SchemaRegistryConfig config) {
         this.config = config;
     }
 
@@ -49,6 +50,8 @@ public class SchemaRegistryClientAuthFilter {
      */
     @RequestFilter
     public void doFilter(MutableHttpRequest<?> request) {
-        request.basicAuth(config.getUsername(), config.getPassword());
+        if (config.isBasicAuthEnabled()) {
+            request.basicAuth(config.getUsername(), config.getPassword());
+        }
     }
 }

@@ -28,7 +28,7 @@ public class ClientTest {
     @Inject
     ResourceLoader resourceLoader;
     @Inject
-    SchemaRegistryNoAuthClient client;
+    SchemaRegistryClient client;
 
     Responses.Subject exampleSubject;
 

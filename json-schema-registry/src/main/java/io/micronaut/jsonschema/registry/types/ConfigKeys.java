@@ -20,5 +20,6 @@ public final class ConfigKeys {
     public static final String ORIGIN = CONFIG_NAME + ".origin";
     public static final String USERNAME = CONFIG_NAME + ".username";
     public static final String PASSWORD = CONFIG_NAME + ".password";
-    public static final String PUSH_TO_REGISTRY_ENABLED = CONFIG_NAME + ".push-to-registry-enabled";
+    public static final String BASIC_AUTH_ENABLED = CONFIG_NAME + ".basicAuthEnabled";
+    public static final String PUSH_TO_REGISTRY_ENABLED = CONFIG_NAME + ".pushToRegistryEnabled";
 }

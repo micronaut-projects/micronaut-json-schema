@@ -36,6 +36,7 @@ public class SchemaRegistryConfig {
     @NotBlank
     private String password;
     private boolean pushToRegistryEnabled = true;
+    private boolean basicAuthEnabled = false;
 
     public SchemaRegistryConfig() {
     }
@@ -94,5 +95,19 @@ public class SchemaRegistryConfig {
      */
     public void setPushToRegistryEnabled(boolean pushToRegistryEnabled) {
         this.pushToRegistryEnabled = pushToRegistryEnabled;
+    }
+
+    /**
+     * @return Whether basic auth is enabled
+     */
+    public boolean isBasicAuthEnabled() {
+        return basicAuthEnabled;
+    }
+
+    /**
+     * @param basicAuthEnabled Whether basic auth will be enabled
+     */
+    public void setBasicAuthEnabled(boolean basicAuthEnabled) {
+        this.basicAuthEnabled = basicAuthEnabled;
     }
 }
