@@ -3,6 +3,7 @@ package io.micronaut.jsonschema.registry;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.jsonschema.registry.types.ConfigKeys;
 import io.micronaut.jsonschema.registry.types.Responses;
 import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -21,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @MicronautTest
-@Property(name = "registry.url", value = "/test/")
+@Property(name = ConfigKeys.ORIGIN, value = "/test/")
 public class ClientTest {
 
     @Inject

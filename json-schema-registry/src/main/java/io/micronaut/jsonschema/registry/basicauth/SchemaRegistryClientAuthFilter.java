@@ -13,12 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.registry;
+package io.micronaut.jsonschema.registry.basicauth;
 
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.http.MutableHttpRequest;
 import io.micronaut.http.annotation.ClientFilter;
 import io.micronaut.http.annotation.RequestFilter;
+import io.micronaut.jsonschema.registry.SchemaRegistryConfig;
+import io.micronaut.jsonschema.registry.types.ConfigKeys;
+import jakarta.inject.Singleton;
 
 /**
  * A client filter that adds basic auth to all requests.
@@ -26,10 +29,12 @@ import io.micronaut.http.annotation.RequestFilter;
  * @since 1.4.0
  * @author Elif Kurtay
  */
-@ClientFilter("/**")
 @Requires(beans = SchemaRegistryConfig.class)
-@Requires(property = "registry.username")
-@Requires(property = "registry.password")
+@Requires(property = ConfigKeys.USERNAME)
+@Requires(property = ConfigKeys.PASSWORD)
+@BasicAuth
+@Singleton
+@ClientFilter("/**")
 public class SchemaRegistryClientAuthFilter {
     private final SchemaRegistryConfig config;
 
