@@ -15,7 +15,6 @@
  */
 package io.micronaut.jsonschema.registry;
 
-import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.beans.BeanIntrospector;
 import io.micronaut.jsonschema.GeneratedFromSchema;
@@ -35,11 +34,11 @@ import java.util.Set;
  */
 @Requires(beans = SchemaRegistryClient.class)
 @Requires(beans = SchemaRegistryConfig.class)
-@Context
+//@Context
 public class SchemaRegistryManager {
+    @Inject
     private final SchemaRegistryClient client;
 
-    @Inject
     public SchemaRegistryManager(SchemaRegistryClient client, SchemaRegistryConfig config) {
         this.client = client;
         if (config.isPushToRegistryEnabled()) {

@@ -13,34 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.registry.basicauth;
+package io.micronaut.jsonschema.registry;
 
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Consumes;
 import io.micronaut.http.client.annotation.Client;
-import io.micronaut.jsonschema.registry.SchemaRegistryClient;
-import io.micronaut.jsonschema.registry.SchemaRegistryConfig;
 import io.micronaut.jsonschema.registry.types.ConfigKeys;
-import jakarta.inject.Singleton;
 
 /**
- * A client for the Confluent Json Schema Registry with basic HTTP authentication.
+ * A client for the Confluent Json Schema Registry without authentication.
  *
  * <p> Supports the operations defined in the
  * <a href="https://docs.confluent.io/platform/current/schema-registry/develop/api.html">SchemaJson Registry API</a>.
  *
- * <p> The client is configured with the {@link SchemaRegistryConfig} file for its host address
- * and authentication. the configuration parameters are expected to be configured in the application context.
+ * <p> The client is configured with the {@link SchemaRegistryConfig} file for its host address.
  *
  * @author Elif Kurtay
  * @since 1.5.0
  */
-@BasicAuth
 @Client(value = "${" + ConfigKeys.ORIGIN + "}")
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = ConfigKeys.ORIGIN)
 @Consumes(MediaType.APPLICATION_JSON)
-@Singleton
-public interface SchemaRegistryBasicAuthClient extends SchemaRegistryClient {
+public interface SchemaRegistryNoAuthClient extends SchemaRegistryClient {
 }
