@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.registry;
+package io.micronaut.jsonschema.registry.basicauth;
 
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.async.annotation.SingleResult;
@@ -26,9 +26,11 @@ import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.client.annotation.Client;
+import io.micronaut.jsonschema.registry.SchemaRegistryConfig;
 import io.micronaut.jsonschema.registry.types.ConfigKeys;
 import io.micronaut.jsonschema.registry.types.Responses;
 import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
+import jakarta.inject.Singleton;
 
 import java.util.List;
 
@@ -44,11 +46,13 @@ import java.util.List;
  * @author Elif Kurtay
  * @since 1.5.0
  */
+@BasicAuth
 @Client(value = "${" + ConfigKeys.ORIGIN + "}")
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = ConfigKeys.ORIGIN)
 @Consumes(MediaType.APPLICATION_JSON)
-public interface SchemaRegistryClient {
+@Singleton
+public interface SchemaRegistryBasicAuthClient {
 
 // SCHEMA OPERATIONS ---------------------------------------------------------------------------
 
@@ -145,7 +149,7 @@ public interface SchemaRegistryClient {
     @Get("/subjects/{subject}/versions/{version}/schema")
     @SingleResult
     String getSchemaWithSubjectAndVersion(@PathVariable String subject,
-                                   @PathVariable String version);
+                                          @PathVariable String version);
 
     /**
      * Register a new schema under the specified subject. (Essentially, create a new schema.)
@@ -158,7 +162,7 @@ public interface SchemaRegistryClient {
     @Post("/subjects/{subject}/versions")
     @SingleResult
     Responses.Id registerNewVersion(@PathVariable String subject,
-                                         @Body SubjectRequestBody schemaBody);
+                                    @Body SubjectRequestBody schemaBody);
 
     /**
      * Checks if a schema has already been registered under the specified subject.
@@ -170,7 +174,7 @@ public interface SchemaRegistryClient {
     @Post("/subjects/{subject}")
     @SingleResult
     Responses.Subject checkSubject(@PathVariable String subject,
-                               @Body SubjectRequestBody schemaBody);
+                                   @Body SubjectRequestBody schemaBody);
 
     /**
      * Deletes a specific version of the schema registered under this subject.
@@ -182,7 +186,7 @@ public interface SchemaRegistryClient {
     @Delete("/subjects/{subject}/versions/{version}")
     @SingleResult
     int deleteSubjectVersion(@PathVariable String subject,
-                                          @PathVariable String version);
+                             @PathVariable String version);
 
     /**
      * Get the list of versions that reference this schema.
@@ -194,7 +198,7 @@ public interface SchemaRegistryClient {
     @Get("/subjects/{subject}/versions/{version}/referencedby")
     @SingleResult
     List<Integer> getSubjectVersionReferencedBy(@PathVariable String subject,
-                                               @PathVariable String version);
+                                                @PathVariable String version);
 
     /**
      * Get the metadata for the specified subject.

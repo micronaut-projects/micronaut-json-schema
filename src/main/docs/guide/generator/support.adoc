@@ -10,7 +10,7 @@ The following JSON schema keywords are processed by the generation:
 | `description` | ✅ |
 | `properties` | ✅ |
 | `$comment` | ❌ |
-| `$ref` | ✅ | Self, local, remote, and url references are accepted. However, for remote references, the generation needs to be given the top local input directory during configuration.
+| `$ref` | ✅ | Self, local, remote, and origin references are accepted. However, for remote references, the generation needs to be given the top local input directory during configuration.
 | `$dynamicRef` | ❌ |
 | `$defs` | ✅ | The `definitions` keyword is also accepted.
 | `format` | ✅ | Teh closest existing class is decided as the type of object when the format is given. For example, for a `""type": "string", "format": "date""` schema, a `LocalDate` object is created in Java. Supported format keywords are: `date`, `date-time`, `time`, `duration`, `ipv4`, `ipv6`, `uuid`, `uri`, `iri`, and `json-pointer`.

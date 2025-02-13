@@ -3,6 +3,8 @@ package io.micronaut.jsonschema.registry;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.jsonschema.registry.basicauth.SchemaRegistryBasicAuthClient;
+import io.micronaut.jsonschema.registry.types.ConfigKeys;
 import io.micronaut.jsonschema.registry.types.Responses;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import org.junit.jupiter.api.Test;
@@ -24,15 +26,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Checking the response types from the client.
  */
 @MicronautTest
-@Property(name = "registry.url", value = "http://144.24.55.159:8081/")
-@Property(name = "registry.username", value = "micronaut")
-@Property(name = "registry.password", value = "test")
+@Property(name = ConfigKeys.ORIGIN, value = "http://144.24.55.159:8081/")
+@Property(name = ConfigKeys.USERNAME, value = "micronaut")
+@Property(name = ConfigKeys.PASSWORD, value = "test")
 public class ConfluentClientTest {
 
     @Inject
     ResourceLoader resourceLoader;
     @Inject
-    SchemaRegistryClient client;
+    SchemaRegistryBasicAuthClient client;
 
     JsonMapper jsonMapper = new JsonMapper();
 

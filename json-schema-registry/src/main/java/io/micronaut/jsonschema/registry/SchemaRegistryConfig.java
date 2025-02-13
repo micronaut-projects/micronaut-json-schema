@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.registry;
 
 import io.micronaut.context.annotation.ConfigurationProperties;
+import io.micronaut.jsonschema.registry.types.ConfigKeys;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
 
@@ -26,10 +27,10 @@ import jakarta.validation.constraints.NotBlank;
  * @author Elif Kurtay
  */
 @Serdeable
-@ConfigurationProperties("registry")
+@ConfigurationProperties(ConfigKeys.CONFIG_NAME)
 public class SchemaRegistryConfig {
     @NotBlank
-    private String url;
+    private String origin;
     @NotBlank
     private String username;
     @NotBlank
@@ -42,15 +43,15 @@ public class SchemaRegistryConfig {
     /**
      * @return The URL of the schema registry
      */
-    public @NotBlank String getUrl() {
-        return url;
+    public @NotBlank String getOrigin() {
+        return origin;
     }
 
     /**
-     * @param url The URL of the schema registry
+     * @param origin The URL of the schema registry
      */
-    public void setUrl(@NotBlank String url) {
-        this.url = url;
+    public void setOrigin(@NotBlank String origin) {
+        this.origin = origin;
     }
 
     /**

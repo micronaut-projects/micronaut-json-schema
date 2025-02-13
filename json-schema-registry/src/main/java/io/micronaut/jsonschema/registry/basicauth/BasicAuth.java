@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 original authors
+ * Copyright 2017-2025 original authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema;
+package io.micronaut.jsonschema.registry.basicauth;
 
-import java.lang.annotation.ElementType;
+import io.micronaut.http.annotation.FilterMatcher;
+
+import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * An annotation that signals that the object was generated from json schema.
- *
- * @since 1.5.0
- * @author Elif Kurtay
- */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.TYPE })
-public @interface GeneratedFromSchema {
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    /**
-     * The title of the JSON schema file used to generate the object.
-     *
-     * @return The fileName
-     */
-    String fileName() default "";
-
+@FilterMatcher
+@Documented
+@Retention(RUNTIME)
+@Target({TYPE, PARAMETER})
+public @interface BasicAuth {
 }
