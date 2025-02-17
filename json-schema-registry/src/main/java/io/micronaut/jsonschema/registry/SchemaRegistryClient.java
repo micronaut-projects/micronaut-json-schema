@@ -46,9 +46,9 @@ import java.util.List;
  * @author Elif Kurtay
  * @since 1.5.0
  */
-@Client(value = "${" + ConfigKeys.ORIGIN + "}")
+@Client(value = "${" + ConfigKeys.HOST_URL + "}")
 @Requires(beans = SchemaRegistryConfig.class)
-@Requires(property = ConfigKeys.ORIGIN)
+@Requires(property = ConfigKeys.HOST_URL)
 @Consumes(MediaType.APPLICATION_JSON)
 @BasicAuth
 @Singleton

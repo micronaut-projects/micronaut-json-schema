@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.registry;
 import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.beans.BeanIntrospector;
+import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.jsonschema.GeneratedFromSchema;
 import io.micronaut.jsonschema.registry.types.Responses;
 import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
@@ -35,11 +36,12 @@ import java.util.Set;
  */
 @Requires(beans = SchemaRegistryClient.class)
 @Requires(beans = SchemaRegistryConfig.class)
+@Requires(beans = ResourceLoader.class)
 @Context
 public class SchemaRegistryManager {
-    @Inject
-    private final SchemaRegistryClient client;
+    SchemaRegistryClient client;
 
+    @Inject
     public SchemaRegistryManager(SchemaRegistryClient client, SchemaRegistryConfig config) {
         this.client = client;
         if (config.isPushToRegistryEnabled()) {
@@ -58,27 +60,31 @@ public class SchemaRegistryManager {
 
         // for each unique filename, get schema from file
         uniqueFileNames.forEach(filename -> {
-            try (InputStream inputStream = getClass().getResourceAsStream(filename)) {
+            String schemaString = null;
+            try (InputStream inputStream = getClass().getResourceAsStream("/" + filename)) {
                 // get local schema file
-                assert inputStream != null;
-                var schemaString = new String(inputStream.readAllBytes());
-
-                // get schema from registry
-                var subjectName = filename.substring(
-                    filename.contains("/") ? filename.lastIndexOf('/') : 0,
-                    filename.contains(".") ? filename.indexOf('.') : filename.length());
-                var responseSchemaString = client.getSchemaWithSubjectAndVersion(subjectName, "latest");
-                // compare local vs registry, if different, push to registry
-                if (!schemaString.equals(responseSchemaString)) {
-                    var response = client.registerNewVersion(
-                        subjectName,
-                        new SubjectRequestBody(schemaString, Responses.SchemaType.JSON, null, null, null));
-                    if (response.id() == -1) {
-                        throw new RuntimeException("Error pushing schema to registry");
-                    }
+                if (inputStream == null) {
+                    System.err.println("Resource not found: " + filename);
+                    return;
                 }
+                schemaString = new String(inputStream.readAllBytes())
+                    .replaceAll("\"", "\\\\\"");
             } catch (Exception e) {
-                throw new RuntimeException("Error pushing schema to registry", e);
+                throw new RuntimeException("Error loading resource " + filename, e);
+            }
+            // get schema from registry
+            var subjectName = filename.substring(
+                filename.contains("/") ? filename.lastIndexOf('/') : 0,
+                filename.contains(".") ? filename.indexOf('.') : filename.length());
+            String responseSchemaString = client.getSchemaWithSubjectAndVersion(subjectName, "latest");
+            // compare local vs registry, if different, push to registry
+            if (!schemaString.equals(responseSchemaString)) {
+                var response = client.registerNewVersion(
+                    subjectName,
+                    new SubjectRequestBody(schemaString, Responses.SchemaType.JSON, null, null, null));
+                if (response.id() == -1) {
+                    System.err.println("Error pushing schema to registry: " + filename);
+                }
             }
         });
     }

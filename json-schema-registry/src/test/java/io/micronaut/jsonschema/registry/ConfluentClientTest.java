@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Checking the response types from the client.
  */
 @MicronautTest
-@Property(name = ConfigKeys.ORIGIN, value = "http://144.24.55.159:8081/")
+@Property(name = ConfigKeys.HOST_URL, value = "http://144.24.55.159:8081/")
 @Property(name = ConfigKeys.USERNAME, value = "micronaut")
 @Property(name = ConfigKeys.PASSWORD, value = "test")
 @Property(name = ConfigKeys.BASIC_AUTH_ENABLED, value = "true")
@@ -76,7 +76,7 @@ public class ConfluentClientTest {
         assertEquals(List.of(1), response2);
 
         // prepare expected response
-        String expected = getExpectedResponse("human.schema.json");
+        String expected = getExpectedResponse("human.json");
         Responses.Subject subjectExpected = jsonMapper.readValue(expected, Responses.Subject.class);
 
         Responses.Subject response3 = client.getSubjectWithVersion("human", "latest");

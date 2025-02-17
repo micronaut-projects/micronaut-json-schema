@@ -30,13 +30,13 @@ import jakarta.validation.constraints.NotBlank;
 @ConfigurationProperties(ConfigKeys.CONFIG_NAME)
 public class SchemaRegistryConfig {
     @NotBlank
-    private String origin;
+    private String url;
     @NotBlank
     private String username;
     @NotBlank
     private String password;
-    private boolean pushToRegistryEnabled = true;
-    private boolean basicAuthEnabled = false;
+    private boolean pushToRegistryEnabled = false;
+    private boolean basicAuthEnabled = true;
 
     public SchemaRegistryConfig() {
     }
@@ -44,15 +44,15 @@ public class SchemaRegistryConfig {
     /**
      * @return The URL of the schema registry
      */
-    public @NotBlank String getOrigin() {
-        return origin;
+    public @NotBlank String getUrl() {
+        return url;
     }
 
     /**
-     * @param origin The URL of the schema registry
+     * @param url The URL of the schema registry
      */
-    public void setOrigin(@NotBlank String origin) {
-        this.origin = origin;
+    public void setUrl(@NotBlank String url) {
+        this.url = url;
     }
 
     /**

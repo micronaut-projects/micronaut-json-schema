@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @MicronautTest
-@Property(name = ConfigKeys.ORIGIN, value = "/test/")
+@Property(name = ConfigKeys.HOST_URL, value = "/test/")
 public class ClientTest {
 
     @Inject
@@ -64,7 +64,7 @@ public class ClientTest {
 
     public void prepareTestData() throws IOException {
         JsonMapper jsonMapper = new JsonMapper();
-        Optional<InputStream> expectedOptional = resourceLoader.getResourceAsStream("human.schema.json");
+        Optional<InputStream> expectedOptional = resourceLoader.getResourceAsStream("human.json");
         assertTrue(expectedOptional.isPresent());
         String expected = new String(expectedOptional.get().readAllBytes(), StandardCharsets.UTF_8);
         expected = expected.replaceAll("\\s+", "").trim();

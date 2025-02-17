@@ -25,6 +25,9 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * An annotation that can be applied to a client to indicate that basic auth should be used.
+ */
 @FilterMatcher
 @Documented
 @Retention(RUNTIME)

@@ -1,5 +1,8 @@
+import io.micronaut.build.internal.generator.BeanGeneratorTask
+
 plugins {
     id("io.micronaut.build.internal.json-schema-module")
+    id("io.micronaut.build.internal.test-suite-generator-java")
 }
 
 dependencies {
@@ -28,8 +31,20 @@ tasks.test {
     useJUnitPlatform()
 }
 
+def animalGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(layout.projectDirectory.file("src/test/resources/animal.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.animals")
+}
+
+tasks.named("generateAnimals") {
+}
+
 sourceSets {
     test {
         java.srcDir('src/test/java')
+        java.srcDir(animalGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
     }
 }
