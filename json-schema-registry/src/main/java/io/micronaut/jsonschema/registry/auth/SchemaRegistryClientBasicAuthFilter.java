@@ -20,7 +20,6 @@ import io.micronaut.http.MutableHttpRequest;
 import io.micronaut.http.annotation.ClientFilter;
 import io.micronaut.http.annotation.RequestFilter;
 import io.micronaut.jsonschema.registry.SchemaRegistryConfig;
-import io.micronaut.jsonschema.registry.types.ConfigKeys;
 import jakarta.inject.Singleton;
 
 /**
@@ -30,9 +29,7 @@ import jakarta.inject.Singleton;
  * @author Elif Kurtay
  */
 @Requires(beans = SchemaRegistryConfig.class)
-@Requires(property = ConfigKeys.USERNAME)
-@Requires(property = ConfigKeys.PASSWORD)
-@Requires(property = ConfigKeys.BASIC_AUTH_ENABLED)
+@Requires(property = SchemaRegistryConfig.BASIC_AUTH_ENABLED)
 @BasicAuth
 @Singleton
 @ClientFilter("/**")

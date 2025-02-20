@@ -16,9 +16,10 @@
 package io.micronaut.jsonschema.registry;
 
 import io.micronaut.context.annotation.ConfigurationProperties;
-import io.micronaut.jsonschema.registry.types.ConfigKeys;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
+
+import static io.micronaut.jsonschema.registry.SchemaRegistryConfig.PREFIX;
 
 /**
  * Configuration for the schema registry.
@@ -27,8 +28,13 @@ import jakarta.validation.constraints.NotBlank;
  * @author Elif Kurtay
  */
 @Serdeable
-@ConfigurationProperties(ConfigKeys.CONFIG_NAME)
+@ConfigurationProperties(PREFIX)
 public class SchemaRegistryConfig {
+    public static final String PREFIX = "schema.registry";
+    public static final String HOST_URL = PREFIX + ".url";
+    public static final String BASIC_AUTH_ENABLED = PREFIX + ".basicAuthEnabled";
+    public static final String PUSH_TO_REGISTRY_ENABLED = PREFIX + ".pushToRegistryEnabled";
+
     @NotBlank
     private String url;
     @NotBlank

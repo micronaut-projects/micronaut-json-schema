@@ -3,9 +3,9 @@ package io.micronaut.jsonschema.registry;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.core.io.ResourceLoader;
-import io.micronaut.jsonschema.registry.types.ConfigKeys;
-import io.micronaut.jsonschema.registry.types.Responses;
-import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
+import io.micronaut.jsonschema.registry.model.SchemaType;
+import io.micronaut.jsonschema.registry.model.SubjectRequestBody;
+import io.micronaut.jsonschema.registry.model.SubjectResponse;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @MicronautTest
-@Property(name = ConfigKeys.HOST_URL, value = "/test/")
+@Property(name = SchemaRegistryConfig.HOST_URL, value = "/test/")
+@Property(name = "schema.registry.mock.service", value = "true")
 public class ClientTest {
 
     @Inject
@@ -30,13 +31,13 @@ public class ClientTest {
     @Inject
     SchemaRegistryClient client;
 
-    Responses.Subject exampleSubject;
+    SubjectResponse exampleSubject;
 
     @Test
     void testAddNewSubject() throws IOException {
         prepareTestData();
         // register new subject
-        var body = new SubjectRequestBody(exampleSubject.schema(), Responses.SchemaType.JSON, List.of(), Map.of(), Set.of());
+        var body = new SubjectRequestBody(exampleSubject.schema(), SchemaType.JSON, List.of(), Map.of(), Set.of());
         var response = client.registerNewVersion(exampleSubject.subject(), body);
 
         // check subject is correctly registered
@@ -68,6 +69,6 @@ public class ClientTest {
         assertTrue(expectedOptional.isPresent());
         String expected = new String(expectedOptional.get().readAllBytes(), StandardCharsets.UTF_8);
         expected = expected.replaceAll("\\s+", "").trim();
-        exampleSubject = jsonMapper.readValue(expected, Responses.Subject.class);
+        exampleSubject = jsonMapper.readValue(expected, SubjectResponse.class);
     }
 }

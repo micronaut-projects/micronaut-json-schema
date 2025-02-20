@@ -27,9 +27,7 @@ import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.jsonschema.registry.auth.BasicAuth;
-import io.micronaut.jsonschema.registry.types.ConfigKeys;
-import io.micronaut.jsonschema.registry.types.Responses;
-import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
+import io.micronaut.jsonschema.registry.model.*;
 import jakarta.inject.Singleton;
 
 import java.util.List;
@@ -46,9 +44,9 @@ import java.util.List;
  * @author Elif Kurtay
  * @since 1.5.0
  */
-@Client(value = "${" + ConfigKeys.HOST_URL + "}")
 @Requires(beans = SchemaRegistryConfig.class)
-@Requires(property = ConfigKeys.HOST_URL)
+@Requires(property = SchemaRegistryConfig.HOST_URL)
+@Client(value = "${" + SchemaRegistryConfig.HOST_URL + "}")
 @Consumes(MediaType.APPLICATION_JSON)
 @BasicAuth
 @Singleton
@@ -64,7 +62,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/schemas/ids/{id}")
     @SingleResult
-    Responses.SchemaJson getSchemaWithId(@PathVariable int id);
+    SchemaResponse getSchemaWithId(@PathVariable int id);
 
     /**
      * Retrieves only the schema identified by the input ID.
@@ -84,7 +82,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/schemas/ids/{id}/versions")
     @SingleResult
-    List<Responses.SubjectVersion> getSchemaVersionsWithId(@PathVariable int id);
+    List<SubjectVersionResponse> getSchemaVersionsWithId(@PathVariable int id);
 
     /**
      * Get the schema types that are registered with SchemaJson Registry.
@@ -93,7 +91,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/schemas/types")
     @SingleResult
-    List<Responses.SchemaType> getSchemaTypes();
+    List<SchemaType> getSchemaTypes();
 
 
     // SUBJECTS ------------------------------------------------------------------------------------
@@ -136,7 +134,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/subjects/{subject}/versions/{version}")
     @SingleResult
-    Responses.Subject getSubjectWithVersion(@PathVariable String subject,
+    SubjectResponse getSubjectWithVersion(@PathVariable String subject,
                                             @PathVariable String version);
 
     /**
@@ -161,7 +159,7 @@ public interface SchemaRegistryClient {
      */
     @Post("/subjects/{subject}/versions")
     @SingleResult
-    Responses.Id registerNewVersion(@PathVariable String subject,
+    IdResponse registerNewVersion(@PathVariable String subject,
                                          @Body SubjectRequestBody schemaBody);
 
     /**
@@ -173,7 +171,7 @@ public interface SchemaRegistryClient {
      */
     @Post("/subjects/{subject}")
     @SingleResult
-    Responses.Subject checkSubject(@PathVariable String subject,
+    SubjectResponse checkSubject(@PathVariable String subject,
                                @Body SubjectRequestBody schemaBody);
 
     /**
@@ -208,7 +206,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/subjects/{subject}/metadata")
     @SingleResult
-    Responses.Subject getSubjectMetadata(@PathVariable String subject);
+    SubjectResponse getSubjectMetadata(@PathVariable String subject);
 
     // MODE ----------------------------------------------------------------------------------------
 
@@ -219,7 +217,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/mode")
     @SingleResult
-    Responses.Mode getMode();
+    ModeResponse getMode();
 
     /**
      * Set the global compatibility mode.
@@ -229,7 +227,7 @@ public interface SchemaRegistryClient {
      */
     @Put("/mode")
     @SingleResult
-    Responses.Mode setMode(@Body Responses.Mode mode);
+    ModeResponse setMode(@Body ModeResponse mode);
 
     /**
      * Get the compatibility mode for the specified subject.
@@ -239,7 +237,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/mode/{subject}")
     @SingleResult
-    Responses.Mode getModeForSubject(@PathVariable String subject);
+    ModeResponse getModeForSubject(@PathVariable String subject);
 
     /**
      * Set the compatibility mode for the specified subject.
@@ -250,7 +248,7 @@ public interface SchemaRegistryClient {
      */
     @Put("/mode/{subject}")
     @SingleResult
-    Responses.Mode setModeForSubject(@PathVariable String subject, @Body Responses.Mode mode);
+    ModeResponse setModeForSubject(@PathVariable String subject, @Body ModeResponse mode);
 
     /**
      * Delete the compatibility mode for the specified subject.
@@ -260,7 +258,7 @@ public interface SchemaRegistryClient {
      */
     @Delete("/mode/{subject}")
     @SingleResult
-    Responses.Mode deleteModeForSubject(@PathVariable String subject);
+    ModeResponse deleteModeForSubject(@PathVariable String subject);
 
     // COMPATIBILITY ---------------------------------------------------------------------------
 
@@ -274,7 +272,7 @@ public interface SchemaRegistryClient {
      */
     @Post("/compatibility/subjects/{subject}/versions/{version}")
     @SingleResult
-    Responses.Compatibility checkCompatibilityForSubjectVersion(@PathVariable String subject,
+    CompatibilityResponse checkCompatibilityForSubjectVersion(@PathVariable String subject,
                                                                 @PathVariable String version,
                                                                 @Body SubjectRequestBody compatibilityRequest);
 
@@ -288,7 +286,7 @@ public interface SchemaRegistryClient {
      */
     @Post("/compatibility/subjects/{subject}/versions")
     @SingleResult
-    Responses.Compatibility checkCompatibilityForSubject(@PathVariable String subject,
+    CompatibilityResponse checkCompatibilityForSubject(@PathVariable String subject,
                                                          @Body SubjectRequestBody compatibilityRequest);
 
     // CONFIG ----------------------------------------------------------------------------------
@@ -300,7 +298,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/config")
     @SingleResult
-    Responses.Config getConfig();
+    ConfigResponse getConfig();
 
     /**
      * Set the global configuration.
@@ -310,7 +308,7 @@ public interface SchemaRegistryClient {
      */
     @Put("/config")
     @SingleResult
-    Responses.Config setConfig(@Body Responses.Config config);
+    ConfigResponse setConfig(@Body ConfigResponse config);
 
     /**
      * Get the configuration for the specified subject.
@@ -320,7 +318,7 @@ public interface SchemaRegistryClient {
      */
     @Get("/config/{subject}")
     @SingleResult
-    Responses.Config getConfigForSubject(@PathVariable String subject);
+    ConfigResponse getConfigForSubject(@PathVariable String subject);
 
     /**
      * Set the configuration for the specified subject.
@@ -331,7 +329,7 @@ public interface SchemaRegistryClient {
      */
     @Put("/config/{subject}")
     @SingleResult
-    Responses.Config setConfigForSubject(@PathVariable String subject, @Body Responses.Config config);
+    ConfigResponse setConfigForSubject(@PathVariable String subject, @Body ConfigResponse config);
 
     /**
      * Delete the configuration for the specified subject.
@@ -341,5 +339,5 @@ public interface SchemaRegistryClient {
      */
     @Delete("/config/{subject}")
     @SingleResult
-    Responses.Config deleteConfigForSubject(@PathVariable String subject);
+    ConfigResponse deleteConfigForSubject(@PathVariable String subject);
 }

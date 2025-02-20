@@ -1,5 +1,6 @@
 package io.micronaut.jsonschema.registry;
 
+import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.async.annotation.SingleResult;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
@@ -9,42 +10,44 @@ import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
-import io.micronaut.jsonschema.registry.types.Responses;
-import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
+import io.micronaut.jsonschema.registry.model.IdResponse;
+import io.micronaut.jsonschema.registry.model.SubjectRequestBody;
+import io.micronaut.jsonschema.registry.model.SubjectResponse;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Controller("/test")
 @Consumes(MediaType.APPLICATION_JSON)
-public class TestController {
-    private final List<Responses.Subject> subjects = new ArrayList<>();
+@Requires(property = "schema.registry.mock.service", value = "true")
+public class MockSchemaRegistryService {
+    private final List<SubjectResponse> subjects = new ArrayList<>();
     private int idCounter = 2;
 
     @Post("/subjects/{subject}/versions")
     @SingleResult
-    Responses.Id registerNewVersion(@PathVariable String subject,
+    IdResponse registerNewVersion(@PathVariable String subject,
                                     @Body SubjectRequestBody schemaBody) {
         // check if subject already exists and get its latest version
         var existingSubject = getExistingLatestSubject(subject);
         var version = 1;
         if (existingSubject != null) {
             if (existingSubject.schema().equals(schemaBody.schema())) {
-                return new Responses.Id(existingSubject.id());
+                return new IdResponse(existingSubject.id());
             }
             version = existingSubject.version() + 1;
         }
-        var newSubject = new Responses.Subject(subject, idCounter, version, schemaBody.schemaType(), schemaBody.schema());
+        var newSubject = new SubjectResponse(subject, idCounter, version, schemaBody.schemaType(), schemaBody.schema());
         subjects.add(newSubject);
         idCounter++;
-        return new Responses.Id(newSubject.id());
+        return new IdResponse(newSubject.id());
     }
 
     @Get("/subjects")
     @SingleResult
     List<String> getSubjects() {
         return subjects.stream()
-                .map(Responses.Subject::subject)
+                .map(SubjectResponse::subject)
                 .distinct()
                 .toList();
     }
@@ -54,7 +57,7 @@ public class TestController {
     List<Integer> getSubjectVersions(@PathVariable String subject) {
         return subjects.stream()
                 .filter(s -> s.subject().equals(subject))
-                .map(Responses.Subject::version)
+                .map(SubjectResponse::version)
                 .toList();
     }
 
@@ -63,7 +66,7 @@ public class TestController {
     List<Integer> deleteSubject(@PathVariable String subject) {
         var deletedVersions = subjects.stream()
                 .filter(s -> s.subject().equals(subject))
-                .map(Responses.Subject::version)
+                .map(SubjectResponse::version)
                 .toList();
         subjects.removeIf(s -> s.subject().equals(subject));
         return deletedVersions;
@@ -71,7 +74,7 @@ public class TestController {
 
     @Get("/subjects/{subject}/versions/{version}")
     @SingleResult
-    Responses.Subject getSubjectWithVersion(@PathVariable String subject,
+    SubjectResponse getSubjectWithVersion(@PathVariable String subject,
                                             @PathVariable String version) {
         if (version.equals("latest")) {
             return getExistingLatestSubject(subject);
@@ -92,7 +95,7 @@ public class TestController {
 
     @Post("/subjects/{subject}")
     @SingleResult
-    Responses.Subject checkSubject(@PathVariable String subject,
+    SubjectResponse checkSubject(@PathVariable String subject,
                                     @Body SubjectRequestBody schemaBody) {
         return subjects.stream()
             .filter(s -> s.subject().equals(subject) && s.schema().equals(schemaBody.schema()))
@@ -118,7 +121,7 @@ public class TestController {
         return versionInt;
     }
 
-    private Responses.Subject getExistingLatestSubject(String subject) {
+    private SubjectResponse getExistingLatestSubject(String subject) {
         return subjects.stream()
             .filter(s -> s.subject().equals(subject))
             .max((s1, s2) -> Integer.compare(s2.version(), s1.version()))

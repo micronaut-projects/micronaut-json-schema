@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.registry.types;
+package io.micronaut.jsonschema.registry.model;
 
 import io.micronaut.core.annotation.Introspected;
 import io.micronaut.serde.annotation.Serdeable;
@@ -35,7 +35,7 @@ import java.util.Set;
 @Introspected
 public record SubjectRequestBody(
     String schema,
-    Responses.SchemaType schemaType,
+    SchemaType schemaType,
     List<ReferenceType> references,
     Map<String, String> metadata,
     Set<String> ruleSet

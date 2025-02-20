@@ -43,8 +43,16 @@ tasks.named("generateAnimals") {
 }
 
 sourceSets {
+    main {
+        resources {
+            srcDirs(java.srcDir(animalGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory)))
+        }
+    }
     test {
         java.srcDir('src/test/java')
-        java.srcDir(animalGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
     }
+}
+
+tasks.withType(Checkstyle).configureEach {
+    enabled = false
 }

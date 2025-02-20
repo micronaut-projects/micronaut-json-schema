@@ -3,8 +3,13 @@ package io.micronaut.jsonschema.registry;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.core.io.ResourceLoader;
-import io.micronaut.jsonschema.registry.types.ConfigKeys;
-import io.micronaut.jsonschema.registry.types.Responses;
+import io.micronaut.jsonschema.registry.model.CompatibilityLevel;
+import io.micronaut.jsonschema.registry.model.ConfigResponse;
+import io.micronaut.jsonschema.registry.model.ModeResponse;
+import io.micronaut.jsonschema.registry.model.SchemaResponse;
+import io.micronaut.jsonschema.registry.model.SchemaType;
+import io.micronaut.jsonschema.registry.model.SubjectResponse;
+import io.micronaut.jsonschema.registry.model.SubjectVersionResponse;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import org.junit.jupiter.api.Test;
 
@@ -25,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Checking the response types from the client.
  */
 @MicronautTest
-@Property(name = ConfigKeys.HOST_URL, value = "http://144.24.55.159:8081/")
-@Property(name = ConfigKeys.USERNAME, value = "micronaut")
-@Property(name = ConfigKeys.PASSWORD, value = "test")
-@Property(name = ConfigKeys.BASIC_AUTH_ENABLED, value = "true")
+@Property(name = SchemaRegistryConfig.HOST_URL, value = "http://144.24.55.159:8081/")
+@Property(name = SchemaRegistryConfig.PREFIX + ".username", value = "micronaut")
+@Property(name = SchemaRegistryConfig.PREFIX + ".password", value = "test")
+@Property(name = SchemaRegistryConfig.BASIC_AUTH_ENABLED, value = "true")
 public class ConfluentClientTest {
 
     @Inject
@@ -41,29 +46,29 @@ public class ConfluentClientTest {
     @Test
     void testGetWithSchemas() {
         var response = client.getSchemaWithId(1);
-        assertEquals(new Responses.SchemaJson("\"string\""), response);
+        assertEquals(new SchemaResponse("\"string\""), response);
 
         var response2 = client.getSchemaStringWithId(1);
         assertEquals("\"string\"", response2);
 
         var response3 = client.getSchemaVersionsWithId(1);
-        assertEquals(List.of(new Responses.SubjectVersion("my_subject", 1)), response3);
+        assertEquals(List.of(new SubjectVersionResponse("my_subject", 1)), response3);
 
         var response4 = client.getSchemaTypes();
-        assertEquals(List.of(Responses.SchemaType.JSON, Responses.SchemaType.PROTOBUF, Responses.SchemaType.AVRO), response4);
+        assertEquals(List.of(SchemaType.JSON, SchemaType.PROTOBUF, SchemaType.AVRO), response4);
     }
 
     @Test
     void testConfigGetters() {
         var response1 = client.getConfig();
-        assertEquals(new Responses.Config(null, false, Responses.CompatibilityLevel.BACKWARD,
+        assertEquals(new ConfigResponse(null, false, CompatibilityLevel.BACKWARD,
             null, null, null, null, null), response1);
     }
 
     @Test
     void testModeGetters() {
         var response1 = client.getMode();
-        assertEquals(new Responses.Mode(Responses.Mode.ModeType.READWRITE), response1);
+        assertEquals(new ModeResponse(ModeResponse.ModeType.READWRITE), response1);
         assertNull(client.getModeForSubject("human"));
     }
 
@@ -77,9 +82,9 @@ public class ConfluentClientTest {
 
         // prepare expected response
         String expected = getExpectedResponse("human.json");
-        Responses.Subject subjectExpected = jsonMapper.readValue(expected, Responses.Subject.class);
+        SubjectResponse subjectExpected = jsonMapper.readValue(expected, SubjectResponse.class);
 
-        Responses.Subject response3 = client.getSubjectWithVersion("human", "latest");
+        SubjectResponse response3 = client.getSubjectWithVersion("human", "latest");
         assertEquals(subjectExpected, response3);
 
         String response4 = client.getSchemaWithSubjectAndVersion("human", "latest");
@@ -88,7 +93,7 @@ public class ConfluentClientTest {
         var response5 = client.getSubjectVersionReferencedBy("human", "latest");
         assertEquals(List.of(), response5);
 
-        Responses.Subject response6 = client.getSubjectMetadata("human");
+        SubjectResponse response6 = client.getSubjectMetadata("human");
         assertNull(response6);
     }
 

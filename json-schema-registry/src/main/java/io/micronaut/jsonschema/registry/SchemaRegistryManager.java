@@ -20,8 +20,8 @@ import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.beans.BeanIntrospector;
 import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.jsonschema.GeneratedFromSchema;
-import io.micronaut.jsonschema.registry.types.Responses;
-import io.micronaut.jsonschema.registry.types.SubjectRequestBody;
+import io.micronaut.jsonschema.registry.model.SchemaType;
+import io.micronaut.jsonschema.registry.model.SubjectRequestBody;
 import jakarta.inject.Inject;
 
 import java.io.InputStream;
@@ -81,7 +81,7 @@ public class SchemaRegistryManager {
             if (!schemaString.equals(responseSchemaString)) {
                 var response = client.registerNewVersion(
                     subjectName,
-                    new SubjectRequestBody(schemaString, Responses.SchemaType.JSON, null, null, null));
+                    new SubjectRequestBody(schemaString, SchemaType.JSON, null, null, null));
                 if (response.id() == -1) {
                     System.err.println("Error pushing schema to registry: " + filename);
                 }

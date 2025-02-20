@@ -13,13 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.registry.types;
+package io.micronaut.jsonschema.registry.model;
 
-public final class ConfigKeys {
-    public static final String CONFIG_NAME = "schema.registry";
-    public static final String HOST_URL = CONFIG_NAME + ".url";
-    public static final String USERNAME = CONFIG_NAME + ".username";
-    public static final String PASSWORD = CONFIG_NAME + ".password";
-    public static final String BASIC_AUTH_ENABLED = CONFIG_NAME + ".basicAuthEnabled";
-    public static final String PUSH_TO_REGISTRY_ENABLED = CONFIG_NAME + ".pushToRegistryEnabled";
+import io.micronaut.core.annotation.Introspected;
+import io.micronaut.serde.annotation.Serdeable;
+
+/**
+ * The mode of the registry.
+ *
+ * @param mode The mode type
+ */
+@Introspected
+@Serdeable
+public record ModeResponse(
+    ModeType mode
+) {
+    /**
+     * The mode type.
+     */
+    public enum ModeType {
+        IMPORT,
+        READONLY,
+        READWRITE
+    }
 }
