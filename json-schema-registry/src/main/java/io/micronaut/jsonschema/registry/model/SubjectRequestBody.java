@@ -15,7 +15,6 @@
  */
 package io.micronaut.jsonschema.registry.model;
 
-import io.micronaut.core.annotation.Introspected;
 import io.micronaut.serde.annotation.Serdeable;
 
 import java.util.List;
@@ -32,7 +31,6 @@ import java.util.Set;
  * @param ruleSet The rule set.
  */
 @Serdeable
-@Introspected
 public record SubjectRequestBody(
     String schema,
     SchemaType schemaType,
@@ -47,7 +45,7 @@ public record SubjectRequestBody(
      * @param subject The subject name.
      * @param version The subject version.
      */
-    @Introspected
+    @Serdeable
     public record ReferenceType(
         String name,
         String subject,

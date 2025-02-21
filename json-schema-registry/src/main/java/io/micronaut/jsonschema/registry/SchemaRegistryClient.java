@@ -16,10 +16,7 @@
 package io.micronaut.jsonschema.registry;
 
 import io.micronaut.context.annotation.Requires;
-import io.micronaut.core.async.annotation.SingleResult;
-import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
-import io.micronaut.http.annotation.Consumes;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
@@ -47,7 +44,6 @@ import java.util.List;
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = SchemaRegistryConfig.HOST_URL)
 @Client(value = "${" + SchemaRegistryConfig.HOST_URL + "}")
-@Consumes(MediaType.APPLICATION_JSON)
 @BasicAuth
 @Singleton
 public interface SchemaRegistryClient {
@@ -61,7 +57,6 @@ public interface SchemaRegistryClient {
      * @return The schema string identified by the input ID
      */
     @Get("/schemas/ids/{id}")
-    @SingleResult
     SchemaResponse getSchemaWithId(@PathVariable int id);
 
     /**
@@ -71,7 +66,6 @@ public interface SchemaRegistryClient {
      * @return SchemaJson identified by the ID
      */
     @Get("/schemas/ids/{id}/schema")
-    @SingleResult
     String getSchemaStringWithId(@PathVariable int id);
 
     /**
@@ -81,7 +75,6 @@ public interface SchemaRegistryClient {
      * @return The subject-version pairs
      */
     @Get("/schemas/ids/{id}/versions")
-    @SingleResult
     List<SubjectVersionResponse> getSchemaVersionsWithId(@PathVariable int id);
 
     /**
@@ -90,7 +83,6 @@ public interface SchemaRegistryClient {
      * @return The list of schema types
      */
     @Get("/schemas/types")
-    @SingleResult
     List<SchemaType> getSchemaTypes();
 
 
@@ -102,7 +94,6 @@ public interface SchemaRegistryClient {
      * @return The list of subject names
      */
     @Get("/subjects")
-    @SingleResult
     List<String> getSubjects();
 
     /**
@@ -112,7 +103,6 @@ public interface SchemaRegistryClient {
      * @return The list of versions
      */
     @Get("/subjects/{subject}/versions")
-    @SingleResult
     List<Integer> getSubjectVersions(@PathVariable String subject);
 
     /**
@@ -122,7 +112,6 @@ public interface SchemaRegistryClient {
      * @return The list of versions that were deleted
      */
     @Delete("/subjects/{subject}")
-    @SingleResult
     List<Integer> deleteSubject(@PathVariable String subject);
 
     /**
@@ -133,7 +122,6 @@ public interface SchemaRegistryClient {
      * @return The requested schema
      */
     @Get("/subjects/{subject}/versions/{version}")
-    @SingleResult
     SubjectResponse getSubjectWithVersion(@PathVariable String subject,
                                             @PathVariable String version);
 
@@ -145,7 +133,6 @@ public interface SchemaRegistryClient {
      * @return The requested schema string (unescaped)
      */
     @Get("/subjects/{subject}/versions/{version}/schema")
-    @SingleResult
     String getSchemaWithSubjectAndVersion(@PathVariable String subject,
                                    @PathVariable String version);
 
@@ -158,7 +145,6 @@ public interface SchemaRegistryClient {
      * @return The globally unique identifier of the schema
      */
     @Post("/subjects/{subject}/versions")
-    @SingleResult
     IdResponse registerNewVersion(@PathVariable String subject,
                                          @Body SubjectRequestBody schemaBody);
 
@@ -170,7 +156,6 @@ public interface SchemaRegistryClient {
      * @return the schema string along with its globally unique identifier, its version under this subject and the subject name.
      */
     @Post("/subjects/{subject}")
-    @SingleResult
     SubjectResponse checkSubject(@PathVariable String subject,
                                @Body SubjectRequestBody schemaBody);
 
@@ -182,7 +167,6 @@ public interface SchemaRegistryClient {
      * @return The version number that was deleted
      */
     @Delete("/subjects/{subject}/versions/{version}")
-    @SingleResult
     int deleteSubjectVersion(@PathVariable String subject,
                                           @PathVariable String version);
 
@@ -194,7 +178,6 @@ public interface SchemaRegistryClient {
      * @return The list of versions that reference this schema
      */
     @Get("/subjects/{subject}/versions/{version}/referencedby")
-    @SingleResult
     List<Integer> getSubjectVersionReferencedBy(@PathVariable String subject,
                                                @PathVariable String version);
 
@@ -205,7 +188,6 @@ public interface SchemaRegistryClient {
      * @return The metadata for the specified subject
      */
     @Get("/subjects/{subject}/metadata")
-    @SingleResult
     SubjectResponse getSubjectMetadata(@PathVariable String subject);
 
     // MODE ----------------------------------------------------------------------------------------
@@ -216,7 +198,6 @@ public interface SchemaRegistryClient {
      * @return The global compatibility mode
      */
     @Get("/mode")
-    @SingleResult
     ModeResponse getMode();
 
     /**
@@ -226,7 +207,6 @@ public interface SchemaRegistryClient {
      * @return The new global compatibility mode
      */
     @Put("/mode")
-    @SingleResult
     ModeResponse setMode(@Body ModeResponse mode);
 
     /**
@@ -236,7 +216,6 @@ public interface SchemaRegistryClient {
      * @return The compatibility mode for the specified subject
      */
     @Get("/mode/{subject}")
-    @SingleResult
     ModeResponse getModeForSubject(@PathVariable String subject);
 
     /**
@@ -247,7 +226,6 @@ public interface SchemaRegistryClient {
      * @return The new compatibility mode for the specified subject
      */
     @Put("/mode/{subject}")
-    @SingleResult
     ModeResponse setModeForSubject(@PathVariable String subject, @Body ModeResponse mode);
 
     /**
@@ -257,7 +235,6 @@ public interface SchemaRegistryClient {
      * @return The compatibility mode that was deleted
      */
     @Delete("/mode/{subject}")
-    @SingleResult
     ModeResponse deleteModeForSubject(@PathVariable String subject);
 
     // COMPATIBILITY ---------------------------------------------------------------------------
@@ -271,7 +248,6 @@ public interface SchemaRegistryClient {
      * @return Whether the new schema is compatible with the specified subject and version
      */
     @Post("/compatibility/subjects/{subject}/versions/{version}")
-    @SingleResult
     CompatibilityResponse checkCompatibilityForSubjectVersion(@PathVariable String subject,
                                                                 @PathVariable String version,
                                                                 @Body SubjectRequestBody compatibilityRequest);
@@ -285,7 +261,6 @@ public interface SchemaRegistryClient {
      * @return Whether the new schema is compatible with the specified subject
      */
     @Post("/compatibility/subjects/{subject}/versions")
-    @SingleResult
     CompatibilityResponse checkCompatibilityForSubject(@PathVariable String subject,
                                                          @Body SubjectRequestBody compatibilityRequest);
 
@@ -297,7 +272,6 @@ public interface SchemaRegistryClient {
      * @return The global configuration
      */
     @Get("/config")
-    @SingleResult
     ConfigResponse getConfig();
 
     /**
@@ -307,7 +281,6 @@ public interface SchemaRegistryClient {
      * @return The new global configuration
      */
     @Put("/config")
-    @SingleResult
     ConfigResponse setConfig(@Body ConfigResponse config);
 
     /**
@@ -317,7 +290,6 @@ public interface SchemaRegistryClient {
      * @return The configuration for the specified subject
      */
     @Get("/config/{subject}")
-    @SingleResult
     ConfigResponse getConfigForSubject(@PathVariable String subject);
 
     /**
@@ -328,7 +300,6 @@ public interface SchemaRegistryClient {
      * @return The new configuration for the specified subject
      */
     @Put("/config/{subject}")
-    @SingleResult
     ConfigResponse setConfigForSubject(@PathVariable String subject, @Body ConfigResponse config);
 
     /**
@@ -338,6 +309,5 @@ public interface SchemaRegistryClient {
      * @return The configuration that was deleted
      */
     @Delete("/config/{subject}")
-    @SingleResult
     ConfigResponse deleteConfigForSubject(@PathVariable String subject);
 }

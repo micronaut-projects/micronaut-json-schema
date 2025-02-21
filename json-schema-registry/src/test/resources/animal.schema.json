@@ -1,6 +1,6 @@
 {
   "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "$id":"https://example.com/schemas/llama.schema.json",
+  "$id":"https://example.com/schemas/animal.schema.json",
   "title":"Animal",
   "description":"An animal.",
   "type":["object"],
@@ -52,7 +52,7 @@
       }
     }
   }],
-  "$defs": {
+  "definitions": {
     "id": {
       "pattern": "^[A-Za-z0-9\\-\\.]{1,64}$",
       "type": "string",
