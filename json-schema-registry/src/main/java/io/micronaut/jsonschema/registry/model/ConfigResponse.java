@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.registry.model;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
-import io.micronaut.core.annotation.Introspected;
 import io.micronaut.serde.annotation.Serdeable;
 
 /**
@@ -32,7 +31,6 @@ import io.micronaut.serde.annotation.Serdeable;
  * @param defaultRuleSet The default rule set
  * @param overrideRuleSet The override rule set
  */
-@Introspected
 @Serdeable
 public record ConfigResponse(
     String alias,

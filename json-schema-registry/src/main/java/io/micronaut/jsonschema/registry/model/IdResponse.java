@@ -15,7 +15,6 @@
  */
 package io.micronaut.jsonschema.registry.model;
 
-import io.micronaut.core.annotation.Introspected;
 import io.micronaut.serde.annotation.Serdeable;
 
 /**
@@ -23,7 +22,6 @@ import io.micronaut.serde.annotation.Serdeable;
  *
  * @param id The ID
  */
-@Introspected
 @Serdeable
 public record IdResponse(int id) {
 }

@@ -15,7 +15,6 @@
  */
 package io.micronaut.jsonschema.registry.model;
 
-import io.micronaut.core.annotation.Introspected;
 import io.micronaut.serde.annotation.Serdeable;
 
 /**
@@ -27,7 +26,6 @@ import io.micronaut.serde.annotation.Serdeable;
  * @param schemaType The type of the schema
  * @param schema The schema string
  */
-@Introspected
 @Serdeable
 public record SubjectResponse(
     String subject,

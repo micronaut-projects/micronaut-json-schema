@@ -34,7 +34,7 @@ import java.util.Set;
 public record SubjectRequestBody(
     String schema,
     SchemaType schemaType,
-    List<ReferenceType> references,
+    List<Reference> references,
     Map<String, String> metadata,
     Set<String> ruleSet
 ) {
@@ -46,7 +46,7 @@ public record SubjectRequestBody(
      * @param version The subject version.
      */
     @Serdeable
-    public record ReferenceType(
+    public record Reference(
         String name,
         String subject,
         String version) {

@@ -23,7 +23,7 @@ import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.client.annotation.Client;
-import io.micronaut.jsonschema.registry.auth.BasicAuth;
+import io.micronaut.jsonschema.registry.auth.SchemaRegistryAuth;
 import io.micronaut.jsonschema.registry.model.*;
 import jakarta.inject.Singleton;
 
@@ -44,7 +44,7 @@ import java.util.List;
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = SchemaRegistryConfig.HOST_URL)
 @Client(value = "${" + SchemaRegistryConfig.HOST_URL + "}")
-@BasicAuth
+@SchemaRegistryAuth
 @Singleton
 public interface SchemaRegistryClient {
 

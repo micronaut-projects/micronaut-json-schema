@@ -27,9 +27,8 @@ import static io.micronaut.jsonschema.registry.SchemaRegistryConfig.PREFIX;
  * @since 1.5.0
  * @author Elif Kurtay
  */
-@Serdeable
 @ConfigurationProperties(PREFIX)
-public class SchemaRegistryConfig {
+public final class SchemaRegistryConfig {
     public static final String PREFIX = "schema.registry";
     public static final String HOST_URL = PREFIX + ".url";
     public static final String BASIC_AUTH_ENABLED = PREFIX + ".basicAuthEnabled";

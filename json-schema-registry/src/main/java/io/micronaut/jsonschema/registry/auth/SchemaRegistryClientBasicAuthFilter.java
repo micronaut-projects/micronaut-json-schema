@@ -30,7 +30,7 @@ import jakarta.inject.Singleton;
  */
 @Requires(beans = SchemaRegistryConfig.class)
 @Requires(property = SchemaRegistryConfig.BASIC_AUTH_ENABLED)
-@BasicAuth
+@SchemaRegistryAuth
 @Singleton
 @ClientFilter("/**")
 public class SchemaRegistryClientBasicAuthFilter {

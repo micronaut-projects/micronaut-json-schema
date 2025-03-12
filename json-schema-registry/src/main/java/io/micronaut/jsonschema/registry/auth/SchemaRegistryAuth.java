@@ -32,5 +32,5 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 @Retention(RUNTIME)
 @Target({TYPE, PARAMETER})
-public @interface BasicAuth {
+public @interface SchemaRegistryAuth {
 }

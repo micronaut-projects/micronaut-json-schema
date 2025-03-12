@@ -34,6 +34,13 @@ import java.util.stream.Collectors;
 /**
  * A manager for the Confluent SchemaJson Registry Client.
  *
+ * This class is responsible for keeping the registry updated.
+ * When the application starts,
+ *  - it will check for generated files from a local schema,
+ *  - check if the local schema is different from the one in the registry
+ *      (schema filename and registry subject name needs to be the same),
+ *  - if yes, will push the new local schemas to the registry.
+ *
  * @author Elif Kurtay
  * @since 1.5.0
  */

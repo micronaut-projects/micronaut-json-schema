@@ -15,7 +15,6 @@
  */
 package io.micronaut.jsonschema.registry.model;
 
-import io.micronaut.core.annotation.Introspected;
 import io.micronaut.serde.annotation.Serdeable;
 
 /**
@@ -23,15 +22,14 @@ import io.micronaut.serde.annotation.Serdeable;
  *
  * @param mode The mode type
  */
-@Introspected
 @Serdeable
 public record ModeResponse(
-    ModeType mode
+    Mode mode
 ) {
     /**
      * The mode type.
      */
-    public enum ModeType {
+    public enum Mode {
         IMPORT,
         READONLY,
         READWRITE

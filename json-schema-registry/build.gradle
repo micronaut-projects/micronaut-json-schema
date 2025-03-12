@@ -43,13 +43,11 @@ tasks.named("generateAnimals") {
 }
 
 sourceSets {
-    main {
+    test {
+        java.srcDir('src/test/java')
         resources {
             srcDirs(java.srcDir(animalGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory)))
         }
-    }
-    test {
-        java.srcDir('src/test/java')
     }
 }
 
