@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @MicronautTest
@@ -32,6 +33,18 @@ public class ClientTest {
     SchemaRegistryClient client;
 
     SubjectResponse exampleSubject;
+
+    @Test
+    void testSchemaManager() {
+        SchemaRegistryConfig config = new SchemaRegistryConfig();
+        config.setUrl("/test/");
+        config.setPushToRegistryEnabled(true);
+        SchemaRegistryManager manager = new SchemaRegistryManager(client, config);
+        assertNotNull(manager);
+
+        assertEquals(List.of("animal"), client.getSubjects());
+        assertNotNull(client.getSubjectWithVersion("animal", "1"));
+    }
 
     @Test
     void testAddNewSubject() throws IOException {
