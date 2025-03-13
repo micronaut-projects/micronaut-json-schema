@@ -36,12 +36,10 @@ public final class SchemaRegistryConfig {
 
     @NotBlank
     private String url;
-    @NotBlank
     private String username;
-    @NotBlank
     private String password;
     private boolean pushToRegistryEnabled = false;
-    private boolean basicAuthEnabled = true;
+    private boolean basicAuthEnabled = false;
 
     public SchemaRegistryConfig() {
     }

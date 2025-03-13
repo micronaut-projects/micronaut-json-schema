@@ -1,4 +1,4 @@
 link:https://json-schema.org/[JSON Schema] is a human-readable format for exchanging data that also enables
 JSON data consistency, validity and interoperability.
 
-Micronaut JSON Schema assists transforming schemas to beans and beans to schemas in your applications.
+Micronaut JSON Schema assists transforming schemas to beans and beans to schemas in your applications. In addition, it includes a convenient connection to https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] for schema management.

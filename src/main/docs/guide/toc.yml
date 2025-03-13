@@ -22,6 +22,7 @@ generator:
   registration: Build-time Generation Configuration
   usage: Run-time Generation Configuration
   support: Supported JSON Schema Keywords and Limitations
-  example: Example Output of Generation
+  example: Example Usage of Generation
+registry: Schema Registry with Confluent
 repository: Repository
 releaseHistory: Release History

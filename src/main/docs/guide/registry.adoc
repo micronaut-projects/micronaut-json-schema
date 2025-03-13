@@ -1,0 +1,29 @@
+This section explain the connection to the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] for schema management.
+
+The `SchemaRegistryConfig` class is used to configure the connection to the Confluent Schema Registry. The following properties are available:
+
+[cols="2,4", options="header"]
+|===
+| Configuration Property | Explanation
+| `SchemaRegistryConfig.HOST_URL` | This field is mandatory and specifies the URL of the Schema Registry.
+| `SchemaRegistryConfig.BASIC_AUTH_ENABLED` | Whether the basic authentication is enabled. Default is `false`.
+| `SchemaRegistryConfig.PUSH_TO_REGISTRY_ENABLED` | Whether new schemas should be automatically pushed to the registry. Default is `false`.
+| `SchemaRegistryConfig.PREFIX + ".username"` | The username info needed if Basic Auth is enabled.
+| `SchemaRegistryConfig.PREFIX + ".password"` | The password info needed if Basic Auth is enabled.
+|===
+
+The following example shows how to configure the connection to the Confluent Schema Registry:
+[source,java]
+----
+@Property(name = SchemaRegistryConfig.HOST_URL, value = "/test/") // The URL of your Schema Registry
+public class ClientTest {
+    // Your code here
+}
+----
+
+When the `SchemaRegistryConfig.PUSH_TO_REGISTRY_ENABLED` is set to `true`, the `SchemaRegistryManager` will automatically push new (or updated) schemas to the registry. If the schema already exists in the registry, the client will not push it again. However, there are some requirements:
+
+- The schema file must be available locally and in the `src/test/resources` directory.
+- The schema file must be in the JSON Schema format.
+- The schema file must have the same name as the subject name in the Confluent Schema Registry. For example, if the subject name is `test`, the schema file must be named `test.json` or `test.schema.json`.
+- The schema must be used to generate sources from with the JSON Schema Generator module so that the generated files include the `@GeneratedFromSchema` annotation.
