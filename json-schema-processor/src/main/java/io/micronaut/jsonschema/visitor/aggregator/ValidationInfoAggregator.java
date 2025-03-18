@@ -166,7 +166,7 @@ public class ValidationInfoAggregator implements SchemaInfoAggregator {
 
     static void addRequiredPropertyInfo(String propertyName, PropertyElement property, Schema schema, JsonSchemaContext context) {
         if (schema.getProperties() != null) {
-            if (context.strictMode() && !property.hasAnnotation(NON_NULL_ANN)) {
+            if (context.strictMode() && !property.hasAnnotation(NULLABLE_ANN)) {
                 schema.addRequired(propertyName);
             } else if (property.isPrimitive()
                     || property.hasAnnotation(NOT_NULL_ANN + LIST_SUFFIX)
