@@ -112,14 +112,14 @@ public final class SourceGenerator {
     /**
      * Generates source code from JSON schema files based on the provided configuration.
      * <p>
-     * This method first checks if an {@code inputFolder} is specified in the configuration. If the
-     * {@code inputFolder} is provided, it processes all JSON Schema in the folder to generate source code.
-     * If {@code inputFolder} is {@code null}, it attempts to retrieve the JSON schema from the specified
-     * {@code inputStream}, {@code jsonUrl}, or {@code jsonFile} in the configuration and generates code from the schema.
+     * This method first checks if an {@code inputDirectory} is specified in the configuration. If the
+     * {@code inputDirectory} is provided, it processes all JSON Schema in the folder to generate source code.
+     * If {@code inputDirectory} is {@code null}, it attempts to retrieve the JSON schema from the specified
+     * {@code inputStream}, {@code inputURL}, or {@code inputFile} in the configuration and generates code from the schema.
      * </p>
      * <p>
      * If the {@code outputFileName} exists, the method generates a single source file from the schema with that file name.
-     * Otherwise, the method generates all objects defined in the schema inside the specified {@code outputPath}
+     * Otherwise, the method generates all objects defined in the schema inside the specified {@code outputDirectory}
      * (and {@code outputPackageName} if available).
      * </p>
      *
