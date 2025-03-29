@@ -211,6 +211,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         def schema = buildJsonSchema('test.Salamander', 'salamander', """
         package test;
 
+        import io.micronaut.core.annotation.Nullable;
         import io.micronaut.jsonschema.*;
         import java.util.*;
 
@@ -218,14 +219,15 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         public record Salamander(
                 String name,
                 boolean poisonous,
-                int age
+                int age,
+                @Nullable String description
         ) {
         }
 """, config)
 
         expect:
         schema.title == "Salamander"
-        schema.properties.size() == 3
+        schema.properties.size() == 4
         schema.additionalProperties == Schema.FALSE
         schema.required == ["name", "poisonous", "age"]
     }
