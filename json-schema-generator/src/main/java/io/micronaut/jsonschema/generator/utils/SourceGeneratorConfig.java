@@ -25,10 +25,10 @@ import java.nio.file.Path;
  *
  * This class is used to specify:
  * <ol>
- *   <li>The URL of the JSON schema file to be processed ({@code jsonUrl})</li>
+ *   <li>The URL of the JSON schema file to be processed ({@code inputURL})</li>
  *   <li>The name of the JSON schema file ({@code jsonFileName})</li>
- *   <li>The input folder where schema files might be located ({@code inputFolder})</li>
- *   <li>The output directory for generated source files ({@code outputPath})</li>
+ *   <li>The input folder where schema files might be located ({@code inputDirectory})</li>
+ *   <li>The output directory for generated source files ({@code outputDirectory})</li>
  *   <li>The package name to be applied to the generated source files ({@code outputPackageName})</li>
  *   <li>The output file name for the generated source ({@code outputFileName})</li>
  * </ol>

@@ -22,6 +22,7 @@ micronaut-logging = "1.6.1"
 micronaut-serde = "2.14.0"
 micronaut-test = "4.7.0"
 micronaut-sourcegen = "1.7.5"
+micronaut-build-plugin-sourcegen = "0.0.1-SNAPSHOT"
 micronaut-validation = "4.9.0"
 micronaut-serialization = "2.12.0"
 groovy = "4.0.24"
@@ -39,6 +40,7 @@ micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.r
 micronaut-test = { module = "io.micronaut.test:micronaut-test-bom", version.ref = "micronaut-test" }
 micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-bom", version.ref = "micronaut-validation" }
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
+micronaut-build-plugin-sourcegen = { module = "io.micronaut.build.plugin.sourcegen:micronaut-build-plugin-sourcegen-bom", version.ref = "micronaut-build-plugin-sourcegen" }
 micronaut-serialization = { module = "io.micronaut.serialization:micronaut-serialization-bom", version.ref = "micronaut-serialization" }
 
 managed-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "managed-json-schema-validator" }
