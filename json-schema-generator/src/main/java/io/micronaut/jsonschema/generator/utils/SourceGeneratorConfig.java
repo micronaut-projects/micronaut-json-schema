@@ -42,7 +42,8 @@ import java.nio.file.Path;
  * @param outputPackageName The package name to be applied to the generated source files.
  *                          This field is optional and can be {@code null} if no package name is needed.
  * @param outputFileName The name of the file where the generated source code will be written. This field is optional.
- * @param javadoc
+ * @param javadoc Configuration specific to Javadoc.
+ * @param recordAdoptionStrategy Strategy specifying when to generate records vs classes. Defaults to preferring records.
  * @author Elif Kurtay
  * @version 1.3
  */
@@ -54,7 +55,8 @@ public record SourceGeneratorConfig(
     Path outputPath,
     String outputPackageName,
     String outputFileName,
-    JavadocConfig javadoc
+    JavadocConfig javadoc,
+    RecordAdoptionStrategy recordAdoptionStrategy
 ) {
     public String getInputName() {
         if (jsonFile != null) {
@@ -81,5 +83,37 @@ public record SourceGeneratorConfig(
         public JavadocConfig() {
             this(true);
         }
+    }
+
+    /**
+     * Strategy enum that specifies when to generate records vs classes.
+     */
+    public enum RecordAdoptionStrategy {
+        /**
+         * Will generate record when possible.
+         */
+        PREFER_RECORD,
+        /**
+         * Will always generate classes.
+         */
+        ALWAYS_CLASS
+    }
+
+    /**
+     * Convert this configuration to builder.
+     * @return The builder
+     */
+    public SourceGeneratorConfigBuilder toBuilder() {
+        return new SourceGeneratorConfigBuilder()
+            .withInputStream(inputStream)
+            .withJsonUrl(jsonUrl)
+            .withInputFolder(inputFolder)
+            .withJsonFile(jsonFile)
+            .withOutputFolder(outputPath)
+            .withOutputPackageName(outputPackageName)
+            .withOutputFileName(outputFileName)
+            .withJavadoc(javadoc)
+            .withRecordAdoptionStrategy(recordAdoptionStrategy);
+
     }
 }

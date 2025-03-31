@@ -22,6 +22,7 @@ import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.generator.loaders.FileLoader;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.generator.SourceGenerators;
 import io.micronaut.sourcegen.model.*;
@@ -620,6 +621,9 @@ public final class SourceGenerator {
     }
 
     private boolean shouldBeAClass(Schema schema) {
+        if (context.getConfiguration().recordAdoptionStrategy() == RecordAdoptionStrategy.ALWAYS_CLASS) {
+            return true;
+        }
         boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
         return hasOverLimitParameters || schema.hasAdditionalProperties() || schema.hasConstValue();
     }

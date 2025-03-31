@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.utils;
 
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy;
 
 import java.io.File;
 import java.io.InputStream;
@@ -37,6 +38,7 @@ public class SourceGeneratorConfigBuilder {
     String outputPackageName = "";
     String outputFileName = "";
     JavadocConfig javadocConfig = new JavadocConfig();
+    RecordAdoptionStrategy recordAdoptionStrategy = RecordAdoptionStrategy.PREFER_RECORD;
 
     /**
      * @return {@link SourceGeneratorConfig}
@@ -50,7 +52,8 @@ public class SourceGeneratorConfigBuilder {
             outputPath,
             outputPackageName,
             outputFileName,
-            javadocConfig
+            javadocConfig,
+            recordAdoptionStrategy
         );
     }
 
@@ -131,6 +134,16 @@ public class SourceGeneratorConfigBuilder {
      */
     public SourceGeneratorConfigBuilder withJavadoc(JavadocConfig javadoc) {
         this.javadocConfig = javadoc;
+        return this;
+    }
+
+    /**
+     * Sets the strategy for generating records vs classes.
+     * @param strategy The strategy
+     * @return This
+     */
+    public SourceGeneratorConfigBuilder withRecordAdoptionStrategy(RecordAdoptionStrategy strategy) {
+        this.recordAdoptionStrategy = strategy;
         return this;
     }
 

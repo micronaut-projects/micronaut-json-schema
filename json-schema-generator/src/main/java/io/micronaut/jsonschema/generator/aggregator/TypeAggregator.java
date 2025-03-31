@@ -137,9 +137,8 @@ public final class TypeAggregator {
                     var generator = new SourceGenerator(SourceGenerator.getLanguage(), context);
                     SourceGenerator.setInputFileName(location);
                     generator.generate(
-                        new SourceGeneratorConfig(null, location, null, null,
-                            SourceGenerator.getOutputPath(), SourceGenerator.getOutputPackageName(), null,
-                            context.getConfiguration().javadoc()));
+                        context.getConfiguration().toBuilder().withInputStream(null)
+                            .withInputFolder(null).withJsonUrl(location).withJsonFile(null).build());
                     SourceGenerator.setInputFileName(originalFileName);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
