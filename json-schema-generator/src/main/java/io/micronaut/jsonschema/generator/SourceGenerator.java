@@ -577,12 +577,12 @@ public final class SourceGenerator {
             return "";
         }
         return description
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll("'", "&apos;")
-            .replaceAll("\"", "&quot;")
-            .replaceAll("\n", "<br>\n")
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("'", "&apos;")
+            .replace("\"", "&quot;")
+            .replace("\n", "<br>\n")
             .trim();
     }
 
