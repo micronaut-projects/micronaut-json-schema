@@ -15,6 +15,8 @@
  */
 package io.micronaut.jsonschema.generator.utils;
 
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig;
+
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -34,12 +36,22 @@ public class SourceGeneratorConfigBuilder {
     Path outputPath = null;
     String outputPackageName = "";
     String outputFileName = "";
+    JavadocConfig javadocConfig = new JavadocConfig();
 
     /**
      * @return {@link SourceGeneratorConfig}
      */
     public SourceGeneratorConfig build() {
-        return new SourceGeneratorConfig(inputStream, jsonUrl, jsonFile, inputFolder, outputPath, outputPackageName, outputFileName);
+        return new SourceGeneratorConfig(
+            inputStream,
+            jsonUrl,
+            jsonFile,
+            inputFolder,
+            outputPath,
+            outputPackageName,
+            outputFileName,
+            javadocConfig
+        );
     }
 
     /**
@@ -111,5 +123,16 @@ public class SourceGeneratorConfigBuilder {
         this.outputFileName = outputFileName;
         return this;
     }
+
+    /**
+     * Sets the Javadoc-specific configuration.
+     * @param javadoc The configuration
+     * @return This
+     */
+    public SourceGeneratorConfigBuilder withJavadoc(JavadocConfig javadoc) {
+        this.javadocConfig = javadoc;
+        return this;
+    }
+
 }
 

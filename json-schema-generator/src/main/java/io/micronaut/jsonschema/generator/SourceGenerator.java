@@ -128,6 +128,7 @@ public final class SourceGenerator {
      * @throws IOException If an I/O error occurs during file or directory creation, or if an error occurs while reading or writing files.
      */
     public File generate(SourceGeneratorConfig config) throws IOException {
+        context.setConfiguration(config);
         outputPath = config.outputPath();
         outputPackageName = config.outputPackageName();
         if (config.inputFolder() != null) {
@@ -568,16 +569,19 @@ public final class SourceGenerator {
     }
 
     private String getJavadoc(String description) {
+        if (!context.getConfiguration().javadoc().replaceHTML()) {
+            return description;
+        }
         if (description.isBlank()) {
             return "";
         }
         return description
+            .replaceAll("&", "&amp;")
             .replaceAll("<", "&lt;")
             .replaceAll(">", "&gt;")
-            .replaceAll("&", "&amp;")
             .replaceAll("'", "&apos;")
             .replaceAll("\"", "&quot;")
-            .replaceAll("\n", "<br>")
+            .replaceAll("\n", "<br>\n")
             .trim();
     }
 

@@ -42,6 +42,7 @@ import java.nio.file.Path;
  * @param outputPackageName The package name to be applied to the generated source files.
  *                          This field is optional and can be {@code null} if no package name is needed.
  * @param outputFileName The name of the file where the generated source code will be written. This field is optional.
+ * @param javadoc
  * @author Elif Kurtay
  * @version 1.3
  */
@@ -52,7 +53,9 @@ public record SourceGeneratorConfig(
     Path inputFolder,
     Path outputPath,
     String outputPackageName,
-    String outputFileName) {
+    String outputFileName,
+    JavadocConfig javadoc
+) {
     public String getInputName() {
         if (jsonFile != null) {
             return jsonFile.getName();
@@ -60,6 +63,23 @@ public record SourceGeneratorConfig(
             return jsonUrl.substring(jsonUrl.lastIndexOf('/') + 1);
         } else {
             return "InputStream.schema.json";
+        }
+    }
+
+    /**
+     * A sub-configuration used for generated Javadoc.
+     * The configuration has single parameter, but is expected to be extended with more properties.
+     *
+     * @param replaceHTML Whether to replace HTML characters, e.g. {@code >} to {@code &gt;}.
+     */
+    public record JavadocConfig(
+        boolean replaceHTML
+    ) {
+        /**
+         * Initialize the configuration with defaults.
+         */
+        public JavadocConfig() {
+            this(true);
         }
     }
 }

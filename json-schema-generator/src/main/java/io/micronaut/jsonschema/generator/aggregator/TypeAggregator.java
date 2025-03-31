@@ -138,7 +138,8 @@ public final class TypeAggregator {
                     SourceGenerator.setInputFileName(location);
                     generator.generate(
                         new SourceGeneratorConfig(null, location, null, null,
-                            SourceGenerator.getOutputPath(), SourceGenerator.getOutputPackageName(), null));
+                            SourceGenerator.getOutputPath(), SourceGenerator.getOutputPackageName(), null,
+                            context.getConfiguration().javadoc()));
                     SourceGenerator.setInputFileName(originalFileName);
                 } catch (IOException e) {
                     throw new RuntimeException(e);

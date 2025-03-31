@@ -465,11 +465,53 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             "name": { "type": "string" }
           }
         }
-        ''')
+        ''', (b) -> {})
 
         then:
         type != null
         type.name.asString() == "MyLlamaNumberOne"
+    }
+
+    void testJavadocGeneration() {
+        when:
+        var type = generateType("Elephant", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/elephant.schema.json",
+          "title": "Elephant",
+          "description":"A elephant <(|)>.\\nAnother line",
+          "type":["object"],
+          "properties":{
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+        ''', b -> {})
+
+        then:
+        type.getJavadoc().get().toText() == """A elephant &lt;(|)&gt;.<br>\nAnother line\n"""
+    }
+
+    void testJavadocGenerationWithoutReplacement() {
+        when:
+        var type = generateType("Elephant", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/elephant.schema.json",
+          "title": "Elephant",
+          "description":"A elephant <a href=\\"https://elephant.com\\">elephant URL</a>.\\n Another line",
+          "type":["object"],
+          "properties":{
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+        ''', b -> b.withJavadoc(new SourceGeneratorConfig.JavadocConfig(false)))
+
+        then:
+        type.getJavadoc().get().toText() == """A elephant <a href="https://elephant.com">elephant URL</a>.\n Another line\n"""
     }
 
     void testPropertyGeneration() {
