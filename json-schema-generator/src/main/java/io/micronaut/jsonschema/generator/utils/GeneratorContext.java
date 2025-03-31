@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.generator.utils;
 
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;

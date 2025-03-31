@@ -25,6 +25,7 @@ class AbstractGeneratorSpec extends Specification {
         var builder = new SourceGeneratorConfigBuilder()
                 .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
                 .withOutputFolder(outputPath)
+                .withOutputFileName(className)
                 .withOutputPackageName(packageName)
         consumer.accept(builder)
         File generated = generator.generate(builder.build());
@@ -39,12 +40,16 @@ class AbstractGeneratorSpec extends Specification {
         }
     }
 
+    TypeDeclaration generateType(String className, String jsonSchema) {
+        return generateType(className, jsonSchema, b -> {})
+    }
+
     String generateTypeAndGetContent(String className, String jsonSchema, Consumer<SourceGeneratorConfigBuilder> configConsumer) {
         return generateType(className, jsonSchema, configConsumer).getTokenRange().get().toString()
     }
 
     String generateTypeAndGetContent(String className, String jsonSchema) {
-        return generateTypeAndGetContent(className, jsonSchema, (b) -> {})
+        return generateType(className, jsonSchema).getTokenRange().get().toString()
     }
 
     String generatePropertyAndGetContent(String propertyName, String propertySchema) {

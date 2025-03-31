@@ -17,8 +17,6 @@ package io.micronaut.jsonschema.generator;
 
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.generator.loaders.UrlLoader;
-import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
-import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder;
 
 import java.io.File;

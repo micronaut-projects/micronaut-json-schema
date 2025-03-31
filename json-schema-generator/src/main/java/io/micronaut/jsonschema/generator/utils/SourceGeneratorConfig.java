@@ -69,6 +69,24 @@ public record SourceGeneratorConfig(
     }
 
     /**
+     * Convert this configuration to builder.
+     * @return The builder
+     */
+    public SourceGeneratorConfigBuilder toBuilder() {
+        return new SourceGeneratorConfigBuilder()
+            .withInputStream(inputStream)
+            .withJsonUrl(jsonUrl)
+            .withInputFolder(inputFolder)
+            .withJsonFile(jsonFile)
+            .withOutputFolder(outputPath)
+            .withOutputPackageName(outputPackageName)
+            .withOutputFileName(outputFileName)
+            .withJavadoc(javadoc)
+            .withRecordAdoptionStrategy(recordAdoptionStrategy);
+
+    }
+
+    /**
      * A sub-configuration used for generated Javadoc.
      * The configuration has single parameter, but is expected to be extended with more properties.
      *
@@ -97,23 +115,5 @@ public record SourceGeneratorConfig(
          * Will always generate classes.
          */
         ALWAYS_CLASS
-    }
-
-    /**
-     * Convert this configuration to builder.
-     * @return The builder
-     */
-    public SourceGeneratorConfigBuilder toBuilder() {
-        return new SourceGeneratorConfigBuilder()
-            .withInputStream(inputStream)
-            .withJsonUrl(jsonUrl)
-            .withInputFolder(inputFolder)
-            .withJsonFile(jsonFile)
-            .withOutputFolder(outputPath)
-            .withOutputPackageName(outputPackageName)
-            .withOutputFileName(outputFileName)
-            .withJavadoc(javadoc)
-            .withRecordAdoptionStrategy(recordAdoptionStrategy);
-
     }
 }

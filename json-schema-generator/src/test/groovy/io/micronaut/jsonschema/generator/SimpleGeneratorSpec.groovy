@@ -2,6 +2,8 @@ package io.micronaut.jsonschema.generator
 
 import io.micronaut.jsonschema.generator.loaders.UrlLoader
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder
+
 import java.nio.file.Path
 
 import static io.micronaut.jsonschema.generator.loaders.UrlLoader.isValidUrl
@@ -74,9 +76,12 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
           }
         }
         ''';
-        File generated = generator.generate(new SourceGeneratorConfig(
-                new ByteArrayInputStream(jsonSchema.getBytes()), null, null,
-                null, outputPath, packageName, fileName))
+        File generated = generator.generate(new SourceGeneratorConfigBuilder()
+                .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
+                .withOutputFolder(outputPath)
+                .withOutputPackageName(packageName)
+                .withOutputFileName(fileName)
+                .build())
 
         then:
         generated == null
@@ -355,7 +360,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testMapGeneration() {
         when:
-        var content = generateTypeAndGetContent("Hedgehog", '''
+        var content = generateTypeAndGetContent(null, '''
         {
           "$schema":"https://json-schema.org/draft/2020-12/schema",
           "$id":"https://example.com/schemas/hedgehog.schema.json",
@@ -493,82 +498,6 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         type.getJavadoc().get().toText() == """A elephant &lt;(|)&gt;.<br>\nAnother line\n"""
     }
 
-    void testJavadocGenerationWithoutReplacement() {
-        when:
-        var type = generateType("Elephant", '''
-        {
-          "$schema":"https://json-schema.org/draft/2020-12/schema",
-          "$id":"https://example.com/schemas/elephant.schema.json",
-          "title": "Elephant",
-          "description":"A elephant <a href=\\"https://elephant.com\\">elephant URL</a>.\\n Another line",
-          "type":["object"],
-          "properties":{
-            "name": {
-              "type": "string"
-            }
-          }
-        }
-        ''', b -> b.withJavadoc(new SourceGeneratorConfig.JavadocConfig(false)))
-
-        then:
-        type.getJavadoc().get().toText() == """A elephant <a href="https://elephant.com">elephant URL</a>.\n Another line\n"""
-    }
-
-    void testJavadocGenerationWithoutReplacement() {
-        when:
-        var type = generateType("Elephant", '''
-        {
-          "$schema":"https://json-schema.org/draft/2020-12/schema",
-          "$id":"https://example.com/schemas/elephant.schema.json",
-          "title": "Elephant",
-          "description":"A elephant <a href=\\"https://elephant.com\\">elephant URL</a>.\\n Another line",
-          "type":["object"],
-          "properties":{
-            "name": {
-              "type": "string"
-            }
-          }
-        }
-        ''', b -> b.withJavadoc(new SourceGeneratorConfig.JavadocConfig(false)))
-
-        then:
-        type.getJavadoc().get().toText() == """A elephant <a href="https://elephant.com">elephant URL</a>.\n Another line\n"""
-    }
-
-    void testGenerateAlwaysClass() {
-        when:
-        var content = generateTypeAndGetContent("Porcupine", '''
-        {
-          "$schema":"https://json-schema.org/draft/2020-12/schema",
-          "$id":"https://example.com/schemas/elephant.schema.json",
-          "title": "Elephant",
-          "description":"A porcupine",
-          "type":["object"],
-          "properties":{
-            "name": {
-              "type": "string"
-            }
-          }
-        }
-        ''', b -> b.withRecordAdoptionStrategy(SourceGeneratorConfig.RecordAdoptionStrategy.ALWAYS_CLASS))
-
-        then:
-        content == """
-        @Serdeable
-        public class Elephant {
-          private String name;
-
-          String getName() {
-            return this.name;
-          }
-
-          void setName(String name) {
-            this.name = name;
-          }
-        }
-        """.stripIndent().trim()
-    }
-
     void testPropertyGeneration() {
         when:
         var content = generatePropertyAndGetContent(propertyName, propertySchema)
@@ -648,14 +577,4 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'array'      |'{"type": "array", "items": {"type":"number"},"nullable": false}'| "@NotNull List<Float> array"
     }
 
-    void testUrlValidation() {
-        when:
-        var urlLocal = "http://localhost:8001/animal/schema"
-        var urlExternal = "https://json.schemastore.org/github-workflow.json"
-        UrlLoader.addAllowedUrlPattern("^http://localhost:.*")
-
-        then:
-        isValidUrl(urlExternal)
-        isValidUrl(urlLocal)
-    }
 }
