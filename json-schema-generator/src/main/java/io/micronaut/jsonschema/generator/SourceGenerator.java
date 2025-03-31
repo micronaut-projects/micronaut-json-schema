@@ -547,6 +547,13 @@ public final class SourceGenerator {
             propertyType = getListTypeDef(objectBuilder, name, schema);
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
+        } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties()) {
+            if (schema.getAdditionalProperties().equals(Schema.TRUE)) {
+                return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
+            } else {
+                return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING,
+                    getPropertyType(objectBuilder, schema.getAdditionalProperties(), name + "Item"));
+            }
         }
         return propertyType;
     }

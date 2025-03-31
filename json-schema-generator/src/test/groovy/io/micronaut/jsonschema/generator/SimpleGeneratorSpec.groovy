@@ -353,6 +353,56 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         }""".stripIndent().trim()
     }
 
+    void testMapGeneration() {
+        when:
+        var content = generateTypeAndGetContent("Hedgehog", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/hedgehog.schema.json",
+          "title":"Hedgehog",
+          "type": "object",
+          "properties":{
+            "spikes": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/Spike"
+              }
+            },
+            "aliases":{
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "properties": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "$defs": {
+            "Spike": {
+              "type": "object",
+              "properties": {
+                "length": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+        ''')
+
+        then:
+        content == """
+        @Serdeable
+        public record Hedgehog(
+            Map<String, Spike> spikes,
+            Map<String, String> aliases,
+            Map<String, Object> properties
+        ) {
+        }""".stripIndent().trim()
+    }
+
     void testAllOf() {
         when:
         var content = generateTypeAndGetContent("Llama3", '''

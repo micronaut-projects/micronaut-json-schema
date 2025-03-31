@@ -19,11 +19,10 @@ class AbstractGeneratorSpec extends Specification {
 
         Path outputPath = new File("output").toPath() // Define the base output path
         String packageName = "com.example.project"; // Example package name
-        String fileName = className;
 
         File generated = generator.generate(new SourceGeneratorConfig(
                 new ByteArrayInputStream(jsonSchema.getBytes()), null, null,
-                null, outputPath, packageName, fileName))
+                null, outputPath, packageName, null))
 
         try {
             ParserConfiguration configuration = new ParserConfiguration()
