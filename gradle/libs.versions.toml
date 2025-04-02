@@ -29,7 +29,7 @@ managed-json-schema-validator = "1.5.6"
 kotlin = "1.9.25"
 ksp = "1.9.25-1.0.20"
 spock = "2.3-groovy-4.0"
-java-parser = "3.26.3"
+java-parser = "3.26.4"
 sonatype-scan = "3.0.0"
 
 [libraries]
