@@ -319,27 +319,27 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
           HashMap<String, String> unknownFields;
 
-          @NotNull @Min(0) int getAge() {
+          public @NotNull @Min(0) int getAge() {
             return this.age;
           }
 
-          void setAge(@NotNull @Min(0) int age) {
+          public void setAge(@NotNull @Min(0) int age) {
             this.age = age;
           }
 
-          @NotNull @Size(min = 1) String getName() {
+          public @NotNull @Size(min = 1) String getName() {
             return this.name;
           }
 
-          void setName(@NotNull @Size(min = 1) String name) {
+          public void setName(@NotNull @Size(min = 1) String name) {
             this.name = name;
           }
 
-          List<@DecimalMin("0.0") Float> getHours() {
+          public List<@DecimalMin("0.0") Float> getHours() {
             return this.hours;
           }
 
-          void setHours(List<@DecimalMin("0.0") Float> hours) {
+          public void setHours(List<@DecimalMin("0.0") Float> hours) {
             this.hours = hours;
           }
 
@@ -522,8 +522,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         // https://json-schema.org/understanding-json-schema/reference/numeric
         'integer'             | '{"type": "integer"}'                                                 | 'int integer'
         'test'                | '{"type": "number"}'                                                  | "float test"
-        'test'                | '{"type": "number", "pattern": "^[0]|[-+]?[1-9][0-9]*$"}'             | "Integer test"
-        'test'                | '{"type": "number", "pattern": "^[0]|[-+]?[1-9][0-9]*.?[0-9]+$"}'     | "Float test"
+        'test'                | '{"type": "number", "pattern": "^[0]|[-+]?[1-9][0-9]*$"}'             | "int test"
+        'test'                | '{"type": "number", "pattern": "^[0]|[-+]?[1-9][0-9]*.?[0-9]+$"}'     | "float test"
         // https://json-schema.org/understanding-json-schema/reference/array
         'array'               | '{"type": "array", "items": {"type": "string"}}'                      | "List<String> array"
         'array'               | '{"type": "array", "uniqueItems": true, "items": {"type": "string"}}' | "Set<String> array"
@@ -551,30 +551,35 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         content == expectedJava
 
         where:
-        propertyName | propertySchema                                                  | expectedJava
-        'test'       | '{"type": "number", "minimum": 10}'                             | "@DecimalMin(\"10\") float test"
-        'test'       | '{"type": "number", "maximum": 10}'                             | "@DecimalMax(\"10\") float test"
-        'test'       | '{"type": "number", "exclusiveMaximum": 10.0}'                  | "@DecimalMax(\"9.999\") float test"
-        'test'       | '{"type": "number", "exclusiveMinimum": 10.0}'                  | "@DecimalMin(\"10.001\") float test"
-        'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*$"}'                | "@Min(1) Integer test"
-        'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*.?[0-9]+$"}'        | "@DecimalMin(\"0.001\") Float test"
-        'test'       | '{"type": "number", "pattern": "^[0]|([1-9][0-9]*)$"}'          | "@Min(0) Integer test"
-        'test'       | '{"type": "number", "pattern": "^-d+$"}'                        | "@Max(0) Integer test"
-        'test'       | '{"type": "number", "pattern": "^[0]|[-+]?[1-9][0-9]*$"}'       | "Integer test"
-        'test'       | '{"type": "string", "pattern": "[A-Z]+"}'                       | "@Pattern(regexp = \"[A-Z]+\") String test"
-        'test'       | '{"type": "boolean", "const": true}'                            | "@AssertTrue boolean test"
-        'test'       | '{"type": "boolean", "const": false}'                           | "@AssertFalse boolean test"
+        propertyName | propertySchema                                                    | expectedJava
+        'test'       | '{"type": "number", "minimum": 10}'                               | "@DecimalMin(\"10\") float test"
+        'test'       | '{"type": "number", "maximum": 10}'                               | "@DecimalMax(\"10\") float test"
+        'test'       | '{"type": "number", "exclusiveMaximum": 10.0}'                    | "@DecimalMax(\"9.999\") float test"
+        'test'       | '{"type": "number", "exclusiveMinimum": 10.0}'                    | "@DecimalMin(\"10.001\") float test"
+        'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*$"}'                  | "@Min(1) int test"
+        'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*.?[0-9]+$"}'          | "@DecimalMin(\"0.001\") float test"
+        'test'       | '{"type": "number", "pattern": "^[0]|([1-9][0-9]*)$"}'            | "@Min(0) int test"
+        'test'       | '{"type": "number", "pattern": "^-d+$"}'                          | "@Max(0) int test"
+        'test'       | '{"type": "number", "pattern": "^[0]|[-+]?[1-9][0-9]*$"}'         | "int test"
+        'test'       | '{"type": "string", "pattern": "[A-Z]+"}'                         | "@Pattern(regexp = \"[A-Z]+\") String test"
+        'test'       | '{"type": "boolean", "const": true}'                              | "@AssertTrue boolean test"
+        'test'       | '{"type": "boolean", "const": false}'                             | "@AssertFalse boolean test"
+        // nullable
+        'test'       | '{"type": ["boolean", "null"]}'                                   | "Boolean test"
+        'test'       | '{"type": ["integer", "null"]}'                                   | "Integer test"
+        'test'       | '{"type": ["number", "null"]}'                                    | "Float test"
+        'test'       | '{"type": ["object", "null"]}'                                    | "Object test"
         // array annotations
-        'array'      |'{"type": "array", "items": {"type": "number", "minimum": 10.0}}'| "List<@DecimalMin(\"10.0\") Float> array"
-        'arrayMulti' |'{"type": "array", "items": {"type": "array", ' +
+        'array'      | '{"type": "array", "items": {"type": "number", "minimum": 10.0}}' | "List<@DecimalMin(\"10.0\") Float> array"
+        'arrayMulti' | '{"type": "array", "items": {"type": "array", ' +
                 '"items": {"type": "number", "minimum": 10.0}, ' +
-                '"uniqueItems": true, "minItems": 2}, "minItems": 1}'                  | "@Size(min = 1) List<@Size(min = 2) Set<@DecimalMin(\"10.0\") Float>> arrayMulti"
-        'array'      |'{"type": "array", "contains": {"type": "number"}, ' +
-                        '"minContains": 2, "maxContains": 3}'                          | "@Size(max = 3) @Size(min = 2) List<Float> array"
-        'array'      |'{"type": "array", "items": {"type": "number"}, ' +
-                        '"minLength": 2, "maxLength": 3}'                              | "@Size(max = 3) @Size(min = 2) List<Float> array"
-        'array'      |'{"type": "array", "items": {"type":"number"},"nullable": true}' | "@Nullable List<Float> array"
-        'array'      |'{"type": "array", "items": {"type":"number"},"nullable": false}'| "@NotNull List<Float> array"
+                '"uniqueItems": true, "minItems": 2}, "minItems": 1}'                    | "@Size(min = 1) List<@Size(min = 2) Set<@DecimalMin(\"10.0\") Float>> arrayMulti"
+        'array'      | '{"type": "array", "contains": {"type": "number"}, ' +
+                '"minContains": 2, "maxContains": 3}'                                    | "@Size(max = 3) @Size(min = 2) List<Float> array"
+        'array'      | '{"type": "array", "items": {"type": "number"}, ' +
+                '"minLength": 2, "maxLength": 3}'                                        | "@Size(max = 3) @Size(min = 2) List<Float> array"
+        'array'      | '{"type": "array", "items": {"type":"number"},"nullable": true}'  | "@Nullable List<Float> array"
+        'array'      | '{"type": "array", "items": {"type":"number"},"nullable": false}' | "@NotNull List<Float> array"
     }
 
 }
