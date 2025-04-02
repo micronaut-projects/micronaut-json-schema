@@ -297,7 +297,9 @@ public final class TypeAggregator {
     public static String unicodeToString(String input) {
         StringBuilder newName = new StringBuilder();
         for (Character c : input.toCharArray()) {
-            if (!Character.isLetter(c)) {
+            if (c == '-' || c == '_') {
+                newName.append('_');
+            } else if (!Character.isLetter(c)) {
                 String charName = Character.getName(c);
                 newName.append(' ')
                     .append(charName, 0, charName.lastIndexOf(' ') != -1 ? charName.lastIndexOf(' ') : charName.length())

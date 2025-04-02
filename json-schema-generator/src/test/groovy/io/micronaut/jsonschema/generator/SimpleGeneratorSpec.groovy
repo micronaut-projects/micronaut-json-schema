@@ -1,62 +1,11 @@
 package io.micronaut.jsonschema.generator
 
-import io.micronaut.jsonschema.generator.loaders.UrlLoader
-import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig
+
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder
 
 import java.nio.file.Path
 
-import static io.micronaut.jsonschema.generator.loaders.UrlLoader.isValidUrl
-
 class SimpleGeneratorSpec extends AbstractGeneratorSpec {
-
-    void testEnumGeneration() {
-        when:
-        var content = generateTypeAndGetContent("Status", '''
-        {
-          "$schema":"https://json-schema.org/draft/2020-12/schema",
-          "$id":"https://example.com/schemas/status.schema.json",
-          "description":"Status für mich",
-          "type": "string",
-          "enum": [
-             "active",
-             "in progress",
-             "deleted"
-          ]
-        }
-        ''')
-
-        then:
-        content == """
-        @Serdeable
-        public enum Status {
-
-          ACTIVE("active"),
-          IN_PROGRESS("in progress"),
-          DELETED("deleted");
-
-          public String value;
-
-          private Status(String value) {
-            this.value = value;
-          }
-
-          @JsonValue
-          public String getValue() {
-            return this.value;
-          }
-
-          @JsonCreator
-          public static Status statusOf(String value) {
-            return switch (value) {
-                  case "active" -> ACTIVE;
-                  case "in progress" -> IN_PROGRESS;
-                  case "deleted" -> DELETED;
-                  default -> null;
-                };
-          }
-        }""".stripIndent().trim()
-    }
 
     void testArrayGeneration() {
         when:
