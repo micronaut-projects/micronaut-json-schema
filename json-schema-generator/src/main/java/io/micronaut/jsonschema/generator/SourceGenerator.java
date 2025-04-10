@@ -351,7 +351,7 @@ public final class SourceGenerator {
             if (valueType.equals(Schema.Type.NULL)) {
                 valueType = Schema.Type.STRING;
             }
-            TypeDef valueTypeDef = TYPE_MAP.get(valueType.toString().toLowerCase(Locale.ENGLISH));
+            TypeDef valueTypeDef = TYPE_MAP_NULLABLE.get(valueType.toString().toLowerCase(Locale.ENGLISH));
             // add constructor field and methods
             enumBuilder.addField(FieldDef.builder("value")
                     .ofType(valueTypeDef)
@@ -503,7 +503,8 @@ public final class SourceGenerator {
             return;
         }
         String name = getPropertyName(propertyName);
-        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name);
+        PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name)
+            .addModifiers(Modifier.PUBLIC);
         if (!name.equals(propertyName)) {
             propertyDef.addAnnotation(getJsonPropertyAnn(propertyName));
         }

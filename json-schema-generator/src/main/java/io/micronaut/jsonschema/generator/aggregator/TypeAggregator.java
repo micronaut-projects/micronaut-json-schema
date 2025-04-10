@@ -31,6 +31,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,10 +52,26 @@ import static java.lang.String.join;
 @Internal
 public final class TypeAggregator {
 
-    public static final Map<String, TypeDef> TYPE_MAP = CollectionUtils.mapOf(new Object[]{
-        "integer", TypeDef.Primitive.INT, "boolean", TypeDef.Primitive.BOOLEAN, "array", TypeDef.of(List.class),
-        "void", TypeDef.VOID, "string", TypeDef.STRING, "object", TypeDef.OBJECT,
-        "number", TypeDef.Primitive.FLOAT, "null", TypeDef.OBJECT});
+    public static final Map<String, TypeDef> TYPE_MAP;
+
+    public static final Map<String, TypeDef> TYPE_MAP_NULLABLE = CollectionUtils.mapOf(
+        "integer", TypeDef.Primitive.INT_WRAPPER,
+        "boolean", TypeDef.Primitive.BOOLEAN_WRAPPER,
+        "array", TypeDef.of(List.class),
+        "void", TypeDef.VOID,
+        "string", TypeDef.STRING,
+        "object", TypeDef.OBJECT,
+        "number", TypeDef.Primitive.FLOAT_WRAPPER,
+        "null", TypeDef.OBJECT
+    );
+
+    static {
+        TYPE_MAP = new HashMap<>();
+        TYPE_MAP.putAll(TYPE_MAP_NULLABLE);
+        TYPE_MAP.put("integer", TypeDef.Primitive.INT);
+        TYPE_MAP.put("boolean", TypeDef.Primitive.BOOLEAN);
+        TYPE_MAP.put("number", TypeDef.Primitive.FLOAT);
+    }
 
     /**
      * Extracts a Java type definition ({@code TypeDef}) from a given JSON schema.
@@ -89,8 +106,10 @@ public final class TypeAggregator {
         }
 
         // check for "type"
+        boolean nullable = false;
         if (schema.hasType() && schema.getType().size() > 1) {
             if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
+                nullable = true;
                 var typeList = schema.getType();
                 typeList.remove(NULL);
                 schema.setType(typeList);
@@ -118,9 +137,9 @@ public final class TypeAggregator {
             };
         } else if (type.equals(Schema.Type.NUMBER) && schema.getPattern() != null) {
             if (schema.getPattern().contains(".")) {
-                typeDef = ClassTypeDef.of(Float.class);
+                typeDef = nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT;
             } else {
-                typeDef = ClassTypeDef.of(Integer.class);
+                typeDef = nullable ? TypeDef.Primitive.INT_WRAPPER : TypeDef.Primitive.INT;
             }
         } else if (schema.has$ref()) {
             String ref = schema.get$ref();
@@ -145,7 +164,12 @@ public final class TypeAggregator {
             }
             typeDef = context.getDefinitionType(ref);
         } else {
-            typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
+            String typeKey = type.toString().toLowerCase(Locale.ENGLISH);
+            if (nullable) {
+                typeDef = TYPE_MAP_NULLABLE.get(typeKey);
+            } else {
+                typeDef = TYPE_MAP.get(typeKey);
+            }
         }
         // throw an error in case there is an unknown type
         if (typeDef == null) {
@@ -273,7 +297,9 @@ public final class TypeAggregator {
     public static String unicodeToString(String input) {
         StringBuilder newName = new StringBuilder();
         for (Character c : input.toCharArray()) {
-            if (!Character.isLetter(c)) {
+            if (c == '-' || c == '_') {
+                newName.append('_');
+            } else if (!Character.isLetter(c)) {
                 String charName = Character.getName(c);
                 newName.append(' ')
                     .append(charName, 0, charName.lastIndexOf(' ') != -1 ? charName.lastIndexOf(' ') : charName.length())

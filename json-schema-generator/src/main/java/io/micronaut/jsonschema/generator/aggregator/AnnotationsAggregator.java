@@ -162,7 +162,9 @@ public class AnnotationsAggregator {
         }
         if (schema.getPattern() != null &&
             (propertyType.equals(ClassTypeDef.of(Float.class))
-                || propertyType.equals(ClassTypeDef.of(Integer.class)))) {
+                || propertyType.equals(ClassTypeDef.of(Integer.class))
+                || propertyType.equals(TypeDef.Primitive.INT)
+                || propertyType.equals(TypeDef.Primitive.FLOAT))) {
             var pattern = schema.getPattern();
             switch (pattern) {
                 case "^[1-9][0-9]*$" -> // positive int
