@@ -43,7 +43,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor-summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -87,9 +87,11 @@ loadScripts(document, 'script');</script>
 <dd><code><span id="param-outputPackageName">outputPackageName</span></code> - The package name to be applied to the generated source files.
                           This field is optional and can be <code>null</code> if no package name is needed.</dd>
 <dd><code><span id="param-outputFileName">outputFileName</span></code> - The name of the file where the generated source code will be written. This field is optional.</dd>
+<dd><code><span id="param-javadoc">javadoc</span></code> - Configuration specific to Javadoc.</dd>
+<dd><code><span id="param-recordAdoptionStrategy">recordAdoptionStrategy</span></code> - Strategy specifying when to generate records vs classes. Defaults to preferring records.</dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">SourceGeneratorConfig</span>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&nbsp;inputStream, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;jsonUrl, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/File.html" title="class or interface in java.io" class="external-link">File</a>&nbsp;jsonFile, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;inputFolder, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;outputPath, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputPackageName, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputFileName)
+<div class="type-signature"><span class="modifiers">public record </span><span class="element-name type-name-label">SourceGeneratorConfig</span>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&nbsp;inputStream, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;jsonUrl, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/File.html" title="class or interface in java.io" class="external-link">File</a>&nbsp;jsonFile, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;inputFolder, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;outputPath, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputPackageName, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputFileName, <a href="SourceGeneratorConfig.JavadocConfig.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.JavadocConfig</a>&nbsp;javadoc, <a href="SourceGeneratorConfig.RecordAdoptionStrategy.html" title="enum class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.RecordAdoptionStrategy</a>&nbsp;recordAdoptionStrategy)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
 <div class="block">A configuration class for the JSON schema source generator, encapsulating the configuration
  properties related to the input and output paths, file names, and URL.
@@ -110,6 +112,28 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="caption"><span>Nested Classes</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static final record&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="SourceGeneratorConfig.JavadocConfig.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.JavadocConfig</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">A sub-configuration used for generated Javadoc.</div>
+</div>
+<div class="col-first odd-row-color"><code>static enum&nbsp;</code></div>
+<div class="col-second odd-row-color"><code><a href="SourceGeneratorConfig.RecordAdoptionStrategy.html" class="type-name-link" title="enum class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.RecordAdoptionStrategy</a></code></div>
+<div class="col-last odd-row-color">
+<div class="block">Strategy enum that specifies when to generate records vs classes.</div>
+</div>
+</div>
+</section>
+</li>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <li>
 <section class="constructor-summary" id="constructor-summary">
@@ -118,13 +142,15 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.io.InputStream,java.lang.String,java.io.File,java.nio.file.Path,java.nio.file.Path,java.lang.String,java.lang.String)" class="member-name-link">SourceGeneratorConfig</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&nbsp;inputStream,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.io.InputStream,java.lang.String,java.io.File,java.nio.file.Path,java.nio.file.Path,java.lang.String,java.lang.String,io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig,io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy)" class="member-name-link">SourceGeneratorConfig</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&nbsp;inputStream,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;jsonUrl,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/File.html" title="class or interface in java.io" class="external-link">File</a>&nbsp;jsonFile,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;inputFolder,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;outputPath,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputPackageName,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputFileName)</code></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputFileName,
+ <a href="SourceGeneratorConfig.JavadocConfig.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.JavadocConfig</a>&nbsp;javadoc,
+ <a href="SourceGeneratorConfig.RecordAdoptionStrategy.html" title="enum class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.RecordAdoptionStrategy</a>&nbsp;recordAdoptionStrategy)</code></div>
 <div class="col-last even-row-color">
 <div class="block">Creates an instance of a <code>SourceGeneratorConfig</code> record class.</div>
 </div>
@@ -165,34 +191,49 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-inputStream"><code>inputStream</code></a> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/File.html" title="class or interface in java.io" class="external-link">File</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#jsonFile()" class="member-name-link">jsonFile</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfig.JavadocConfig.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.JavadocConfig</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#javadoc()" class="member-name-link">javadoc</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <a href="#param-javadoc"><code>javadoc</code></a> record component.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/File.html" title="class or interface in java.io" class="external-link">File</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#jsonFile()" class="member-name-link">jsonFile</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-jsonFile"><code>jsonFile</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#jsonUrl()" class="member-name-link">jsonUrl</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#jsonUrl()" class="member-name-link">jsonUrl</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-jsonUrl"><code>jsonUrl</code></a> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outputFileName()" class="member-name-link">outputFileName</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outputFileName()" class="member-name-link">outputFileName</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-outputFileName"><code>outputFileName</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outputPackageName()" class="member-name-link">outputPackageName</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outputPackageName()" class="member-name-link">outputPackageName</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-outputPackageName"><code>outputPackageName</code></a> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outputPath()" class="member-name-link">outputPath</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outputPath()" class="member-name-link">outputPath</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-outputPath"><code>outputPath</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfig.RecordAdoptionStrategy.html" title="enum class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.RecordAdoptionStrategy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#recordAdoptionStrategy()" class="member-name-link">recordAdoptionStrategy</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <a href="#param-recordAdoptionStrategy"><code>recordAdoptionStrategy</code></a> record component.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toBuilder()" class="member-name-link">toBuilder</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Convert this configuration to builder.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a string representation of this record class.</div>
 </div>
 </div>
@@ -213,7 +254,7 @@ loadScripts(document, 'script');</script>
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.io.InputStream,java.lang.String,java.io.File,java.nio.file.Path,java.nio.file.Path,java.lang.String,java.lang.String)">
+<section class="detail" id="&lt;init&gt;(java.io.InputStream,java.lang.String,java.io.File,java.nio.file.Path,java.nio.file.Path,java.lang.String,java.lang.String,io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig,io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy)">
 <h3>SourceGeneratorConfig</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">SourceGeneratorConfig</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&nbsp;inputStream,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;jsonUrl,
@@ -221,7 +262,9 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;inputFolder,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;outputPath,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputPackageName,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputFileName)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputFileName,
+ <a href="SourceGeneratorConfig.JavadocConfig.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.JavadocConfig</a>&nbsp;javadoc,
+ <a href="SourceGeneratorConfig.RecordAdoptionStrategy.html" title="enum class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.RecordAdoptionStrategy</a>&nbsp;recordAdoptionStrategy)</span></div>
 <div class="block">Creates an instance of a <code>SourceGeneratorConfig</code> record class.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -232,6 +275,8 @@ loadScripts(document, 'script');</script>
 <dd><code>outputPath</code> - the value for the <a href="#param-outputPath"><code>outputPath</code></a> record component</dd>
 <dd><code>outputPackageName</code> - the value for the <a href="#param-outputPackageName"><code>outputPackageName</code></a> record component</dd>
 <dd><code>outputFileName</code> - the value for the <a href="#param-outputFileName"><code>outputFileName</code></a> record component</dd>
+<dd><code>javadoc</code> - the value for the <a href="#param-javadoc"><code>javadoc</code></a> record component</dd>
+<dd><code>recordAdoptionStrategy</code> - the value for the <a href="#param-recordAdoptionStrategy"><code>recordAdoptionStrategy</code></a> record component</dd>
 </dl>
 </section>
 </li>
@@ -247,6 +292,17 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="getInputName()">
 <h3>getInputName</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getInputName</span>()</div>
+</section>
+</li>
+<li>
+<section class="detail" id="toBuilder()">
+<h3>toBuilder</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></span>&nbsp;<span class="element-name">toBuilder</span>()</div>
+<div class="block">Convert this configuration to builder.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>The builder</dd>
+</dl>
 </section>
 </li>
 <li>
@@ -364,6 +420,28 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the value of the <a href="#param-outputFileName"><code>outputFileName</code></a> record component</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="javadoc()">
+<h3>javadoc</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="SourceGeneratorConfig.JavadocConfig.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.JavadocConfig</a></span>&nbsp;<span class="element-name">javadoc</span>()</div>
+<div class="block">Returns the value of the <a href="#param-javadoc"><code>javadoc</code></a> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <a href="#param-javadoc"><code>javadoc</code></a> record component</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="recordAdoptionStrategy()">
+<h3>recordAdoptionStrategy</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="SourceGeneratorConfig.RecordAdoptionStrategy.html" title="enum class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.RecordAdoptionStrategy</a></span>&nbsp;<span class="element-name">recordAdoptionStrategy</span>()</div>
+<div class="block">Returns the value of the <a href="#param-recordAdoptionStrategy"><code>recordAdoptionStrategy</code></a> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <a href="#param-recordAdoptionStrategy"><code>recordAdoptionStrategy</code></a> record component</dd>
 </dl>
 </section>
 </li>
