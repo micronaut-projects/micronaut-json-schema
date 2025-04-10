@@ -47,6 +47,7 @@ public final class GeneratorContext {
     private final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private final HashMap<String, LinkedList<String>> TEMP_DEFINITIONS = new HashMap<>();
     private final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
+    private SourceGeneratorConfig configuration;
 
     public boolean isDefinitionClass(String key) {
         return getDefinition(key).getValue();
@@ -187,5 +188,21 @@ public final class GeneratorContext {
             return key;
         }
         return key.replace("#/definitions/", DEF_SCHEMA_REF_PREFIX);
+    }
+
+    /**
+     * Set the current configuration.
+     * @param configuration The configuration
+     */
+    public void setConfiguration(SourceGeneratorConfig configuration) {
+        this.configuration = configuration;
+    }
+
+    /**
+     * Get the current configuration.
+     * @return The configuration
+     */
+    public SourceGeneratorConfig getConfiguration() {
+        return configuration;
     }
 }

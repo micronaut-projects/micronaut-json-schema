@@ -42,6 +42,8 @@ import java.nio.file.Path;
  * @param outputPackageName The package name to be applied to the generated source files.
  *                          This field is optional and can be {@code null} if no package name is needed.
  * @param outputFileName The name of the file where the generated source code will be written. This field is optional.
+ * @param javadoc Configuration specific to Javadoc.
+ * @param recordAdoptionStrategy Strategy specifying when to generate records vs classes. Defaults to preferring records.
  * @author Elif Kurtay
  * @version 1.3
  */
@@ -52,7 +54,10 @@ public record SourceGeneratorConfig(
     Path inputFolder,
     Path outputPath,
     String outputPackageName,
-    String outputFileName) {
+    String outputFileName,
+    JavadocConfig javadoc,
+    RecordAdoptionStrategy recordAdoptionStrategy
+) {
     public String getInputName() {
         if (jsonFile != null) {
             return jsonFile.getName();
@@ -61,5 +66,54 @@ public record SourceGeneratorConfig(
         } else {
             return "InputStream.schema.json";
         }
+    }
+
+    /**
+     * Convert this configuration to builder.
+     * @return The builder
+     */
+    public SourceGeneratorConfigBuilder toBuilder() {
+        return new SourceGeneratorConfigBuilder()
+            .withInputStream(inputStream)
+            .withJsonUrl(jsonUrl)
+            .withInputFolder(inputFolder)
+            .withJsonFile(jsonFile)
+            .withOutputFolder(outputPath)
+            .withOutputPackageName(outputPackageName)
+            .withOutputFileName(outputFileName)
+            .withJavadoc(javadoc)
+            .withRecordAdoptionStrategy(recordAdoptionStrategy);
+
+    }
+
+    /**
+     * A sub-configuration used for generated Javadoc.
+     * The configuration has single parameter, but is expected to be extended with more properties.
+     *
+     * @param replaceHTML Whether to replace HTML characters, e.g. {@code >} to {@code &gt;}.
+     */
+    public record JavadocConfig(
+        boolean replaceHTML
+    ) {
+        /**
+         * Initialize the configuration with defaults.
+         */
+        public JavadocConfig() {
+            this(true);
+        }
+    }
+
+    /**
+     * Strategy enum that specifies when to generate records vs classes.
+     */
+    public enum RecordAdoptionStrategy {
+        /**
+         * Will generate record when possible.
+         */
+        PREFER_RECORD,
+        /**
+         * Will always generate classes.
+         */
+        ALWAYS_CLASS
     }
 }

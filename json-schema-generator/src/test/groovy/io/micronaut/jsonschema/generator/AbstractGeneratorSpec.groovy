@@ -8,22 +8,27 @@ import com.github.javaparser.ast.body.RecordDeclaration
 import com.github.javaparser.ast.body.TypeDeclaration
 import io.micronaut.inject.visitor.VisitorContext
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.util.function.Consumer
 
 class AbstractGeneratorSpec extends Specification {
 
-    TypeDeclaration generateType(String className, String jsonSchema) {
+    TypeDeclaration generateType(String className, String jsonSchema, Consumer<SourceGeneratorConfigBuilder> consumer) {
         SourceGenerator generator = new SourceGenerator("java")
 
         Path outputPath = new File("output").toPath() // Define the base output path
         String packageName = "com.example.project"; // Example package name
-        String fileName = className;
 
-        File generated = generator.generate(new SourceGeneratorConfig(
-                new ByteArrayInputStream(jsonSchema.getBytes()), null, null,
-                null, outputPath, packageName, fileName))
+        var builder = new SourceGeneratorConfigBuilder()
+                .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
+                .withOutputFolder(outputPath)
+                .withOutputFileName(className)
+                .withOutputPackageName(packageName)
+        consumer.accept(builder)
+        File generated = generator.generate(builder.build());
 
         try {
             ParserConfiguration configuration = new ParserConfiguration()
@@ -33,6 +38,14 @@ class AbstractGeneratorSpec extends Specification {
         } catch (Exception e) {
             throw new Exception("Failed to parse file and get record. The contents are: '\n" + generated.text + "\n'", e)
         }
+    }
+
+    TypeDeclaration generateType(String className, String jsonSchema) {
+        return generateType(className, jsonSchema, b -> {})
+    }
+
+    String generateTypeAndGetContent(String className, String jsonSchema, Consumer<SourceGeneratorConfigBuilder> configConsumer) {
+        return generateType(className, jsonSchema, configConsumer).getTokenRange().get().toString()
     }
 
     String generateTypeAndGetContent(String className, String jsonSchema) {

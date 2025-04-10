@@ -22,6 +22,7 @@ import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.generator.loaders.FileLoader;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.generator.SourceGenerators;
 import io.micronaut.sourcegen.model.*;
@@ -128,6 +129,7 @@ public final class SourceGenerator {
      * @throws IOException If an I/O error occurs during file or directory creation, or if an error occurs while reading or writing files.
      */
     public File generate(SourceGeneratorConfig config) throws IOException {
+        context.setConfiguration(config);
         outputPath = config.outputPath();
         outputPackageName = config.outputPackageName();
         if (config.inputFolder() != null) {
@@ -547,6 +549,13 @@ public final class SourceGenerator {
             propertyType = getListTypeDef(objectBuilder, name, schema);
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
+        } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties()) {
+            if (schema.getAdditionalProperties().equals(Schema.TRUE)) {
+                return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
+            } else {
+                return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING,
+                    getPropertyType(objectBuilder, schema.getAdditionalProperties(), name + "Item"));
+            }
         }
         return propertyType;
     }
@@ -561,16 +570,19 @@ public final class SourceGenerator {
     }
 
     private String getJavadoc(String description) {
+        if (!context.getConfiguration().javadoc().replaceHTML()) {
+            return description;
+        }
         if (description.isBlank()) {
             return "";
         }
         return description
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll("&", "&amp;")
-            .replaceAll("'", "&apos;")
-            .replaceAll("\"", "&quot;")
-            .replaceAll("\n", "<br>")
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("'", "&apos;")
+            .replace("\"", "&quot;")
+            .replace("\n", "<br>\n")
             .trim();
     }
 
@@ -609,6 +621,9 @@ public final class SourceGenerator {
     }
 
     private boolean shouldBeAClass(Schema schema) {
+        if (context.getConfiguration().recordAdoptionStrategy() == RecordAdoptionStrategy.ALWAYS_CLASS) {
+            return true;
+        }
         boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
         return hasOverLimitParameters || schema.hasAdditionalProperties() || schema.hasConstValue();
     }

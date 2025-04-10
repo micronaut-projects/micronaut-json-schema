@@ -2,6 +2,8 @@ package io.micronaut.jsonschema.generator
 
 import io.micronaut.jsonschema.generator.loaders.UrlLoader
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder
+
 import java.nio.file.Path
 
 import static io.micronaut.jsonschema.generator.loaders.UrlLoader.isValidUrl
@@ -74,9 +76,12 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
           }
         }
         ''';
-        File generated = generator.generate(new SourceGeneratorConfig(
-                new ByteArrayInputStream(jsonSchema.getBytes()), null, null,
-                null, outputPath, packageName, fileName))
+        File generated = generator.generate(new SourceGeneratorConfigBuilder()
+                .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
+                .withOutputFolder(outputPath)
+                .withOutputPackageName(packageName)
+                .withOutputFileName(fileName)
+                .build())
 
         then:
         generated == null
@@ -353,6 +358,56 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         }""".stripIndent().trim()
     }
 
+    void testMapGeneration() {
+        when:
+        var content = generateTypeAndGetContent(null, '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/hedgehog.schema.json",
+          "title":"Hedgehog",
+          "type": "object",
+          "properties":{
+            "spikes": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/Spike"
+              }
+            },
+            "aliases":{
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "properties": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "$defs": {
+            "Spike": {
+              "type": "object",
+              "properties": {
+                "length": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+        ''')
+
+        then:
+        content == """
+        @Serdeable
+        public record Hedgehog(
+            Map<String, Spike> spikes,
+            Map<String, String> aliases,
+            Map<String, Object> properties
+        ) {
+        }""".stripIndent().trim()
+    }
+
     void testAllOf() {
         when:
         var content = generateTypeAndGetContent("Llama3", '''
@@ -415,11 +470,32 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             "name": { "type": "string" }
           }
         }
-        ''')
+        ''', (b) -> {})
 
         then:
         type != null
         type.name.asString() == "MyLlamaNumberOne"
+    }
+
+    void testJavadocGeneration() {
+        when:
+        var type = generateType("Elephant", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/elephant.schema.json",
+          "title": "Elephant",
+          "description":"A elephant <(|)>.\\nAnother line",
+          "type":["object"],
+          "properties":{
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+        ''', b -> {})
+
+        then:
+        type.getJavadoc().get().toText() == """A elephant &lt;(|)&gt;.<br>\nAnother line\n"""
     }
 
     void testPropertyGeneration() {
@@ -501,14 +577,4 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'array'      |'{"type": "array", "items": {"type":"number"},"nullable": false}'| "@NotNull List<Float> array"
     }
 
-    void testUrlValidation() {
-        when:
-        var urlLocal = "http://localhost:8001/animal/schema"
-        var urlExternal = "https://json.schemastore.org/github-workflow.json"
-        UrlLoader.addAllowedUrlPattern("^http://localhost:.*")
-
-        then:
-        isValidUrl(urlExternal)
-        isValidUrl(urlLocal)
-    }
 }

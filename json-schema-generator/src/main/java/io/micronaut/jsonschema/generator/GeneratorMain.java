@@ -17,7 +17,7 @@ package io.micronaut.jsonschema.generator;
 
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.generator.loaders.UrlLoader;
-import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,9 +67,14 @@ public class GeneratorMain {
         Path outputPath = Paths.get(args[4]);
         String outputPackageName = args[5];
         String outputFileName = args[6];
-        var config = new SourceGeneratorConfig(null,
-            jsonURL, jsonFile, inputFolder, outputPath,
-            outputPackageName, outputFileName);
+        var config = new SourceGeneratorConfigBuilder()
+            .withJsonUrl(jsonURL)
+            .withJsonFile(jsonFile)
+            .withInputFolder(inputFolder)
+            .withOutputFolder(outputPath)
+            .withOutputPackageName(outputPackageName)
+            .withOutputFileName(outputFileName)
+            .build();
 
         var allowedUrlPatterns = parseListOfAllowedUrlPatterns(args[7]);
         if (!allowedUrlPatterns.isEmpty()) {

@@ -20,7 +20,6 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
-import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
 
@@ -137,8 +136,8 @@ public final class TypeAggregator {
                     var generator = new SourceGenerator(SourceGenerator.getLanguage(), context);
                     SourceGenerator.setInputFileName(location);
                     generator.generate(
-                        new SourceGeneratorConfig(null, location, null, null,
-                            SourceGenerator.getOutputPath(), SourceGenerator.getOutputPackageName(), null));
+                        context.getConfiguration().toBuilder().withInputStream(null)
+                            .withInputFolder(null).withJsonUrl(location).withJsonFile(null).build());
                     SourceGenerator.setInputFileName(originalFileName);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
