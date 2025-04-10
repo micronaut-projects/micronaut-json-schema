@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.generator;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.jsonschema.GeneratedFromSchema;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.generator.loaders.FileLoader;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
@@ -305,7 +306,9 @@ public final class SourceGenerator {
     public EnumDef buildEnum(Schema jsonSchema, String builderClassName) {
         EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN))
+            .addAnnotation(getGeneratedFromSchemaAnn());
+
         boolean isComplexEnum = false;
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
         LinkedHashMap<String, Object> enumValues = new LinkedHashMap<>();
@@ -380,7 +383,8 @@ public final class SourceGenerator {
     private RecordDef buildRecord(Schema jsonSchema, String builderClassName) {
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN))
+            .addAnnotation(getGeneratedFromSchemaAnn());
 
         addFields(jsonSchema, objectBuilder);
         return objectBuilder.build();
@@ -389,7 +393,8 @@ public final class SourceGenerator {
     private ClassDef buildClass(Schema jsonSchema, String builderClassName) {
         ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN))
+            .addAnnotation(getGeneratedFromSchemaAnn());
 
         if (context.hasDefinition(inputFileName + "/superClass")) {
             var superClass = context.getDefinitionType(inputFileName + "/superClass");
@@ -423,7 +428,8 @@ public final class SourceGenerator {
     private InterfaceDef buildInterface(Schema jsonSchema, String builderClassName) {
         InterfaceDef.InterfaceDefBuilder objectBuilder = InterfaceDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+            .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN))
+            .addAnnotation(getGeneratedFromSchemaAnn());
         if (jsonSchema.hasDiscriminator()) {
             // top level interface
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
@@ -646,5 +652,9 @@ public final class SourceGenerator {
 
     public static VisitorContext.Language getLanguage() {
         return language;
+    }
+
+    private static AnnotationDef getGeneratedFromSchemaAnn() {
+        return AnnotationDef.builder(ClassTypeDef.of(GeneratedFromSchema.class)).addMember("fileName", inputFileName).build();
     }
 }

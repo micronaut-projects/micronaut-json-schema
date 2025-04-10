@@ -31,7 +31,7 @@ dependencies {
     testRuntimeOnly(libs.junit.jupiter.engine)
 }
 
-def beanGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
+def animalGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
     language = "java"
     classpath.from(configurations.beanGenerator)
     jsonFile.convention(layout.projectDirectory.file("src/test/resources/animal.schema.json"))
@@ -94,7 +94,7 @@ tasks.withType(Checkstyle).configureEach {
 sourceSets {
     test {
         java.srcDir('src/test/java')
-        java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(animalGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(foodGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(githubGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(wordPressGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))

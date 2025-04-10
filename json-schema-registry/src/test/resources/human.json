@@ -1,0 +1,7 @@
+{
+  "subject": "human",
+  "version": 1,
+  "id": 2,
+  "schemaType": "JSON",
+  "schema": "{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}"
+}
