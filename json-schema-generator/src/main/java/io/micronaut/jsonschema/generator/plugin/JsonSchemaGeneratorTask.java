@@ -20,6 +20,9 @@ import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.loaders.UrlLoader;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy;
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder;
 import io.micronaut.sourcegen.annotations.PluginTask;
 import io.micronaut.sourcegen.annotations.PluginTaskExecutable;
 import io.micronaut.sourcegen.annotations.PluginTaskParameter;
@@ -67,6 +70,8 @@ public record JsonSchemaGeneratorTask(
     Language language,
     @PluginTaskParameter
     List<String> acceptedUrlPatterns,
+    JavadocConfig javadoc,
+    RecordAdoptionStrategy recordAdoptionStrategy,
     @PluginTaskParameter(directory = true, output = OutputType.CUSTOM, required = true)
     File outputDirectory,
     @PluginTaskParameter(directory = true, output = OutputType.JAVA_SOURCES, internal = true)
@@ -91,17 +96,19 @@ public record JsonSchemaGeneratorTask(
             case GROOVY -> groovyOutputDirectory;
             case KOTLIN -> kotlinOutputDirectory;
         };
-        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.valueOf(language.name()), new GeneratorContext());
+        SourceGenerator generator = new SourceGenerator(language.name());
         try {
-            generator.generate(new SourceGeneratorConfig(
-                null,
-                inputURL,
-                    inputFile,
-                inputDirectory == null ? null : inputDirectory.toPath(),
-                languageDir.toPath(),
-                outputPackageName,
-                outputFileName
-            ));
+            SourceGeneratorConfig config = new SourceGeneratorConfigBuilder()
+                .withJsonUrl(inputURL)
+                .withJsonFile(inputFile)
+                .withInputFolder(inputDirectory == null ? null : inputDirectory.toPath())
+                .withOutputFolder(languageDir.toPath())
+                .withOutputPackageName(outputPackageName)
+                .withOutputFileName(outputFileName)
+                .withJavadoc(javadoc)
+                .withRecordAdoptionStrategy(recordAdoptionStrategy)
+                .build();
+            generator.generate(config);
         } catch (IOException e) {
             throw new RuntimeException("Could not generate based on JSON schema", e);
         }
