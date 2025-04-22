@@ -27,4 +27,5 @@ micronautBuild {
     descriptor {
         parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-generator"
     }
+    binaryCompatibility.enabledAfter("2.0.0")
 }

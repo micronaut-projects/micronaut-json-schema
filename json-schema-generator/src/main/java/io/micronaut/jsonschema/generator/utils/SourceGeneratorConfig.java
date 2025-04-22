@@ -15,6 +15,8 @@
  */
 package io.micronaut.jsonschema.generator.utils;
 
+import io.micronaut.sourcegen.annotations.PluginTaskParameter;
+
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -93,14 +95,9 @@ public record SourceGeneratorConfig(
      * @param replaceHTML Whether to replace HTML characters, e.g. {@code >} to {@code &gt;}.
      */
     public record JavadocConfig(
+        @PluginTaskParameter(defaultValue = "true")
         boolean replaceHTML
     ) {
-        /**
-         * Initialize the configuration with defaults.
-         */
-        public JavadocConfig() {
-            this(true);
-        }
     }
 
     /**
