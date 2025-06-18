@@ -52,8 +52,9 @@ public class UrlLoader implements SchemaLoader {
     @Override
     public Schema load() {
         try {
+            String jsonString = null;
             try (InputStream inputStream = downloadAsStream(this.url)) {
-                String jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                 return JSON_MAPPER.readValue(jsonString, Schema.class);
             } catch (InterruptedException e) {
                 throw new IOException(e);
