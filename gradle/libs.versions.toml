@@ -19,7 +19,7 @@
 micronaut = "4.9.8"
 micronaut-docs = "2.0.0"
 micronaut-logging = "1.7.0"
-micronaut-serde = "2.15.0"
+micronaut-serde = "2.15.1"
 micronaut-test = "4.7.0"
 micronaut-sourcegen = "1.8.2"
 micronaut-validation = "4.9.0"
