@@ -17,6 +17,7 @@ package io.micronaut.jsonschema.validation;
 
 import io.micronaut.context.annotation.ConfigurationProperties;
 import io.micronaut.core.bind.annotation.Bindable;
+import io.micronaut.jsonschema.utils.JsonSchemaConfiguration;
 
 /**
  * A configuration for {@link JsonSchemaValidator}.
@@ -24,7 +25,7 @@ import io.micronaut.core.bind.annotation.Bindable;
  * folder on the classpath.
  *
  * @param baseUri The base URI for JSON schemas to be validated
- * @param classpathFolder THe folder where the JSON schemas are located, on the classpath
+ * @param classpathFolder THe folder where the JSON schemas are located, on the classpath. Deprecated. Not used. Use {@link JsonSchemaConfiguration#getOutputLocation()} instead.
  *
  * @author Andriy Dmytruk
  * @since 1.0.0

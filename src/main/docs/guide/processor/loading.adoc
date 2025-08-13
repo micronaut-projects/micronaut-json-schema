@@ -1,0 +1,3 @@
+If you want to load the generated JSON Schema, you can inject a bean of type api:jsonschema.utils.JsonSchemaClassPathResourceLoader[]. You need the following dependency:
+
+dependency:micronaut-json-schema-utils[groupId="io.micronaut.jsonschema"]

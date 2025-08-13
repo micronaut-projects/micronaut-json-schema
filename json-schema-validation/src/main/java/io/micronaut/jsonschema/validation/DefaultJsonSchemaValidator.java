@@ -15,27 +15,28 @@
  */
 package io.micronaut.jsonschema.validation;
 
-import com.networknt.schema.*;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.AbsoluteIri;
+import com.networknt.schema.InputFormat;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SchemaValidatorsConfig;
+import com.networknt.schema.ExecutionContextCustomizer;
+import com.networknt.schema.JsonSchema;
 import com.networknt.schema.resource.InputStreamSource;
 import com.networknt.schema.resource.SchemaLoader;
-import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.annotation.NonNull;
-import io.micronaut.core.beans.BeanIntrospection;
-import io.micronaut.core.beans.exceptions.IntrospectionException;
 import io.micronaut.core.io.ResourceLoader;
-import io.micronaut.core.naming.NameUtils;
 import io.micronaut.json.JsonMapper;
+import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
+import io.micronaut.jsonschema.utils.JsonSchemaConfiguration;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -45,29 +46,36 @@ import java.util.stream.Collectors;
 final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultJsonSchemaValidator.class);
     private static final String CLASSPATH_PREFIX = "classpath:";
-    private static final String SUFFIX = ".schema.json";
-    private static final String MEMBER_URI = "uri";
+
     private static final ExecutionContextCustomizer CONTEXT_CUSTOMIZER = (executionContext, validationContext) -> {
         // By default, since Draft 2019-09 the format keyword only generates annotations and not assertions
         validationContext.getConfig().setFormatAssertionsEnabled(true);
     };
+    private static final String SLASH = "/";
+    private static final String META_INF = "META-INF";
 
     private final Map<Class<?>, JsonSchema> jsonSchemaCache = new ConcurrentHashMap<>();
     private final JsonSchemaValidatorConfiguration config;
     private final ResourceLoader resourceLoader;
     private final JsonMapper jsonMapper;
     private final SchemaValidatorsConfig schemaValidatorsConfig;
+    private final JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader;
+    private final JsonSchemaConfiguration jsonSchemaConfiguration;
 
     DefaultJsonSchemaValidator(
-            JsonSchemaValidatorConfiguration config,
-            ResourceLoader resourceLoader,
-            JsonMapper jsonMapper,
-            SchemaValidatorsConfig schemaValidatorsConfig
+        JsonSchemaValidatorConfiguration config,
+        ResourceLoader resourceLoader,
+        JsonMapper jsonMapper,
+        SchemaValidatorsConfig schemaValidatorsConfig,
+        JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader,
+        JsonSchemaConfiguration jsonSchemaConfiguration
     ) {
         this.config = config;
         this.resourceLoader = resourceLoader;
         this.jsonMapper = jsonMapper;
         this.schemaValidatorsConfig = schemaValidatorsConfig;
+        this.jsonSchemaClassPathResourceLoader = jsonSchemaClassPathResourceLoader;
+        this.jsonSchemaConfiguration = jsonSchemaConfiguration;
     }
 
     @Override
@@ -85,7 +93,7 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
     }
 
     private <T> JsonSchema jsonSchemaForClass(@NonNull Class<T> type) {
-        String jsonSchema = jsonSchemaStringForClass(type);
+        String jsonSchema = jsonSchemaClassPathResourceLoader.jsonSchemaStringForClass(type).orElse(null);
         if (jsonSchema == null) {
             throw new IllegalArgumentException("No schema found for type: " + type);
         }
@@ -93,31 +101,6 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
             builder.schemaLoaders(b -> b.add(new ResourceSchemaLoader()));
         });
         return jsonSchemaFactory.getSchema(jsonSchema, schemaValidatorsConfig);
-    }
-
-    private <T> String jsonSchemaStringForClass(@NonNull Class<T> type) {
-        String path = jsonSchemaPath(type);
-        try (InputStream inputStream = resourceLoader.getResourceAsStream(path).orElseThrow(() -> new IllegalArgumentException("No schema found for type: " + type + " at path: " + path))) {
-            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
-    private <T> String jsonSchemaPath(@NonNull Class<T> type) {
-        String className = NameUtils.hyphenate(type.getSimpleName());
-        try {
-            BeanIntrospection<T> introspection = BeanIntrospection.getIntrospection(type);
-            AnnotationValue<io.micronaut.jsonschema.JsonSchema> jsonSchemaAnnotationValue = introspection.getAnnotation(io.micronaut.jsonschema.JsonSchema.class);
-            Optional<String> uriOptional = jsonSchemaAnnotationValue.stringValue(MEMBER_URI);
-            if (uriOptional.isPresent()) {
-                className = uriOptional.get().replace("/", "");
-            }
-        } catch (IntrospectionException e) {
-            LOG.debug("Introspection exception for class {}.}", type, e);
-        }
-        String name = className + SUFFIX;
-        return CLASSPATH_PREFIX + config.classpathFolder() + name;
     }
 
     private static Set<? extends ValidationMessage> validate(JsonSchema schema, String json) {
@@ -134,8 +117,9 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
             if (path.startsWith(config.baseUri())) {
                 path = path.substring(config.baseUri().length());
             }
-            String filePath = Path.of(config.classpathFolder() + path).normalize().toString();
-            if (!filePath.startsWith(config.classpathFolder())) {
+            String classpathFolder = META_INF + SLASH + jsonSchemaConfiguration.getOutputLocation() + SLASH;
+            String filePath = Path.of(classpathFolder + path).normalize().toString();
+            if (!filePath.startsWith(classpathFolder)) {
                 throw new IllegalArgumentException("Schema for URI " + absoluteIri + " is not inside the required folder " + config.classpathFolder() + " at path: " + path);
             }
             return () -> resourceLoader.getResourceAsStream(CLASSPATH_PREFIX + filePath)
