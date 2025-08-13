@@ -79,8 +79,8 @@ class SchemaSerializationSpec extends Specification {
 
         where:
         schema                                             | expectedJson
-        Schema.number().setMinimum(12).setMaximum(13)      | '{"type":["number"],"maximum":13,"minimum":12}'
-        Schema.object().putProperty("a", Schema.integer()) | '{"type":["object"],"properties":{"a":{"type":["integer"]}}}'
+        Schema.number().setMinimum(12).setMaximum(13)      | '{"type":"number","maximum":13,"minimum":12}'
+        Schema.object().putProperty("a", Schema.integer()) | '{"type":"object","properties":{"a":{"type":"integer"}}}'
     }
 
     void "test #expectedJson serialization"() {

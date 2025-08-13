@@ -12,8 +12,3 @@ dependencies {
     testImplementation(mnLogging.slf4j.api)
     testImplementation(mnLogging.slf4j.simple)
 }
-
-
-test {
-    useJUnitPlatform()
-}

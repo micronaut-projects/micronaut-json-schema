@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.micronaut.core.annotation.Internal;
 
 import java.util.ArrayList;
@@ -66,7 +67,9 @@ public final class Schema {
     /**
      * The supported types of the schema.
      */
+    @JsonSerialize(using = TypeListSerializer.class)
     private List<Type> type;
+
     private String format;
     @JsonProperty("const")
     private Object constValue;

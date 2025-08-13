@@ -32,7 +32,7 @@ class ObjectsValidationSpec extends Specification {
         where:
         llama | message
         new Llama("", 12)      | "/name: must be at least 1 characters long"
-        '{"name":null}'        | "/name: null found, [string] expected"
+        '{"name":null}'        | "/name: null found, string expected"
         new Llama("John", -12) | "/age: must have a minimum value of 0"
     }
 
@@ -150,7 +150,7 @@ class ObjectsValidationSpec extends Specification {
 
         then:
         assertions.size() == 1
-        assertions[0].message == "/name: integer found, [string] expected"
+        assertions[0].message == "/name: integer found, string expected"
     }
 
 }
