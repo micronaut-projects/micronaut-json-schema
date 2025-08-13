@@ -3,15 +3,15 @@
   "$id":"http://localhost:8080/schemas/red-winged-blackbird.schema.json",
   "title":"RedWingedBlackbird",
   "description":"A species of blackbird with red wings",
-  "type":["object"],
+  "type":"object",
   "properties":{
     "name":{
       "description":"The name",
-      "type":["string"]
+      "type":"string"
     },
     "wingSpan":{
       "description":"The wing span of the bird",
-      "type":["number"]
+      "type":"number"
     }
   }
 }
