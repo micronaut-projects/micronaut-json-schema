@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.List;
 
 @Internal
-public class TypeListSerializer extends JsonSerializer<List<Schema.Type>> {
+class TypeListSerializer extends JsonSerializer<List<Schema.Type>> {
 
     @Override
     public void serialize(List<Schema.Type> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
