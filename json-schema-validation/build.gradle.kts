@@ -17,8 +17,8 @@ dependencies {
     testImplementation(mn.micronaut.jackson.databind)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
-    testImplementation(libs.junit.jupiter.api)
-    testImplementation(mnTest.micronaut.test.junit5)
-    testRuntimeOnly(libs.junit.jupiter.engine)
     testImplementation(libs.junit.jupiter.params)
+}
+micronautBuild {
+    testFramework = io.micronaut.build.TestFramework.JUNIT5
 }
