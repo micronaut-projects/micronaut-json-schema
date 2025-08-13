@@ -28,7 +28,7 @@ managed-json-schema-validator = "1.5.8"
 kotlin = "1.9.25"
 ksp = "1.9.25-1.0.20"
 spock = "2.3-groovy-4.0"
-java-parser = "3.26.4"
+java-parser = "3.27.0"
 sonatype-scan = "3.1.2"
 
 [libraries]
