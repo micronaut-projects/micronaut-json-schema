@@ -101,15 +101,17 @@
         
         <div class="toc-item" style="margin-left:10px" id="toc-item-serving"><a href="#serving"><strong>4.3</strong><span>Serving JSON Schemas</span></a></div>
         
-        <div class="toc-item" style="margin-left:10px" id="toc-item-validation"><a href="#validation"><strong>4.4</strong><span>JSON Schema Validation</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-loading"><a href="#loading"><strong>4.4</strong><span>Loading JSON Schemas</span></a></div>
         
-        <div class="toc-item" style="margin-left:10px" id="toc-item-sources"><a href="#sources"><strong>4.5</strong><span>Supported Information Sources</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-validation"><a href="#validation"><strong>4.5</strong><span>JSON Schema Validation</span></a></div>
         
-        <div class="toc-item" style="margin-left:20px" id="toc-item-javadoc"><a href="#javadoc"><strong>4.5.1</strong><span>JavaDoc</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-sources"><a href="#sources"><strong>4.6</strong><span>Supported Information Sources</span></a></div>
         
-        <div class="toc-item" style="margin-left:20px" id="toc-item-validationAnnotations"><a href="#validationAnnotations"><strong>4.5.2</strong><span>Validation Annotations</span></a></div>
+        <div class="toc-item" style="margin-left:20px" id="toc-item-javadoc"><a href="#javadoc"><strong>4.6.1</strong><span>JavaDoc</span></a></div>
         
-        <div class="toc-item" style="margin-left:20px" id="toc-item-jacksonAnnotations"><a href="#jacksonAnnotations"><strong>4.5.3</strong><span>Jackson Annotations</span></a></div>
+        <div class="toc-item" style="margin-left:20px" id="toc-item-validationAnnotations"><a href="#validationAnnotations"><strong>4.6.2</strong><span>Validation Annotations</span></a></div>
+        
+        <div class="toc-item" style="margin-left:20px" id="toc-item-jacksonAnnotations"><a href="#jacksonAnnotations"><strong>4.6.3</strong><span>Jackson Annotations</span></a></div>
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-generator"><a href="#generator"><strong>5</strong><span>Generating Beans from Schema</span></a></div>
         
@@ -365,16 +367,16 @@ documentation and add <code>Serdeable</code> annotation to the bean.</td>
   "$id":"http://localhost:8080/schemas/llama.schema.json",
   "title":"Llama",
   "description":"A llama. &lt;4&gt;",
-  "type":["object"],
+  "type":"object",
   "properties":{
     "age":{
       "description":"The age",
-      "type":["integer"],
+      "type":"integer",
       "minimum":0
     },
     "name":{
       "description":"The name",
-      "type":["string"],
+      "type":"string",
       "minLength":1
     }
   },
@@ -468,16 +470,16 @@ kapt {
   "$id":"https://example.com/schemas/llama.schema.json",
   "title":"Llama",
   "description":"A llama. &lt;4&gt;",
-  "type":["object"],
+  "type":"object",
   "properties":{
     "age":{
       "description":"The age",
-      "type":["integer"],
+      "type":"integer",
       "minimum":0
     },
     "name":{
       "description":"The name",
-      "type":["string"],
+      "type":"string",
       "minLength":1
     }
   }
@@ -608,15 +610,15 @@ This will affect the file name as well as the id by which this schema can be ref
   "$id":"http://localhost:8080/schemas/red-winged-blackbird.schema.json",
   "title":"RedWingedBlackbird",
   "description":"A species of blackbird with red wings",
-  "type":["object"],
+  "type":"object",
   "properties":{
     "name":{
       "description":"The name",
-      "type":["string"]
+      "type":"string"
     },
     "wingSpan":{
       "description":"The wing span of the bird",
-      "type":["number"]
+      "type":"number"
     }
   }
 }</code></pre>
@@ -655,7 +657,36 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 </table>
 </div>
 
-<h2 id="validation"><a class="anchor" href="#validation"></a>4.4 JSON Schema Validation</h2>
+<h2 id="loading"><a class="anchor" href="#loading"></a>4.4 Loading JSON Schemas</h2>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/loading.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>If you want to load the generated JSON Schema, you can inject a bean of type <a href="../api/io/micronaut/jsonschema/utils/JsonSchemaClassPathResourceLoader.html">JsonSchemaClassPathResourceLoader</a>. You need the following dependency:</p>
+</div>
+<div class="paragraph">
+<p>        <div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">implementation(<span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-utils")</span></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;dependency&gt;
+    &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
+    &lt;artifactId&gt;micronaut-json-schema-utils&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div></p>
+</div>
+
+<h2 id="validation"><a class="anchor" href="#validation"></a>4.5 JSON Schema Validation</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/validation.adoc"'>
@@ -684,7 +715,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 </div></p>
 </div>
 
-<h2 id="sources"><a class="anchor" href="#sources"></a>4.5 Supported Information Sources</h2>
+<h2 id="sources"><a class="anchor" href="#sources"></a>4.6 Supported Information Sources</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/sources.adoc"'>
@@ -697,7 +728,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <p>Information for JSON schema is aggregated from multiple sources.</p>
 </div>
 
-<h2 id="javadoc"><a class="anchor" href="#javadoc"></a>4.5.1 JavaDoc</h2>
+<h2 id="javadoc"><a class="anchor" href="#javadoc"></a>4.6.1 JavaDoc</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/sources/javadoc.adoc"'>
@@ -711,7 +742,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 descriptions and record parameter descriptions.</p>
 </div>
 
-<h2 id="validationAnnotations"><a class="anchor" href="#validationAnnotations"></a>4.5.2 Validation Annotations</h2>
+<h2 id="validationAnnotations"><a class="anchor" href="#validationAnnotations"></a>4.6.2 Validation Annotations</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/sources/validationAnnotations.adoc"'>
@@ -867,7 +898,7 @@ Custom validators cannot be supported, as this information is implementation-spe
 </table>
 </div>
 
-<h2 id="jacksonAnnotations"><a class="anchor" href="#jacksonAnnotations"></a>4.5.3 Jackson Annotations</h2>
+<h2 id="jacksonAnnotations"><a class="anchor" href="#jacksonAnnotations"></a>4.6.3 Jackson Annotations</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/sources/jacksonAnnotations.adoc"'>

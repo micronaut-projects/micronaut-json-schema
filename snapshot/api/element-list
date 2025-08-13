@@ -5,6 +5,7 @@ io.micronaut.jsonschema.generator.loaders
 io.micronaut.jsonschema.generator.utils
 io.micronaut.jsonschema.model
 io.micronaut.jsonschema.serialization
+io.micronaut.jsonschema.utils
 io.micronaut.jsonschema.validation
 io.micronaut.jsonschema.visitor
 io.micronaut.jsonschema.visitor.aggregator

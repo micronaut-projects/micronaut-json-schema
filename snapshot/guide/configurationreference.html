@@ -50,10 +50,37 @@
                 <p></p>
             </div>
 <div class="sect2">
+<h3 id="_micronaut_json_schema_utils_config_properties">Micronaut Json Schema Utils Config Properties</h3>
+<a id="io.micronaut.jsonschema.utils.JsonSchemaConfigurationProperties" href="#io.micronaut.jsonschema.utils.JsonSchemaConfigurationProperties">&#128279;</a>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Configuration Properties for <a href="../api/io/micronaut/jsonschema/utils/JsonSchemaConfigurationProperties.html">JsonSchemaConfigurationProperties</a></caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.output-location</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The location where JSON schemas will be generated inside the build META-INF/ directory. It defaults to {@value DEFAULT_OUTPUT_LOCATION}.</p></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+</div>
+<div class="sect2">
 <h3 id="_micronaut_json_schema_validation_config_properties">Micronaut Json Schema Validation Config Properties</h3>
 <a id="io.micronaut.jsonschema.validation.JsonSchemaValidatorConfiguration" href="#io.micronaut.jsonschema.validation.JsonSchemaValidatorConfiguration">&#128279;</a>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 1. Configuration Properties for <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html">JsonSchemaValidatorConfiguration</a></caption>
+<caption class="title">Table 2. Configuration Properties for <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html">JsonSchemaValidatorConfiguration</a></caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 33.3333%;">
@@ -75,7 +102,7 @@
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.validation.classpath-folder</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">THe folder where the JSON schemas are located, on the classpath</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">THe folder where the JSON schemas are located, on the classpath. Deprecated. Not used. Use {@link JsonSchemaConfiguration#getOutputLocation()} instead.</p></td>
 </tr>
 </tbody>
 </table>

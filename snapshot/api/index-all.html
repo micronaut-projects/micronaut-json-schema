@@ -173,6 +173,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.html#DEFAULT_BINARY_AS_ARRAY" class="member-name-link">DEFAULT_BINARY_AS_ARRAY</a> - Static variable in record class io.micronaut.jsonschema.visitor.context.<a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.html" title="class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/utils/JsonSchemaConfiguration.html#DEFAULT_OUTPUT_LOCATION" class="member-name-link">DEFAULT_OUTPUT_LOCATION</a> - Static variable in interface io.micronaut.jsonschema.utils.<a href="io/micronaut/jsonschema/utils/JsonSchemaConfiguration.html" title="interface in io.micronaut.jsonschema.utils">JsonSchemaConfiguration</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.html#DEFAULT_OUTPUT_LOCATION" class="member-name-link">DEFAULT_OUTPUT_LOCATION</a> - Static variable in record class io.micronaut.jsonschema.visitor.context.<a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.html" title="class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/JsonSchema.html#description()" class="member-name-link">description()</a> - Element in annotation interface io.micronaut.jsonschema.<a href="io/micronaut/jsonschema/JsonSchema.html" title="annotation interface in io.micronaut.jsonschema">JsonSchema</a></dt>
@@ -355,6 +357,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates or retrieves a file at the specified output path, package name, and file name.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/utils/JsonSchemaConfiguration.html#getOutputLocation()" class="member-name-link">getOutputLocation()</a> - Method in interface io.micronaut.jsonschema.utils.<a href="io/micronaut/jsonschema/utils/JsonSchemaConfiguration.html" title="interface in io.micronaut.jsonschema.utils">JsonSchemaConfiguration</a></dt>
+<dd>
+<div class="block">The location where JSON schemas will be generated inside the build META-INF/ directory.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/SourceGenerator.html#getOutputPackageName()" class="member-name-link">getOutputPackageName()</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SourceGenerator.html" title="class in io.micronaut.jsonschema.generator">SourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/SourceGenerator.html#getOutputPath()" class="member-name-link">getOutputPath()</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SourceGenerator.html" title="class in io.micronaut.jsonschema.generator">SourceGenerator</a></dt>
@@ -467,6 +473,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/serialization/package-summary.html">io.micronaut.jsonschema.serialization</a> - package io.micronaut.jsonschema.serialization</dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/utils/package-summary.html">io.micronaut.jsonschema.utils</a> - package io.micronaut.jsonschema.utils</dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/validation/package-summary.html">io.micronaut.jsonschema.validation</a> - package io.micronaut.jsonschema.validation</dt>
 <dd>
 <div class="block">Classes related to JSON Schema Validation.</div>
@@ -542,6 +550,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">An annotation that signifies that json schema should be created for the object.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/utils/JsonSchemaClassPathResourceLoader.html" class="type-name-link" title="interface in io.micronaut.jsonschema.utils">JsonSchemaClassPathResourceLoader</a> - Interface in <a href="io/micronaut/jsonschema/utils/package-summary.html">io.micronaut.jsonschema.utils</a></dt>
+<dd>
+<div class="block">API to retrieve a JSON Schema for a class.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/utils/JsonSchemaConfiguration.html" class="type-name-link" title="interface in io.micronaut.jsonschema.utils">JsonSchemaConfiguration</a> - Interface in <a href="io/micronaut/jsonschema/utils/package-summary.html">io.micronaut.jsonschema.utils</a></dt>
+<dd>
+<div class="block">Json Schema Configuration.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.html" class="type-name-link" title="class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext</a> - Record Class in <a href="io/micronaut/jsonschema/visitor/context/package-summary.html">io.micronaut.jsonschema.visitor.context</a></dt>
 <dd>
 <div class="block">A context with configuration for the JSON schema.</div>
@@ -560,6 +576,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/micronaut/jsonschema/serialization/JsonSchemaMapperFactory.html#%3Cinit%3E()" class="member-name-link">JsonSchemaMapperFactory()</a> - Constructor for class io.micronaut.jsonschema.serialization.<a href="io/micronaut/jsonschema/serialization/JsonSchemaMapperFactory.html" title="class in io.micronaut.jsonschema.serialization">JsonSchemaMapperFactory</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/utils/JsonSchemaClassPathResourceLoader.html#jsonSchemaStringForClass(java.lang.Class)" class="member-name-link">jsonSchemaStringForClass(Class&lt;T&gt;)</a> - Method in interface io.micronaut.jsonschema.utils.<a href="io/micronaut/jsonschema/utils/JsonSchemaClassPathResourceLoader.html" title="interface in io.micronaut.jsonschema.utils">JsonSchemaClassPathResourceLoader</a></dt>
+<dd>
+<div class="block">This method retrieves the JSON Schema for a class for which a JSON Schema was generated.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/validation/JsonSchemaValidator.html" class="type-name-link" title="interface in io.micronaut.jsonschema.validation">JsonSchemaValidator</a> - Interface in <a href="io/micronaut/jsonschema/validation/package-summary.html">io.micronaut.jsonschema.validation</a></dt>
 <dd>
 <div class="block">JSON Schema Validator.</div>
