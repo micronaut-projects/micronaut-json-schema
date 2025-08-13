@@ -10,6 +10,8 @@ processor:
     title: JSON Schema Annotation Members
   serving:
     title: Serving JSON Schemas
+  loading:
+    title: Loading JSON Schemas
   validation:
     title: JSON Schema Validation
   sources:

@@ -3,7 +3,7 @@ plugins {
 }
 dependencies {
     api(mn.micronaut.json.core)
-    api(projects.micronautJsonSchemaAnnotations)
+    api(projects.micronautJsonSchemaUtils)
     api(libs.managed.json.schema.validator)
 
     // JSON Schema
