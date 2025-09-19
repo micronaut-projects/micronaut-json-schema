@@ -46,8 +46,8 @@ class BirdTest {
 
     private static Stream<Arguments> provideValid() {
         return Stream.of(
-                Arguments.of(new Ostrich("Bob", 10.5f)),
-                Arguments.of(new Eagle("Blob", 31.2f))
+            Arguments.of(new Ostrich("Bob", 10.5f)),
+            Arguments.of(new Eagle("Blob", 31.2f))
         );
     }
 

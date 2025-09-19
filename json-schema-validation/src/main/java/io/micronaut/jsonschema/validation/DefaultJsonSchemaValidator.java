@@ -31,8 +31,6 @@ import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import io.micronaut.jsonschema.utils.JsonSchemaConfiguration;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -44,7 +42,6 @@ import java.util.stream.Collectors;
 @Singleton
 @Internal
 final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultJsonSchemaValidator.class);
     private static final String CLASSPATH_PREFIX = "classpath:";
 
     private static final ExecutionContextCustomizer CONTEXT_CUSTOMIZER = (executionContext, validationContext) -> {
@@ -80,34 +77,67 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
 
     @Override
     public <T> Set<? extends ValidationMessage> validate(@NonNull String json, @NonNull Class<T> type) {
-        JsonSchema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchemaForClass);
+        JsonSchema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchema);
         return validate(schema, json);
     }
 
     @Override
     @NonNull
-    public <T> Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull Class<T> type) throws IOException {
-        JsonSchema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchemaForClass);
-        String json = jsonMapper.writeValueAsString(value);
-        return validate(schema, json);
+    public Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull Map<String, Object> jsonSchema) throws IOException {
+        JsonSchema schema = jsonSchema(jsonSchema);
+        return validate(schema, value);
     }
 
-    private <T> JsonSchema jsonSchemaForClass(@NonNull Class<T> type) {
+    @Override
+    @NonNull
+    public Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull String jsonSchema) throws IOException {
+        JsonSchema schema = jsonSchema(jsonSchema);
+        return validate(schema, value);
+    }
+
+    @Override
+    @NonNull
+    public <T> Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull Class<T> type) throws IOException {
+        JsonSchema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchema);
+        return validate(schema, value);
+    }
+
+    private <T> JsonSchema jsonSchema(@NonNull Class<T> type) {
         String jsonSchema = jsonSchemaClassPathResourceLoader.jsonSchemaStringForClass(type).orElse(null);
         if (jsonSchema == null) {
             throw new IllegalArgumentException("No schema found for type: " + type);
         }
+        return jsonSchema(jsonSchema);
+    }
+
+    @NonNull
+    private JsonSchema jsonSchema(@NonNull Map<String, Object> jsonSchema) {
+        try {
+            String jsonSchemaString = jsonMapper.writeValueAsString(jsonSchema);
+            return jsonSchema(jsonSchemaString);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("could not serialize JSON Schema from: " + jsonSchema);
+        }
+    }
+
+    @NonNull
+    private JsonSchema jsonSchema(@NonNull String jsonSchema) {
         JsonSchemaFactory jsonSchemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012, builder -> {
             builder.schemaLoaders(b -> b.add(new ResourceSchemaLoader()));
         });
         return jsonSchemaFactory.getSchema(jsonSchema, schemaValidatorsConfig);
     }
 
+    private Set<? extends ValidationMessage> validate(JsonSchema schema, Object value) throws IOException {
+        String json = value instanceof String s ? s : jsonMapper.writeValueAsString(value);
+        return validate(schema, json);
+    }
+
     private static Set<? extends ValidationMessage> validate(JsonSchema schema, String json) {
         return schema.validate(json, InputFormat.JSON, CONTEXT_CUSTOMIZER)
-                .stream()
-                .map(ValidationMessageAdapter::new)
-                .collect(Collectors.toSet());
+            .stream()
+            .map(ValidationMessageAdapter::new)
+            .collect(Collectors.toSet());
     }
 
     private class ResourceSchemaLoader implements SchemaLoader {
