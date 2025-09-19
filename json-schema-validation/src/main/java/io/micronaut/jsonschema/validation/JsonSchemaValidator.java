@@ -19,6 +19,7 @@ import io.micronaut.context.annotation.DefaultImplementation;
 import io.micronaut.core.annotation.NonNull;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -55,4 +56,23 @@ public interface JsonSchemaValidator {
     @NonNull
     <T> Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull Class<T> type) throws IOException;
 
+    /**
+     * Validate Object against a JSON schema.
+     *
+     * @param value Object to validate against a JSON schema
+     * @param jsonSchema The JSON Schema expressed as a Map
+     * @return A set of validation messages. Empty if valid.
+     * @throws IOException If an error occurs validating the JSON against the schema.
+     */
+    Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull Map<String, Object> jsonSchema) throws IOException;
+
+    /**
+     * Validate Object against a JSON schema.
+     *
+     * @param value Object to validate against a JSON schema
+     * @param jsonSchema The JSON Schema expressed as a Map
+     * @return A set of validation messages. Empty if valid.
+     * @throws IOException If an error occurs validating the JSON against the schema.
+     */
+    Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull String jsonSchema) throws IOException;
 }
