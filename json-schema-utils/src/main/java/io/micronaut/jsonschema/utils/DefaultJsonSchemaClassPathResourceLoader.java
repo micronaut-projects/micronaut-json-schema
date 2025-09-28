@@ -57,7 +57,14 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
     @Nullable
     public <T> Optional<String> jsonSchemaStringForClass(@NonNull Class<T> type) {
 
-        String path = jsonSchemaPath(type);
+        Optional<String> pathOptional = jsonSchemaPath(type);
+        if (pathOptional.isEmpty()) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("No schema path found for type: {}", type);
+            }
+            return Optional.empty();
+        }
+        String path = pathOptional.get();
         Optional<InputStream> resourceAsStream = resourceLoader.getResourceAsStream(path);
         if (resourceAsStream.isEmpty()) {
             if (LOG.isTraceEnabled()) {
@@ -75,11 +82,17 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
         }
     }
 
-    private <T> String jsonSchemaPath(@NonNull Class<T> type) {
+    private <T> Optional<String> jsonSchemaPath(@NonNull Class<T> type) {
         String className = NameUtils.hyphenate(type.getSimpleName());
         try {
             BeanIntrospection<T> introspection = BeanIntrospection.getIntrospection(type);
             AnnotationValue<JsonSchema> jsonSchemaAnnotationValue = introspection.getAnnotation(io.micronaut.jsonschema.JsonSchema.class);
+            if (jsonSchemaAnnotationValue == null) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("JsonSchema annotation not found for type: {}", type);
+                }
+                return Optional.empty();
+            }
             Optional<String> uriOptional = jsonSchemaAnnotationValue.stringValue(MEMBER_URI);
             if (uriOptional.isPresent()) {
                 className = uriOptional.get().replace(SLASH, "");
@@ -88,6 +101,6 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
             LOG.debug("Introspection exception for class {}.}", type, e);
         }
         String name = className + SUFFIX;
-        return CLASSPATH_PREFIX + String.join(SLASH, META_INF, jsonSchemaConfiguration.getOutputLocation(), name);
+        return Optional.of(CLASSPATH_PREFIX + String.join(SLASH, META_INF, jsonSchemaConfiguration.getOutputLocation(), name));
     }
 }
