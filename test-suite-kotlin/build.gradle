@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("io.micronaut.build.internal.json-schema-module")
     alias(libs.plugins.kotlin.jvm)
@@ -31,4 +32,10 @@ ksp {
 compileTestGroovy {
     dependsOn tasks.getByPath('compileTestKotlin')
     classpath += files(compileTestKotlin)
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_21
+    }
 }
