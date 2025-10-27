@@ -2,3 +2,8 @@ plugins {
     id 'io.micronaut.build.internal.json-schema-base'
     id "io.micronaut.build.internal.module"
 }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
