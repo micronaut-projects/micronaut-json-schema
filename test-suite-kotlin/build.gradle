@@ -33,9 +33,3 @@ compileTestGroovy {
     dependsOn tasks.getByPath('compileTestKotlin')
     classpath += files(compileTestKotlin)
 }
-
-kotlin {
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_21
-    }
-}
