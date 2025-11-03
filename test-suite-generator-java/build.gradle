@@ -25,10 +25,10 @@ dependencies {
     testImplementation(mnSerde.micronaut.serde.processor)
     testImplementation(mnValidation.micronaut.validation)
     testImplementation(mnTest.micronaut.test.junit5)
-    testImplementation(libs.junit.jupiter.api)
-    testImplementation(libs.junit.jupiter.params)
+    testImplementation(mnTest.junit.jupiter.api)
+    testImplementation(mnTest.junit.jupiter.params)
     testRuntimeOnly(mnTest.junit.platform.launcher)
-    testRuntimeOnly(libs.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
 }
 
 def beanGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
