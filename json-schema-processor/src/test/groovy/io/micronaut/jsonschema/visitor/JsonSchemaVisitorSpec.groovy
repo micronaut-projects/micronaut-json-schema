@@ -211,7 +211,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         def schema = buildJsonSchema('test.Salamander', 'salamander', """
         package test;
 
-        import io.micronaut.core.annotation.Nullable;
+        import org.jspecify.annotations.Nullable;
         import io.micronaut.jsonschema.*;
         import java.util.*;
 
@@ -309,7 +309,7 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         def schema = buildJsonSchema('test.ClownFish', 'clown-fish', """
         package test;
 
-        import io.micronaut.core.annotation.NonNull;
+        import org.jspecify.annotations.NonNull;
         import io.micronaut.jsonschema.JsonSchema;
         import jakarta.annotation.Nonnull;
         import jakarta.validation.constraints.*;

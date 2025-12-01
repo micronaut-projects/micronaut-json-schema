@@ -25,7 +25,7 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.resource.InputStreamSource;
 import com.networknt.schema.resource.SchemaLoader;
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
