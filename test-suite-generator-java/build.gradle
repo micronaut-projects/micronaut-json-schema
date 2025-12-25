@@ -28,7 +28,7 @@ dependencies {
     testImplementation(mnTest.junit.jupiter.api)
     testImplementation(mnTest.junit.jupiter.params)
     testRuntimeOnly(mnTest.junit.platform.launcher)
-    testImplementation(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
 }
 
 def beanGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {

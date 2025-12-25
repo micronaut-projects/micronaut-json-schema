@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.visitor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.core.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.EnumElement;
 import io.micronaut.inject.ast.PropertyElement;
