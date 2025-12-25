@@ -20,5 +20,5 @@ dependencies {
     testImplementation(mnTest.junit.jupiter.params)
 }
 micronautBuild {
-    testFramework = io.micronaut.build.TestFramework.JUNIT5
+//    testFramework = io.micronaut.build.TestFramework.JUNIT5
 }

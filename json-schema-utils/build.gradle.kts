@@ -8,5 +8,5 @@ dependencies {
 }
 micronautBuild {
     binaryCompatibility.enabledAfter("1.7.0")
-    testFramework = io.micronaut.build.TestFramework.JUNIT5
+//    testFramework = io.micronaut.build.TestFramework.JUNIT5
 }
