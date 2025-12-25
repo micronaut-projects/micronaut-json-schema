@@ -21,8 +21,6 @@ micronaut-serde = "3.0.0-M1"
 micronaut-sourcegen = "1.8.2"
 micronaut-validation = "5.0.0-M1"
 managed-json-schema-validator = "1.5.8"
-kotlin = "2.2.20"
-ksp = "2.2.20-2.0.4"
 java-parser = "3.27.1"
 
 [libraries]
@@ -44,6 +42,3 @@ junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
 [bundles]
 
 [plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
