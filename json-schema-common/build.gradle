@@ -12,3 +12,9 @@ dependencies {
     testImplementation(mnLogging.slf4j.api)
     testImplementation(mnLogging.slf4j.simple)
 }
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-common"
+    }
+}
