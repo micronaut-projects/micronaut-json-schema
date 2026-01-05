@@ -1,6 +1,6 @@
 package io.micronaut.jsonschema.serialization
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import io.micronaut.jsonschema.model.Schema
 import spock.lang.Specification
 

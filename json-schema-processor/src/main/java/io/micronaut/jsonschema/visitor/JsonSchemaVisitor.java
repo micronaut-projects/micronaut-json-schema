@@ -15,7 +15,7 @@
  */
 package io.micronaut.jsonschema.visitor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
 import org.jspecify.annotations.NonNull;
@@ -64,7 +64,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
     private static final String SLASH = "/";
 
     @Override
-    public @NonNull TypeElementVisitor.VisitorKind getVisitorKind() {
+    public TypeElementVisitor.@NonNull VisitorKind getVisitorKind() {
         return VisitorKind.ISOLATING;
     }
 
