@@ -15,7 +15,7 @@
  */
 package io.micronaut.jsonschema.generator.aggregator;
 
-import com.fasterxml.jackson.core.JsonPointer;
+import tools.jackson.core.JsonPointer;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.jsonschema.generator.SourceGenerator;

@@ -20,3 +20,8 @@ dependencies {
     testImplementation(mnValidation.micronaut.validation)
 }
 
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-generator"
+    }
+}
