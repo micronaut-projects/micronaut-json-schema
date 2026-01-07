@@ -51,8 +51,11 @@ public final class Schema {
     public static final String DEF_SCHEMA_REF_PREFIX = "#/$defs/";
     public static final String ONE_OF_SCHEMA_REF_PREFIX = "#/oneOf/";
 
+    @JsonProperty("$schema")
     private String $schema;
+    @JsonProperty("$id")
     private String $id;
+    @JsonProperty("$ref")
     private String $ref;
 
     private SchemaDiscriminator discriminator;
