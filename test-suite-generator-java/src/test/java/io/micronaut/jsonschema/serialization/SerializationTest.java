@@ -1,6 +1,6 @@
 package io.micronaut.jsonschema.serialization;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.json.JsonMapper;
 import io.micronaut.jsonschema.generator.animals.Animal;
 import io.micronaut.jsonschema.generator.animals.Cat;
 import io.micronaut.jsonschema.generator.animals.Dog;

@@ -1,6 +1,6 @@
 package io.micronaut.jsonschema.visitor
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import io.micronaut.annotation.processing.test.AbstractTypeElementSpec
 import io.micronaut.jsonschema.visitor.context.JsonSchemaContext
 import io.micronaut.jsonschema.model.Schema

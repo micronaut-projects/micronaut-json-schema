@@ -15,8 +15,8 @@
  */
 package io.micronaut.jsonschema.generator;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 import io.micronaut.jsonschema.generator.food.Food;
 import io.micronaut.jsonschema.generator.food.Fruit;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ public class FoodTest {
     JsonMapper jsonMapper = new JsonMapper();
 
     @Test
-    public void mapFood() throws JsonProcessingException {
+    public void mapFood() throws JacksonException {
         var food = jsonMapper.readValue("""
             {
               "fruits": {
