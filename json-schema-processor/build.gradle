@@ -24,3 +24,10 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-processor"
+    }
+}

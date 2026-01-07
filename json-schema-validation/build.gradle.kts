@@ -22,3 +22,9 @@ dependencies {
 micronautBuild {
     testFramework = io.micronaut.build.TestFramework.JUNIT6
 }
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-validation"
+    }
+}

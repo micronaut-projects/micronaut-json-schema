@@ -105,3 +105,9 @@ sourceSets {
 javadoc {
     options.encoding = 'UTF-8'
 }
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-test-suite-generator-java"
+    }
+}

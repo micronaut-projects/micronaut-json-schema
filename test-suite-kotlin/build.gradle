@@ -31,3 +31,9 @@ compileTestGroovy {
     dependsOn tasks.getByPath('compileTestKotlin')
     classpath += files(compileTestKotlin)
 }
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-test-suite-kotlin"
+    }
+}

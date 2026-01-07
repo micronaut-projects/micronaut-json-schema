@@ -28,3 +28,9 @@ dependencies {
 tasks.withType(GroovyCompile).configureEach {
     options.compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas")
 }
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-test-suite-groovy"
+    }
+}
