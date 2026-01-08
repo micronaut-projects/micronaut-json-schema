@@ -1,4 +1,5 @@
 plugins {
+    id "groovy"
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.ksp)
 }
@@ -27,7 +28,7 @@ ksp {
     arg("micronaut.jsonschema.baseUri", "https://example.com/schemas")
 }
 
-//compileTestGroovy {
-//    dependsOn tasks.getByPath('compileTestKotlin')
-//    classpath += files(compileTestKotlin)
-//}
+compileTestGroovy {
+    dependsOn tasks.getByPath('compileTestKotlin')
+    classpath += files(compileTestKotlin)
+}
