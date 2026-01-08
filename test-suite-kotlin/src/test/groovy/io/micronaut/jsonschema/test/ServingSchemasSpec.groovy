@@ -1,12 +1,10 @@
 package io.micronaut.jsonschema.test
 
 import io.micronaut.http.HttpRequest
-import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
 import jakarta.inject.Inject
-import org.junit.Test
 import spock.lang.Specification
 
 
@@ -19,7 +17,6 @@ class ServingSchemasSpec extends Specification {
     @Inject
     HttpClient client
 
-    @Test
     void "test get schemas"() {
         when:
         String result = client.toBlocking().retrieve(
