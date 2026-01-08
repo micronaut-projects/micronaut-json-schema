@@ -32,7 +32,4 @@ tasks.withType(GroovyCompile).configureEach {
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
-    testLogging {
-        exceptionFormat = 'full'
-    }
 }
