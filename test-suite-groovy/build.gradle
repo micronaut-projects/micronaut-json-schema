@@ -1,6 +1,6 @@
 plugins {
     id 'groovy'
-    id("io.micronaut.build.internal.json-schema-module")
+    id 'java-library'
 }
 
 dependencies {
@@ -23,14 +23,13 @@ dependencies {
     testImplementation(mn.micronaut.inject.groovy.test)
     testImplementation(mn.micronaut.inject.java.test)
     testImplementation(mn.micronaut.inject)
+    testImplementation(mnTest.micronaut.test.spock)
 }
 
 tasks.withType(GroovyCompile).configureEach {
     options.compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas")
 }
 
-micronautBuild {
-    descriptor {
-        parentModuleId = "io.micronaut.jsonschema:micronaut-test-suite-groovy"
-    }
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }

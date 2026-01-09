@@ -1,7 +1,7 @@
 import io.micronaut.build.internal.generator.BeanGeneratorTask
 
 plugins {
-    id("io.micronaut.build.internal.json-schema-module")
+    id("java-library")
     id("io.micronaut.build.internal.test-suite-generator-java")
 }
 
@@ -106,8 +106,3 @@ javadoc {
     options.encoding = 'UTF-8'
 }
 
-micronautBuild {
-    descriptor {
-        parentModuleId = "io.micronaut.jsonschema:micronaut-test-suite-generator-java"
-    }
-}
