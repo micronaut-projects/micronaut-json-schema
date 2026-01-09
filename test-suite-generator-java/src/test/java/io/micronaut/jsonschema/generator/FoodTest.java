@@ -21,8 +21,8 @@ import io.micronaut.jsonschema.generator.food.Food;
 import io.micronaut.jsonschema.generator.food.Fruit;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class FoodTest {
 
