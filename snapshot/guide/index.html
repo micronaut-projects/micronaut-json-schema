@@ -15,7 +15,7 @@
     <script>hljs.initHighlightingOnLoad();</script>
     <link rel="stylesheet" href="../css/multi-language-sample.css"/>
     <script src="../js/docs.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.13/clipboard.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
     <script type="text/javascript">
         function addJsClass(el) {
             var classes = document.body.className.split(" ");
@@ -23,7 +23,9 @@
             document.body.className = classes.join(" ");
         }
     </script>
-
+    <style type="text/css">
+        .lang-java { display: block }; .lang-python { display: block }; .lang-kotlin { display: block }; .lang-groovy { display: block }; 
+    </style>
 </head>
 
 <body class="body" id="docs" onload="addJsClass();" onhashchange="highlightMenu()">
@@ -135,13 +137,13 @@
         <h1>Micronaut JSON schema</h1>
         <p></p>
         <p>JSON schema support for Micronaut</p>
-        <p><strong>Version:</strong> 1.7.5-SNAPSHOT </p>
+        <p><strong>Version:</strong> 2.0.0-SNAPSHOT </p>
     </div>
     
 <h1 id="introduction"><a class="anchor" href="#introduction"></a>1 Introduction</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/introduction.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/introduction.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -158,7 +160,7 @@ JSON data consistency, validity and interoperability.</p>
 <h1 id="dependencies"><a class="anchor" href="#dependencies"></a>2 Dependencies</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/dependencies.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/dependencies.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -184,7 +186,8 @@ JSON data consistency, validity and interoperability.</p>
     &lt;/path&gt;
 &lt;/annotationProcessorPaths&gt;</code></pre>
 </div>
-</div></p>
+</div>
+</p>
 </div>
 <div class="paragraph">
 <p>and the Micronaut JSON Schema Annotations dependency to compile classpath:
@@ -201,7 +204,8 @@ JSON data consistency, validity and interoperability.</p>
     &lt;artifactId&gt;micronaut-json-schema-annotations&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
 </div>
-</div></p>
+</div>
+</p>
 </div>
 <div class="paragraph">
 <p>In order to create beans from JSON Schema, add Micronaut JSON Schema generator dependency to compile classpath:
@@ -218,7 +222,8 @@ JSON data consistency, validity and interoperability.</p>
     &lt;artifactId&gt;micronaut-json-schema-generator&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
 </div>
-</div></p>
+</div>
+</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -236,7 +241,7 @@ The Generator module can also be directly used with the Micronaut&#8217;s <a hre
 <h1 id="quickStart"><a class="anchor" href="#quickStart"></a>3 Quick Start</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/quickStart.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/quickStart.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -277,6 +282,34 @@ public record Llama(
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">package io.micronaut.jsonschema.test
+
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import io.micronaut.jsonschema.JsonSchema
+import io.micronaut.serde.annotation.Serdeable
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.PositiveOrZero
+
+/**
+ * A llama. <b class="conum">(4)</b>
+ *
+ * @param name The name
+ * @param age The age
+ */
+@JsonSchema // <b class="conum">(1)</b>
+@Serdeable // <b class="conum">(2)</b>
+class Llama(
+        @field:JsonInclude(Include.NON_NULL)
+        @field:NotBlank
+        val name: String,
+        @field:PositiveOrZero
+        val age: Int? // <b class="conum">(3)</b>
+)</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
 <pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">package io.micronaut.jsonschema.test
 
 import com.fasterxml.jackson.annotation.JsonInclude
@@ -305,34 +338,6 @@ class Llama {
     @PositiveOrZero // <b class="conum">(3)</b>
     Integer age
 }</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">package io.micronaut.jsonschema.test
-
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonInclude.Include
-import io.micronaut.jsonschema.JsonSchema
-import io.micronaut.serde.annotation.Serdeable
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.PositiveOrZero
-
-/**
- * A llama. <b class="conum">(4)</b>
- *
- * @param name The name
- * @param age The age
- */
-@JsonSchema // <b class="conum">(1)</b>
-@Serdeable // <b class="conum">(2)</b>
-class Llama(
-        @field:JsonInclude(Include.NON_NULL)
-        @field:NotBlank
-        val name: String,
-        @field:PositiveOrZero
-        val age: Int? // <b class="conum">(3)</b>
-)</code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -391,7 +396,7 @@ documentation and add <code>Serdeable</code> annotation to the bean.</td>
 <h1 id="processor"><a class="anchor" href="#processor"></a>4 Creating Schema From Beans</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -404,7 +409,7 @@ documentation and add <code>Serdeable</code> annotation to the bean.</td>
 <h2 id="globalConfiguration"><a class="anchor" href="#globalConfiguration"></a>4.1 JSON Schema Configuration</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/globalConfiguration.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/globalConfiguration.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -527,7 +532,7 @@ kapt {
 <h2 id="configuration"><a class="anchor" href="#configuration"></a>4.2 JSON Schema Annotation Members</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/configuration.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/configuration.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -554,6 +559,20 @@ public record RWBlackbird(
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">@JsonSchema(
+    title = "RedWingedBlackbird", // <b class="conum">(1)</b>
+    description = "A species of blackbird with red wings",
+    uri = "/red-winged-blackbird" // <b class="conum">(2)</b>
+)
+@Serdeable
+class RWBlackbird (
+        val name: String,
+        val wingSpan: Double?
+)</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
 <pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">@JsonSchema(
     title = "RedWingedBlackbird", // <b class="conum">(1)</b>
     description = "A species of blackbird with red wings",
@@ -571,20 +590,6 @@ class RWBlackbird {
      */
     Double wingSpan
 }</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">@JsonSchema(
-    title = "RedWingedBlackbird", // <b class="conum">(1)</b>
-    description = "A species of blackbird with red wings",
-    uri = "/red-winged-blackbird" // <b class="conum">(2)</b>
-)
-@Serdeable
-class RWBlackbird (
-        val name: String,
-        val wingSpan: Double?
-)</code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -628,7 +633,7 @@ This will affect the file name as well as the id by which this schema can be ref
 <h2 id="serving"><a class="anchor" href="#serving"></a>4.3 Serving JSON Schemas</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/serving.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/serving.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -660,7 +665,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="loading"><a class="anchor" href="#loading"></a>4.4 Loading JSON Schemas</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/loading.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/loading.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -683,13 +688,14 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
     &lt;artifactId&gt;micronaut-json-schema-utils&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
 </div>
-</div></p>
+</div>
+</p>
 </div>
 
 <h2 id="validation"><a class="anchor" href="#validation"></a>4.5 JSON Schema Validation</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/validation.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/validation.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -712,13 +718,14 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
     &lt;artifactId&gt;micronaut-json-schema-validation&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
 </div>
-</div></p>
+</div>
+</p>
 </div>
 
 <h2 id="sources"><a class="anchor" href="#sources"></a>4.6 Supported Information Sources</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/sources.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/sources.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -731,7 +738,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="javadoc"><a class="anchor" href="#javadoc"></a>4.6.1 JavaDoc</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/sources/javadoc.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/sources/javadoc.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -745,7 +752,7 @@ descriptions and record parameter descriptions.</p>
 <h2 id="validationAnnotations"><a class="anchor" href="#validationAnnotations"></a>4.6.2 Validation Annotations</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/sources/validationAnnotations.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/sources/validationAnnotations.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -901,7 +908,7 @@ Custom validators cannot be supported, as this information is implementation-spe
 <h2 id="jacksonAnnotations"><a class="anchor" href="#jacksonAnnotations"></a>4.6.3 Jackson Annotations</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/processor/sources/jacksonAnnotations.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/sources/jacksonAnnotations.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1119,7 +1126,7 @@ which allows defining custom filters.
 <h1 id="generator"><a class="anchor" href="#generator"></a>5 Generating Beans from Schema</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/generator.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1144,7 +1151,7 @@ The Generator module can also be directly used with the Micronaut&#8217;s <a hre
 <h2 id="registration"><a class="anchor" href="#registration"></a>5.1 Build-time Generation Configuration</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/generator/registration.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator/registration.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1215,7 +1222,7 @@ The Generator module can also be directly used with the Micronaut&#8217;s <a hre
 <h2 id="usage"><a class="anchor" href="#usage"></a>5.2 Run-time Generation Configuration</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/generator/usage.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator/usage.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1321,7 +1328,7 @@ javaGenerator.generate(config);</code></pre>
 <h2 id="support"><a class="anchor" href="#support"></a>5.3 Supported JSON Schema Keywords and Limitations</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/generator/support.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator/support.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1655,7 +1662,7 @@ The source code generation decides which object type to use for representing the
 <h2 id="example"><a class="anchor" href="#example"></a>5.4 Example Output of Generation</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/generator/example.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator/example.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1805,7 +1812,7 @@ The source code generation decides which object type to use for representing the
 <div class="listingblock multi-language-sample">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@Test
-public void mapCat() throws JsonProcessingException {
+public void mapCat() throws JacksonException {
     var animal = jsonMapper.readValue("""
         {
           "id": "0x",
@@ -1869,7 +1876,7 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 <h1 id="repository"><a class="anchor" href="#repository"></a>6 Repository</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/repository.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/repository.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1885,7 +1892,7 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 <h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>7 Release History</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/1.7.x/src/main/docs/guide/releaseHistory.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/releaseHistory.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
