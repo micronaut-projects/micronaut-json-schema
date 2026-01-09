@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 import io.micronaut.core.annotation.Internal;
 
 import java.util.ArrayList;
@@ -51,8 +51,11 @@ public final class Schema {
     public static final String DEF_SCHEMA_REF_PREFIX = "#/$defs/";
     public static final String ONE_OF_SCHEMA_REF_PREFIX = "#/oneOf/";
 
+    @JsonProperty("$schema")
     private String $schema;
+    @JsonProperty("$id")
     private String $id;
+    @JsonProperty("$ref")
     private String $ref;
 
     private SchemaDiscriminator discriminator;

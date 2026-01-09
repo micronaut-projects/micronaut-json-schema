@@ -16,9 +16,9 @@
 package io.micronaut.jsonschema.generator.loaders;
 
 import io.micronaut.jsonschema.model.Schema;
+import tools.jackson.core.JacksonException;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * Loads a JSON schema from a file.
@@ -37,10 +37,6 @@ public class FileLoader implements SchemaLoader {
 
     @Override
     public Schema load() {
-        try {
             return JSON_MAPPER.readValue(file, Schema.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

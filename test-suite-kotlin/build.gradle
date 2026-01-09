@@ -1,7 +1,6 @@
 plugins {
+    id("io.micronaut.build.internal.kotlin-ksp")
     id "groovy"
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.ksp)
 }
 
 dependencies {

@@ -524,18 +524,32 @@ public final class SourceGenerator {
 
         PropertyDef property = propertyDef.build();
         // transfer to field if it is const and class builder
+
         if (schema.hasConstValue() && objectBuilder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
-            FieldDef.FieldDefBuilder fieldDefBuilder = FieldDef.builder(name)
-                .ofType(property.getType())
-                .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+            final String fieldName = name;
+            final TypeDef fieldType = propertyType;
+            FieldDef.FieldDefBuilder fieldDefBuilder = FieldDef.builder(fieldName)
+                .ofType(fieldType)
+                .addModifiers(Modifier.PRIVATE)
                 .initializer(ExpressionDef.constant(schema.getConstValue()));
             property.getAnnotations().forEach(fieldDefBuilder::addAnnotation);
             property.getJavadoc().forEach(fieldDefBuilder::addJavadoc);
             FieldDef fieldDef = fieldDefBuilder.build();
-            classDefBuilder
-                .addField(fieldDef)
-                .addMethod(MethodDef.builder("get" + capitalize(name))
-                    .build(((aThis, methodParameters) -> aThis.field(fieldDef).returning())));
+            classDefBuilder.addField(fieldDef);
+
+            // add getter
+            classDefBuilder.addMethod(MethodDef.builder("get" + capitalize(fieldName))
+                .addModifiers(Modifier.PUBLIC)
+                .returns(fieldType)
+                .build((aThis, params) -> aThis.field(fieldName, fieldType).returning()));
+
+            // add setter
+            classDefBuilder.addMethod(MethodDef.builder("set" + capitalize(fieldName))
+                .addModifiers(Modifier.PUBLIC)
+                .returns(TypeDef.VOID)
+                .addParameter(fieldName, fieldType)
+                .build((aThis, params) -> aThis.field(fieldName, fieldType).assign(params.get(0))));
+
             return;
         }
         objectBuilder.addProperty(property);

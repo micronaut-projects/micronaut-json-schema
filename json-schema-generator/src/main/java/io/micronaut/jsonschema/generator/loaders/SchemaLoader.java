@@ -15,7 +15,7 @@
  */
 package io.micronaut.jsonschema.generator.loaders;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 

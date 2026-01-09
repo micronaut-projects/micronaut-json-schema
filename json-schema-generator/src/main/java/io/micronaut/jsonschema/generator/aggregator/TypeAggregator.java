@@ -15,7 +15,7 @@
  */
 package io.micronaut.jsonschema.generator.aggregator;
 
-import com.fasterxml.jackson.core.JsonPointer;
+import tools.jackson.core.JsonPointer;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.jsonschema.generator.SourceGenerator;
@@ -163,6 +163,21 @@ public final class TypeAggregator {
                 }
             }
             typeDef = context.getDefinitionType(ref);
+        } else if (schema.hasConstValue()) {
+            Object constVal = schema.getConstValue();
+            if (constVal instanceof Boolean) {
+                typeDef = nullable ? TypeDef.Primitive.BOOLEAN_WRAPPER : TypeDef.Primitive.BOOLEAN;
+            } else if (constVal instanceof Number num) {
+                if (num instanceof Integer || num instanceof Long) {
+                    typeDef = nullable ? TypeDef.Primitive.INT_WRAPPER : TypeDef.Primitive.INT;
+                } else {
+                    typeDef = nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT;
+                }
+            } else if (constVal instanceof String) {
+                typeDef = TypeDef.STRING;
+            } else {
+                typeDef = TypeDef.OBJECT;
+            }
         } else {
             String typeKey = type.toString().toLowerCase(Locale.ENGLISH);
             if (nullable) {

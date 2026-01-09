@@ -15,20 +15,20 @@
  */
 package io.micronaut.jsonschema.model;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.util.CollectionUtils;
 
-import java.io.IOException;
 import java.util.List;
 
 @Internal
-class TypeListSerializer extends JsonSerializer<List<Schema.Type>> {
+class TypeListSerializer extends ValueSerializer<List<Schema.Type>> {
 
     @Override
-    public void serialize(List<Schema.Type> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(List<Schema.Type> value, JsonGenerator gen, SerializationContext serializers) throws JacksonException {
         if (CollectionUtils.isEmpty(value)) {
             gen.writeNull();
         } else if (value.size() == 1) {

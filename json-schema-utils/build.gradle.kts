@@ -8,5 +8,11 @@ dependencies {
 }
 micronautBuild {
     binaryCompatibility.enabledAfter("1.7.0")
-    testFramework = io.micronaut.build.TestFramework.JUNIT5
+    testFramework = io.micronaut.build.TestFramework.JUNIT6
+}
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-utils"
+    }
 }

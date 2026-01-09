@@ -1,6 +1,6 @@
 package io.micronaut.jsonschema.serialization
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import io.micronaut.jsonschema.model.Schema
 import spock.lang.Specification
 
@@ -79,8 +79,8 @@ class SchemaSerializationSpec extends Specification {
 
         where:
         schema                                             | expectedJson
-        Schema.number().setMinimum(12).setMaximum(13)      | '{"type":"number","maximum":13,"minimum":12}'
-        Schema.object().putProperty("a", Schema.integer()) | '{"type":"object","properties":{"a":{"type":"integer"}}}'
+        Schema.number().setMinimum(12).setMaximum(13)      | '{"maximum":13,"minimum":12,"type":"number"}'
+        Schema.object().putProperty("a", Schema.integer()) | '{"properties":{"a":{"type":"integer"}},"type":"object"}'
     }
 
     void "test #expectedJson serialization"() {

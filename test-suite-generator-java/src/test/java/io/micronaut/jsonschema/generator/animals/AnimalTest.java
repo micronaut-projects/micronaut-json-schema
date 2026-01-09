@@ -15,8 +15,8 @@
  */
 package io.micronaut.jsonschema.generator.animals;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,7 +26,7 @@ public class AnimalTest {
     JsonMapper jsonMapper = new JsonMapper();
 
     @Test
-    public void mapAnimal() throws JsonProcessingException {
+    public void mapAnimal() throws JacksonException {
         var animal = jsonMapper.readValue("""
             {
               "id": "0x",
@@ -43,7 +43,7 @@ public class AnimalTest {
 
     // tag::mapp[]
     @Test
-    public void mapCat() throws JsonProcessingException {
+    public void mapCat() throws JacksonException {
         var animal = jsonMapper.readValue("""
             {
               "id": "0x",
@@ -65,7 +65,7 @@ public class AnimalTest {
     // end::mapp[]
 
     @Test
-    public void mapDog() throws JsonProcessingException {
+    public void mapDog() throws JacksonException {
         var animal = jsonMapper.readValue("""
             {
               "id": "0x",
@@ -95,7 +95,7 @@ public class AnimalTest {
         assertEquals("0x", dog.getId());
         assertEquals("2000-01-01", dog.getBirthdate());
         assertEquals("Micronaut", dog.getName());
-        assertEquals(true, dog.hasMate);
+        assertEquals(true, dog.getHasMate());
         assertEquals("Dog", dog.resourceType);
         assertEquals("Goodie", dog.getNickname());
         assertEquals("Owner", dog.getUnknownFields().getOrDefault("ownerName", ""));
@@ -103,7 +103,7 @@ public class AnimalTest {
     }
 
     @Test
-    public void mapFish() throws JsonProcessingException {
+    public void mapFish() throws JacksonException {
         var animal = jsonMapper.readValue("""
             {
               "id": "0x",
@@ -139,7 +139,7 @@ public class AnimalTest {
     }
 
     @Test
-    public void mapHuman() throws JsonProcessingException {
+    public void mapHuman() throws JacksonException {
         var animal = jsonMapper.readValue("""
             {
               "id": "N-XN",

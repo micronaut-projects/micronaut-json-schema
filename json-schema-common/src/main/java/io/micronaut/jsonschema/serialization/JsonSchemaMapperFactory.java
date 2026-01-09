@@ -15,34 +15,36 @@
  */
 package io.micronaut.jsonschema.serialization;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
-import com.fasterxml.jackson.databind.deser.std.DelegatingDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.BooleanNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.databind.node.TreeTraversingParser;
-import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
-import com.fasterxml.jackson.databind.type.SimpleType;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.StreamWriteFeature;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.deser.ValueDeserializerModifier;
+import tools.jackson.databind.deser.std.DelegatingDeserializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.BooleanNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
+import tools.jackson.databind.node.TreeTraversingParser;
+import tools.jackson.databind.ser.BeanSerializerFactory;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.model.Schema;
 
-import java.io.IOException;
 import java.util.Collections;
 
 /**
@@ -57,42 +59,43 @@ public class JsonSchemaMapperFactory {
      * @return A JSON object mapper
      */
     public static ObjectMapper createMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-
-        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
-        mapper.configure(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN, true);
-        mapper.setSerializationInclusion(Include.NON_NULL);
-        mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-
         SimpleModule module = new SimpleModule();
         module.addSerializer(Schema.class, new SchemaSerializer());
-        module.setDeserializerModifier(new BeanDeserializerModifier() {
+        module.setDeserializerModifier(new ValueDeserializerModifier() {
             @Override
-            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
+            public ValueDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription.Supplier beanDesc, ValueDeserializer<?> deserializer) {
                 if (beanDesc.getBeanClass() == Schema.class) {
                     return new SchemaDeserializer(deserializer);
                 }
                 return deserializer;
             }
         });
-        mapper.registerModule(module);
+
+        ObjectMapper mapper = JsonMapper.builder()
+            .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+            .configure(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+            .enable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
+            .enable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+            .changeDefaultPropertyInclusion(incl ->
+                incl.withValueInclusion(JsonInclude.Include.NON_NULL)
+                    .withContentInclusion(JsonInclude.Include.NON_NULL))
+            .addModule(module)
+            .build();
 
         return mapper;
     }
 
-    static class SchemaSerializer extends JsonSerializer<Schema> {
+    static class SchemaSerializer extends ValueSerializer<Schema> {
         @Override
-        public void serialize(Schema schema, JsonGenerator jsonGenerator, SerializerProvider provider) throws IOException {
+        public void serialize(Schema schema, JsonGenerator jsonGenerator, SerializationContext provider) throws JacksonException {
             if (schema == Schema.TRUE) {
                 jsonGenerator.writeBoolean(true);
             } else if (schema == Schema.FALSE) {
                 jsonGenerator.writeBoolean(false);
             } else {
-                BeanSerializerFactory.instance.createSerializer(provider, SimpleType.construct(Schema.class))
+                BeanSerializerFactory.instance.createSerializer(provider, provider.getTypeFactory().constructType(Schema.class))
                     .serialize(schema, jsonGenerator, provider);
             }
         }
@@ -100,18 +103,18 @@ public class JsonSchemaMapperFactory {
 
     static class SchemaDeserializer extends DelegatingDeserializer {
 
-        public SchemaDeserializer(JsonDeserializer delegate) {
+        public SchemaDeserializer(ValueDeserializer delegate) {
             super(delegate);
         }
 
         @Override
-        protected JsonDeserializer<?> newDelegatingInstance(JsonDeserializer<?> delegate) {
+        protected ValueDeserializer<?> newDelegatingInstance(ValueDeserializer<?> delegate) {
             return new SchemaDeserializer(delegate);
         }
 
         @Override
-        public Schema deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException, JacksonException {
-            JsonNode tree = jsonParser.getCodec().readTree(jsonParser);
+        public Schema deserialize(JsonParser jsonParser, DeserializationContext context) throws JacksonException {
+            JsonNode tree = jsonParser.objectReadContext().readTree(jsonParser);
             jsonParser.finishToken();
             if (tree instanceof ObjectNode node) {
                 // An empty schema is a true schema, as there is nothing to validate
@@ -119,12 +122,12 @@ public class JsonSchemaMapperFactory {
                     return Schema.TRUE;
                 }
                 // Type is always stored as an array, convert it
-                if (node.get("type") instanceof TextNode text) {
+                if (node.get("type") instanceof StringNode text) {
                     node.set("type",
                         new ArrayNode(context.getNodeFactory(), Collections.singletonList(text))
                     );
                 }
-                try (JsonParser newParser = new TreeTraversingParser(tree, jsonParser.getCodec())) {
+                try (JsonParser newParser = new TreeTraversingParser(tree, jsonParser.objectReadContext())) {
                     newParser.nextToken();
                     return (Schema) getDelegatee().deserialize(newParser, context);
                 }
