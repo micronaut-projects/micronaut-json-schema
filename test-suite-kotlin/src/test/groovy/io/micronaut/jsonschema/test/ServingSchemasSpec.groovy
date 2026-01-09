@@ -1,7 +1,6 @@
 package io.micronaut.jsonschema.test
 
 import io.micronaut.http.HttpRequest
-import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.runtime.server.EmbeddedServer
 import io.micronaut.test.extensions.spock.annotation.MicronautTest
