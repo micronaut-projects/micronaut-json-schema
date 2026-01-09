@@ -33,3 +33,6 @@ compileTestGroovy {
     dependsOn tasks.getByPath('compileTestKotlin')
     classpath += files(compileTestKotlin)
 }
+test {
+    useJUnitPlatform()
+}
