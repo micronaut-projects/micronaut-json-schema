@@ -37,10 +37,6 @@ public class FileLoader implements SchemaLoader {
 
     @Override
     public Schema load() {
-        try {
             return JSON_MAPPER.readValue(file, Schema.class);
-        } catch (JacksonException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
