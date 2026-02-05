@@ -59,7 +59,6 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
         this.jsonSchemaConfiguration = jsonSchemaConfiguration;
     }
 
-    @Nullable
     public <T> Optional<String> jsonSchemaStringForClass(@NonNull Class<T> type) {
 
         Optional<String> pathOptional = jsonSchemaPath(type);

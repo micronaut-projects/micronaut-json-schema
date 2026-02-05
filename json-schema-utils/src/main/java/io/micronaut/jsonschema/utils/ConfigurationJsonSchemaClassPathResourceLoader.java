@@ -54,7 +54,6 @@ final class ConfigurationJsonSchemaClassPathResourceLoader implements JsonSchema
     }
 
     @Override
-    @Nullable
     public <T> Optional<String> jsonSchemaStringForClass(@NonNull Class<T> type) {
         String path = jsonSchemaPath(type);
         Optional<InputStream> resourceAsStream = resourceLoader.getResourceAsStream(path);

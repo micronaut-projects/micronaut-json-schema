@@ -41,7 +41,7 @@ class JsonSchemaClassPathResourceLoaderTest {
             assertNotNull(readable, entry.getKey());
             assertTrue(readable.exists(), entry.getKey());
             try (InputStream inputStream = readable.asInputStream()) {
-                assertTrue(inputStream.read() != -1, entry.getKey());
+                assertNotEquals(-1, inputStream.read(), entry.getKey());
             }
         }
     }

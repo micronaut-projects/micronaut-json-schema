@@ -55,13 +55,13 @@ final class CompositeJsonSchemaClassPathResourceLoader implements JsonSchemaClas
             }
             try {
                 Optional<String> result = loader.jsonSchemaStringForClass(type);
-                if (result != null && result.isPresent()) {
+                if (result.isPresent()) {
                     if (LOG.isTraceEnabled()) {
                         LOG.trace("Schema for {} resolved by {}", type, loader.getClass().getSimpleName());
                     }
                     return result;
                 }
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Loader {} failed to resolve schema for {}", loader.getClass().getName(), type, e);
                 }
@@ -83,10 +83,10 @@ final class CompositeJsonSchemaClassPathResourceLoader implements JsonSchemaClas
             }
             try {
                 Map<String, Readable> loaderSchemas = loader.jsonSchemas();
-                if (loaderSchemas != null && !loaderSchemas.isEmpty()) {
+                if (!loaderSchemas.isEmpty()) {
                     loaderSchemas.forEach(schemas::putIfAbsent);
                 }
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Loader {} failed to resolve schemas", loader.getClass().getName(), e);
                 }

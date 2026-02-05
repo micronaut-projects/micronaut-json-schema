@@ -17,7 +17,6 @@ package io.micronaut.jsonschema.utils;
 
 import io.micronaut.core.io.Readable;
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 import java.util.Optional;
@@ -35,7 +34,6 @@ public interface JsonSchemaClassPathResourceLoader {
      * @return A JSON Schema
      * @param <T> Type used to generate the JSON Schema
      */
-    @Nullable
     <T> Optional<String> jsonSchemaStringForClass(@NonNull Class<T> type);
 
     /**

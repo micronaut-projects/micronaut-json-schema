@@ -102,65 +102,106 @@ public final class JsonSchemaResourceUtils {
      * @return The schemas
      */
     static @NonNull Map<String, io.micronaut.core.io.Readable> resolveSchemas(ResourceLoader resourceLoader, ClassLoader classLoader, String schemaFolder) {
-        List<URI> roots;
-        try {
-            roots = IOUtils.getResources(classLoader, schemaFolder);
-        } catch (IOException e) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Error scanning JSON schema resources under {}", schemaFolder, e);
-            }
-            return Map.of();
-        }
+        List<URI> roots = findRoots(classLoader, schemaFolder);
         if (roots.isEmpty()) {
             return Map.of();
         }
 
         Map<String, Readable> schemas = new LinkedHashMap<>();
-
         List<Closeable> toClose = new ArrayList<>();
         try {
             for (URI uri : roots) {
-                Path basePath = IOUtils.resolvePath(uri, schemaFolder, toClose);
-                if (basePath == null) {
-                    continue;
-                }
-
-                Files.walkFileTree(basePath, new SimpleFileVisitor<>() {
-                    @Override
-                    public java.nio.file.FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        if (Files.isHidden(file)) {
-                            return java.nio.file.FileVisitResult.CONTINUE;
-                        }
-                        Path fileName = file.getFileName();
-                        if (fileName == null) {
-                            return java.nio.file.FileVisitResult.CONTINUE;
-                        }
-                        if (fileName.toString().startsWith(".")) {
-                            return java.nio.file.FileVisitResult.CONTINUE;
-                        }
-                        if (!file.toString().endsWith(".json")) {
-                            return java.nio.file.FileVisitResult.CONTINUE;
-                        }
-
-                        String relativePath = basePath.relativize(file).toString().replace('\\', '/');
-                        String resourcePath = CLASSPATH_PREFIX + schemaFolder + relativePath;
-                        schemas.putIfAbsent(fileName.toString(), new LazyJsonSchemaReadable(resourceLoader, fileName.toString(), resourcePath));
-                        return java.nio.file.FileVisitResult.CONTINUE;
-                    }
-                });
+                collectFromRoot(resourceLoader, schemaFolder, uri, toClose, schemas);
             }
+        } finally {
+            closeAll(toClose);
+        }
+        return Collections.unmodifiableMap(schemas);
+    }
+
+    @NonNull
+    private static List<URI> findRoots(@NonNull ClassLoader classLoader, @NonNull String schemaFolder) {
+        try {
+            return IOUtils.getResources(classLoader, schemaFolder);
+        } catch (IOException e) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Error scanning JSON schema resources under {}", schemaFolder, e);
+            }
+            return List.of();
+        }
+    }
+
+    private static void collectFromRoot(
+        @NonNull ResourceLoader resourceLoader,
+        @NonNull String schemaFolder,
+        @NonNull URI uri,
+        @NonNull List<Closeable> toClose,
+        @NonNull Map<String, Readable> schemas
+    ) {
+        try {
+            Path basePath = IOUtils.resolvePath(uri, schemaFolder, toClose);
+            if (basePath == null) {
+                return;
+            }
+            Files.walkFileTree(basePath, new SchemaCollectingVisitor(resourceLoader, schemaFolder, basePath, schemas));
         } catch (IOException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Error scanning JSON schema resources", e);
             }
-        } finally {
-            for (Closeable closeable : toClose) {
-                try {
-                    closeable.close();
-                } catch (IOException ignored) {
-                }
+        }
+    }
+
+    private static void closeAll(@NonNull List<Closeable> toClose) {
+        for (Closeable closeable : toClose) {
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                // Ignore close failures
             }
         }
-        return Collections.unmodifiableMap(schemas);
+    }
+
+    private static final class SchemaCollectingVisitor extends SimpleFileVisitor<Path> {
+        private final ResourceLoader resourceLoader;
+        private final String schemaFolder;
+        private final Path basePath;
+        private final Map<String, Readable> schemas;
+
+        private SchemaCollectingVisitor(ResourceLoader resourceLoader,
+                                       String schemaFolder,
+                                       Path basePath,
+                                       Map<String, Readable> schemas) {
+            this.resourceLoader = resourceLoader;
+            this.schemaFolder = schemaFolder;
+            this.basePath = basePath;
+            this.schemas = schemas;
+        }
+
+        @Override
+        public java.nio.file.FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            if (!shouldInclude(file)) {
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
+
+            String relativePath = basePath.relativize(file).toString().replace('\\', '/');
+            String resourcePath = CLASSPATH_PREFIX + schemaFolder + relativePath;
+            schemas.putIfAbsent(relativePath, new LazyJsonSchemaReadable(resourceLoader, relativePath, resourcePath));
+            return java.nio.file.FileVisitResult.CONTINUE;
+        }
+
+        private static boolean shouldInclude(Path file) throws IOException {
+            if (Files.isHidden(file)) {
+                return false;
+            }
+            Path fileName = file.getFileName();
+            if (fileName == null) {
+                return false;
+            }
+            String name = fileName.toString();
+            if (name.startsWith(".")) {
+                return false;
+            }
+            return file.toString().endsWith(".json");
+        }
     }
 }
