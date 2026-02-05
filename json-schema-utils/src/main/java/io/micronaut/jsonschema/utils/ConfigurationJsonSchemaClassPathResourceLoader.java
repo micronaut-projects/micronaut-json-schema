@@ -16,7 +16,10 @@
 package io.micronaut.jsonschema.utils;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.io.Readable;
 import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.core.io.scan.ClassPathResourceLoader;
+import io.micronaut.context.env.Environment;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -26,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -41,10 +45,6 @@ import java.util.Optional;
 final class ConfigurationJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathResourceLoader {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigurationJsonSchemaClassPathResourceLoader.class);
 
-    private static final String CLASSPATH_PREFIX = "classpath:";
-    private static final String META_INF = "META-INF";
-    private static final String CONFIGURATION_SCHEMAS = "micronaut-configuration-schemas";
-    private static final String SLASH = "/";
     private static final String SUFFIX = ".json";
 
     private final ResourceLoader resourceLoader;
@@ -74,8 +74,31 @@ final class ConfigurationJsonSchemaClassPathResourceLoader implements JsonSchema
         }
     }
 
+    @Override
+    @NonNull
+    public Map<String, Readable> jsonSchemas() {
+        ClassLoader classLoader = resolveClassLoader();
+        if (classLoader == null) {
+            return Map.of();
+        }
+
+        String schemaFolder = JsonSchemaResourceUtils.configurationSchemasFolder();
+        return JsonSchemaResourceUtils.resolveSchemas(resourceLoader , classLoader, schemaFolder);
+    }
+
+    @Nullable
+    private ClassLoader resolveClassLoader() {
+        if (resourceLoader instanceof ClassPathResourceLoader classPathResourceLoader) {
+            return classPathResourceLoader.getClassLoader();
+        }
+        if (resourceLoader instanceof Environment environment) {
+            return environment.getClassLoader();
+        }
+        return null;
+    }
+
     private static <T> String jsonSchemaPath(@NonNull Class<T> type) {
         String name = type.getName() + SUFFIX;
-        return CLASSPATH_PREFIX + String.join(SLASH, META_INF, CONFIGURATION_SCHEMAS, name);
+        return JsonSchemaResourceUtils.CLASSPATH_PREFIX + JsonSchemaResourceUtils.configurationSchemasFolder() + name;
     }
 }

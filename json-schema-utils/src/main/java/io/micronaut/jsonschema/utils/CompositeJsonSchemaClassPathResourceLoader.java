@@ -18,11 +18,14 @@ package io.micronaut.jsonschema.utils;
 import io.micronaut.context.BeanProvider;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.context.annotation.Primary;
+import io.micronaut.core.io.Readable;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -68,5 +71,27 @@ final class CompositeJsonSchemaClassPathResourceLoader implements JsonSchemaClas
             LOG.trace("No schema found for type: {} via composite", type);
         }
         return Optional.empty();
+    }
+
+    @Override
+    @NonNull
+    public Map<String, Readable> jsonSchemas() {
+        Map<String, Readable> schemas = new LinkedHashMap<>();
+        for (JsonSchemaClassPathResourceLoader loader : loaders) {
+            if (loader == this) {
+                continue;
+            }
+            try {
+                Map<String, Readable> loaderSchemas = loader.jsonSchemas();
+                if (loaderSchemas != null && !loaderSchemas.isEmpty()) {
+                    loaderSchemas.forEach(schemas::putIfAbsent);
+                }
+            } catch (Throwable e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Loader {} failed to resolve schemas", loader.getClass().getName(), e);
+                }
+            }
+        }
+        return schemas;
     }
 }
