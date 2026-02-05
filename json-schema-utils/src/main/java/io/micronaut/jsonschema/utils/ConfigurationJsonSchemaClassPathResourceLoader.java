@@ -45,6 +45,10 @@ import java.util.Optional;
 final class ConfigurationJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathResourceLoader {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigurationJsonSchemaClassPathResourceLoader.class);
 
+    private static final String CLASSPATH_PREFIX = "classpath:";
+    private static final String META_INF = "META-INF";
+    private static final String CONFIGURATION_SCHEMAS = "micronaut-configuration-schemas";
+    private static final String SLASH = "/";
     private static final String SUFFIX = ".json";
 
     private final ResourceLoader resourceLoader;
