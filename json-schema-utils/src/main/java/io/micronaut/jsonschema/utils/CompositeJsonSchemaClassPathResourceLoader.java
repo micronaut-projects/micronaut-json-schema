@@ -29,7 +29,7 @@ import java.util.Optional;
  * A composite {@link JsonSchemaClassPathResourceLoader} that delegates to other registered loaders
  * and returns the first non-empty result.
  *
- * @since 1.7.0
+ * @since 2.0.0
  */
 @Singleton
 @Primary
