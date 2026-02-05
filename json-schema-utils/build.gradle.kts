@@ -3,6 +3,9 @@ plugins {
 }
 dependencies {
     api(projects.micronautJsonSchemaAnnotations)
+
+    testImplementation(mn.micronaut.http)
+
     testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
     testAnnotationProcessor(mn.micronaut.inject.java)
 }

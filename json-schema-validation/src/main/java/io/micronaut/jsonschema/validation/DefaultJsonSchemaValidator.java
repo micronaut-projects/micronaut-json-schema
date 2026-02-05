@@ -140,7 +140,7 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
             .collect(Collectors.toSet());
     }
 
-    private class ResourceSchemaLoader implements SchemaLoader {
+    private final class ResourceSchemaLoader implements SchemaLoader {
         @Override
         public InputStreamSource getSchema(AbsoluteIri absoluteIri) {
             String path = URI.create(absoluteIri.toString()).toString();
