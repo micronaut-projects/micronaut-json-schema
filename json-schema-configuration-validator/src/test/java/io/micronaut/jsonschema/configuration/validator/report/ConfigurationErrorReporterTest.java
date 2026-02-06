@@ -73,6 +73,8 @@ class ConfigurationErrorReporterTest {
         String html = baos.toString(StandardCharsets.UTF_8);
 
         assertTrue(html.contains("<html"));
+        assertTrue(html.contains("bootstrap"));
+        assertTrue(html.contains("micronaut-logo-white.svg"));
         assertTrue(html.contains("Configuration validation errors"));
         assertTrue(html.contains("a&lt;b"));
         assertTrue(html.contains("m&amp;g"));
