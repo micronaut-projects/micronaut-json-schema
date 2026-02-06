@@ -74,8 +74,12 @@ public final class JsonSchemaConfigurationValidator {
     @NonNull
     public Set<ConfigurationError> validate() throws IOException {
         try (URLClassLoader classLoader = new URLClassLoader(classpath.toArray(URL[]::new), JsonSchemaConfigurationValidator.class.getClassLoader());
-             Environment environment = createEnvironment(classLoader, environments)) {
-            return validator.validate(classLoader, environment);
+             Environment environment = Environment.create(createEnvironmentConfiguration(classLoader, environments)).start()) {
+            try {
+                return validator.validate(classLoader, environment);
+            } finally {
+                environment.stop();
+            }
         }
     }
 
@@ -92,8 +96,8 @@ public final class JsonSchemaConfigurationValidator {
         return errors;
     }
 
-    private static Environment createEnvironment(ClassLoader classLoader, List<String> environments) {
-        ApplicationContextConfiguration configuration = new ApplicationContextConfiguration() {
+    private static ApplicationContextConfiguration createEnvironmentConfiguration(ClassLoader classLoader, List<String> environments) {
+        return new ApplicationContextConfiguration() {
             @Override
             public List<String> getEnvironments() {
                 return environments;
@@ -109,8 +113,6 @@ public final class JsonSchemaConfigurationValidator {
                 return Optional.of(false);
             }
         };
-
-        return Environment.create(configuration).start();
     }
 
     private static List<URL> parseClasspath(String classpath) {

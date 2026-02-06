@@ -88,15 +88,15 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             .append("<div class='row g-3 mb-3'>")
             .append(HTML_CARD_OPEN)
             .append("<div class='text-secondary small'>Total</div>")
-            .append("<div class='h4 mb-0'>").append(errors.size()).append("</div>")
+            .append("<div class='h4 mb-0'>").append(errors.size()).append(HTML_DIV_CLOSE)
             .append(HTML_DIV_DIV_CLOSE)
             .append(HTML_CARD_OPEN)
             .append("<div class='text-secondary small'>Errors</div>")
-            .append("<div class='h4 mb-0 text-danger'>").append(errorCount).append("</div>")
+            .append("<div class='h4 mb-0 text-danger'>").append(errorCount).append(HTML_DIV_CLOSE)
             .append(HTML_DIV_DIV_CLOSE)
             .append(HTML_CARD_OPEN)
             .append("<div class='text-secondary small'>Warnings</div>")
-            .append("<div class='h4 mb-0 text-warning'>").append(warningCount).append("</div>")
+            .append("<div class='h4 mb-0 text-warning'>").append(warningCount).append(HTML_DIV_CLOSE)
             .append(HTML_DIV_DIV_CLOSE)
             .append(HTML_DIV_CLOSE);
 

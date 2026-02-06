@@ -23,6 +23,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.io.ByteArrayOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -238,6 +240,64 @@ class ConfigurationJsonSchemaValidatorCliTest {
         assertTrue(finished, () -> "Process did not finish. Output so far:\n" + output);
 
         assertTrue(output.contains("Missing required argument: --classpath"), () -> "Unexpected output:\n" + output);
+    }
+
+    @Test
+    void bootstrapCliErrorsWhenClasspathHasNoValue() throws Exception {
+        String minimalClasspath = String.join(File.pathSeparator,
+            Path.of("build/resources/main").toAbsolutePath().toString(),
+            Path.of("build/classes/java/main").toAbsolutePath().toString()
+        );
+
+        List<String> cmd = List.of(
+            javaBin(),
+            "-cp",
+            minimalClasspath,
+            ConfigurationJsonSchemaValidatorCliBootstrap.class.getName(),
+            "--classpath"
+        );
+
+        Process process = new ProcessBuilder(cmd)
+            .redirectErrorStream(true)
+            .start();
+
+        String output;
+        try (InputStream is = process.getInputStream()) {
+            output = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        boolean finished = process.waitFor(Duration.ofSeconds(30).toMillis(), TimeUnit.MILLISECONDS);
+        assertTrue(finished, () -> "Process did not finish. Output so far:\n" + output);
+
+        assertTrue(output.contains("Missing required argument: --classpath"), () -> "Unexpected output:\n" + output);
+    }
+
+    @Test
+    void cliHelpPrintsUsage() {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--help"
+        }, new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true, StandardCharsets.UTF_8));
+
+        assertEquals(0, exit);
+        assertTrue(out.toString(StandardCharsets.UTF_8).contains("Usage:"));
+    }
+
+    @Test
+    void cliInvalidFormatReturnsUsageExitCode() {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--environments", "test",
+            "--out", tempDir.resolve("out-invalid-format").toString(),
+            "--format", "nope"
+        }, new PrintStream(out, true, StandardCharsets.UTF_8), new PrintStream(err, true, StandardCharsets.UTF_8));
+
+        assertEquals(2, exit);
+        assertTrue(err.toString(StandardCharsets.UTF_8).contains("Invalid format"));
     }
 
     private static String javaBin() {
