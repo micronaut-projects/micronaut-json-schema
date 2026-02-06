@@ -35,15 +35,16 @@ class ConfigurationErrorReporterTest {
         errors.add(new ConfigurationError("a.b", "msg", "origin", "raw", "<bad>"));
 
         PrintStream original = System.err;
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            System.setErr(new PrintStream(baos, true, StandardCharsets.UTF_8));
+        String out;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             PrintStream ps = new PrintStream(baos, true, StandardCharsets.UTF_8)) {
+            System.setErr(ps);
             new SystemErrConfigurationErrorReporter().report(errors);
+            out = baos.toString(StandardCharsets.UTF_8);
         } finally {
             System.setErr(original);
         }
 
-        String out = baos.toString(StandardCharsets.UTF_8);
         assertTrue(out.contains("a.b"));
         assertTrue(out.contains("msg"));
         assertTrue(out.contains("origin"));

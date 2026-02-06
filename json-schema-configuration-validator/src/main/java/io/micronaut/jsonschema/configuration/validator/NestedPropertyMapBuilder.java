@@ -41,6 +41,7 @@ final class NestedPropertyMapBuilder {
         return root;
     }
 
+    @SuppressWarnings("java:S3776")
     private static void insert(Map<String, Object> root, String key, Object value) {
         String[] segments = key.split("\\.");
         Object current = root;

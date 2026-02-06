@@ -37,6 +37,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 /**
@@ -47,9 +48,9 @@ public final class ConfigurationJsonSchemaValidator {
 
     private final SchemaValidationEngine engine = new SchemaValidationEngine();
 
-    private volatile @Nullable JsonMapper jsonMapper;
+    private final AtomicReference<JsonMapper> jsonMapper = new AtomicReference<>();
     private boolean failOnNotPresent = true;
-    private volatile List<String> suppressionPatterns = List.of();
+    private final AtomicReference<List<String>> suppressionPatterns = new AtomicReference<>(List.of());
 
     /**
      * @return Whether to fail when configuration contains keys not present in schema.
@@ -69,7 +70,7 @@ public final class ConfigurationJsonSchemaValidator {
      * @param jsonMapper A mapper used to deserialize JSON schemas.
      */
     public void setJsonMapper(@Nullable JsonMapper jsonMapper) {
-        this.jsonMapper = jsonMapper;
+        this.jsonMapper.set(jsonMapper);
     }
 
     /**
@@ -79,7 +80,7 @@ public final class ConfigurationJsonSchemaValidator {
      */
     @NonNull
     public List<String> getSuppressionPatterns() {
-        return suppressionPatterns;
+        return suppressionPatterns.get();
     }
 
     /**
@@ -89,7 +90,7 @@ public final class ConfigurationJsonSchemaValidator {
      * @param suppressionPatterns The suppression patterns
      */
     public void setSuppressionPatterns(@Nullable List<String> suppressionPatterns) {
-        this.suppressionPatterns = suppressionPatterns != null ? List.copyOf(suppressionPatterns) : List.of();
+        this.suppressionPatterns.set(suppressionPatterns != null ? List.copyOf(suppressionPatterns) : List.of());
     }
 
     /**
@@ -143,7 +144,7 @@ public final class ConfigurationJsonSchemaValidator {
     }
 
     private Set<ConfigurationError> applySuppressions(Set<ConfigurationError> errors) {
-        List<String> patterns = suppressionPatterns;
+        List<String> patterns = suppressionPatterns.get();
         if (patterns.isEmpty() || errors.isEmpty()) {
             return errors;
         }
@@ -174,12 +175,16 @@ public final class ConfigurationJsonSchemaValidator {
     }
 
     private JsonMapper jsonMapper() {
-        JsonMapper mapper = jsonMapper;
-        if (mapper == null) {
-            mapper = JsonMapper.createDefault();
-            this.jsonMapper = mapper;
+        JsonMapper mapper = jsonMapper.get();
+        if (mapper != null) {
+            return mapper;
         }
-        return mapper;
+
+        JsonMapper created = JsonMapper.createDefault();
+        if (jsonMapper.compareAndSet(null, created)) {
+            return created;
+        }
+        return jsonMapper.get();
     }
 
     private static JsonSchema readSchema(JsonMapper jsonMapper, Readable readable) throws IOException {

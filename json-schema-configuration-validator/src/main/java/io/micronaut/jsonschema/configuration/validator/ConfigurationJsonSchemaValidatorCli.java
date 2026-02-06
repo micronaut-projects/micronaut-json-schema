@@ -144,6 +144,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
         Path outDir,
         Format format
     ) {
+        @SuppressWarnings("java:S3776")
         static Options parse(String[] args) {
             boolean help = false;
             String classpath = null;

@@ -32,6 +32,11 @@ import java.util.Optional;
 public interface JsonSchemaClassPathResourceLoader {
 
     /**
+     * Constant for null-check messages.
+     */
+    String CLASS_LOADER_REQUIRED = "classLoader";
+
+    /**
      * Create a default {@link JsonSchemaClassPathResourceLoader} for the given {@link ClassLoader}.
      *
      * <p>This factory is intended for usage outside of the Micronaut DI framework (for example, CLI tools).
@@ -43,7 +48,7 @@ public interface JsonSchemaClassPathResourceLoader {
      */
     @NonNull
     static JsonSchemaClassPathResourceLoader createDefault(@NonNull ClassLoader classLoader) {
-        Objects.requireNonNull(classLoader, "classLoader");
+        Objects.requireNonNull(classLoader, CLASS_LOADER_REQUIRED);
 
         ResourceLoader resourceLoader = ClassPathResourceLoader.defaultLoader(classLoader);
         JsonSchemaClassPathResourceLoader configurationLoader = new ConfigurationJsonSchemaClassPathResourceLoader(resourceLoader);
@@ -64,7 +69,7 @@ public interface JsonSchemaClassPathResourceLoader {
      */
     @NonNull
     static JsonSchemaClassPathResourceLoader createConfigurationSchemasLoader(@NonNull ClassLoader classLoader) {
-        Objects.requireNonNull(classLoader, "classLoader");
+        Objects.requireNonNull(classLoader, CLASS_LOADER_REQUIRED);
         ResourceLoader resourceLoader = ClassPathResourceLoader.defaultLoader(classLoader);
         return new ConfigurationJsonSchemaClassPathResourceLoader(resourceLoader);
     }
@@ -79,7 +84,7 @@ public interface JsonSchemaClassPathResourceLoader {
      */
     @NonNull
     static JsonSchemaClassPathResourceLoader createGeneratedSchemasLoader(@NonNull ClassLoader classLoader) {
-        Objects.requireNonNull(classLoader, "classLoader");
+        Objects.requireNonNull(classLoader, CLASS_LOADER_REQUIRED);
         ResourceLoader resourceLoader = ClassPathResourceLoader.defaultLoader(classLoader);
         JsonSchemaConfiguration jsonSchemaConfiguration = new JsonSchemaConfiguration() {
         };

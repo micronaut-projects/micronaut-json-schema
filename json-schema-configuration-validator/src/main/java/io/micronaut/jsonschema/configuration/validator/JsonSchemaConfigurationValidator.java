@@ -78,7 +78,7 @@ public final class JsonSchemaConfigurationValidator {
             try {
                 return validator.validate(classLoader, environment);
             } finally {
-                closeIfPossible(environment);
+                environment.stop();
             }
         }
     }
@@ -115,16 +115,6 @@ public final class JsonSchemaConfigurationValidator {
         };
 
         return Environment.create(configuration).start();
-    }
-
-    private static void closeIfPossible(Object maybeCloseable) {
-        if (maybeCloseable instanceof AutoCloseable closeable) {
-            try {
-                closeable.close();
-            } catch (Exception e) {
-                LOG.log(System.Logger.Level.DEBUG, "Failed to close", e);
-            }
-        }
     }
 
     private static List<URL> parseClasspath(String classpath) {

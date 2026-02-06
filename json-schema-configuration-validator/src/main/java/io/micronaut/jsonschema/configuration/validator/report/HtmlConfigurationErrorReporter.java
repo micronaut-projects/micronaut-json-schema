@@ -27,6 +27,13 @@ import java.util.Set;
  * Reports errors as an HTML document.
  */
 public final class HtmlConfigurationErrorReporter implements ConfigurationErrorReporter {
+    private static final String HTML_DIV_CLOSE = "</div>";
+    private static final String HTML_DIV_DIV_CLOSE = "</div></div>";
+    private static final String HTML_CARD_OPEN = "<div class='col-sm-4'><div class='p-3 border rounded bg-light'>";
+    private static final String HTML_TD_CODE_OPEN = "<td class='mn-wrap'><code>";
+    private static final String HTML_TD_CODE_CLOSE = "</code></td>";
+    private static final String HTML_TD_CLOSE = "</td>";
+
     private final OutputStream output;
 
     /**
@@ -79,19 +86,19 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             .append("</header>")
             .append("<main class='container my-4'>")
             .append("<div class='row g-3 mb-3'>")
-            .append("<div class='col-sm-4'><div class='p-3 border rounded bg-light'>")
+            .append(HTML_CARD_OPEN)
             .append("<div class='text-secondary small'>Total</div>")
             .append("<div class='h4 mb-0'>").append(errors.size()).append("</div>")
-            .append("</div></div>")
-            .append("<div class='col-sm-4'><div class='p-3 border rounded bg-light'>")
+            .append(HTML_DIV_DIV_CLOSE)
+            .append(HTML_CARD_OPEN)
             .append("<div class='text-secondary small'>Errors</div>")
             .append("<div class='h4 mb-0 text-danger'>").append(errorCount).append("</div>")
-            .append("</div></div>")
-            .append("<div class='col-sm-4'><div class='p-3 border rounded bg-light'>")
+            .append(HTML_DIV_DIV_CLOSE)
+            .append(HTML_CARD_OPEN)
             .append("<div class='text-secondary small'>Warnings</div>")
             .append("<div class='h4 mb-0 text-warning'>").append(warningCount).append("</div>")
-            .append("</div></div>")
-            .append("</div>");
+            .append(HTML_DIV_DIV_CLOSE)
+            .append(HTML_DIV_CLOSE);
 
         if (errors.isEmpty()) {
             html.append("<div class='alert alert-success' role='alert'>No configuration validation errors.</div>")
@@ -121,13 +128,13 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
                 case WARNING -> "<span class='badge text-bg-warning'>WARNING</span>";
             };
             html.append("<tr>")
-                .append("<td class='mn-wrap'><code>").append(escape(error.property())).append("</code></td>")
-                .append("<td>").append(typeBadge).append("</td>")
+                .append(HTML_TD_CODE_OPEN).append(escape(error.property())).append(HTML_TD_CODE_CLOSE)
+                .append("<td>").append(typeBadge).append(HTML_TD_CLOSE)
                 .append("<td class='mn-wrap'>").append(escape(error.message())).append("</td>")
                 .append("<td class='mn-wrap'>").append(escape(error.originLocation())).append("</td>")
                 .append("<td>").append(error.lineNumber()).append("</td>")
-                .append("<td class='mn-wrap'><code>").append(escape(error.rawPropertyName())).append("</code></td>")
-                .append("<td class='mn-wrap'><code>").append(escape(error.rawValue() != null ? String.valueOf(error.rawValue()) : null)).append("</code></td>");
+                .append(HTML_TD_CODE_OPEN).append(escape(error.rawPropertyName())).append(HTML_TD_CODE_CLOSE)
+                .append(HTML_TD_CODE_OPEN).append(escape(error.rawValue() != null ? String.valueOf(error.rawValue()) : null)).append(HTML_TD_CODE_CLOSE);
 
             String snippet = error.snippet();
             if (snippet != null && !snippet.isBlank()) {
@@ -139,9 +146,9 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
                     .append("<pre><code class='hljs language-").append(escape(language)).append("'>")
                     .append(escape(snippet))
                     .append("</code></pre>")
-                    .append("</div>")
+                    .append(HTML_DIV_CLOSE)
                     .append("</details>")
-                    .append("</td>");
+                    .append(HTML_TD_CLOSE);
             } else {
                 html.append("<td class='text-secondary'>-</td>");
             }

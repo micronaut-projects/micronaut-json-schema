@@ -34,6 +34,7 @@ final class ValueCoercer {
     private ValueCoercer() {
     }
 
+    @SuppressWarnings("java:S3776")
     static Object coerce(
         SchemaContext ctx,
         JsonSchemaProperty schema,

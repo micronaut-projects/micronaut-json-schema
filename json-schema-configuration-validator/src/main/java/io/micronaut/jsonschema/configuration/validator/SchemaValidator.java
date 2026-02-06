@@ -67,6 +67,7 @@ final class SchemaValidator {
         validateObjectSchema(ctx, resolved, instanceMap, computedPropertyName, wildcardReplacement, errors);
     }
 
+    @SuppressWarnings("java:S3776")
     private static void validateObjectSchema(
         SchemaContext ctx,
         JsonSchemaProperty schema,
@@ -157,6 +158,7 @@ final class SchemaValidator {
         }
     }
 
+    @SuppressWarnings("java:S3776")
     private static void validateNode(
         SchemaContext ctx,
         JsonSchemaProperty schema,

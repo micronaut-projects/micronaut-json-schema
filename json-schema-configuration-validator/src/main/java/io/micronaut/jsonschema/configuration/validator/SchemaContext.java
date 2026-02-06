@@ -100,11 +100,12 @@ final class SchemaContext {
         Optional<PropertyEntry> entry = environment.getPropertyEntry(property);
         if (entry.isPresent()) {
             PropertyEntry propertyEntry = entry.get();
-            String originLocation = propertyEntry.origin() != null ? propertyEntry.origin().location() : null;
+            String originLocation = propertyEntry.origin().location();
+            String raw = Objects.requireNonNullElse(propertyEntry.raw(), property);
             OriginSnippet snippet = OriginSnippetResolver.resolve(
                 classLoader,
                 originLocation,
-                propertyEntry.raw() != null ? propertyEntry.raw() : property,
+                raw,
                 propertyEntry.value()
             );
             return new ConfigurationError(
@@ -137,10 +138,15 @@ final class SchemaContext {
     }
 
     private static final class OriginSnippetResolver {
-        private static final Pattern PROPERTIES_LINE = Pattern.compile("^\\s*([^#;!][^=:\\s]*?)\\s*[=:].*$");
-        private static final Pattern YAML_KEY_LINE = Pattern.compile("^(\\s*)(?:-\\s+)?([^\\s:#]+)\\s*:\\s*(.*)$");
-        private static final Pattern TOML_TABLE_LINE = Pattern.compile("^\\s*\\[\\[?([^\\]]+)]\\]?\\s*(?:#.*)?$");
-        private static final Pattern TOML_KEY_LINE = Pattern.compile("^\\s*([^=]+?)\\s*=\\s*(.*)$");
+        private static final String LANG_PROPERTIES = "properties";
+        private static final String LANG_YAML = "yaml";
+        private static final String LANG_TOML = "toml";
+        private static final String LANG_JSON = "json";
+
+        private static final Pattern PROPERTIES_LINE = Pattern.compile("^\\s*+([^#;!][^=:\\s]*+)\\s*+[=:][^\\n]*+$");
+        private static final Pattern YAML_KEY_LINE = Pattern.compile("^(\\s*+)(?:-\\s++)?([^\\s:#]++)\\s*+:(?:\\s*+([^\\n]*+))?$");
+        private static final Pattern TOML_TABLE_LINE = Pattern.compile("^\\s*+\\[\\[?([^\\]]++)]\\]?\\s*+(?:#([^\\n]*+))?$");
+        private static final Pattern TOML_KEY_LINE = Pattern.compile("^\\s*+([^=]++)\\s*+=\\s*+([^\\n]*+)$");
 
         private OriginSnippetResolver() {
         }
@@ -164,10 +170,10 @@ final class SchemaContext {
 
             String language = languageFor(originLocation);
             int idx = findLineIndex(lines, rawPropertyName);
-            if (idx < 0 && "yaml".equals(language)) {
+            if (idx < 0 && LANG_YAML.equals(language)) {
                 idx = findYamlLineIndex(lines, rawPropertyName);
             }
-            if (idx < 0 && "toml".equals(language)) {
+            if (idx < 0 && LANG_TOML.equals(language)) {
                 idx = findTomlLineIndex(lines, rawPropertyName);
             }
             if (idx < 0) {
@@ -251,6 +257,7 @@ final class SchemaContext {
          * Attempts to locate a YAML line for a dotted property name (for example {@code a.b.c})
          * by tracking key-paths using indentation.
          */
+        @SuppressWarnings("java:S3776")
         private static int findYamlLineIndex(List<String> lines, String dottedProperty) {
             if (dottedProperty == null || dottedProperty.isBlank()) {
                 return -1;
@@ -309,6 +316,7 @@ final class SchemaContext {
          * Attempts to locate a TOML line for a dotted property name (for example {@code a.b.c})
          * by tracking the current table path (for example {@code [a.b]}).
          */
+        @SuppressWarnings("java:S3776")
         private static int findTomlLineIndex(List<String> lines, String dottedProperty) {
             if (dottedProperty == null || dottedProperty.isBlank()) {
                 return -1;
@@ -454,16 +462,16 @@ final class SchemaContext {
         private static String languageFor(String originLocation) {
             String lower = originLocation.toLowerCase(java.util.Locale.ENGLISH);
             if (lower.endsWith(".properties")) {
-                return "properties";
+                return LANG_PROPERTIES;
             }
             if (lower.endsWith(".yml") || lower.endsWith(".yaml")) {
-                return "yaml";
+                return LANG_YAML;
             }
             if (lower.endsWith(".toml")) {
-                return "toml";
+                return LANG_TOML;
             }
             if (lower.endsWith(".json")) {
-                return "json";
+                return LANG_JSON;
             }
             return null;
         }
@@ -477,6 +485,9 @@ final class SchemaContext {
 
     @Internal
     final class RefResolver {
+        private static final String TOKEN_DEFS = "$defs";
+        private static final String TOKEN_PROPERTIES = "properties";
+
         @Nullable
         JsonSchemaProperty resolveAdditionalPropertiesSchema(JsonSchemaProperty schema) {
             Object additionalProperties = schema.additionalProperties();
@@ -532,20 +543,20 @@ final class SchemaContext {
         }
 
         private static Object resolveFromRoot(JsonSchema schema, String token) {
-            if ("$defs".equals(token)) {
+            if (TOKEN_DEFS.equals(token)) {
                 return schema.defs();
             }
-            if ("properties".equals(token)) {
+            if (TOKEN_PROPERTIES.equals(token)) {
                 return schema.properties();
             }
             return null;
         }
 
         private static Object resolveFromProperty(JsonSchemaProperty schema, String token) {
-            if ("$defs".equals(token)) {
+            if (TOKEN_DEFS.equals(token)) {
                 return schema.defs();
             }
-            if ("properties".equals(token)) {
+            if (TOKEN_PROPERTIES.equals(token)) {
                 return schema.properties();
             }
             return null;
