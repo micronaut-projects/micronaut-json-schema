@@ -17,12 +17,14 @@ package io.micronaut.jsonschema.configuration.validator.report;
 
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
+import io.micronaut.serde.annotation.Serdeable;
 import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -43,9 +45,33 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
 
     @Override
     public void report(Set<ConfigurationError> errors) throws IOException {
-        String json = jsonMapper.writeValueAsString(new ArrayList<>(errors));
+        List<JsonConfigurationError> view = new ArrayList<>(errors.size());
+        for (ConfigurationError error : errors) {
+            view.add(new JsonConfigurationError(
+                error.property(),
+                error.type(),
+                error.message(),
+                error.originLocation(),
+                error.rawPropertyName(),
+                error.rawValue(),
+                error.lineNumber()
+            ));
+        }
+        String json = jsonMapper.writeValueAsString(view);
         output.write(json.getBytes(StandardCharsets.UTF_8));
         output.write('\n');
         output.flush();
+    }
+
+    @Serdeable
+    private record JsonConfigurationError(
+        String property,
+        ConfigurationError.Type type,
+        String message,
+        String originLocation,
+        String rawPropertyName,
+        Object rawValue,
+        int lineNumber
+    ) {
     }
 }

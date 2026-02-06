@@ -20,11 +20,15 @@ import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -201,6 +205,34 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
+    void resolvesLineNumbersAndSnippetsFromFileOrigins(@TempDir Path tempDir) throws Exception {
+        Path propertiesFile = tempDir.resolve("application.properties");
+        Files.writeString(propertiesFile, String.join("\n",
+            "test.config.enabled=not-a-bool",
+            "test.config.count=1",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Environment environment = createEnvironment(
+            Map.of(
+                "test.config.enabled", "not-a-bool",
+                "test.config.count", "1"
+            ),
+            propertiesFile.toUri().toString()
+        );
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        ConfigurationError enabled = errors.stream().filter(e -> e.property().equals("test.config.enabled")).findFirst().orElseThrow();
+        assertEquals(1, enabled.lineNumber());
+        assertNotNull(enabled.snippet());
+        assertTrue(enabled.snippet().contains("test.config.enabled=not-a-bool"));
+        assertEquals("properties", enabled.snippetLanguage());
+    }
+
+    @Test
     void validatesMinPropertiesForObjects() {
         Environment environment = createEnvironment(Map.of(
             "test.config.enabled", "true",
@@ -230,6 +262,10 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     private static Environment createEnvironment(Map<String, Object> properties) {
+        return createEnvironment(properties, "test-origin");
+    }
+
+    private static Environment createEnvironment(Map<String, Object> properties, String originLocation) {
         ClassLoader classLoader = ConfigurationJsonSchemaValidatorTest.class.getClassLoader();
         ApplicationContextConfiguration configuration = new ApplicationContextConfiguration() {
             @Override
@@ -253,7 +289,7 @@ class ConfigurationJsonSchemaValidatorTest {
             }
         };
         Environment environment = Environment.create(configuration);
-        environment.addPropertySource(PropertySource.of("test", properties, PropertySource.Origin.of("test-origin")));
+        environment.addPropertySource(PropertySource.of("test", properties, PropertySource.Origin.of(originLocation)));
         return environment.start();
     }
 }

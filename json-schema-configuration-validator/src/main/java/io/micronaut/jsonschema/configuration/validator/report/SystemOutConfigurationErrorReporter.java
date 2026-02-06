@@ -33,7 +33,7 @@ public final class SystemOutConfigurationErrorReporter implements ConfigurationE
             writer.println("  type: " + error.type());
             writer.println("  " + error.message());
             if (error.originLocation() != null) {
-                writer.println("  origin: " + error.originLocation());
+                writer.println("  origin: " + error.originLocation() + ":" + error.lineNumber());
             }
             if (error.rawPropertyName() != null) {
                 writer.println("  raw: " + error.rawPropertyName());

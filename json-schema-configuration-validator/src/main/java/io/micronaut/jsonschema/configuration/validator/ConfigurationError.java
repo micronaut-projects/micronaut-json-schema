@@ -27,6 +27,9 @@ import org.jspecify.annotations.Nullable;
  * @param originLocation Where the property originated from (if available)
  * @param rawPropertyName The raw property name prior to normalization (if available)
  * @param rawValue The raw value (if available)
+ * @param lineNumber The 1-based line number in the origin file, or {@code -1} if unknown
+ * @param snippet A best-effort snippet showing the invalid definition (if available)
+ * @param snippetLanguage The snippet language (for example {@code properties}, {@code yaml}, {@code toml})
  */
 @Introspected
 public record ConfigurationError(
@@ -36,6 +39,10 @@ public record ConfigurationError(
     @Nullable String originLocation,
     @Nullable String rawPropertyName,
     @Nullable Object rawValue
+    ,
+    int lineNumber,
+    @Nullable String snippet,
+    @Nullable String snippetLanguage
 ) {
 
     /**
@@ -69,7 +76,32 @@ public record ConfigurationError(
         @Nullable String rawPropertyName,
         @Nullable Object rawValue
     ) {
-        this(property, Type.ERROR, message, originLocation, rawPropertyName, rawValue);
+        this(property, Type.ERROR, message, originLocation, rawPropertyName, rawValue, -1, null, null);
+    }
+
+    /**
+     * Constructs a configuration error with type {@link Type#ERROR} and origin information.
+     *
+     * @param property The full configuration property name
+     * @param message The error message
+     * @param originLocation Where the property originated from (if available)
+     * @param rawPropertyName The raw property name prior to normalization (if available)
+     * @param rawValue The raw value (if available)
+     * @param lineNumber The 1-based line number in the origin file, or {@code -1} if unknown
+     * @param snippet A best-effort snippet showing the invalid definition (if available)
+     * @param snippetLanguage The snippet language
+     */
+    public ConfigurationError(
+        String property,
+        String message,
+        @Nullable String originLocation,
+        @Nullable String rawPropertyName,
+        @Nullable Object rawValue,
+        int lineNumber,
+        @Nullable String snippet,
+        @Nullable String snippetLanguage
+    ) {
+        this(property, Type.ERROR, message, originLocation, rawPropertyName, rawValue, lineNumber, snippet, snippetLanguage);
     }
 
     /**
@@ -77,6 +109,6 @@ public record ConfigurationError(
      * @return A copy of this error with the given type
      */
     public ConfigurationError withType(Type type) {
-        return new ConfigurationError(property, type, message, originLocation, rawPropertyName, rawValue);
+        return new ConfigurationError(property, type, message, originLocation, rawPropertyName, rawValue, lineNumber, snippet, snippetLanguage);
     }
 }

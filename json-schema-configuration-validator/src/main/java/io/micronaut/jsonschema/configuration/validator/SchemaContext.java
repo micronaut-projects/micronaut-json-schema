@@ -25,10 +25,18 @@ import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaProperty;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Internal
 final class SchemaContext {
@@ -92,16 +100,27 @@ final class SchemaContext {
         Optional<PropertyEntry> entry = environment.getPropertyEntry(property);
         if (entry.isPresent()) {
             PropertyEntry propertyEntry = entry.get();
+            String originLocation = propertyEntry.origin() != null ? propertyEntry.origin().location() : null;
+            OriginSnippet snippet = OriginSnippetResolver.resolve(
+                classLoader,
+                originLocation,
+                propertyEntry.raw() != null ? propertyEntry.raw() : property,
+                propertyEntry.value()
+            );
             return new ConfigurationError(
                 property,
                 type,
                 message,
-                propertyEntry.origin() != null ? propertyEntry.origin().location() : null,
+                originLocation,
                 propertyEntry.raw(),
-                propertyEntry.value()
+                propertyEntry.value(),
+                snippet.lineNumber(),
+                snippet.snippet(),
+                snippet.language()
             );
         }
-        return new ConfigurationError(property, type, message, null, null, null);
+        OriginSnippet snippet = OriginSnippetResolver.resolve(classLoader, null, property, null);
+        return new ConfigurationError(property, type, message, null, null, null, snippet.lineNumber(), snippet.snippet(), snippet.language());
     }
 
     String resolvedPropertyName(String computedPropertyName, @Nullable String micronautPath, @Nullable String wildcardReplacement) {
@@ -112,6 +131,158 @@ final class SchemaContext {
             return micronautPath;
         }
         return computedPropertyName;
+    }
+
+    private record OriginSnippet(int lineNumber, @Nullable String snippet, @Nullable String language) {
+    }
+
+    private static final class OriginSnippetResolver {
+        private static final Pattern PROPERTIES_LINE = Pattern.compile("^\\s*([^#;!][^=:\\s]*?)\\s*[=:].*$");
+
+        private OriginSnippetResolver() {
+        }
+
+        static OriginSnippet resolve(
+            ClassLoader classLoader,
+            @Nullable String originLocation,
+            String rawPropertyName,
+            @Nullable Object rawValue
+        ) {
+            if (originLocation == null || originLocation.isBlank()) {
+                return new OriginSnippet(-1, inferredSnippet(rawPropertyName, rawValue), null);
+            }
+
+            ResolvedText resolved = readOriginText(classLoader, originLocation);
+            if (resolved == null || resolved.text().isBlank()) {
+                return new OriginSnippet(-1, inferredSnippet(rawPropertyName, rawValue), languageFor(originLocation));
+            }
+
+            List<String> lines = splitLines(resolved.text());
+            int idx = findLineIndex(lines, rawPropertyName);
+            if (idx < 0) {
+                // Try best-effort match on the last segment (common when YAML is used).
+                int dot = rawPropertyName.lastIndexOf('.');
+                if (dot > -1 && dot + 1 < rawPropertyName.length()) {
+                    idx = findLineIndex(lines, rawPropertyName.substring(dot + 1));
+                }
+            }
+
+            if (idx < 0) {
+                return new OriginSnippet(-1, inferredSnippet(rawPropertyName, rawValue), languageFor(originLocation));
+            }
+
+            String snippet = sliceSnippet(lines, idx, 2);
+            return new OriginSnippet(idx + 1, snippet, languageFor(originLocation));
+        }
+
+        @Nullable
+        private static ResolvedText readOriginText(ClassLoader classLoader, String originLocation) {
+            try {
+                if (originLocation.startsWith("file:")) {
+                    URI uri = URI.create(originLocation);
+                    Path path = Path.of(uri);
+                    if (!Files.exists(path)) {
+                        return null;
+                    }
+                    return new ResolvedText(Files.readString(path, StandardCharsets.UTF_8));
+                }
+
+                String location = originLocation;
+                if (location.startsWith("classpath:")) {
+                    location = location.substring("classpath:".length());
+                    if (location.startsWith("/")) {
+                        location = location.substring(1);
+                    }
+                }
+
+                try (InputStream is = classLoader.getResourceAsStream(location)) {
+                    if (is == null) {
+                        return null;
+                    }
+                    return new ResolvedText(new String(is.readAllBytes(), StandardCharsets.UTF_8));
+                }
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        private static List<String> splitLines(String text) {
+            String normalized = text.replace("\r\n", "\n").replace("\r", "\n");
+            String[] parts = normalized.split("\n", -1);
+            List<String> lines = new ArrayList<>(parts.length);
+            for (String p : parts) {
+                lines.add(p);
+            }
+            return lines;
+        }
+
+        private static int findLineIndex(List<String> lines, String needle) {
+            if (needle.isBlank()) {
+                return -1;
+            }
+
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (line == null) {
+                    continue;
+                }
+                if (matchesPropertiesKey(line, needle)) {
+                    return i;
+                }
+                if (line.contains(needle)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static boolean matchesPropertiesKey(String line, String key) {
+            Matcher m = PROPERTIES_LINE.matcher(line);
+            if (!m.matches()) {
+                return false;
+            }
+            return Objects.equals(m.group(1), key);
+        }
+
+        private static String sliceSnippet(List<String> lines, int lineIndex, int contextLines) {
+            int start = Math.max(0, lineIndex - contextLines);
+            int end = Math.min(lines.size() - 1, lineIndex + contextLines);
+
+            StringBuilder sb = new StringBuilder(256);
+            for (int i = start; i <= end; i++) {
+                if (i > start) {
+                    sb.append('\n');
+                }
+                sb.append(lines.get(i));
+            }
+            return sb.toString();
+        }
+
+        private static String inferredSnippet(String rawPropertyName, @Nullable Object rawValue) {
+            String value = rawValue == null ? "" : String.valueOf(rawValue);
+            return rawPropertyName + "=" + value;
+        }
+
+        @Nullable
+        private static String languageFor(String originLocation) {
+            String lower = originLocation.toLowerCase(java.util.Locale.ENGLISH);
+            if (lower.endsWith(".properties")) {
+                return "properties";
+            }
+            if (lower.endsWith(".yml") || lower.endsWith(".yaml")) {
+                return "yaml";
+            }
+            if (lower.endsWith(".toml")) {
+                return "toml";
+            }
+            if (lower.endsWith(".json")) {
+                return "json";
+            }
+            return null;
+        }
+
+        private record ResolvedText(String text) {
+        }
     }
 
     @Internal

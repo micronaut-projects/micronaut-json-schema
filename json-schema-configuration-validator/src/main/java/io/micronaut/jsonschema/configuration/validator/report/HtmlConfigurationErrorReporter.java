@@ -46,6 +46,7 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             .append("<meta name='viewport' content='width=device-width, initial-scale=1'>")
             .append("<title>Configuration validation errors</title>")
             .append("<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css'>")
+            .append("<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css'>")
             .append("<style>")
             // Fallback styles if CDN fails
             .append("body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;}")
@@ -61,6 +62,8 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             .append(".col-raw{width:13%;}")
             .append(".col-value{width:13%;}")
             .append(".mn-wrap{word-break:break-word;white-space:normal;}")
+            .append("pre{margin:0;}")
+            .append("code.hljs{padding:12px;border-radius:8px;}")
             .append("</style>")
             .append("</head><body>")
             .append("<header class='mn-hero py-4'>")
@@ -106,8 +109,10 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             .append("<th class='col-type'>Type</th>")
             .append("<th class='col-msg'>Message</th>")
             .append("<th class='col-origin'>Origin</th>")
+            .append("<th style='width:6%'>Line</th>")
             .append("<th class='col-raw'>Raw</th>")
             .append("<th class='col-value'>Value</th>")
+            .append("<th style='width:12%'>Snippet</th>")
             .append("</tr></thead><tbody>");
 
         for (ConfigurationError error : errors) {
@@ -120,13 +125,34 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
                 .append("<td>").append(typeBadge).append("</td>")
                 .append("<td class='mn-wrap'>").append(escape(error.message())).append("</td>")
                 .append("<td class='mn-wrap'>").append(escape(error.originLocation())).append("</td>")
+                .append("<td>").append(error.lineNumber()).append("</td>")
                 .append("<td class='mn-wrap'><code>").append(escape(error.rawPropertyName())).append("</code></td>")
-                .append("<td class='mn-wrap'><code>").append(escape(error.rawValue() != null ? String.valueOf(error.rawValue()) : null)).append("</code></td>")
-                .append("</tr>");
+                .append("<td class='mn-wrap'><code>").append(escape(error.rawValue() != null ? String.valueOf(error.rawValue()) : null)).append("</code></td>");
+
+            String snippet = error.snippet();
+            if (snippet != null && !snippet.isBlank()) {
+                String language = error.snippetLanguage() != null ? error.snippetLanguage() : "plaintext";
+                html.append("<td>")
+                    .append("<details>")
+                    .append("<summary>View</summary>")
+                    .append("<div class='mt-2'>")
+                    .append("<pre><code class='hljs language-").append(escape(language)).append("'>")
+                    .append(escape(snippet))
+                    .append("</code></pre>")
+                    .append("</div>")
+                    .append("</details>")
+                    .append("</td>");
+            } else {
+                html.append("<td class='text-secondary'>-</td>");
+            }
+
+            html.append("</tr>");
         }
 
         html.append("</tbody></table></div>")
             .append("</main>")
+            .append("<script src='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js'></script>")
+            .append("<script>try{hljs.highlightAll();}catch(e){}</script>")
             .append("</body></html>");
 
         output.write(html.toString().getBytes(StandardCharsets.UTF_8));

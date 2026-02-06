@@ -47,6 +47,7 @@ class ConfigurationErrorReporterTest {
         assertTrue(out.contains("a.b"));
         assertTrue(out.contains("msg"));
         assertTrue(out.contains("origin"));
+        assertTrue(out.contains(":-1"));
         assertTrue(out.contains("raw"));
     }
 
@@ -62,11 +63,22 @@ class ConfigurationErrorReporterTest {
         assertNotNull(decoded);
         assertTrue(json.contains("\"property\""));
         assertTrue(json.contains("\"a.b\""));
+        assertTrue(json.contains("\"lineNumber\""));
+        assertFalse(json.contains("snippet"));
     }
 
     @Test
     void htmlReporterEscapesContent() throws Exception {
-        Set<ConfigurationError> errors = Set.of(new ConfigurationError("a<b", "m&g", "o\"r", "r'aw", "<bad>"));
+        Set<ConfigurationError> errors = Set.of(new ConfigurationError(
+            "a<b",
+            "m&g",
+            "o\"r",
+            "r'aw",
+            "<bad>",
+            12,
+            "k=v<bad>",
+            "properties"
+        ));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         new HtmlConfigurationErrorReporter(baos).report(errors);
@@ -74,6 +86,7 @@ class ConfigurationErrorReporterTest {
 
         assertTrue(html.contains("<html"));
         assertTrue(html.contains("bootstrap"));
+        assertTrue(html.contains("highlight"));
         assertTrue(html.contains("micronaut-logo-white.svg"));
         assertTrue(html.contains("Configuration validation errors"));
         assertTrue(html.contains("a&lt;b"));
@@ -81,5 +94,7 @@ class ConfigurationErrorReporterTest {
         assertTrue(html.contains("o&quot;r"));
         assertTrue(html.contains("r&#39;aw"));
         assertTrue(html.contains("&lt;bad&gt;"));
+        assertTrue(html.contains("language-properties"));
+        assertTrue(html.contains("<details>"));
     }
 }
