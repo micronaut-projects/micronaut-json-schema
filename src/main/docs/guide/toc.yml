@@ -19,6 +19,8 @@ processor:
     javadoc: JavaDoc
     validationAnnotations: Validation Annotations
     jacksonAnnotations: Jackson Annotations
+configurationValidator:
+  title: Validating Configuration Against Schemas
 generator:
   title: Generating Beans from Schema
   registration: Build-time Generation Configuration
