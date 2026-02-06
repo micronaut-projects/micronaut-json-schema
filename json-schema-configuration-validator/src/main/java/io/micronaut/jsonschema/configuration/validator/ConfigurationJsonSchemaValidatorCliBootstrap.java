@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -123,7 +122,14 @@ public final class ConfigurationJsonSchemaValidatorCliBootstrap {
                 if (i + 1 >= args.length) {
                     return null;
                 }
-                return Objects.requireNonNullElse(args[i + 1], "");
+                String next = args[i + 1];
+                if (next == null) {
+                    return "";
+                }
+                if (next.startsWith("-")) {
+                    return null;
+                }
+                return next;
             }
         }
         return null;

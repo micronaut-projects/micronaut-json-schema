@@ -118,27 +118,31 @@ final class SchemaValidator {
         }
 
         // unknown keys
-        boolean additionalPropertiesFalse = schema.additionalProperties() instanceof Boolean b && !b;
-        if (ctx.failOnNotPresent() || additionalPropertiesFalse) {
+        Object additionalProperties = schema.additionalProperties();
+        boolean additionalPropertiesTrue = additionalProperties instanceof Boolean b && b;
+        boolean additionalPropertiesFalse = additionalProperties instanceof Boolean b && !b;
+        JsonSchemaProperty additionalSchema = ctx.refResolver().resolveAdditionalPropertiesSchema(schema);
+        if (ctx.failOnNotPresent() || additionalPropertiesFalse || additionalSchema != null) {
             for (Map.Entry<String, Object> entry : instance.entrySet()) {
                 String key = entry.getKey();
                 if (properties.containsKey(key)) {
                     continue;
                 }
 
-                Object additionalProperties = schema.additionalProperties();
-                if (additionalProperties instanceof Boolean b && b) {
-                    continue;
-                }
-
                 String unknownComputed = computedPropertyName + "." + key;
                 String unknownResolved = ctx.resolvedPropertyName(unknownComputed, null, wildcardReplacement);
 
-                JsonSchemaProperty additionalSchema = ctx.refResolver().resolveAdditionalPropertiesSchema(schema);
                 if (additionalSchema != null) {
                     Object coerced = ValueCoercer.coerce(ctx, additionalSchema, unknownResolved, wildcardReplacement, entry.getValue(), errors);
                     validateNode(ctx, additionalSchema, coerced, unknownComputed, unknownResolved, wildcardReplacement, errors);
-                } else {
+                    continue;
+                }
+
+                if (additionalPropertiesTrue && !ctx.failOnNotPresent()) {
+                    continue;
+                }
+
+                if (ctx.failOnNotPresent() || additionalPropertiesFalse) {
                     List<String> suggestions = PropertySuggester.suggest(key, properties.keySet(), 3, 0.35d);
                     if (!suggestions.isEmpty()) {
                         StringBuilder didYouMean = new StringBuilder(64);

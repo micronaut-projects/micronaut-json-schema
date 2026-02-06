@@ -124,6 +124,21 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
+    void validatesAdditionalPropertiesSchemaEvenWhenFailOnNotPresentIsFalse() {
+        Environment environment = createEnvironment(Map.of(
+            "test.executors.alpha.n-threads", "0"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(false);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.executors.alpha.n-threads")
+            && e.message().contains(">=")), () -> "Expected minimum validation error, got: " + errors);
+    }
+
+    @Test
     void validatesArrayOfObjectsAndNestedConstraints() {
         Environment environment = createEnvironment(Map.of(
             "test.edge.servers[0].port", "0",

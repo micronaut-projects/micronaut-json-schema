@@ -38,8 +38,7 @@ public record ConfigurationError(
     String message,
     @Nullable String originLocation,
     @Nullable String rawPropertyName,
-    @Nullable Object rawValue
-    ,
+    @Nullable Object rawValue,
     int lineNumber,
     @Nullable String snippet,
     @Nullable String snippetLanguage

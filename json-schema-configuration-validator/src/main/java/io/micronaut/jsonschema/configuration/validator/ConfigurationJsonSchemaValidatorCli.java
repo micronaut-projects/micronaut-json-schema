@@ -57,9 +57,9 @@ public final class ConfigurationJsonSchemaValidatorCli {
     public static void main(String[] args) {
         int exitCode = run(args, System.out, System.err);
         if (exitCode != 0) {
-            // Don't call System.exit to keep invokable from tests.
             LOG.log(System.Logger.Level.ERROR, "Validation failed with exit code " + exitCode);
         }
+        System.exit(exitCode);
     }
 
     static int run(String[] args, PrintStream out, PrintStream err) {

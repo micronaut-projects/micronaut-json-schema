@@ -159,7 +159,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
 
         boolean finished = process.waitFor(Duration.ofSeconds(30).toMillis(), TimeUnit.MILLISECONDS);
         assertTrue(finished, () -> "Process did not finish. Output so far:\n" + output);
-        assertEquals(0, process.exitValue(), () -> "Non-zero exit. Output:\n" + output);
+        assertEquals(1, process.exitValue(), () -> "Unexpected exit. Output:\n" + output);
 
         assertTrue(Files.exists(out.resolve("configuration-errors.html")), () -> "No report written. Output:\n" + output);
     }
@@ -207,7 +207,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
 
         boolean finished = process.waitFor(Duration.ofSeconds(30).toMillis(), TimeUnit.MILLISECONDS);
         assertTrue(finished, () -> "Process did not finish. Output so far:\n" + output);
-        assertEquals(0, process.exitValue(), () -> "Non-zero exit. Output:\n" + output);
+        assertEquals(1, process.exitValue(), () -> "Unexpected exit. Output:\n" + output);
 
         assertTrue(Files.exists(out.resolve("configuration-errors.html")), () -> "No report written. Output:\n" + output);
     }
@@ -255,6 +255,37 @@ class ConfigurationJsonSchemaValidatorCliTest {
             minimalClasspath,
             ConfigurationJsonSchemaValidatorCliBootstrap.class.getName(),
             "--classpath"
+        );
+
+        Process process = new ProcessBuilder(cmd)
+            .redirectErrorStream(true)
+            .start();
+
+        String output;
+        try (InputStream is = process.getInputStream()) {
+            output = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        boolean finished = process.waitFor(Duration.ofSeconds(30).toMillis(), TimeUnit.MILLISECONDS);
+        assertTrue(finished, () -> "Process did not finish. Output so far:\n" + output);
+
+        assertTrue(output.contains("Missing required argument: --classpath"), () -> "Unexpected output:\n" + output);
+    }
+
+    @Test
+    void bootstrapCliErrorsWhenClasspathValueIsAnotherFlag() throws Exception {
+        String minimalClasspath = String.join(File.pathSeparator,
+            Path.of("build/resources/main").toAbsolutePath().toString(),
+            Path.of("build/classes/java/main").toAbsolutePath().toString()
+        );
+
+        List<String> cmd = List.of(
+            javaBin(),
+            "-cp",
+            minimalClasspath,
+            ConfigurationJsonSchemaValidatorCliBootstrap.class.getName(),
+            "--classpath",
+            "--out",
+            tempDir.resolve("out-missing").toString()
         );
 
         Process process = new ProcessBuilder(cmd)

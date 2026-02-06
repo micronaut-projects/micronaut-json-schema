@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ConfigurationErrorReporterTest {
 
     @Test
-    void systemOutReporterPrintsToSystemErr() throws Exception {
+    void systemErrReporterPrintsToSystemErr() throws Exception {
         Set<ConfigurationError> errors = new LinkedHashSet<>();
         errors.add(new ConfigurationError("a.b", "msg", "origin", "raw", "<bad>"));
 
