@@ -233,6 +233,27 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
+    void resolvesLineNumbersAndSnippetsFromClasspathOrigins() {
+        Environment environment = createEnvironment(
+            Map.of(
+                "test.config.enabled", "not-a-bool",
+                "test.config.count", "1"
+            ),
+            "classpath:origin-test.properties"
+        );
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        ConfigurationError enabled = errors.stream().filter(e -> e.property().equals("test.config.enabled")).findFirst().orElseThrow();
+        assertEquals(1, enabled.lineNumber());
+        assertNotNull(enabled.snippet());
+        assertTrue(enabled.snippet().contains("test.config.enabled=not-a-bool"));
+        assertEquals("properties", enabled.snippetLanguage());
+    }
+
+    @Test
     void validatesMinPropertiesForObjects() {
         Environment environment = createEnvironment(Map.of(
             "test.config.enabled", "true",

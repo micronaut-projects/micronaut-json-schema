@@ -73,13 +73,9 @@ public final class JsonSchemaConfigurationValidator {
      */
     @NonNull
     public Set<ConfigurationError> validate() throws IOException {
-        try (URLClassLoader classLoader = new URLClassLoader(classpath.toArray(URL[]::new), JsonSchemaConfigurationValidator.class.getClassLoader())) {
-            Environment environment = createEnvironment(classLoader, environments);
-            try {
-                return validator.validate(classLoader, environment);
-            } finally {
-                environment.stop();
-            }
+        try (URLClassLoader classLoader = new URLClassLoader(classpath.toArray(URL[]::new), JsonSchemaConfigurationValidator.class.getClassLoader());
+             Environment environment = createEnvironment(classLoader, environments)) {
+            return validator.validate(classLoader, environment);
         }
     }
 

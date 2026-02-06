@@ -98,4 +98,14 @@ class ConfigurationErrorReporterTest {
         assertTrue(html.contains("language-properties"));
         assertTrue(html.contains("<details>"));
     }
+
+    @Test
+    void htmlReporterRendersSuccessForNoErrors() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        new HtmlConfigurationErrorReporter(baos).report(Set.of());
+        String html = baos.toString(StandardCharsets.UTF_8);
+
+        assertTrue(html.contains("No configuration validation errors"));
+    }
 }

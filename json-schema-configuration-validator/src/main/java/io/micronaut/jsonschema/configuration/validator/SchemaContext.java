@@ -144,8 +144,9 @@ final class SchemaContext {
         private static final String LANG_JSON = "json";
 
         private static final Pattern PROPERTIES_LINE = Pattern.compile("^\\s*+([^#;!][^=:\\s]*+)\\s*+[=:][^\\n]*+$");
-        private static final Pattern YAML_KEY_LINE = Pattern.compile("^(\\s*+)(?:-\\s++)?([^\\s:#]++)\\s*+:(?:\\s*+([^\\n]*+))?$");
-        private static final Pattern TOML_TABLE_LINE = Pattern.compile("^\\s*+\\[\\[?([^\\]]++)]\\]?\\s*+(?:#([^\\n]*+))?$");
+        @SuppressWarnings("java:S5842")
+        private static final Pattern YAML_KEY_LINE = Pattern.compile("^(\\s*+)(?:-\\s++)?([^\\s:#]++)\\s*+:(?:\\s++[^\\n]++)?$");
+        private static final Pattern TOML_TABLE_LINE = Pattern.compile("^\\s*+\\[\\[?([^\\]]++)]\\]?\\s*+(?:#([^\\n]++))?$");
         private static final Pattern TOML_KEY_LINE = Pattern.compile("^\\s*+([^=]++)\\s*+=\\s*+([^\\n]*+)$");
 
         private OriginSnippetResolver() {
