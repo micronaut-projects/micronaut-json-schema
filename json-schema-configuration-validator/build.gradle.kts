@@ -21,6 +21,8 @@ dependencies {
     testImplementation(mn.micronaut.http.server.netty)
     testImplementation("io.micronaut:micronaut-http-client-core")
     testImplementation("io.micronaut:micronaut-jackson-databind")
+    testImplementation("org.yaml:snakeyaml")
+    testImplementation("io.micronaut.toml:micronaut-toml:2.7.0")
 
     // Needed for @ConfigurationProperties schema generation in tests
     testAnnotationProcessor(mn.micronaut.core.processor)

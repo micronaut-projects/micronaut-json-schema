@@ -21,11 +21,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -105,5 +107,134 @@ class ConfigurationJsonSchemaValidatorCliTest {
         assertTrue(list.stream().anyMatch(m -> "micronaut.http.client.unknown".equals(m.get("property"))));
         assertTrue(list.stream().anyMatch(m -> "WARNING".equals(m.get("type"))));
         assertFalse(list.stream().anyMatch(m -> "ERROR".equals(m.get("type"))));
+    }
+
+    @Test
+    void htmlReportIncludesSnippetsForApplicationProperties() throws Exception {
+        Path cp = tempDir.resolve("cp-props");
+        Files.createDirectories(cp);
+        Files.writeString(cp.resolve("application.properties"), String.join("\n",
+            "test.config.enabled=not-a-bool",
+            "test.config.count=1",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Path out = tempDir.resolve("out-props");
+
+        String classpath = cp + File.pathSeparator + System.getProperty("java.class.path");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", classpath,
+            "--environments", "test",
+            "--out", out.toString(),
+            "--format", "html"
+        }, System.out, System.err);
+
+        assertEquals(1, exit);
+        String html = Files.readString(out.resolve("configuration-errors.html"), StandardCharsets.UTF_8);
+        assertTrue(html.contains("test.config.enabled"));
+        assertTrue(html.contains("language-properties"));
+        assertTrue(html.contains("test.config.enabled=not-a-bool"));
+        assertTrue(html.contains("<details>"));
+
+        assertTrue(Pattern.compile("(?s)test\\.config\\.enabled.*?<td>1</td>").matcher(html).find());
+    }
+
+    @Test
+    void htmlReportIncludesSnippetsForApplicationYaml() throws Exception {
+        Path cp = tempDir.resolve("cp-yaml");
+        Files.createDirectories(cp);
+        Files.writeString(cp.resolve("application.yml"), String.join("\n",
+            "test:",
+            "  config:",
+            "    enabled: not-a-bool",
+            "    count: 1",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Path out = tempDir.resolve("out-yaml");
+
+        String classpath = cp + File.pathSeparator + System.getProperty("java.class.path");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", classpath,
+            "--environments", "test",
+            "--out", out.toString(),
+            "--format", "html"
+        }, System.out, System.err);
+
+        assertEquals(1, exit);
+        String html = Files.readString(out.resolve("configuration-errors.html"), StandardCharsets.UTF_8);
+        assertTrue(html.contains("test.config.enabled"));
+        assertTrue(html.contains("language-yaml"));
+        assertTrue(html.contains("enabled: not-a-bool"));
+        assertTrue(html.contains("<details>"));
+
+        assertTrue(Pattern.compile("(?s)test\\.config\\.enabled.*?<td>3</td>").matcher(html).find());
+    }
+
+    @Test
+    void htmlReportUsesPathAwareYamlLocatorForDuplicateKeys() throws Exception {
+        Path cp = tempDir.resolve("cp-yaml-dup");
+        Files.createDirectories(cp);
+        Files.writeString(cp.resolve("application.yml"), String.join("\n",
+            "other:",
+            "  enabled: true",
+            "test:",
+            "  config:",
+            "    enabled: not-a-bool",
+            "    count: 1",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Path out = tempDir.resolve("out-yaml-dup");
+
+        String classpath = cp + File.pathSeparator + System.getProperty("java.class.path");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", classpath,
+            "--environments", "test",
+            "--out", out.toString(),
+            "--format", "html"
+        }, System.out, System.err);
+
+        assertEquals(1, exit);
+        String html = Files.readString(out.resolve("configuration-errors.html"), StandardCharsets.UTF_8);
+
+        // Ensure we point at test.config.enabled (line 5), not other.enabled (line 2)
+        assertTrue(Pattern.compile("(?s)test\\.config\\.enabled.*?<td>5</td>").matcher(html).find());
+        assertFalse(Pattern.compile("(?s)test\\.config\\.enabled.*?<td>2</td>").matcher(html).find());
+    }
+
+    @Test
+    void htmlReportUsesPathAwareTomlLocatorForDuplicateKeys() throws Exception {
+        Path cp = tempDir.resolve("cp-toml-dup");
+        Files.createDirectories(cp);
+        Files.writeString(cp.resolve("application.toml"), String.join("\n",
+            "[other]",
+            "enabled = true",
+            "",
+            "[test.config]",
+            "enabled = \"not-a-bool\"",
+            "count = 1",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Path out = tempDir.resolve("out-toml-dup");
+
+        String classpath = cp + File.pathSeparator + System.getProperty("java.class.path");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", classpath,
+            "--environments", "test",
+            "--out", out.toString(),
+            "--format", "html"
+        }, System.out, System.err);
+
+        assertEquals(1, exit);
+        String html = Files.readString(out.resolve("configuration-errors.html"), StandardCharsets.UTF_8);
+
+        assertTrue(html.contains("language-toml"));
+        assertTrue(html.contains("enabled = &quot;not-a-bool&quot;"));
+
+        // Ensure we point at test.config.enabled (line 5), not other.enabled (line 2)
+        assertTrue(Pattern.compile("(?s)test\\.config\\.enabled.*?<td>5</td>").matcher(html).find());
+        assertFalse(Pattern.compile("(?s)test\\.config\\.enabled.*?<td>2</td>").matcher(html).find());
     }
 }

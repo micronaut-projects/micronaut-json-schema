@@ -138,6 +138,9 @@ final class SchemaContext {
 
     private static final class OriginSnippetResolver {
         private static final Pattern PROPERTIES_LINE = Pattern.compile("^\\s*([^#;!][^=:\\s]*?)\\s*[=:].*$");
+        private static final Pattern YAML_KEY_LINE = Pattern.compile("^(\\s*)(?:-\\s+)?([^\\s:#]+)\\s*:\\s*(.*)$");
+        private static final Pattern TOML_TABLE_LINE = Pattern.compile("^\\s*\\[\\[?([^\\]]+)]\\]?\\s*(?:#.*)?$");
+        private static final Pattern TOML_KEY_LINE = Pattern.compile("^\\s*([^=]+?)\\s*=\\s*(.*)$");
 
         private OriginSnippetResolver() {
         }
@@ -158,9 +161,17 @@ final class SchemaContext {
             }
 
             List<String> lines = splitLines(resolved.text());
+
+            String language = languageFor(originLocation);
             int idx = findLineIndex(lines, rawPropertyName);
+            if (idx < 0 && "yaml".equals(language)) {
+                idx = findYamlLineIndex(lines, rawPropertyName);
+            }
+            if (idx < 0 && "toml".equals(language)) {
+                idx = findTomlLineIndex(lines, rawPropertyName);
+            }
             if (idx < 0) {
-                // Try best-effort match on the last segment (common when YAML is used).
+                // Try best-effort match on the last segment.
                 int dot = rawPropertyName.lastIndexOf('.');
                 if (dot > -1 && dot + 1 < rawPropertyName.length()) {
                     idx = findLineIndex(lines, rawPropertyName.substring(dot + 1));
@@ -168,11 +179,11 @@ final class SchemaContext {
             }
 
             if (idx < 0) {
-                return new OriginSnippet(-1, inferredSnippet(rawPropertyName, rawValue), languageFor(originLocation));
+                return new OriginSnippet(-1, inferredSnippet(rawPropertyName, rawValue), language);
             }
 
             String snippet = sliceSnippet(lines, idx, 2);
-            return new OriginSnippet(idx + 1, snippet, languageFor(originLocation));
+            return new OriginSnippet(idx + 1, snippet, language);
         }
 
         @Nullable
@@ -236,6 +247,182 @@ final class SchemaContext {
             return -1;
         }
 
+        /**
+         * Attempts to locate a YAML line for a dotted property name (for example {@code a.b.c})
+         * by tracking key-paths using indentation.
+         */
+        private static int findYamlLineIndex(List<String> lines, String dottedProperty) {
+            if (dottedProperty == null || dottedProperty.isBlank()) {
+                return -1;
+            }
+            String[] segments = dottedProperty.split("\\.");
+            if (segments.length == 0) {
+                return -1;
+            }
+
+            List<PathKey> stack = new ArrayList<>(segments.length);
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (line == null) {
+                    continue;
+                }
+                String trimmed = line.trim();
+                if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                    continue;
+                }
+
+                Matcher m = YAML_KEY_LINE.matcher(line);
+                if (!m.matches()) {
+                    continue;
+                }
+
+                int indent = indentation(m.group(1));
+                String key = unquote(m.group(2));
+                if (key == null || key.isEmpty()) {
+                    continue;
+                }
+
+                while (!stack.isEmpty() && indent <= stack.get(stack.size() - 1).indent()) {
+                    stack.remove(stack.size() - 1);
+                }
+                stack.add(new PathKey(indent, key));
+
+                if (stack.size() != segments.length) {
+                    continue;
+                }
+
+                boolean matches = true;
+                for (int s = 0; s < segments.length; s++) {
+                    if (!stack.get(s).key().equals(segments[s])) {
+                        matches = false;
+                        break;
+                    }
+                }
+                if (matches) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /**
+         * Attempts to locate a TOML line for a dotted property name (for example {@code a.b.c})
+         * by tracking the current table path (for example {@code [a.b]}).
+         */
+        private static int findTomlLineIndex(List<String> lines, String dottedProperty) {
+            if (dottedProperty == null || dottedProperty.isBlank()) {
+                return -1;
+            }
+
+            String[] segments = dottedProperty.split("\\.");
+            if (segments.length == 0) {
+                return -1;
+            }
+
+            String key = segments[segments.length - 1];
+            List<String> prefix = new ArrayList<>(Math.max(0, segments.length - 1));
+            for (int i = 0; i < segments.length - 1; i++) {
+                prefix.add(segments[i]);
+            }
+
+            List<String> currentTable = new ArrayList<>(0);
+
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (line == null) {
+                    continue;
+                }
+
+                String trimmed = line.trim();
+                if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                    continue;
+                }
+
+                Matcher table = TOML_TABLE_LINE.matcher(line);
+                if (table.matches()) {
+                    currentTable = parseTomlDottedPath(table.group(1));
+                    continue;
+                }
+
+                Matcher kv = TOML_KEY_LINE.matcher(line);
+                if (!kv.matches()) {
+                    continue;
+                }
+
+                String left = kv.group(1).trim();
+                if (left.isEmpty()) {
+                    continue;
+                }
+
+                // Handle dotted assignments like a.b.c = 1
+                if (left.contains(".")) {
+                    String normalized = left.replace("\"", "").replace("'", "").trim();
+                    if (normalized.equals(dottedProperty)) {
+                        return i;
+                    }
+                }
+
+                String parsedKey = unquote(left);
+                if (!Objects.equals(parsedKey, key)) {
+                    continue;
+                }
+
+                if (currentTable.size() != prefix.size()) {
+                    continue;
+                }
+                boolean matches = true;
+                for (int p = 0; p < prefix.size(); p++) {
+                    if (!Objects.equals(currentTable.get(p), prefix.get(p))) {
+                        matches = false;
+                        break;
+                    }
+                }
+                if (matches) {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static List<String> parseTomlDottedPath(String dotted) {
+            String[] parts = dotted.split("\\.");
+            List<String> result = new ArrayList<>(parts.length);
+            for (String part : parts) {
+                String t = part.trim();
+                if (!t.isEmpty()) {
+                    result.add(unquote(t));
+                }
+            }
+            return result;
+        }
+
+        private static int indentation(String leadingWhitespace) {
+            int indent = 0;
+            for (int i = 0; i < leadingWhitespace.length(); i++) {
+                char c = leadingWhitespace.charAt(i);
+                if (c == '\t') {
+                    indent += 4;
+                } else {
+                    indent++;
+                }
+            }
+            return indent;
+        }
+
+        @Nullable
+        private static String unquote(@Nullable String s) {
+            if (s == null) {
+                return null;
+            }
+            if ((s.startsWith("\"") && s.endsWith("\"")) || (s.startsWith("'") && s.endsWith("'"))) {
+                if (s.length() >= 2) {
+                    return s.substring(1, s.length() - 1);
+                }
+            }
+            return s;
+        }
+
         private static boolean matchesPropertiesKey(String line, String key) {
             Matcher m = PROPERTIES_LINE.matcher(line);
             if (!m.matches()) {
@@ -279,6 +466,9 @@ final class SchemaContext {
                 return "json";
             }
             return null;
+        }
+
+        private record PathKey(int indent, String key) {
         }
 
         private record ResolvedText(String text) {
