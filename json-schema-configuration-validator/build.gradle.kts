@@ -2,6 +2,11 @@ plugins {
     id("io.micronaut.build.internal.json-schema-module")
 }
 
+micronautBuild {
+    binaryCompatibility.enabledAfter("2.0.0")
+}
+
+
 dependencies {
     api(projects.micronautJsonSchemaUtils)
     api(mn.micronaut.inject)
