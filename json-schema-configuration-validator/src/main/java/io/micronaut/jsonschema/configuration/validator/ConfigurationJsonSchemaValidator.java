@@ -37,6 +37,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Validates Micronaut configuration ({@link Environment}) against JSON schemas on the classpath.
@@ -48,6 +49,7 @@ public final class ConfigurationJsonSchemaValidator {
 
     private volatile @Nullable JsonMapper jsonMapper;
     private boolean failOnNotPresent = true;
+    private volatile List<String> suppressionPatterns = List.of();
 
     /**
      * @return Whether to fail when configuration contains keys not present in schema.
@@ -68,6 +70,26 @@ public final class ConfigurationJsonSchemaValidator {
      */
     public void setJsonMapper(@Nullable JsonMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
+    }
+
+    /**
+     * Patterns used to suppress validation errors. Matching errors are downgraded to warnings.
+     *
+     * @return The suppression patterns
+     */
+    @NonNull
+    public List<String> getSuppressionPatterns() {
+        return suppressionPatterns;
+    }
+
+    /**
+     * Set patterns used to suppress validation errors. Matching errors are downgraded to warnings.
+     * Patterns may include {@code *} wildcards (for example {@code micronaut.http.*}).
+     *
+     * @param suppressionPatterns The suppression patterns
+     */
+    public void setSuppressionPatterns(@Nullable List<String> suppressionPatterns) {
+        this.suppressionPatterns = suppressionPatterns != null ? List.copyOf(suppressionPatterns) : List.of();
     }
 
     /**
@@ -117,7 +139,38 @@ public final class ConfigurationJsonSchemaValidator {
             }
         }
 
-        return errors;
+        return applySuppressions(errors);
+    }
+
+    private Set<ConfigurationError> applySuppressions(Set<ConfigurationError> errors) {
+        List<String> patterns = suppressionPatterns;
+        if (patterns.isEmpty() || errors.isEmpty()) {
+            return errors;
+        }
+
+        List<SuppressionMatcher> matchers = SuppressionMatcher.compileAll(patterns);
+        if (matchers.isEmpty()) {
+            return errors;
+        }
+
+        Set<ConfigurationError> result = new LinkedHashSet<>(errors.size());
+        for (ConfigurationError error : errors) {
+            if (error.type() == ConfigurationError.Type.ERROR && matchesAny(matchers, error.property())) {
+                result.add(error.withType(ConfigurationError.Type.WARNING));
+            } else {
+                result.add(error);
+            }
+        }
+        return result;
+    }
+
+    private static boolean matchesAny(List<SuppressionMatcher> matchers, String property) {
+        for (SuppressionMatcher matcher : matchers) {
+            if (matcher.matches(property)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private JsonMapper jsonMapper() {
@@ -139,7 +192,7 @@ public final class ConfigurationJsonSchemaValidator {
     /**
      * Internal validation implementation.
      */
-    static final class SchemaValidationEngine {
+    private static final class SchemaValidationEngine {
         void validateSchema(
             String prefix,
             JsonSchema schema,
@@ -210,6 +263,48 @@ public final class ConfigurationJsonSchemaValidator {
 
                 SchemaValidator.validateObject(ctx, entrySchema, instance, entryPrefix, entry, errors);
             }
+        }
+    }
+
+    private interface SuppressionMatcher {
+        boolean matches(String property);
+
+        static List<SuppressionMatcher> compileAll(List<String> patterns) {
+            List<SuppressionMatcher> matchers = new ArrayList<>(patterns.size());
+            for (String pattern : patterns) {
+                if (StringUtils.isEmpty(pattern)) {
+                    continue;
+                }
+                matchers.add(compile(pattern));
+            }
+            return matchers;
+        }
+
+        static SuppressionMatcher compile(String pattern) {
+            if (pattern.indexOf('*') > -1) {
+                Pattern regex = Pattern.compile("^" + toRegex(pattern) + "$");
+                return property -> regex.matcher(property).matches();
+            }
+            return property -> property.equals(pattern)
+                || property.startsWith(pattern + '.')
+                || property.startsWith(pattern + '[');
+        }
+
+        private static String toRegex(String wildcardPattern) {
+            StringBuilder regex = new StringBuilder(wildcardPattern.length() * 2);
+            for (int i = 0; i < wildcardPattern.length(); i++) {
+                char c = wildcardPattern.charAt(i);
+                if (c == '*') {
+                    regex.append(".*");
+                } else {
+                    // Escape regex meta characters
+                    if ("\\.^$|?+()[]{}".indexOf(c) != -1) {
+                        regex.append('\\');
+                    }
+                    regex.append(c);
+                }
+            }
+            return regex.toString();
         }
     }
 }

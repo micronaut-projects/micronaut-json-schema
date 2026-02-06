@@ -22,6 +22,7 @@ import org.jspecify.annotations.Nullable;
  * A configuration validation error.
  *
  * @param property The full configuration property name (e.g. {@code micronaut.server.ssl.enabled})
+ * @param type The error type
  * @param message The error message
  * @param originLocation Where the property originated from (if available)
  * @param rawPropertyName The raw property name prior to normalization (if available)
@@ -30,9 +31,52 @@ import org.jspecify.annotations.Nullable;
 @Introspected
 public record ConfigurationError(
     String property,
+    Type type,
     String message,
     @Nullable String originLocation,
     @Nullable String rawPropertyName,
     @Nullable Object rawValue
 ) {
+
+    /**
+     * The configuration validation error type.
+     */
+    public enum Type {
+        /**
+         * A validation error.
+         */
+        ERROR,
+
+        /**
+         * A validation warning.
+         */
+        WARNING
+    }
+
+    /**
+     * Constructs a configuration error with type {@link Type#ERROR}.
+     *
+     * @param property The full configuration property name
+     * @param message The error message
+     * @param originLocation Where the property originated from (if available)
+     * @param rawPropertyName The raw property name prior to normalization (if available)
+     * @param rawValue The raw value (if available)
+     */
+    public ConfigurationError(
+        String property,
+        String message,
+        @Nullable String originLocation,
+        @Nullable String rawPropertyName,
+        @Nullable Object rawValue
+    ) {
+        this(property, Type.ERROR, message, originLocation, rawPropertyName, rawValue);
+    }
+
+    /**
+     * @param type The new type
+     * @return A copy of this error with the given type
+     */
+    public ConfigurationError withType(Type type) {
+        return new ConfigurationError(property, type, message, originLocation, rawPropertyName, rawValue);
+    }
 }

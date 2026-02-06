@@ -29,6 +29,7 @@ final class JsonSchemaPropertyAdapter {
             schema.type(),
             schema.description(),
             schema.format(),
+            null,
             schema.pattern(),
             schema.minLength(),
             schema.maxLength(),

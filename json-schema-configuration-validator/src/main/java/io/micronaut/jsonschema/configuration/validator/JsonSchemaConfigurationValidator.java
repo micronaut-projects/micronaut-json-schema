@@ -36,10 +36,17 @@ import java.util.Set;
  * {@link ConfigurationJsonSchemaValidator}.
  */
 public final class JsonSchemaConfigurationValidator {
+    private static final System.Logger LOG = System.getLogger(JsonSchemaConfigurationValidator.class.getName());
+
     private final List<URL> classpath;
     private final List<String> environments;
     private final ConfigurationJsonSchemaValidator validator;
 
+    /**
+     * @param classpath The classpath to use to discover configuration schemas
+     * @param environments The environments to enable
+     * @param validator The validator
+     */
     public JsonSchemaConfigurationValidator(
         @NonNull List<URL> classpath,
         @NonNull List<String> environments,
@@ -58,6 +65,12 @@ public final class JsonSchemaConfigurationValidator {
         return new JsonSchemaConfigurationValidator(parseClasspath(classpath), environments, validator);
     }
 
+    /**
+     * Validate the configuration found on the configured classpath.
+     *
+     * @return A set of validation errors/warnings (empty if valid)
+     * @throws IOException If validation fails
+     */
     @NonNull
     public Set<ConfigurationError> validate() throws IOException {
         try (URLClassLoader classLoader = new URLClassLoader(classpath.toArray(URL[]::new), ClassLoader.getSystemClassLoader())) {
@@ -70,6 +83,13 @@ public final class JsonSchemaConfigurationValidator {
         }
     }
 
+    /**
+     * Validate and report using the given reporter.
+     *
+     * @param reporter The reporter
+     * @return The validation errors/warnings
+     * @throws IOException If validation or reporting fails
+     */
     public Set<ConfigurationError> validateAndReport(ConfigurationErrorReporter reporter) throws IOException {
         Set<ConfigurationError> errors = validate();
         reporter.report(errors);
@@ -101,8 +121,8 @@ public final class JsonSchemaConfigurationValidator {
         if (maybeCloseable instanceof AutoCloseable closeable) {
             try {
                 closeable.close();
-            } catch (Exception ignored) {
-                // ignore
+            } catch (Exception e) {
+                LOG.log(System.Logger.Level.DEBUG, "Failed to close", e);
             }
         }
     }
@@ -121,7 +141,7 @@ public final class JsonSchemaConfigurationValidator {
             try {
                 urls.add(Path.of(trimmed).toUri().toURL());
             } catch (MalformedURLException e) {
-                // ignore invalid classpath entries
+                LOG.log(System.Logger.Level.DEBUG, "Invalid classpath entry: " + trimmed, e);
             }
         }
         return urls;

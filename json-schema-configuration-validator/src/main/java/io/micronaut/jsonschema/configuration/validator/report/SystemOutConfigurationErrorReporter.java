@@ -30,6 +30,7 @@ public final class SystemOutConfigurationErrorReporter implements ConfigurationE
         PrintWriter writer = new PrintWriter(System.err);
         for (ConfigurationError error : errors) {
             writer.println(error.property());
+            writer.println("  type: " + error.type());
             writer.println("  " + error.message());
             if (error.originLocation() != null) {
                 writer.println("  origin: " + error.originLocation());

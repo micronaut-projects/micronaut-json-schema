@@ -29,6 +29,9 @@ import java.util.Set;
 public final class HtmlConfigurationErrorReporter implements ConfigurationErrorReporter {
     private final OutputStream output;
 
+    /**
+     * @param output The output stream
+     */
     public HtmlConfigurationErrorReporter(@NonNull OutputStream output) {
         this.output = output;
     }
@@ -49,12 +52,13 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             .append("<h1>Configuration validation errors</h1>")
             .append("<p>Total: ").append(errors.size()).append("</p>")
             .append("<table><thead><tr>")
-            .append("<th>Property</th><th>Message</th><th>Origin</th><th>Raw</th><th>Value</th>")
+            .append("<th>Property</th><th>Type</th><th>Message</th><th>Origin</th><th>Raw</th><th>Value</th>")
             .append("</tr></thead><tbody>");
 
         for (ConfigurationError error : errors) {
             html.append("<tr>")
                 .append("<td><code>").append(escape(error.property())).append("</code></td>")
+                .append("<td>").append(escape(error.type() != null ? error.type().name() : null)).append("</td>")
                 .append("<td>").append(escape(error.message())).append("</td>")
                 .append("<td>").append(escape(error.originLocation())).append("</td>")
                 .append("<td><code>").append(escape(error.rawPropertyName())).append("</code></td>")

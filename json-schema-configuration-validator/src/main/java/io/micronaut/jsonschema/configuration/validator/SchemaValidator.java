@@ -154,6 +154,10 @@ final class SchemaValidator {
             return;
         }
 
+        if (Boolean.TRUE.equals(resolved.deprecated())) {
+            errors.add(ctx.warning(resolvedPropertyName, "Deprecated property"));
+        }
+
         JsonSchemaType type = SchemaTypes.toType(resolved.type());
         if (type == null) {
             if (resolved.properties() != null || resolved.additionalProperties() != null) {

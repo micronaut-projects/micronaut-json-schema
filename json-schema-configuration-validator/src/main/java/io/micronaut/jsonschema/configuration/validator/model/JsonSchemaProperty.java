@@ -31,6 +31,7 @@ public record JsonSchemaProperty(
     @Nullable String description,
 
     @Nullable String format,
+    @Nullable Boolean deprecated,
     @Nullable String pattern,
     @Nullable @JsonProperty("minLength") Integer minLength,
     @Nullable @JsonProperty("maxLength") Integer maxLength,

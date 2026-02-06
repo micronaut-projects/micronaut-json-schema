@@ -95,6 +95,21 @@ class MicronautShippedSchemasTest {
     }
 
     @Test
+    void reportsDeprecatedSchemaPropertiesAsWarnings() {
+        Environment environment = createEnvironment(Map.of(
+            "micronaut.server.read-timeout", "1"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.server.read-timeout") && e.type() == ConfigurationError.Type.WARNING));
+        assertFalse(errors.stream().anyMatch(e -> e.type() == ConfigurationError.Type.ERROR));
+    }
+
+    @Test
     void validatesAgainstMicronautStaticResourceEachPropertySchema() {
         Environment environment = createEnvironment(Map.of(
             "micronaut.router.static-resources.assets.paths", "classpath:public",
@@ -143,6 +158,38 @@ class MicronautShippedSchemasTest {
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.http.client.read-timeout") && e.message().toLowerCase().contains("duration")));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.http.client.log-level") && e.message().contains("enum")));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.http.client.channel-options") && e.message().contains("object")));
+    }
+
+    @Test
+    void canSuppressErrorsWithWildcardPatterns() {
+        Environment environment = createEnvironment(Map.of(
+            "micronaut.http.client.unknown", "x"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+        validator.setSuppressionPatterns(List.of("micronaut.http.*"));
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.http.client.unknown") && e.type() == ConfigurationError.Type.WARNING));
+        assertFalse(errors.stream().anyMatch(e -> e.type() == ConfigurationError.Type.ERROR));
+    }
+
+    @Test
+    void canSuppressErrorsWithPrefixPatterns() {
+        Environment environment = createEnvironment(Map.of(
+            "micronaut.http.client.unknown", "x"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+        validator.setSuppressionPatterns(List.of("micronaut.http"));
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.http.client.unknown") && e.type() == ConfigurationError.Type.WARNING));
+        assertFalse(errors.stream().anyMatch(e -> e.type() == ConfigurationError.Type.ERROR));
     }
 
     @Test

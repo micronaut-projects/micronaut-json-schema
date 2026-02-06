@@ -24,5 +24,11 @@ import java.util.Set;
  * Reports configuration validation errors.
  */
 public interface ConfigurationErrorReporter {
+    /**
+     * Report configuration validation errors.
+     *
+     * @param errors The errors to report
+     * @throws IOException If the reporter fails to write the report
+     */
     void report(Set<ConfigurationError> errors) throws IOException;
 }

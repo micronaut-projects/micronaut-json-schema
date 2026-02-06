@@ -81,18 +81,27 @@ final class SchemaContext {
     }
 
     ConfigurationError error(String property, String message) {
+        return create(ConfigurationError.Type.ERROR, property, message);
+    }
+
+    ConfigurationError warning(String property, String message) {
+        return create(ConfigurationError.Type.WARNING, property, message);
+    }
+
+    private ConfigurationError create(ConfigurationError.Type type, String property, String message) {
         Optional<PropertyEntry> entry = environment.getPropertyEntry(property);
         if (entry.isPresent()) {
             PropertyEntry propertyEntry = entry.get();
             return new ConfigurationError(
                 property,
+                type,
                 message,
                 propertyEntry.origin() != null ? propertyEntry.origin().location() : null,
                 propertyEntry.raw(),
                 propertyEntry.value()
             );
         }
-        return new ConfigurationError(property, message, null, null, null);
+        return new ConfigurationError(property, type, message, null, null, null);
     }
 
     String resolvedPropertyName(String computedPropertyName, @Nullable String micronautPath, @Nullable String wildcardReplacement) {

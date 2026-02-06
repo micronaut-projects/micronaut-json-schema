@@ -81,6 +81,22 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
+    void resolvesPropertyPlaceholdersBeforeValidation() {
+        Environment environment = createEnvironment(Map.of(
+            "source.enabled", "true",
+            "source.count", "2",
+            "test.config.enabled", "${source.enabled}",
+            "test.config.count", "${source.count}"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+        assertTrue(errors.isEmpty(), () -> "Expected no errors, got: " + errors);
+    }
+
+    @Test
     void validatesEachPropertySchemasViaPropertyEntries() {
         Environment environment = createEnvironment(Map.of(
             "test.executors.alpha.n-threads", "0",

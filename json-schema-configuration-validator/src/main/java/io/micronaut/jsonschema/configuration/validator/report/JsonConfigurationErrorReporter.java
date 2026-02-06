@@ -32,6 +32,10 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
     private final JsonMapper jsonMapper;
     private final OutputStream output;
 
+    /**
+     * @param jsonMapper The JSON mapper
+     * @param output The output stream
+     */
     public JsonConfigurationErrorReporter(@NonNull JsonMapper jsonMapper, @NonNull OutputStream output) {
         this.jsonMapper = jsonMapper;
         this.output = output;
