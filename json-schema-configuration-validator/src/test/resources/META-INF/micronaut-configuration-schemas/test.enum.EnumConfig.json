@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.enum.EnumConfig",
+  "title": "test.enum.EnumConfig",
+  "x-micronaut": {
+    "prefix": "test.enum",
+    "type": "test.enum.EnumConfig",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["A", "B"],
+      "x-micronaut-path": "test.enum.mode"
+    }
+  }
+}

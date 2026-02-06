@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.url.UrlConfig",
+  "title": "test.url.UrlConfig",
+  "x-micronaut": {
+    "prefix": "test.url",
+    "type": "test.url.UrlConfig",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "type": "string",
+      "x-micronaut-javaType": "java.net.URL",
+      "x-micronaut-path": "test.url.endpoint"
+    },
+    "location": {
+      "type": "string",
+      "x-micronaut-javaType": "java.net.URI",
+      "x-micronaut-path": "test.url.location"
+    }
+  }
+}
