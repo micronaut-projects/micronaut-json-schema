@@ -22,9 +22,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -107,6 +110,61 @@ class ConfigurationJsonSchemaValidatorCliTest {
         assertTrue(list.stream().anyMatch(m -> "micronaut.http.client.unknown".equals(m.get("property"))));
         assertTrue(list.stream().anyMatch(m -> "WARNING".equals(m.get("type"))));
         assertFalse(list.stream().anyMatch(m -> "ERROR".equals(m.get("type"))));
+    }
+
+    @Test
+    void bootstrapCliCanRunWithMinimalProcessClasspath() throws Exception {
+        Path cpDir = tempDir.resolve("cp-bootstrap");
+        Files.createDirectories(cpDir);
+        Files.writeString(cpDir.resolve("application.properties"), String.join("\n",
+            "test.config.enabled=not-a-bool",
+            "test.config.count=1",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Path out = tempDir.resolve("out-bootstrap");
+
+        String fullRuntimeClasspath = cpDir + File.pathSeparator + System.getProperty("java.class.path");
+
+        String minimalClasspath = String.join(File.pathSeparator,
+            Path.of("build/resources/main").toAbsolutePath().toString(),
+            Path.of("build/classes/java/main").toAbsolutePath().toString()
+        );
+
+        List<String> cmd = List.of(
+            javaBin(),
+            "-cp",
+            minimalClasspath,
+            ConfigurationJsonSchemaValidatorCliBootstrap.class.getName(),
+            "--classpath",
+            fullRuntimeClasspath,
+            "--environments",
+            "test",
+            "--out",
+            out.toString(),
+            "--format",
+            "html"
+        );
+
+        Process process = new ProcessBuilder(cmd)
+            .redirectErrorStream(true)
+            .start();
+
+        String output;
+        try (InputStream is = process.getInputStream()) {
+            output = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        boolean finished = process.waitFor(Duration.ofSeconds(30).toMillis(), TimeUnit.MILLISECONDS);
+        assertTrue(finished, () -> "Process did not finish. Output so far:\n" + output);
+        assertEquals(0, process.exitValue(), () -> "Non-zero exit. Output:\n" + output);
+
+        assertTrue(Files.exists(out.resolve("configuration-errors.html")), () -> "No report written. Output:\n" + output);
+    }
+
+    private static String javaBin() {
+        String home = System.getProperty("java.home");
+        return Path.of(home, "bin", "java").toAbsolutePath().toString();
     }
 
     @Test
