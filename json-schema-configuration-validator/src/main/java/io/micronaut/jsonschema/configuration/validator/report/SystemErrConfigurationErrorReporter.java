@@ -24,7 +24,7 @@ import java.util.Set;
 /**
  * Reports errors to {@code System.err}.
  */
-public final class SystemOutConfigurationErrorReporter implements ConfigurationErrorReporter {
+public final class SystemErrConfigurationErrorReporter implements ConfigurationErrorReporter {
     @Override
     public void report(Set<ConfigurationError> errors) throws IOException {
         PrintWriter writer = new PrintWriter(System.err);

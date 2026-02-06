@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 /**
- * Reports errors as a self-contained HTML document.
+ * Reports errors as an HTML document.
  */
 public final class HtmlConfigurationErrorReporter implements ConfigurationErrorReporter {
     private final OutputStream output;

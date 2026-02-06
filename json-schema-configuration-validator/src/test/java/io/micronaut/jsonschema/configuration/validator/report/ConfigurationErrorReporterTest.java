@@ -38,7 +38,7 @@ class ConfigurationErrorReporterTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             System.setErr(new PrintStream(baos, true, StandardCharsets.UTF_8));
-            new SystemOutConfigurationErrorReporter().report(errors);
+            new SystemErrConfigurationErrorReporter().report(errors);
         } finally {
             System.setErr(original);
         }

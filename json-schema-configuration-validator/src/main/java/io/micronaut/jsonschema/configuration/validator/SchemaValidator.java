@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
@@ -362,13 +363,12 @@ final class SchemaValidator {
 
     private static boolean isUnique(List<Object> list) {
         // Use string form to avoid deep-comparison for nested structures.
-        List<String> seen = new ArrayList<>(list.size());
+        Set<String> seen = new HashSet<>(list.size());
         for (Object o : list) {
             String s = String.valueOf(o);
-            if (seen.contains(s)) {
+            if (!seen.add(s)) {
                 return false;
             }
-            seen.add(s);
         }
         return true;
     }
