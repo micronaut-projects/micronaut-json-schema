@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.executors.UserExecutorConfiguration",
+  "title": "test.executors.UserExecutorConfiguration",
+  "x-micronaut": {
+    "prefix": "test.executors",
+    "type": "test.executors.UserExecutorConfiguration",
+    "kind": "each-property",
+    "container": "map"
+  },
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": {
+    "$ref": "#/$defs/Entry"
+  },
+  "$defs": {
+    "Entry": {
+      "type": "object",
+      "properties": {
+        "n-threads": {
+          "type": "integer",
+          "minimum": 1,
+          "x-micronaut-javaType": "java.lang.Integer",
+          "x-micronaut-path": "test.executors.*.n-threads"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["FIXED", "CACHED"],
+          "x-micronaut-path": "test.executors.*.type"
+        }
+      },
+      "required": ["n-threads"]
+    }
+  }
+}

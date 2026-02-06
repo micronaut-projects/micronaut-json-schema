@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.config.TestConfig",
+  "title": "test.config.TestConfig",
+  "x-micronaut": {
+    "prefix": "test.config",
+    "type": "test.config.TestConfig",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "x-micronaut-javaType": "java.lang.Boolean",
+      "x-micronaut-path": "test.config.enabled"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 1,
+      "x-micronaut-javaType": "java.lang.Integer",
+      "x-micronaut-path": "test.config.count"
+    },
+    "ratio": {
+      "type": "number",
+      "exclusiveMaximum": 1,
+      "x-micronaut-javaType": "java.math.BigDecimal",
+      "x-micronaut-path": "test.config.ratio"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["A", "B"],
+      "x-micronaut-javaType": "java.lang.String",
+      "x-micronaut-path": "test.config.mode"
+    },
+    "names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "x-micronaut-javaType": "java.util.List",
+      "x-micronaut-path": "test.config.names"
+    }
+  },
+  "required": ["enabled", "count"]
+}
