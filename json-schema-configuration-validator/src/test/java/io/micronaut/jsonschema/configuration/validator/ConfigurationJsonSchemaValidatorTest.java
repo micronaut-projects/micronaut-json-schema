@@ -36,6 +36,10 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(schemas.containsKey("test.config.TestConfig.json"));
         assertTrue(schemas.containsKey("test.executors.UserExecutorConfiguration.json"));
         assertTrue(schemas.containsKey("test.edge.EdgeCases.json"));
+        assertTrue(schemas.containsKey("test.suggest.SuggestConfig.json"));
+        assertTrue(schemas.containsKey("test.enum.EnumConfig.json"));
+        assertTrue(schemas.containsKey("test.pattern.PatternConfig.json"));
+        assertTrue(schemas.containsKey("test.url.UrlConfig.json"));
     }
 
     @Test
@@ -133,6 +137,67 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.edge.servers[0].name") && e.message().toLowerCase().contains("length")));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.edge.servers[0].extra") && e.message().contains("not present")));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.edge.servers[1].port") && e.message().contains("Missing required")));
+    }
+
+    @Test
+    void suggestsSimilarPropertiesForUnknownKeys() {
+        Environment environment = createEnvironment(Map.of(
+            "test.suggest.enabeld", "true",
+            "test.suggest.read-timeout", "1s"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.suggest.enabeld")
+            && e.message().contains("Did you mean")
+            && e.message().contains("test.suggest.enabled")));
+    }
+
+    @Test
+    void listsAllowedValuesForEnumValidationErrors() {
+        Environment environment = createEnvironment(Map.of(
+            "test.enum.mode", "C"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.enum.mode")
+            && e.message().contains("enum")
+            && e.message().contains("'A'")
+            && e.message().contains("'B'")));
+    }
+
+    @Test
+    void validatesRegexPatternJavaTypeValues() {
+        Environment environment = createEnvironment(Map.of(
+            "test.pattern.regex", "["
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.pattern.regex")
+            && e.message().toLowerCase().contains("regex")));
+    }
+
+    @Test
+    void validatesUrlAndUriJavaTypeValues() {
+        Environment environment = createEnvironment(Map.of(
+            "test.url.endpoint", "ht!tp://bad",
+            "test.url.location", "http://bad uri"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.url.endpoint")
+            && e.message().toLowerCase().contains("url")));
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.url.location")
+            && e.message().toLowerCase().contains("uri")));
     }
 
     @Test

@@ -23,11 +23,15 @@ import org.jspecify.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
+import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -133,7 +137,20 @@ final class SchemaValidator {
                     Object coerced = ValueCoercer.coerce(ctx, additionalSchema, unknownResolved, wildcardReplacement, entry.getValue(), errors);
                     validateNode(ctx, additionalSchema, coerced, unknownComputed, unknownResolved, wildcardReplacement, errors);
                 } else {
-                    errors.add(ctx.error(unknownResolved, "Property not present in schema"));
+                    List<String> suggestions = PropertySuggester.suggest(key, properties.keySet(), 3, 0.35d);
+                    if (!suggestions.isEmpty()) {
+                        StringBuilder didYouMean = new StringBuilder(64);
+                        for (int i = 0; i < suggestions.size(); i++) {
+                            if (i > 0) {
+                                didYouMean.append(", ");
+                            }
+                            String suggestionComputed = computedPropertyName + "." + suggestions.get(i);
+                            didYouMean.append(ctx.resolvedPropertyName(suggestionComputed, null, wildcardReplacement));
+                        }
+                        errors.add(ctx.error(unknownResolved, "Property not present in schema. Did you mean: " + didYouMean + "?"));
+                    } else {
+                        errors.add(ctx.error(unknownResolved, "Property not present in schema"));
+                    }
                 }
             }
         }
@@ -214,7 +231,7 @@ final class SchemaValidator {
         // enums
         if (resolved.enumValues() != null && value != null) {
             if (!enumContains(resolved.enumValues(), value)) {
-                errors.add(ctx.error(resolvedPropertyName, "Value not in enum"));
+                errors.add(ctx.error(resolvedPropertyName, "Value not in enum. Expected one of: " + formatEnumValues(resolved.enumValues(), 10)));
                 return;
             }
         }
@@ -268,6 +285,32 @@ final class SchemaValidator {
                     }
                     default -> {
                         // ignore unknown formats
+                    }
+                }
+            }
+
+            String javaType = resolved.javaType();
+            if (javaType != null) {
+                switch (javaType) {
+                    case "java.util.regex.Pattern" -> {
+                        try {
+                            Pattern.compile(s);
+                        } catch (Exception e) {
+                            errors.add(ctx.error(resolvedPropertyName, "Invalid regex pattern"));
+                        }
+                    }
+                    case "java.net.URL" -> {
+                        if (ctx.environment().getConversionService().convert(s, URL.class).isEmpty()) {
+                            errors.add(ctx.error(resolvedPropertyName, "Invalid URL"));
+                        }
+                    }
+                    case "java.net.URI" -> {
+                        if (ctx.environment().getConversionService().convert(s, URI.class).isEmpty()) {
+                            errors.add(ctx.error(resolvedPropertyName, "Invalid URI"));
+                        }
+                    }
+                    default -> {
+                        // ignore other java types
                     }
                 }
             }
@@ -370,6 +413,28 @@ final class SchemaValidator {
         return false;
     }
 
+    private static String formatEnumValues(Collection<Object> values, int limit) {
+        List<String> formatted = new ArrayList<>(Math.min(values.size(), limit));
+        int i = 0;
+        for (Object v : values) {
+            if (i++ >= limit) {
+                break;
+            }
+            if (v == null) {
+                formatted.add("null");
+            } else if (v instanceof String s) {
+                formatted.add('\'' + s + '\'');
+            } else {
+                formatted.add(String.valueOf(v));
+            }
+        }
+        String joined = String.join(", ", formatted);
+        if (values.size() > limit) {
+            joined += " … (" + values.size() + " total)";
+        }
+        return joined;
+    }
+
     @Nullable
     private static BigDecimal toBigDecimal(@Nullable Object value) {
         if (value == null) {
@@ -395,5 +460,102 @@ final class SchemaValidator {
             }
         }
         return null;
+    }
+
+    private static final class PropertySuggester {
+        private PropertySuggester() {
+        }
+
+        static List<String> suggest(String unknownKey, Collection<String> candidates, int maxSuggestions, double minScore) {
+            if (unknownKey == null || unknownKey.isBlank() || candidates.isEmpty() || maxSuggestions <= 0) {
+                return List.of();
+            }
+
+            String unknown = normalize(unknownKey);
+            Map<String, Integer> unknownVec = trigramVector(unknown);
+            double unknownNorm = vectorNorm(unknownVec);
+            if (unknownNorm == 0.0d) {
+                return List.of();
+            }
+
+            List<ScoredCandidate> scored = new ArrayList<>(candidates.size());
+            for (String candidate : candidates) {
+                if (candidate == null || candidate.isBlank()) {
+                    continue;
+                }
+                String normalized = normalize(candidate);
+                Map<String, Integer> vec = trigramVector(normalized);
+                double norm = vectorNorm(vec);
+                if (norm == 0.0d) {
+                    continue;
+                }
+                double score = cosineSimilarity(unknownVec, unknownNorm, vec, norm);
+                if (score >= minScore) {
+                    scored.add(new ScoredCandidate(candidate, score));
+                }
+            }
+
+            if (scored.isEmpty()) {
+                return List.of();
+            }
+
+            scored.sort(Comparator
+                .comparingDouble(ScoredCandidate::score).reversed()
+                .thenComparing(ScoredCandidate::candidate));
+
+            List<String> result = new ArrayList<>(Math.min(maxSuggestions, scored.size()));
+            for (int i = 0; i < scored.size() && result.size() < maxSuggestions; i++) {
+                result.add(scored.get(i).candidate());
+            }
+            return result;
+        }
+
+        private static String normalize(String s) {
+            return s.toLowerCase(Locale.ENGLISH);
+        }
+
+        private static Map<String, Integer> trigramVector(String s) {
+            String padded = "  " + s + "  ";
+            Map<String, Integer> counts = new HashMap<>(padded.length());
+            for (int i = 0; i < padded.length() - 2; i++) {
+                String gram = padded.substring(i, i + 3);
+                counts.merge(gram, 1, Integer::sum);
+            }
+            return counts;
+        }
+
+        private static double vectorNorm(Map<String, Integer> vec) {
+            long sumSq = 0;
+            for (int v : vec.values()) {
+                sumSq += (long) v * (long) v;
+            }
+            return Math.sqrt(sumSq);
+        }
+
+        private static double cosineSimilarity(
+            Map<String, Integer> a,
+            double aNorm,
+            Map<String, Integer> b,
+            double bNorm
+        ) {
+            if (a.isEmpty() || b.isEmpty()) {
+                return 0.0d;
+            }
+            Map<String, Integer> smaller = a.size() <= b.size() ? a : b;
+            Map<String, Integer> larger = smaller == a ? b : a;
+
+            long dot = 0;
+            for (Map.Entry<String, Integer> e : smaller.entrySet()) {
+                Integer bv = larger.get(e.getKey());
+                if (bv != null) {
+                    dot += (long) e.getValue() * (long) bv;
+                }
+            }
+
+            return dot / (aNorm * bNorm);
+        }
+
+        private record ScoredCandidate(String candidate, double score) {
+        }
     }
 }
