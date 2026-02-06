@@ -129,13 +129,7 @@ final class ValueCoercer {
     private static boolean isBooleanLiteral(String value) {
         String normalized = value.trim().toLowerCase(Locale.ENGLISH);
         return "true".equals(normalized)
-            || "false".equals(normalized)
-            || "yes".equals(normalized)
-            || "no".equals(normalized)
-            || "on".equals(normalized)
-            || "off".equals(normalized)
-            || "1".equals(normalized)
-            || "0".equals(normalized);
+            || "false".equals(normalized);
     }
 
     private static boolean isNumericLiteral(String value) {
