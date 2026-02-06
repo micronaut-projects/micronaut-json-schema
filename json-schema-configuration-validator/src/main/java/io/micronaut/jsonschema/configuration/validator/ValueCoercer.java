@@ -53,7 +53,7 @@ final class ValueCoercer {
         }
 
         if (value instanceof String s) {
-            // Some conversion services may coerce arbitrary strings to boolean/number; keep validation strict.
+            // Some conversion services may coerce arbitrary strings to boolean/number; only attempt coercion for recognized literals.
             if (type == JsonSchemaType.BOOLEAN && !isBooleanLiteral(s)) {
                 return value;
             }
