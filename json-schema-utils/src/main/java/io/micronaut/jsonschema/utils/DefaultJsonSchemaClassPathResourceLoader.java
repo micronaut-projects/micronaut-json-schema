@@ -17,11 +17,14 @@ package io.micronaut.jsonschema.utils;
 
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.io.Readable;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.beans.BeanIntrospection;
 import io.micronaut.core.beans.exceptions.IntrospectionException;
 import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.core.io.scan.ClassPathResourceLoader;
+import io.micronaut.context.env.Environment;
 import io.micronaut.core.naming.NameUtils;
 import io.micronaut.jsonschema.JsonSchema;
 import jakarta.inject.Singleton;
@@ -31,7 +34,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
+
+import static io.micronaut.jsonschema.utils.JsonSchemaResourceUtils.CLASSPATH_PREFIX;
 
 /**
  * @since 1.7.0
@@ -42,7 +48,6 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
     private static final Logger LOG = LoggerFactory.getLogger(DefaultJsonSchemaClassPathResourceLoader.class);
     private static final String SUFFIX = ".schema.json";
     private static final String MEMBER_URI = "uri";
-    private static final String CLASSPATH_PREFIX = "classpath:";
     private static final String META_INF = "META-INF";
     private static final String SLASH = "/";
     private final ResourceLoader resourceLoader;
@@ -54,7 +59,6 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
         this.jsonSchemaConfiguration = jsonSchemaConfiguration;
     }
 
-    @Nullable
     public <T> Optional<String> jsonSchemaStringForClass(@NonNull Class<T> type) {
 
         Optional<String> pathOptional = jsonSchemaPath(type);
@@ -80,6 +84,29 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
             }
             return Optional.empty();
         }
+    }
+
+    @Override
+    @NonNull
+    public Map<String, Readable> jsonSchemas() {
+        ClassLoader classLoader = resolveClassLoader();
+        if (classLoader == null) {
+            return Map.of();
+        }
+
+        String schemaFolder = META_INF + SLASH + jsonSchemaConfiguration.getOutputLocation() + SLASH;
+        return JsonSchemaResourceUtils.resolveSchemas(resourceLoader , classLoader, schemaFolder);
+    }
+
+    @Nullable
+    private ClassLoader resolveClassLoader() {
+        if (resourceLoader instanceof ClassPathResourceLoader classPathResourceLoader) {
+            return classPathResourceLoader.getClassLoader();
+        }
+        if (resourceLoader instanceof Environment environment) {
+            return environment.getClassLoader();
+        }
+        return null;
     }
 
     private <T> Optional<String> jsonSchemaPath(@NonNull Class<T> type) {

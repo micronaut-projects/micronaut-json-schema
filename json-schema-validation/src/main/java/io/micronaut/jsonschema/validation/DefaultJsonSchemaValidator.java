@@ -30,10 +30,10 @@ import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import io.micronaut.jsonschema.utils.JsonSchemaConfiguration;
+import io.micronaut.jsonschema.utils.JsonSchemaResourceUtils;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,14 +42,10 @@ import java.util.stream.Collectors;
 @Singleton
 @Internal
 final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
-    private static final String CLASSPATH_PREFIX = "classpath:";
-
     private static final ExecutionContextCustomizer CONTEXT_CUSTOMIZER = (executionContext, validationContext) -> {
         // By default, since Draft 2019-09 the format keyword only generates annotations and not assertions
         validationContext.getConfig().setFormatAssertionsEnabled(true);
     };
-    private static final String SLASH = "/";
-    private static final String META_INF = "META-INF";
 
     private final Map<Class<?>, JsonSchema> jsonSchemaCache = new ConcurrentHashMap<>();
     private final JsonSchemaValidatorConfiguration config;
@@ -140,19 +136,16 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
             .collect(Collectors.toSet());
     }
 
-    private class ResourceSchemaLoader implements SchemaLoader {
+    private final class ResourceSchemaLoader implements SchemaLoader {
         @Override
         public InputStreamSource getSchema(AbsoluteIri absoluteIri) {
             String path = URI.create(absoluteIri.toString()).toString();
             if (path.startsWith(config.baseUri())) {
                 path = path.substring(config.baseUri().length());
             }
-            String classpathFolder = META_INF + SLASH + jsonSchemaConfiguration.getOutputLocation() + SLASH;
-            String filePath = Path.of(classpathFolder + path).normalize().toString();
-            if (!filePath.startsWith(classpathFolder)) {
-                throw new IllegalArgumentException("Schema for URI " + absoluteIri + " is not inside the required folder " + config.classpathFolder() + " at path: " + path);
-            }
-            return () -> resourceLoader.getResourceAsStream(CLASSPATH_PREFIX + filePath)
+            String classpathFolder = JsonSchemaResourceUtils.generatedSchemasFolder(jsonSchemaConfiguration);
+            String filePath = JsonSchemaResourceUtils.resolvePathWithinFolder(classpathFolder, path, absoluteIri.toString(), config.classpathFolder());
+            return () -> resourceLoader.getResourceAsStream(JsonSchemaResourceUtils.CLASSPATH_PREFIX + filePath)
                 .orElseThrow(() -> new IllegalArgumentException("No schema found for uri: " + absoluteIri + " at path: " + filePath));
         }
     }
