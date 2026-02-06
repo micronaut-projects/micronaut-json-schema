@@ -22,11 +22,15 @@ import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Internal
 final class SchemaValidator {
@@ -71,6 +75,15 @@ final class SchemaValidator {
             properties = Map.of();
         }
 
+        Integer minProperties = schema.minProperties();
+        if (minProperties != null && instance.size() < minProperties) {
+            errors.add(ctx.error(computedPropertyName, "Expected at least " + minProperties + " properties"));
+        }
+        Integer maxProperties = schema.maxProperties();
+        if (maxProperties != null && instance.size() > maxProperties) {
+            errors.add(ctx.error(computedPropertyName, "Expected at most " + maxProperties + " properties"));
+        }
+
         // required
         List<String> required = schema.required();
         if (required != null) {
@@ -99,7 +112,8 @@ final class SchemaValidator {
         }
 
         // unknown keys
-        if (ctx.failOnNotPresent()) {
+        boolean additionalPropertiesFalse = schema.additionalProperties() instanceof Boolean b && !b;
+        if (ctx.failOnNotPresent() || additionalPropertiesFalse) {
             for (Map.Entry<String, Object> entry : instance.entrySet()) {
                 String key = entry.getKey();
                 if (properties.containsKey(key)) {
@@ -165,6 +179,21 @@ final class SchemaValidator {
             }
             @SuppressWarnings("unchecked")
             List<Object> list = (List<Object>) value;
+
+            Integer minItems = resolved.minItems();
+            if (minItems != null && list.size() < minItems) {
+                errors.add(ctx.error(resolvedPropertyName, "Expected at least " + minItems + " items"));
+            }
+            Integer maxItems = resolved.maxItems();
+            if (maxItems != null && list.size() > maxItems) {
+                errors.add(ctx.error(resolvedPropertyName, "Expected at most " + maxItems + " items"));
+            }
+            if (Boolean.TRUE.equals(resolved.uniqueItems())) {
+                if (!isUnique(list)) {
+                    errors.add(ctx.error(resolvedPropertyName, "Expected unique items"));
+                }
+            }
+
             JsonSchemaProperty items = resolved.items();
             if (items != null) {
                 for (int i = 0; i < list.size(); i++) {
@@ -186,9 +215,57 @@ final class SchemaValidator {
             }
         }
 
+        Object constValue = resolved.constValue();
+        if (constValue != null) {
+            if (value == null || !(Objects.equals(constValue, value) || constValue.toString().equals(value.toString()))) {
+                errors.add(ctx.error(resolvedPropertyName, "Value must be equal to const"));
+                return;
+            }
+        }
+
         if (type == JsonSchemaType.STRING) {
             if (!(value instanceof String)) {
                 errors.add(ctx.error(resolvedPropertyName, "Expected string"));
+                return;
+            }
+            String s = (String) value;
+
+            Integer minLength = resolved.minLength();
+            if (minLength != null && s.length() < minLength) {
+                errors.add(ctx.error(resolvedPropertyName, "Length must be >= " + minLength));
+            }
+            Integer maxLength = resolved.maxLength();
+            if (maxLength != null && s.length() > maxLength) {
+                errors.add(ctx.error(resolvedPropertyName, "Length must be <= " + maxLength));
+            }
+            String pattern = resolved.pattern();
+            if (pattern != null) {
+                try {
+                    if (!Pattern.compile(pattern).matcher(s).matches()) {
+                        errors.add(ctx.error(resolvedPropertyName, "Value does not match pattern"));
+                    }
+                } catch (Exception e) {
+                    // Ignore invalid patterns
+                }
+            }
+
+            String format = resolved.format();
+            if (format != null) {
+                switch (format) {
+                    case "duration" -> {
+                        if (ctx.environment().getConversionService().convert(s, Duration.class).isEmpty()) {
+                            errors.add(ctx.error(resolvedPropertyName, "Invalid duration"));
+                        }
+                    }
+                    case "uri" -> {
+                        if (ctx.environment().getConversionService().convert(s, URI.class).isEmpty()) {
+                            errors.add(ctx.error(resolvedPropertyName, "Invalid URI"));
+                        }
+                    }
+                    default -> {
+                        // ignore unknown formats
+                    }
+                }
             }
             return;
         }
@@ -206,6 +283,10 @@ final class SchemaValidator {
                 errors.add(ctx.error(resolvedPropertyName, "Expected integer"));
                 return;
             }
+            BigDecimal multipleOf = resolved.multipleOf();
+            if (multipleOf != null && !isMultipleOf(number, multipleOf)) {
+                errors.add(ctx.error(resolvedPropertyName, "Value must be a multiple of " + multipleOf));
+            }
             validateNumericConstraints(ctx, resolved, number, resolvedPropertyName, errors);
             return;
         }
@@ -216,8 +297,33 @@ final class SchemaValidator {
                 errors.add(ctx.error(resolvedPropertyName, "Expected number"));
                 return;
             }
+            BigDecimal multipleOf = resolved.multipleOf();
+            if (multipleOf != null && !isMultipleOf(number, multipleOf)) {
+                errors.add(ctx.error(resolvedPropertyName, "Value must be a multiple of " + multipleOf));
+            }
             validateNumericConstraints(ctx, resolved, number, resolvedPropertyName, errors);
         }
+    }
+
+    private static boolean isMultipleOf(BigDecimal value, BigDecimal multipleOf) {
+        try {
+            return value.remainder(multipleOf).compareTo(BigDecimal.ZERO) == 0;
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+
+    private static boolean isUnique(List<Object> list) {
+        // Use string form to avoid deep-comparison for nested structures.
+        List<String> seen = new ArrayList<>(list.size());
+        for (Object o : list) {
+            String s = String.valueOf(o);
+            if (seen.contains(s)) {
+                return false;
+            }
+            seen.add(s);
+        }
+        return true;
     }
 
     private static void validateNumericConstraints(

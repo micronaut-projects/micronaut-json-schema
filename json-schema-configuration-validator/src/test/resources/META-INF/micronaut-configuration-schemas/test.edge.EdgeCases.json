@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.edge.EdgeCases",
+  "title": "test.edge.EdgeCases",
+  "x-micronaut": {
+    "prefix": "test.edge",
+    "type": "test.edge.EdgeCases",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "servers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "port": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["port"],
+        "additionalProperties": false
+      }
+    }
+  }
+}

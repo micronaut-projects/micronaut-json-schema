@@ -39,6 +39,36 @@
       },
       "x-micronaut-javaType": "java.util.List",
       "x-micronaut-path": "test.config.names"
+    },
+    "min-required": {
+      "type": "object",
+      "minProperties": 2,
+      "properties": {
+        "foo": {
+          "type": "string",
+          "x-micronaut-path": "test.config.min-required.foo"
+        },
+        "bar": {
+          "type": "string",
+          "x-micronaut-path": "test.config.min-required.bar"
+        }
+      },
+      "additionalProperties": false
+    },
+    "max-allowed": {
+      "type": "object",
+      "maxProperties": 1,
+      "properties": {
+        "foo": {
+          "type": "string",
+          "x-micronaut-path": "test.config.max-allowed.foo"
+        },
+        "bar": {
+          "type": "string",
+          "x-micronaut-path": "test.config.max-allowed.bar"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": ["enabled", "count"]

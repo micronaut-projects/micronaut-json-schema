@@ -64,23 +64,26 @@ final class ValueCoercer {
 
         ConversionService conversionService = ctx.environment().getConversionService();
 
-        // 1) Try x-micronaut-javaType conversion.
+        // 1) Try conversion based on schema type.
+        if (type != null) {
+            Optional<?> converted = convertBySchemaType(conversionService, type, value);
+            if (converted.isPresent()) {
+                return converted.get();
+            }
+        }
+
+        // 2) Try x-micronaut-javaType conversion if it's compatible with schema type.
         String javaType = schema.javaType();
         if (javaType != null && type != JsonSchemaType.OBJECT) {
             Class<?> target = loadJavaType(ctx, javaType);
             if (target != null) {
                 Optional<?> converted = conversionService.convert(value, Argument.of(target));
                 if (converted.isPresent()) {
-                    return converted.get();
+                    Object convertedValue = converted.get();
+                    if (type == null || isCompatibleWithSchemaType(type, convertedValue)) {
+                        return convertedValue;
+                    }
                 }
-            }
-        }
-
-        // 2) Try conversion based on schema type.
-        if (type != null) {
-            Optional<?> converted = convertBySchemaType(conversionService, type, value);
-            if (converted.isPresent()) {
-                return converted.get();
             }
         }
 
@@ -111,6 +114,16 @@ final class ValueCoercer {
         }
 
         return value;
+    }
+
+    private static boolean isCompatibleWithSchemaType(JsonSchemaType type, Object value) {
+        return switch (type) {
+            case STRING -> value instanceof String;
+            case BOOLEAN -> value instanceof Boolean;
+            case INTEGER, NUMBER -> value instanceof Number;
+            case ARRAY -> value instanceof List<?> || value instanceof Object[] || value instanceof Iterable<?>;
+            case OBJECT -> value instanceof java.util.Map<?, ?>;
+        };
     }
 
     private static boolean isBooleanLiteral(String value) {

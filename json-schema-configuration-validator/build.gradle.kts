@@ -15,6 +15,18 @@ dependencies {
     testAnnotationProcessor(mnSerde.micronaut.serde.processor)
     testAnnotationProcessor(mn.micronaut.inject.java)
 
+    // Needed to load Micronaut's shipped configuration schemas in tests
+    testImplementation(mn.micronaut.http)
+    testImplementation(mn.micronaut.context)
+    testImplementation(mn.micronaut.http.server.netty)
+    testImplementation("io.micronaut:micronaut-http-client-core")
+    testImplementation("io.micronaut:micronaut-jackson-databind")
+
+    // Needed for @ConfigurationProperties schema generation in tests
+    testAnnotationProcessor(mn.micronaut.core.processor)
+    testAnnotationProcessor(mnValidation.micronaut.validation.processor)
+    testImplementation(mnValidation.micronaut.validation)
+
     testImplementation(mnTest.junit.jupiter.params)
 }
 

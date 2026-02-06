@@ -35,6 +35,7 @@ class ConfigurationJsonSchemaValidatorTest {
         var schemas = JsonSchemaClassPathResourceLoader.createDefault(getClass().getClassLoader()).jsonSchemas();
         assertTrue(schemas.containsKey("test.config.TestConfig.json"));
         assertTrue(schemas.containsKey("test.executors.UserExecutorConfiguration.json"));
+        assertTrue(schemas.containsKey("test.edge.EdgeCases.json"));
     }
 
     @Test
@@ -96,6 +97,55 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.executors.alpha.n-threads") && e.message().contains(">=")));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.executors.beta.n-threads") && e.message().contains("Missing required")));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.executors.beta.unknown") && e.message().contains("not present")));
+    }
+
+    @Test
+    void validatesArrayOfObjectsAndNestedConstraints() {
+        Environment environment = createEnvironment(Map.of(
+            "test.edge.servers[0].port", "0",
+            "test.edge.servers[0].name", "",
+            "test.edge.servers[0].extra", "x",
+            "test.edge.servers[1].name", "b"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.edge.servers[0].port") && e.message().contains(">=")));
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.edge.servers[0].name") && e.message().toLowerCase().contains("length")));
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.edge.servers[0].extra") && e.message().contains("not present")));
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.edge.servers[1].port") && e.message().contains("Missing required")));
+    }
+
+    @Test
+    void validatesMinPropertiesForObjects() {
+        Environment environment = createEnvironment(Map.of(
+            "test.config.enabled", "true",
+            "test.config.count", "1",
+            "test.config.min-required.foo", "x"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.config.min-required") && e.message().contains("at least")));
+    }
+
+    @Test
+    void validatesMaxPropertiesForObjects() {
+        Environment environment = createEnvironment(Map.of(
+            "test.config.enabled", "true",
+            "test.config.count", "1",
+            "test.config.max-allowed.foo", "x",
+            "test.config.max-allowed.bar", "y"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.config.max-allowed") && e.message().contains("at most")));
     }
 
     private static Environment createEnvironment(Map<String, Object> properties) {

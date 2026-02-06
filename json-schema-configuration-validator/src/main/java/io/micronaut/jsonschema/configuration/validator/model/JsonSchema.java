@@ -35,10 +35,21 @@ public record JsonSchema(
     @Nullable String description,
     @Nullable @JsonProperty("x-micronaut") MicronautMetadata micronaut,
 
+    @Nullable String format,
+    @Nullable String pattern,
+    @Nullable @JsonProperty("minLength") Integer minLength,
+    @Nullable @JsonProperty("maxLength") Integer maxLength,
+    @Nullable @JsonProperty("minItems") Integer minItems,
+    @Nullable @JsonProperty("maxItems") Integer maxItems,
+    @Nullable @JsonProperty("uniqueItems") Boolean uniqueItems,
+    @Nullable @JsonProperty("multipleOf") BigDecimal multipleOf,
+    @Nullable @JsonProperty("const") Object constValue,
+
     @Nullable Map<String, JsonSchemaProperty> properties,
     @Nullable List<String> required,
 
     @Nullable @JsonProperty("minProperties") Integer minProperties,
+    @Nullable @JsonProperty("maxProperties") Integer maxProperties,
 
     @Nullable @JsonProperty("enum") List<Object> enumValues,
     @Nullable BigDecimal minimum,
