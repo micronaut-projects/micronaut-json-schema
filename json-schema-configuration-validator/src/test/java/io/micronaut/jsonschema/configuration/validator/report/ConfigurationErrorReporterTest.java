@@ -46,10 +46,15 @@ class ConfigurationErrorReporterTest {
         }
 
         assertTrue(out.contains("a.b"));
+        assertTrue(out.contains("Configuration Validation Errors Present"));
+        assertTrue(out.contains("Property"));
+        assertTrue(out.contains("Type"));
+        assertTrue(out.contains("Message"));
+        assertTrue(out.contains("Origin"));
         assertTrue(out.contains("msg"));
         assertTrue(out.contains("origin"));
-        assertTrue(out.contains(":-1"));
-        assertTrue(out.contains("raw"));
+        assertTrue(out.contains("origin:-1"));
+        assertTrue(out.contains("<bad>"));
     }
 
     @Test

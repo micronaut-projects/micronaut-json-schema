@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.configuration.validator.report.HtmlConfigurationErrorReporter;
 import io.micronaut.jsonschema.configuration.validator.report.JsonConfigurationErrorReporter;
+import io.micronaut.jsonschema.configuration.validator.report.SystemErrConfigurationErrorReporter;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -104,7 +105,8 @@ public final class ConfigurationJsonSchemaValidatorCli {
         }
 
         try {
-            writeReports(errors, options);
+            ReportFiles reportFiles = writeReports(errors, options);
+            new SystemErrConfigurationErrorReporter(err, reportFiles.htmlReport(), reportFiles.jsonReport()).report(errors);
         } catch (IOException e) {
             err.println("Failed to write report: " + e.getMessage());
             return 2;
@@ -114,19 +116,26 @@ public final class ConfigurationJsonSchemaValidatorCli {
         return errors.stream().anyMatch(e -> e.type() == ConfigurationError.Type.ERROR) ? 1 : 0;
     }
 
-    private static void writeReports(Set<ConfigurationError> errors, Options options) throws IOException {
+    private static ReportFiles writeReports(Set<ConfigurationError> errors, Options options) throws IOException {
+        Path jsonFile = null;
+        Path htmlFile = null;
+
         if (options.format() == Format.JSON || options.format() == Format.BOTH) {
-            Path jsonFile = options.outDir().resolve("configuration-errors.json");
+            jsonFile = options.outDir().resolve("configuration-errors.json");
             try (OutputStream os = Files.newOutputStream(jsonFile)) {
                 new JsonConfigurationErrorReporter(JsonMapper.createDefault(), os).report(errors);
             }
         }
         if (options.format() == Format.HTML || options.format() == Format.BOTH) {
-            Path htmlFile = options.outDir().resolve("configuration-errors.html");
+            htmlFile = options.outDir().resolve("configuration-errors.html");
             try (OutputStream os = Files.newOutputStream(htmlFile)) {
                 new HtmlConfigurationErrorReporter(os).report(errors);
             }
         }
+        return new ReportFiles(htmlFile, jsonFile);
+    }
+
+    private record ReportFiles(Path htmlReport, Path jsonReport) {
     }
 
     enum Format {

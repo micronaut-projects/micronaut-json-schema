@@ -56,15 +56,21 @@ class ConfigurationJsonSchemaValidatorCliTest {
 
         Path out = tempDir.resolve("out-default");
 
+        ByteArrayOutputStream errCapture = new ByteArrayOutputStream();
+
         int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
             "--classpath", System.getProperty("java.class.path"),
             "--environments", "test",
             "--out", out.toString()
-        }, System.out, System.err);
+        }, System.out, new PrintStream(errCapture, true, StandardCharsets.UTF_8));
 
         assertEquals(1, exit);
         assertTrue(Files.exists(out.resolve("configuration-errors.json")));
         assertTrue(Files.exists(out.resolve("configuration-errors.html")));
+
+        String stderr = errCapture.toString(StandardCharsets.UTF_8);
+        assertTrue(stderr.contains("report: file:"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.contains("configuration-errors.html"), () -> "Unexpected stderr:\n" + stderr);
     }
 
     @Test
@@ -74,16 +80,22 @@ class ConfigurationJsonSchemaValidatorCliTest {
 
         Path out = tempDir.resolve("out-json");
 
+        ByteArrayOutputStream errCapture = new ByteArrayOutputStream();
+
         int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
             "--classpath", System.getProperty("java.class.path"),
             "--environments", "test",
             "--out", out.toString(),
             "--format", "json"
-        }, System.out, System.err);
+        }, System.out, new PrintStream(errCapture, true, StandardCharsets.UTF_8));
 
         assertEquals(1, exit);
         assertTrue(Files.exists(out.resolve("configuration-errors.json")));
         assertFalse(Files.exists(out.resolve("configuration-errors.html")));
+
+        String stderr = errCapture.toString(StandardCharsets.UTF_8);
+        assertTrue(stderr.contains("report: file:"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.contains("configuration-errors.json"), () -> "Unexpected stderr:\n" + stderr);
     }
 
     @Test
