@@ -110,28 +110,42 @@ public final class ConfigurationJsonSchemaValidatorCliBootstrap {
             if (arg == null) {
                 continue;
             }
-            int eq = arg.indexOf('=');
-            if (eq > -1) {
-                String key = arg.substring(0, eq);
-                if ("--classpath".equals(key)) {
-                    return arg.substring(eq + 1);
-                }
-                continue;
+
+            String equalsValue = parseEqualsSyntax(arg);
+            if (equalsValue != null) {
+                return equalsValue;
             }
+
             if ("--classpath".equals(arg)) {
-                if (i + 1 >= args.length) {
-                    return null;
-                }
-                String next = args[i + 1];
-                if (next == null) {
-                    return "";
-                }
-                if (next.startsWith("-")) {
-                    return null;
-                }
-                return next;
+                return parseNextValue(args, i);
             }
         }
         return null;
+    }
+
+    private static String parseEqualsSyntax(String arg) {
+        int eq = arg.indexOf('=');
+        if (eq < 0) {
+            return null;
+        }
+        String key = arg.substring(0, eq);
+        if (!"--classpath".equals(key)) {
+            return null;
+        }
+        return arg.substring(eq + 1);
+    }
+
+    private static String parseNextValue(String[] args, int index) {
+        if (index + 1 >= args.length) {
+            return null;
+        }
+        String next = args[index + 1];
+        if (next == null) {
+            return "";
+        }
+        if (next.startsWith("-")) {
+            return null;
+        }
+        return next;
     }
 }
