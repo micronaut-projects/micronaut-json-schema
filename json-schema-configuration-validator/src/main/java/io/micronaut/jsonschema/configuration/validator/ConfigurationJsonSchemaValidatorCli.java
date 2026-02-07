@@ -40,6 +40,7 @@ import java.util.Set;
  *     <li>{@code --env <name>} (repeatable) or {@code --environments <csv>}</li>
  *     <li>{@code --suppress <pattern>} (repeatable) or {@code --suppressions <csv>}</li>
  *     <li>{@code --fail-on-not-present <true|false>} (defaults to {@code true})</li>
+ *     <li>{@code --deduce-environments <true|false>} (defaults to {@code false})</li>
  *     <li>{@code --out <directory>} (required)</li>
  *     <li>{@code --format <json|html|both>} (defaults to {@code both})</li>
  * </ul>
@@ -93,6 +94,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
         JsonSchemaConfigurationValidator facade = JsonSchemaConfigurationValidator.forClasspath(
             options.classpath(),
             options.environments(),
+            options.deduceEnvironments(),
             validator
         );
 
@@ -150,6 +152,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
         List<String> environments,
         List<String> suppressions,
         boolean failOnNotPresent,
+        boolean deduceEnvironments,
         Path outDir,
         Format format
     ) {
@@ -160,6 +163,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
             List<String> environments = new ArrayList<>(1);
             List<String> suppressions = new ArrayList<>(0);
             boolean failOnNotPresent = true;
+            boolean deduceEnvironments = false;
             Path outDir = null;
             Format format = Format.BOTH;
 
@@ -212,6 +216,11 @@ public final class ConfigurationJsonSchemaValidatorCli {
                         failOnNotPresent = Boolean.parseBoolean(value);
                     }
                     case "--no-fail-on-not-present" -> failOnNotPresent = false;
+                    case "--deduce-environments" -> {
+                        value = value != null ? value : nextValue(list, ++i, key);
+                        deduceEnvironments = Boolean.parseBoolean(value);
+                    }
+                    case "--no-deduce-environments" -> deduceEnvironments = false;
                     case "--out" -> {
                         value = value != null ? value : nextValue(list, ++i, key);
                         outDir = Path.of(value);
@@ -225,7 +234,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
             }
 
             if (help) {
-                return new Options(true, "", List.of(), List.of(), true, Path.of("."), Format.BOTH);
+                return new Options(true, "", List.of(), List.of(), true, false, Path.of("."), Format.BOTH);
             }
             if (classpath == null || classpath.isBlank()) {
                 throw new IllegalArgumentException("Missing required argument: --classpath");
@@ -240,6 +249,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 List.copyOf(environments),
                 List.copyOf(suppressions),
                 failOnNotPresent,
+                deduceEnvironments,
                 outDir,
                 format
             );
@@ -256,6 +266,8 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 "  --suppressions <csv>             Comma-separated suppression patterns\n" +
                 "  --fail-on-not-present <bool>     Whether unknown properties are errors (default: true)\n" +
                 "  --no-fail-on-not-present         Convenience flag to disable unknown property errors\n" +
+                "  --deduce-environments <bool>     Whether to deduce environments (default: false)\n" +
+                "  --no-deduce-environments         Convenience flag to disable environment deduction\n" +
                 "  --out <dir>                      Output directory to write reports\n" +
                 "  --format <json|html|both>        Report format(s) (default: both)\n" +
                 "  --help                           Print this help\n";

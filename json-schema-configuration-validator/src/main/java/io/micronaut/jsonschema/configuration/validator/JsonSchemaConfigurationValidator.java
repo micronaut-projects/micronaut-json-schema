@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.configuration.validator;
 
+import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.ApplicationContextConfiguration;
 import io.micronaut.context.env.Environment;
 import io.micronaut.jsonschema.configuration.validator.report.ConfigurationErrorReporter;
@@ -28,7 +29,6 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -40,21 +40,34 @@ public final class JsonSchemaConfigurationValidator {
 
     private final List<URL> classpath;
     private final List<String> environments;
+    private final boolean deduceEnvironment;
     private final ConfigurationJsonSchemaValidator validator;
 
     /**
      * @param classpath The classpath to use to discover configuration schemas
      * @param environments The environments to enable
+     * @param deduceEnvironment Whether to deduce environments
      * @param validator The validator
      */
     public JsonSchemaConfigurationValidator(
         @NonNull List<URL> classpath,
         @NonNull List<String> environments,
+        boolean deduceEnvironment,
         @NonNull ConfigurationJsonSchemaValidator validator
     ) {
         this.classpath = List.copyOf(classpath);
         this.environments = List.copyOf(environments);
+        this.deduceEnvironment = deduceEnvironment;
         this.validator = validator;
+    }
+
+    public static JsonSchemaConfigurationValidator forClasspath(
+        @NonNull String classpath,
+        @NonNull List<String> environments,
+        boolean deduceEnvironment,
+        @NonNull ConfigurationJsonSchemaValidator validator
+    ) {
+        return new JsonSchemaConfigurationValidator(parseClasspath(classpath), environments, deduceEnvironment, validator);
     }
 
     public static JsonSchemaConfigurationValidator forClasspath(
@@ -62,7 +75,7 @@ public final class JsonSchemaConfigurationValidator {
         @NonNull List<String> environments,
         @NonNull ConfigurationJsonSchemaValidator validator
     ) {
-        return new JsonSchemaConfigurationValidator(parseClasspath(classpath), environments, validator);
+        return forClasspath(classpath, environments, false, validator);
     }
 
     /**
@@ -74,7 +87,7 @@ public final class JsonSchemaConfigurationValidator {
     @NonNull
     public Set<ConfigurationError> validate() throws IOException {
         try (URLClassLoader classLoader = new URLClassLoader(classpath.toArray(URL[]::new), JsonSchemaConfigurationValidator.class.getClassLoader());
-             Environment environment = Environment.create(createEnvironmentConfiguration(classLoader, environments)).start()) {
+             Environment environment = Environment.create(createEnvironmentConfiguration(classLoader, environments, deduceEnvironment)).start()) {
             try {
                 return validator.validate(classLoader, environment);
             } finally {
@@ -96,23 +109,12 @@ public final class JsonSchemaConfigurationValidator {
         return errors;
     }
 
-    private static ApplicationContextConfiguration createEnvironmentConfiguration(ClassLoader classLoader, List<String> environments) {
-        return new ApplicationContextConfiguration() {
-            @Override
-            public List<String> getEnvironments() {
-                return environments;
-            }
-
-            @Override
-            public ClassLoader getClassLoader() {
-                return classLoader;
-            }
-
-            @Override
-            public Optional<Boolean> getDeduceEnvironments() {
-                return Optional.of(false);
-            }
-        };
+    private static ApplicationContextConfiguration createEnvironmentConfiguration(ClassLoader classLoader, List<String> environments, boolean deduceEnvironment) {
+        // Use ApplicationContext.builder(...) so ApplicationContextConfigurer instances are applied.
+        // The builder implementation also implements ApplicationContextConfiguration.
+        return (ApplicationContextConfiguration) ApplicationContext.builder(environments.toArray(String[]::new))
+            .classLoader(classLoader)
+            .deduceEnvironment(deduceEnvironment);
     }
 
     private static List<URL> parseClasspath(String classpath) {

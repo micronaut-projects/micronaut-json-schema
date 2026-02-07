@@ -47,6 +47,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
         System.clearProperty("test.config.count");
         System.clearProperty("test.config.extra");
         System.clearProperty("micronaut.http.client.unknown");
+        System.clearProperty("micronaut.environments");
     }
 
     @Test
@@ -96,6 +97,27 @@ class ConfigurationJsonSchemaValidatorCliTest {
         String stderr = errCapture.toString(StandardCharsets.UTF_8);
         assertTrue(stderr.contains("report: file:"), () -> "Unexpected stderr:\n" + stderr);
         assertTrue(stderr.contains("configuration-errors.json"), () -> "Unexpected stderr:\n" + stderr);
+    }
+
+    @Test
+    void optionsDefaultDoesNotDeduceEnvironments() {
+        ConfigurationJsonSchemaValidatorCli.Options options = ConfigurationJsonSchemaValidatorCli.Options.parse(new String[] {
+            "--classpath", "cp",
+            "--out", tempDir.resolve("out").toString()
+        });
+
+        assertFalse(options.deduceEnvironments());
+    }
+
+    @Test
+    void optionsCanEnableDeduceEnvironments() {
+        ConfigurationJsonSchemaValidatorCli.Options options = ConfigurationJsonSchemaValidatorCli.Options.parse(new String[] {
+            "--classpath", "cp",
+            "--out", tempDir.resolve("out").toString(),
+            "--deduce-environments", "true"
+        });
+
+        assertTrue(options.deduceEnvironments());
     }
 
     @Test
