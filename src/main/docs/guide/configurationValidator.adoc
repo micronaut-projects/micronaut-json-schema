@@ -51,6 +51,72 @@ If an error originates from a resolvable file (for example `application.properti
 
 The HTML report includes an expandable snippet preview with syntax highlighting. The JSON report includes only the line number.
 
+=== Runtime integration (optional)
+
+In addition to the CLI, the configuration validator module also provides optional runtime integrations:
+
+* a runtime API to access current configuration validation errors
+* a health indicator (reports DOWN when configuration has errors)
+* a management endpoint that exposes the validation errors
+
+These runtime integrations are enabled by default, but the health indicator and endpoint are only loaded when the application includes the optional `micronaut-management` dependency.
+
+NOTE: Invalid configuration often causes application startup failures (for example if required configuration is missing, or if a component fails during initialization due to invalid values). In those cases, the application may not start and the runtime beans (including the management endpoint and health indicator) will not be available.
+
+==== Dependencies
+
+To use the management endpoint and health indicator, add:
+
+dependency:micronaut-management[groupId="io.micronaut"]
+
+==== Runtime API
+
+The module exposes a bean of type api:jsonschema.configuration.validator.ConfigurationErrors[] that returns a snapshot of the current validation errors:
+
+snippet::io.micronaut.jsonschema.test.ConfigurationErrorsExample[tags=runtime-api]
+
+By default the first computed validation result is cached for the lifetime of the application context.
+
+==== Configuration
+
+All runtime configuration is under the `micronaut.jsonschema.configuration.validator` prefix:
+
+[configuration]
+----
+micronaut:
+  jsonschema:
+    configuration:
+      validator:
+        cache: true
+        fail-on-not-present: true
+        suppressions:
+          - micronaut.http.*
+        health:
+          enabled: true
+        endpoint:
+          enabled: true
+----
+
+==== Health indicator
+
+When enabled, the health indicator reports `DOWN` if any configuration validation errors are present.
+It also includes a bounded sample of the failing properties and messages in the response details.
+
+==== Management endpoint
+
+When enabled, the management endpoint is available under id `configurationerrors` and returns a JSON response containing an `errors` namespace.
+
+NOTE: Management endpoints are sensitive by default. For tests and local development you may want to disable sensitivity:
+
+[configuration]
+----
+endpoints:
+  all:
+    sensitive: false
+  configurationerrors:
+    sensitive: false
+----
+
 === CLI
 
 ==== Full classpath entry point

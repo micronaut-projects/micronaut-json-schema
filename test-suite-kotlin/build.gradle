@@ -8,6 +8,8 @@ dependencies {
     implementation(projects.micronautJsonSchemaAnnotations)
     implementation(mnSerde.micronaut.serde.jackson)
 
+    testImplementation(projects.micronautJsonSchemaConfigurationValidator)
+
     kspTest(projects.micronautJsonSchemaProcessor)
     kspTest(mnSerde.micronaut.serde.processor)
     kspTest(mn.micronaut.inject.kotlin)

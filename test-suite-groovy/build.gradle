@@ -8,6 +8,8 @@ dependencies {
     implementation(projects.micronautJsonSchemaAnnotations)
     implementation(mnSerde.micronaut.serde.jackson)
 
+    testImplementation(projects.micronautJsonSchemaConfigurationValidator)
+
     implementation(projects.micronautJsonSchemaProcessor)
 
     testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
