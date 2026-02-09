@@ -21,20 +21,27 @@ import io.micronaut.serde.annotation.Serdeable;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
 /**
- * JSON Schema property model used by the configuration validator.
+ * Root configuration schema model used by the configuration validator.
  * <p>
- * This represents schema nodes under {@code properties}, {@code additionalProperties}, {@code items},
- * and {@code $defs}. It also contains Micronaut-specific extensions used to bind a schema node to a
- * configuration property.
+ * This record is intentionally permissive and maps only the subset of JSON Schema keywords
+ * that are needed by the validator and commonly present in Micronaut configuration schemas.
+ * <p>
+ * Note: Some JSON Schema keywords (for example {@code type} and {@code additionalProperties})
+ * may appear in multiple shapes (string vs array, boolean vs object). Those fields are modeled
+ * as {@link Object} and normalized by validator helpers.
  *
+ * @param schema The schema dialect URI, mapped from {@code $schema}
+ * @param id The schema identifier, mapped from {@code $id}
+ * @param title Optional human-readable title
  * @param type The JSON Schema type (string or array)
- * @param description Optional description
+ * @param description Optional schema description
+ * @param micronaut Micronaut-specific metadata, mapped from {@code x-micronaut}
  * @param format Optional string format
- * @param deprecated Whether this property is deprecated
  * @param pattern Optional regex pattern for strings
  * @param minLength Minimum length for string values
  * @param maxLength Maximum length for string values
@@ -43,9 +50,6 @@ import java.util.Map;
  * @param uniqueItems Whether array items must be unique
  * @param multipleOf Numeric multiple-of constraint
  * @param constValue Constant value constraint
- * @param javaType Micronaut extension for the Java type ({@code x-micronaut-javaType})
- * @param sourceType Micronaut extension for the source type ({@code x-micronaut-sourceType})
- * @param micronautPath Micronaut extension for the resolved config path ({@code x-micronaut-path})
  * @param properties Object properties mapped from {@code properties}
  * @param required Required property names mapped from {@code required}
  * @param minProperties Minimum number of properties for object values
@@ -62,28 +66,46 @@ import java.util.Map;
  */
 @Serdeable
 @Internal
-public record JsonSchemaProperty(
+public record ConfigurationSchema(
     /**
-     * The JSON Schema type for this node.
+     * The schema dialect URI (e.g. draft 2020-12), mapped from {@code $schema}.
+     */
+    @Nullable @JsonProperty("$schema") URI schema,
+
+    /**
+     * The schema identifier mapped from {@code $id}.
+     */
+    @Nullable @JsonProperty("$id") String id,
+
+    /**
+     * Optional human-readable title.
+     */
+    @Nullable String title,
+
+    /**
+     * The JSON Schema type for the root.
      * <p>
      * Modeled as {@link Object} because schemas may use a single string or an array.
      */
     @Nullable Object type,
 
     /**
-     * Optional description for this property.
+     * Optional schema description.
      */
     @Nullable String description,
+
+    /**
+     * Micronaut-specific metadata mapped from {@code x-micronaut}.
+     * <p>
+     * In particular, {@code x-micronaut.prefix} determines which configuration prefix the schema
+     * validates.
+     */
+    @Nullable @JsonProperty("x-micronaut") MicronautMetadata micronaut,
 
     /**
      * Optional string format.
      */
     @Nullable String format,
-
-    /**
-     * Whether this property is deprecated.
-     */
-    @Nullable Boolean deprecated,
 
     /**
      * Optional regular expression pattern for string validation.
@@ -126,24 +148,9 @@ public record JsonSchemaProperty(
     @Nullable @JsonProperty("const") Object constValue,
 
     /**
-     * Micronaut extension that indicates the Java type for conversion/validation.
-     */
-    @Nullable @JsonProperty("x-micronaut-javaType") String javaType,
-
-    /**
-     * Micronaut extension indicating the source type.
-     */
-    @Nullable @JsonProperty("x-micronaut-sourceType") String sourceType,
-
-    /**
-     * Micronaut extension that stores the resolved configuration path for this schema node.
-     */
-    @Nullable @JsonProperty("x-micronaut-path") String micronautPath,
-
-    /**
      * Object properties mapped from {@code properties}.
      */
-    @Nullable Map<String, JsonSchemaProperty> properties,
+    @Nullable Map<String, ConfigurationSchemaProperty> properties,
 
     /**
      * Required property names mapped from {@code required}.
@@ -188,7 +195,7 @@ public record JsonSchemaProperty(
     /**
      * Schema for array items.
      */
-    @Nullable JsonSchemaProperty items,
+    @Nullable ConfigurationSchemaProperty items,
 
     /**
      * Schema for additional properties.
@@ -201,7 +208,7 @@ public record JsonSchemaProperty(
     /**
      * Local schema definitions mapped from {@code $defs}.
      */
-    @Nullable @JsonProperty("$defs") Map<String, JsonSchemaProperty> defs,
+    @Nullable @JsonProperty("$defs") Map<String, ConfigurationSchemaProperty> defs,
 
     /**
      * Reference to another schema mapped from {@code $ref}.

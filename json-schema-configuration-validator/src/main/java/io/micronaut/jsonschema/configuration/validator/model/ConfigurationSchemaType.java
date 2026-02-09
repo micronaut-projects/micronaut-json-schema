@@ -25,7 +25,7 @@ import java.util.Locale;
  * A subset of JSON schema types used by Micronaut configuration schemas.
  */
 @Internal
-public enum JsonSchemaType {
+public enum ConfigurationSchemaType {
     OBJECT("object"),
     ARRAY("array"),
     STRING("string"),
@@ -35,7 +35,7 @@ public enum JsonSchemaType {
 
     private final String value;
 
-    JsonSchemaType(String value) {
+    ConfigurationSchemaType(String value) {
         this.value = value;
     }
 
@@ -45,12 +45,12 @@ public enum JsonSchemaType {
     }
 
     @JsonCreator
-    public static JsonSchemaType of(String value) {
+    public static ConfigurationSchemaType of(String value) {
         if (value == null) {
             return null;
         }
         String normalized = value.trim().toLowerCase(Locale.ENGLISH);
-        for (JsonSchemaType t : values()) {
+        for (ConfigurationSchemaType t : values()) {
             if (t.value.equals(normalized)) {
                 return t;
             }

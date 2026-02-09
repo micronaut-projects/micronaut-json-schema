@@ -19,9 +19,9 @@ import io.micronaut.context.ApplicationContextConfiguration;
 import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.json.JsonMapper;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchema;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaProperty;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaType;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchema;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaType;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;
@@ -37,8 +37,8 @@ class ValueCoercerTest {
     @Test
     void schemaTypesToTypeHandlesNullAndStringsAndLists() {
         assertNull(SchemaTypes.toType(null));
-        assertEquals(JsonSchemaType.STRING, SchemaTypes.toType("string"));
-        assertEquals(JsonSchemaType.BOOLEAN, SchemaTypes.toType(List.of("boolean")));
+        assertEquals(ConfigurationSchemaType.STRING, SchemaTypes.toType("string"));
+        assertEquals(ConfigurationSchemaType.BOOLEAN, SchemaTypes.toType(List.of("boolean")));
         assertNull(SchemaTypes.toType(List.of()));
         assertNull(SchemaTypes.toType(List.of(1)));
     }
@@ -156,8 +156,8 @@ class ValueCoercerTest {
         return new SchemaContext(emptyRootSchema(), ValueCoercerTest.class.getClassLoader(), environment, JsonMapper.createDefault(), true);
     }
 
-    private static JsonSchemaProperty schemaProperty(Object type, String javaType) {
-        return new JsonSchemaProperty(
+    private static ConfigurationSchemaProperty schemaProperty(Object type, String javaType) {
+        return new ConfigurationSchemaProperty(
             type,
             null,
             null,
@@ -189,8 +189,8 @@ class ValueCoercerTest {
         );
     }
 
-    private static JsonSchema emptyRootSchema() {
-        return new JsonSchema(
+    private static ConfigurationSchema emptyRootSchema() {
+        return new ConfigurationSchema(
             null,
             null,
             null,

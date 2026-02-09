@@ -16,16 +16,16 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchema;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaProperty;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchema;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
 
 @Internal
-final class JsonSchemaPropertyAdapter {
-    private JsonSchemaPropertyAdapter() {
+final class ConfigurationSchemaPropertyAdapter {
+    private ConfigurationSchemaPropertyAdapter() {
     }
 
-    static JsonSchemaProperty fromRoot(JsonSchema schema) {
-        return new JsonSchemaProperty(
+    static ConfigurationSchemaProperty fromRoot(ConfigurationSchema schema) {
+        return new ConfigurationSchemaProperty(
             schema.type(),
             schema.description(),
             schema.format(),

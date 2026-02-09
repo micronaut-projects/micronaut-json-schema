@@ -16,7 +16,7 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaType;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaType;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -27,16 +27,16 @@ final class SchemaTypes {
     }
 
     @Nullable
-    static JsonSchemaType toType(@Nullable Object typeValue) {
+    static ConfigurationSchemaType toType(@Nullable Object typeValue) {
         if (typeValue == null) {
             return null;
         }
         if (typeValue instanceof String s) {
-            return JsonSchemaType.of(s);
+            return ConfigurationSchemaType.of(s);
         }
         if (typeValue instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof String s) {
             // Micronaut schema model commonly uses a single type.
-            return JsonSchemaType.of(s);
+            return ConfigurationSchemaType.of(s);
         }
         return null;
     }

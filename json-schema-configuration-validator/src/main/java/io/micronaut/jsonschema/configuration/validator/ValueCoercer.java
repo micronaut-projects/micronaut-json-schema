@@ -18,8 +18,8 @@ package io.micronaut.jsonschema.configuration.validator;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.type.Argument;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaProperty;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaType;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaType;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -37,7 +37,7 @@ final class ValueCoercer {
     @SuppressWarnings("java:S3776")
     static Object coerce(
         SchemaContext ctx,
-        JsonSchemaProperty schema,
+        ConfigurationSchemaProperty schema,
         String resolvedPropertyName,
         @Nullable String wildcardReplacement,
         @Nullable Object value,
@@ -47,18 +47,18 @@ final class ValueCoercer {
             return null;
         }
 
-        JsonSchemaType type = SchemaTypes.toType(schema.type());
-        if (type == JsonSchemaType.OBJECT) {
+        ConfigurationSchemaType type = SchemaTypes.toType(schema.type());
+        if (type == ConfigurationSchemaType.OBJECT) {
             // Keep objects as maps; don't attempt to instantiate configuration classes.
             return value;
         }
 
         if (value instanceof String s) {
             // Some conversion services may coerce arbitrary strings to boolean/number; only attempt coercion for recognized literals.
-            if (type == JsonSchemaType.BOOLEAN && !isBooleanLiteral(s)) {
+            if (type == ConfigurationSchemaType.BOOLEAN && !isBooleanLiteral(s)) {
                 return value;
             }
-            if ((type == JsonSchemaType.INTEGER || type == JsonSchemaType.NUMBER) && !isNumericLiteral(s)) {
+            if ((type == ConfigurationSchemaType.INTEGER || type == ConfigurationSchemaType.NUMBER) && !isNumericLiteral(s)) {
                 return value;
             }
         }
@@ -75,7 +75,7 @@ final class ValueCoercer {
 
         // 2) Try x-micronaut-javaType conversion if it's compatible with schema type.
         String javaType = schema.javaType();
-        if (javaType != null && type != JsonSchemaType.OBJECT) {
+        if (javaType != null && type != ConfigurationSchemaType.OBJECT) {
             Class<?> target = loadJavaType(ctx, javaType);
             if (target != null) {
                 Optional<?> converted = conversionService.convert(value, Argument.of(target));
@@ -89,10 +89,10 @@ final class ValueCoercer {
         }
 
         // 3) Fallback manual conversions.
-        if (type == JsonSchemaType.ARRAY && value instanceof String s) {
+        if (type == ConfigurationSchemaType.ARRAY && value instanceof String s) {
             return splitCommaSeparated(s);
         }
-        if (type == JsonSchemaType.BOOLEAN && value instanceof String s) {
+        if (type == ConfigurationSchemaType.BOOLEAN && value instanceof String s) {
             String normalized = s.trim().toLowerCase(Locale.ENGLISH);
             if ("true".equals(normalized)) {
                 return Boolean.TRUE;
@@ -102,10 +102,10 @@ final class ValueCoercer {
             }
             return value;
         }
-        if ((type == JsonSchemaType.INTEGER || type == JsonSchemaType.NUMBER) && value instanceof String s) {
+        if ((type == ConfigurationSchemaType.INTEGER || type == ConfigurationSchemaType.NUMBER) && value instanceof String s) {
             try {
                 BigDecimal number = new BigDecimal(s.trim());
-                if (type == JsonSchemaType.INTEGER) {
+                if (type == ConfigurationSchemaType.INTEGER) {
                     return number.stripTrailingZeros().scale() <= 0 ? number.toBigInteger() : value;
                 }
                 return number;
@@ -117,7 +117,7 @@ final class ValueCoercer {
         return value;
     }
 
-    private static boolean isCompatibleWithSchemaType(JsonSchemaType type, Object value) {
+    private static boolean isCompatibleWithSchemaType(ConfigurationSchemaType type, Object value) {
         return switch (type) {
             case STRING -> value instanceof String;
             case BOOLEAN -> value instanceof Boolean;
@@ -142,7 +142,7 @@ final class ValueCoercer {
         }
     }
 
-    private static Optional<?> convertBySchemaType(ConversionService conversionService, JsonSchemaType type, Object value) {
+    private static Optional<?> convertBySchemaType(ConversionService conversionService, ConfigurationSchemaType type, Object value) {
         return switch (type) {
             case STRING -> conversionService.convert(value, String.class);
             case BOOLEAN -> conversionService.convert(value, Boolean.class);

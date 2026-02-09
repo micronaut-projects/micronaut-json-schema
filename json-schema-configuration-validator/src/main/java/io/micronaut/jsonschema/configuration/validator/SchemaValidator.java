@@ -16,8 +16,8 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaProperty;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaType;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaType;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -44,13 +44,13 @@ final class SchemaValidator {
 
     static void validateObject(
         SchemaContext ctx,
-        JsonSchemaProperty schema,
+        ConfigurationSchemaProperty schema,
         Object instance,
         String computedPropertyName,
         @Nullable String wildcardReplacement,
         Set<ConfigurationError> errors
     ) {
-        JsonSchemaProperty resolved = ctx.refResolver().resolveRef(schema);
+        ConfigurationSchemaProperty resolved = ctx.refResolver().resolveRef(schema);
         if (resolved == null) {
             errors.add(ctx.error(computedPropertyName, "Unable to resolve schema reference"));
             return;
@@ -70,13 +70,13 @@ final class SchemaValidator {
     @SuppressWarnings("java:S3776")
     private static void validateObjectSchema(
         SchemaContext ctx,
-        JsonSchemaProperty schema,
+        ConfigurationSchemaProperty schema,
         Map<String, Object> instance,
         String computedPropertyName,
         @Nullable String wildcardReplacement,
         Set<ConfigurationError> errors
     ) {
-        Map<String, JsonSchemaProperty> properties = schema.properties();
+        Map<String, ConfigurationSchemaProperty> properties = schema.properties();
         if (properties == null) {
             properties = Map.of();
         }
@@ -103,9 +103,9 @@ final class SchemaValidator {
         }
 
         // validate declared properties
-        for (Map.Entry<String, JsonSchemaProperty> entry : properties.entrySet()) {
+        for (Map.Entry<String, ConfigurationSchemaProperty> entry : properties.entrySet()) {
             String key = entry.getKey();
-            JsonSchemaProperty propSchema = entry.getValue();
+            ConfigurationSchemaProperty propSchema = entry.getValue();
             if (!instance.containsKey(key)) {
                 continue;
             }
@@ -121,7 +121,7 @@ final class SchemaValidator {
         Object additionalProperties = schema.additionalProperties();
         boolean additionalPropertiesTrue = additionalProperties instanceof Boolean b && b;
         boolean additionalPropertiesFalse = additionalProperties instanceof Boolean b && !b;
-        JsonSchemaProperty additionalSchema = ctx.refResolver().resolveAdditionalPropertiesSchema(schema);
+        ConfigurationSchemaProperty additionalSchema = ctx.refResolver().resolveAdditionalPropertiesSchema(schema);
         if (ctx.failOnNotPresent() || additionalPropertiesFalse || additionalSchema != null) {
             for (Map.Entry<String, Object> entry : instance.entrySet()) {
                 String key = entry.getKey();
@@ -165,14 +165,14 @@ final class SchemaValidator {
     @SuppressWarnings("java:S3776")
     private static void validateNode(
         SchemaContext ctx,
-        JsonSchemaProperty schema,
+        ConfigurationSchemaProperty schema,
         @Nullable Object value,
         String computedPropertyName,
         String resolvedPropertyName,
         @Nullable String wildcardReplacement,
         Set<ConfigurationError> errors
     ) {
-        JsonSchemaProperty resolved = ctx.refResolver().resolveRef(schema);
+        ConfigurationSchemaProperty resolved = ctx.refResolver().resolveRef(schema);
         if (resolved == null) {
             errors.add(ctx.error(resolvedPropertyName, "Unable to resolve schema reference"));
             return;
@@ -182,14 +182,14 @@ final class SchemaValidator {
             errors.add(ctx.warning(resolvedPropertyName, "Deprecated property"));
         }
 
-        JsonSchemaType type = SchemaTypes.toType(resolved.type());
+        ConfigurationSchemaType type = SchemaTypes.toType(resolved.type());
         if (type == null) {
             if (resolved.properties() != null || resolved.additionalProperties() != null) {
-                type = JsonSchemaType.OBJECT;
+                type = ConfigurationSchemaType.OBJECT;
             }
         }
 
-        if (type == JsonSchemaType.OBJECT) {
+        if (type == ConfigurationSchemaType.OBJECT) {
             if (!(value instanceof Map)) {
                 errors.add(ctx.error(resolvedPropertyName, "Expected object"));
                 return;
@@ -200,7 +200,7 @@ final class SchemaValidator {
             return;
         }
 
-        if (type == JsonSchemaType.ARRAY) {
+        if (type == ConfigurationSchemaType.ARRAY) {
             if (!(value instanceof List)) {
                 errors.add(ctx.error(resolvedPropertyName, "Expected array"));
                 return;
@@ -222,7 +222,7 @@ final class SchemaValidator {
                 }
             }
 
-            JsonSchemaProperty items = resolved.items();
+            ConfigurationSchemaProperty items = resolved.items();
             if (items != null) {
                 for (int i = 0; i < list.size(); i++) {
                     String elementComputed = computedPropertyName + "[" + i + "]";
@@ -251,7 +251,7 @@ final class SchemaValidator {
             }
         }
 
-        if (type == JsonSchemaType.STRING) {
+        if (type == ConfigurationSchemaType.STRING) {
             if (!(value instanceof String)) {
                 errors.add(ctx.error(resolvedPropertyName, "Expected string"));
                 return;
@@ -324,14 +324,14 @@ final class SchemaValidator {
             return;
         }
 
-        if (type == JsonSchemaType.BOOLEAN) {
+        if (type == ConfigurationSchemaType.BOOLEAN) {
             if (!(value instanceof Boolean)) {
                 errors.add(ctx.error(resolvedPropertyName, "Expected boolean"));
             }
             return;
         }
 
-        if (type == JsonSchemaType.INTEGER) {
+        if (type == ConfigurationSchemaType.INTEGER) {
             BigDecimal number = toBigDecimal(value);
             if (number == null || number.stripTrailingZeros().scale() > 0) {
                 errors.add(ctx.error(resolvedPropertyName, "Expected integer"));
@@ -345,7 +345,7 @@ final class SchemaValidator {
             return;
         }
 
-        if (type == JsonSchemaType.NUMBER) {
+        if (type == ConfigurationSchemaType.NUMBER) {
             BigDecimal number = toBigDecimal(value);
             if (number == null) {
                 errors.add(ctx.error(resolvedPropertyName, "Expected number"));
@@ -381,7 +381,7 @@ final class SchemaValidator {
 
     private static void validateNumericConstraints(
         SchemaContext ctx,
-        JsonSchemaProperty schema,
+        ConfigurationSchemaProperty schema,
         BigDecimal value,
         String property,
         Set<ConfigurationError> errors

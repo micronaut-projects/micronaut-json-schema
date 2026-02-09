@@ -20,8 +20,8 @@ import io.micronaut.context.env.PropertyEntry;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.type.Argument;
 import io.micronaut.json.JsonMapper;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchema;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaProperty;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchema;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -40,9 +40,9 @@ import java.util.regex.Pattern;
 
 @Internal
 final class SchemaContext {
-    private static final Argument<JsonSchemaProperty> JSON_SCHEMA_PROPERTY_ARGUMENT = Argument.of(JsonSchemaProperty.class);
+    private static final Argument<ConfigurationSchemaProperty> CONFIGURATION_SCHEMA_PROPERTY_ARGUMENT = Argument.of(ConfigurationSchemaProperty.class);
 
-    private final JsonSchema root;
+    private final ConfigurationSchema root;
     private final ClassLoader classLoader;
     private final Environment environment;
     private final JsonMapper jsonMapper;
@@ -50,7 +50,7 @@ final class SchemaContext {
     private final RefResolver refResolver;
 
     SchemaContext(
-        JsonSchema root,
+        ConfigurationSchema root,
         ClassLoader classLoader,
         Environment environment,
         JsonMapper jsonMapper,
@@ -64,7 +64,7 @@ final class SchemaContext {
         this.refResolver = new RefResolver();
     }
 
-    JsonSchema root() {
+    ConfigurationSchema root() {
         return root;
     }
 
@@ -490,7 +490,7 @@ final class SchemaContext {
         private static final String TOKEN_PROPERTIES = "properties";
 
         @Nullable
-        JsonSchemaProperty resolveAdditionalPropertiesSchema(JsonSchemaProperty schema) {
+        ConfigurationSchemaProperty resolveAdditionalPropertiesSchema(ConfigurationSchemaProperty schema) {
             Object additionalProperties = schema.additionalProperties();
             if (additionalProperties == null) {
                 return null;
@@ -498,18 +498,18 @@ final class SchemaContext {
             if (additionalProperties instanceof Boolean) {
                 return null;
             }
-            if (additionalProperties instanceof JsonSchemaProperty prop) {
+            if (additionalProperties instanceof ConfigurationSchemaProperty prop) {
                 return resolveRef(prop);
             }
             if (additionalProperties instanceof Map) {
-                JsonSchemaProperty parsed = parseProperty(additionalProperties);
+                ConfigurationSchemaProperty parsed = parseProperty(additionalProperties);
                 return parsed != null ? resolveRef(parsed) : null;
             }
             return null;
         }
 
         @Nullable
-        JsonSchemaProperty resolveRef(JsonSchemaProperty schema) {
+        ConfigurationSchemaProperty resolveRef(ConfigurationSchemaProperty schema) {
             if (schema.ref() == null) {
                 return schema;
             }
@@ -517,16 +517,16 @@ final class SchemaContext {
         }
 
         @Nullable
-        JsonSchemaProperty resolveRef(String ref) {
+        ConfigurationSchemaProperty resolveRef(String ref) {
             if (!ref.startsWith("#/")) {
                 return null;
             }
             List<String> tokens = JsonPointer.parse(ref);
             Object current = root;
             for (String token : tokens) {
-                if (current instanceof JsonSchema jsonSchema) {
+                if (current instanceof ConfigurationSchema jsonSchema) {
                     current = resolveFromRoot(jsonSchema, token);
-                } else if (current instanceof JsonSchemaProperty property) {
+                } else if (current instanceof ConfigurationSchemaProperty property) {
                     current = resolveFromProperty(property, token);
                 } else if (current instanceof Map<?, ?> map) {
                     current = map.get(token);
@@ -537,13 +537,13 @@ final class SchemaContext {
                     return null;
                 }
             }
-            if (current instanceof JsonSchemaProperty prop) {
+            if (current instanceof ConfigurationSchemaProperty prop) {
                 return prop.ref() != null ? resolveRef(prop.ref()) : prop;
             }
             return null;
         }
 
-        private static Object resolveFromRoot(JsonSchema schema, String token) {
+        private static Object resolveFromRoot(ConfigurationSchema schema, String token) {
             if (TOKEN_DEFS.equals(token)) {
                 return schema.defs();
             }
@@ -553,7 +553,7 @@ final class SchemaContext {
             return null;
         }
 
-        private static Object resolveFromProperty(JsonSchemaProperty schema, String token) {
+        private static Object resolveFromProperty(ConfigurationSchemaProperty schema, String token) {
             if (TOKEN_DEFS.equals(token)) {
                 return schema.defs();
             }
@@ -564,10 +564,10 @@ final class SchemaContext {
         }
 
         @Nullable
-        private JsonSchemaProperty parseProperty(Object mapLike) {
+        private ConfigurationSchemaProperty parseProperty(Object mapLike) {
             try {
                 String json = jsonMapper.writeValueAsString(mapLike);
-                return jsonMapper.readValue(json, JSON_SCHEMA_PROPERTY_ARGUMENT);
+                return jsonMapper.readValue(json, CONFIGURATION_SCHEMA_PROPERTY_ARGUMENT);
             } catch (IOException e) {
                 return null;
             }

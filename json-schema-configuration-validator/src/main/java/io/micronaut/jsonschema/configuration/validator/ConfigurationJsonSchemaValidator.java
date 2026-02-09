@@ -22,8 +22,8 @@ import io.micronaut.core.type.Argument;
 import io.micronaut.core.util.StringUtils;
 import io.micronaut.core.value.PropertyCatalog;
 import io.micronaut.json.JsonMapper;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchema;
-import io.micronaut.jsonschema.configuration.validator.model.JsonSchemaProperty;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchema;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -44,7 +44,7 @@ import java.util.regex.Pattern;
  * Validates Micronaut configuration ({@link Environment}) against JSON schemas on the classpath.
  */
 public final class ConfigurationJsonSchemaValidator {
-    private static final Argument<JsonSchema> JSON_SCHEMA_ARGUMENT = Argument.of(JsonSchema.class);
+    private static final Argument<ConfigurationSchema> CONFIGURATION_SCHEMA_ARGUMENT = Argument.of(ConfigurationSchema.class);
 
     private final SchemaValidationEngine engine = new SchemaValidationEngine();
 
@@ -105,7 +105,7 @@ public final class ConfigurationJsonSchemaValidator {
         JsonSchemaClassPathResourceLoader loader = JsonSchemaClassPathResourceLoader.createDefault(classLoader);
         Map<String, Readable> schemaResources = loader.jsonSchemas();
 
-        Map<String, List<JsonSchema>> schemasByPrefix = new LinkedHashMap<>();
+        Map<String, List<ConfigurationSchema>> schemasByPrefix = new LinkedHashMap<>();
         Set<ConfigurationError> errors = new LinkedHashSet<>();
         JsonMapper mapper = jsonMapper();
 
@@ -116,7 +116,7 @@ public final class ConfigurationJsonSchemaValidator {
                 continue;
             }
             try {
-                JsonSchema schema = readSchema(mapper, readable);
+                ConfigurationSchema schema = readSchema(mapper, readable);
                 String prefix = schema.micronaut() != null ? schema.micronaut().prefix() : null;
                 if (StringUtils.isEmpty(prefix)) {
                     continue;
@@ -133,9 +133,9 @@ public final class ConfigurationJsonSchemaValidator {
             }
         }
 
-        for (Map.Entry<String, List<JsonSchema>> entry : schemasByPrefix.entrySet()) {
+        for (Map.Entry<String, List<ConfigurationSchema>> entry : schemasByPrefix.entrySet()) {
             String prefix = entry.getKey();
-            for (JsonSchema schema : entry.getValue()) {
+            for (ConfigurationSchema schema : entry.getValue()) {
                 engine.validateSchema(prefix, schema, classLoader, environment, mapper, failOnNotPresent, errors);
             }
         }
@@ -187,10 +187,10 @@ public final class ConfigurationJsonSchemaValidator {
         return jsonMapper.get();
     }
 
-    private static JsonSchema readSchema(JsonMapper jsonMapper, Readable readable) throws IOException {
+    private static ConfigurationSchema readSchema(JsonMapper jsonMapper, Readable readable) throws IOException {
         try (InputStream inputStream = readable.asInputStream()) {
             String schema = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            return jsonMapper.readValue(schema, JSON_SCHEMA_ARGUMENT);
+            return jsonMapper.readValue(schema, CONFIGURATION_SCHEMA_ARGUMENT);
         }
     }
 
@@ -200,7 +200,7 @@ public final class ConfigurationJsonSchemaValidator {
     private static final class SchemaValidationEngine {
         void validateSchema(
             String prefix,
-            JsonSchema schema,
+            ConfigurationSchema schema,
             ClassLoader classLoader,
             Environment environment,
             JsonMapper jsonMapper,
@@ -219,7 +219,7 @@ public final class ConfigurationJsonSchemaValidator {
 
         private void validateConfigurationProperties(
             String prefix,
-            JsonSchema schema,
+            ConfigurationSchema schema,
             ClassLoader classLoader,
             Environment environment,
             JsonMapper jsonMapper,
@@ -231,14 +231,14 @@ public final class ConfigurationJsonSchemaValidator {
             }
             Map<String, Object> flat = environment.getProperties(prefix, StringConvention.HYPHENATED);
             Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
-            JsonSchemaProperty root = JsonSchemaPropertyAdapter.fromRoot(schema);
+            ConfigurationSchemaProperty root = ConfigurationSchemaPropertyAdapter.fromRoot(schema);
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
             SchemaValidator.validateObject(ctx, root, instance, prefix, null, errors);
         }
 
         private void validateEachProperty(
             String prefix,
-            JsonSchema schema,
+            ConfigurationSchema schema,
             ClassLoader classLoader,
             Environment environment,
             JsonMapper jsonMapper,
@@ -246,7 +246,7 @@ public final class ConfigurationJsonSchemaValidator {
             Set<ConfigurationError> errors
         ) {
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
-            JsonSchemaProperty entrySchema = ctx.refResolver().resolveAdditionalPropertiesSchema(JsonSchemaPropertyAdapter.fromRoot(schema));
+            ConfigurationSchemaProperty entrySchema = ctx.refResolver().resolveAdditionalPropertiesSchema(ConfigurationSchemaPropertyAdapter.fromRoot(schema));
             if (entrySchema == null) {
                 errors.add(new ConfigurationError(prefix, "EachProperty schema missing additionalProperties entry schema", null, null, null));
                 return;
