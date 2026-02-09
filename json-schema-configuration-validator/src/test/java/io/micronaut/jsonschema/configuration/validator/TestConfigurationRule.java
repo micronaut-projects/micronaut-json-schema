@@ -40,24 +40,18 @@ public final class TestConfigurationRule implements ConfigurationRule {
         Set<ConfigurationError> errors = new LinkedHashSet<>();
 
         if (!context.environment().containsProperty("datasources.default.url")) {
-            errors.add(new ConfigurationError(
+            errors.add(ConfigurationError.builder(
                 "datasources.default.url",
-                "Required when jpa.default.properties is set",
-                null,
-                null,
-                null
-            ));
+                "Required when jpa.default.properties is set"
+            ).build());
         }
 
         if ("test.executors.alpha".equals(context.prefix())) {
             Object nThreads = context.instanceMap().get("n-threads");
-            errors.add(new ConfigurationError(
+            errors.add(ConfigurationError.builder(
                 context.prefix() + ".rule",
-                "Rule ran for prefix=" + context.prefix() + ", n-threads=" + nThreads,
-                null,
-                null,
-                null
-            ));
+                "Rule ran for prefix=" + context.prefix() + ", n-threads=" + nThreads
+            ).build());
         }
 
         return errors;

@@ -16,13 +16,10 @@ class ConfigurationRuleExample : ConfigurationRule {
 
         if (!context.environment.containsProperty("datasources.default.url")) {
             errors.add(
-                ConfigurationError(
+                ConfigurationError.builder(
                     "datasources.default.url",
-                    "Required when jpa.default.properties is set",
-                    null,
-                    null,
-                    null
-                )
+                    "Required when jpa.default.properties is set"
+                ).build()
             )
         }
 

@@ -21,13 +21,10 @@ class ConfigurationRuleExample implements ConfigurationRule {
         Set<ConfigurationError> errors = new LinkedHashSet<>();
 
         if (!context.environment().containsProperty("datasources.default.url")) {
-            errors.add(new ConfigurationError(
+            errors.add(ConfigurationError.builder(
                 "datasources.default.url",
-                "Required when jpa.default.properties is set",
-                null,
-                null,
-                null
-            ));
+                "Required when jpa.default.properties is set"
+            ).build());
         }
 
         return errors;

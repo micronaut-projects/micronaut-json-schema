@@ -45,21 +45,6 @@ public record ConfigurationError(
 ) {
 
     /**
-     * The configuration validation error type.
-     */
-    public enum Type {
-        /**
-         * A validation error.
-         */
-        ERROR,
-
-        /**
-         * A validation warning.
-         */
-        WARNING
-    }
-
-    /**
      * Constructs a configuration error with type {@link Type#ERROR}.
      *
      * @param property The full configuration property name
@@ -109,5 +94,93 @@ public record ConfigurationError(
      */
     public ConfigurationError withType(Type type) {
         return new ConfigurationError(property, type, message, originLocation, rawPropertyName, rawValue, lineNumber, snippet, snippetLanguage);
+    }
+
+    /**
+     * Create a builder for a {@link ConfigurationError}.
+     * <p>
+     * The returned builder defaults {@link Type} to {@link Type#ERROR}.
+     *
+     * @param property The full configuration property name
+     * @param message The error message
+     * @return A builder
+     */
+    public static Builder builder(String property, String message) {
+        return new Builder(property, message);
+    }
+
+    /**
+     * The configuration validation error type.
+     */
+    public enum Type {
+        /**
+         * A validation error.
+         */
+        ERROR,
+
+        /**
+         * A validation warning.
+         */
+        WARNING
+    }
+
+    /**
+     * Builder for {@link ConfigurationError}.
+     */
+    public static final class Builder {
+        private final String property;
+        private final String message;
+
+        private Type type = Type.ERROR;
+        private @Nullable String originLocation;
+        private @Nullable String rawPropertyName;
+        private @Nullable Object rawValue;
+        private int lineNumber = -1;
+        private @Nullable String snippet;
+        private @Nullable String snippetLanguage;
+
+        private Builder(String property, String message) {
+            this.property = property;
+            this.message = message;
+        }
+
+        public Builder type(Type type) {
+            this.type = type;
+            return this;
+        }
+
+        public Builder originLocation(@Nullable String originLocation) {
+            this.originLocation = originLocation;
+            return this;
+        }
+
+        public Builder rawPropertyName(@Nullable String rawPropertyName) {
+            this.rawPropertyName = rawPropertyName;
+            return this;
+        }
+
+        public Builder rawValue(@Nullable Object rawValue) {
+            this.rawValue = rawValue;
+            return this;
+        }
+
+        public Builder lineNumber(int lineNumber) {
+            this.lineNumber = lineNumber;
+            return this;
+        }
+
+        public Builder snippet(@Nullable String snippet) {
+            this.snippet = snippet;
+            return this;
+        }
+
+        public Builder snippetLanguage(@Nullable String snippetLanguage) {
+            this.snippetLanguage = snippetLanguage;
+            return this;
+        }
+
+        public ConfigurationError build() {
+            return new ConfigurationError(property, type, message, originLocation, rawPropertyName, rawValue, lineNumber, snippet, snippetLanguage);
+        }
     }
 }
