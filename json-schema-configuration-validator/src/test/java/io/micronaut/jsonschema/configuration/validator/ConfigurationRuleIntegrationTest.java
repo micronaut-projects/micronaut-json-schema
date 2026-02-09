@@ -52,6 +52,24 @@ class ConfigurationRuleIntegrationTest {
     }
 
     @Test
+    void supportsPrefixFiltersRuleExecution() {
+        System.setProperty(TestConfigurationRule.ENABLED_PROP, "true");
+
+        Environment env = createEnvironment(Map.of(
+            // Ensure a schema is validated so rules would run if not filtered.
+            "test.config.enabled", "true",
+            "test.config.count", "1",
+            // Add the dependent config to avoid the jpa error.
+            "datasources.default.url", "jdbc:h2:mem:test"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), env);
+
+        assertTrue(errors.isEmpty(), () -> "Expected no rule errors due to prefix filtering, got: " + errors);
+    }
+
+    @Test
     void configurationRuleSeesFullyQualifiedEachPropertyPrefix() {
         System.setProperty(TestConfigurationRule.ENABLED_PROP, "true");
 

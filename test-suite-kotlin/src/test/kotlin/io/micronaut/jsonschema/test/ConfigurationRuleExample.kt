@@ -8,12 +8,13 @@ import java.util.LinkedHashSet
 class ConfigurationRuleExample : ConfigurationRule {
 
     // tag::rule[]
+
+    override fun supportsPrefix(prefix: String): Boolean = prefix == "jpa.default.properties"
+
     override fun validate(context: ConfigurationValidationContext): Set<ConfigurationError> {
         val errors = LinkedHashSet<ConfigurationError>()
 
-        if (context.environment.containsProperties("jpa.default.properties")
-            && !context.environment.containsProperty("datasources.default.url")
-        ) {
+        if (!context.environment.containsProperty("datasources.default.url")) {
             errors.add(
                 ConfigurationError(
                     "datasources.default.url",

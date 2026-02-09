@@ -3,6 +3,12 @@
   "$id": "test.rules.JpaRulesSchema",
   "title": "Test JPA rules schema",
   "type": "object",
+  "properties": {
+    "properties": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
   "additionalProperties": true,
   "x-micronaut": {
     "prefix": "jpa.default"

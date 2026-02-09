@@ -26,6 +26,12 @@ public final class TestConfigurationRule implements ConfigurationRule {
     static final String ENABLED_PROP = "jsonschema.test.configuration.rule.enabled";
 
     @Override
+    public boolean supportsPrefix(String prefix) {
+        return "jpa.default.properties".equals(prefix)
+            || "test.executors.alpha".equals(prefix);
+    }
+
+    @Override
     public Set<ConfigurationError> validate(ConfigurationValidationContext context) {
         if (!Boolean.getBoolean(ENABLED_PROP)) {
             return Set.of();
@@ -33,9 +39,7 @@ public final class TestConfigurationRule implements ConfigurationRule {
 
         Set<ConfigurationError> errors = new LinkedHashSet<>();
 
-        // Example: dependent configuration.
-        if (context.environment().containsProperties("jpa.default.properties")
-            && !context.environment().containsProperty("datasources.default.url")) {
+        if (!context.environment().containsProperty("datasources.default.url")) {
             errors.add(new ConfigurationError(
                 "datasources.default.url",
                 "Required when jpa.default.properties is set",
@@ -45,8 +49,7 @@ public final class TestConfigurationRule implements ConfigurationRule {
             ));
         }
 
-        // Prove each-property context uses the fully qualified entry prefix.
-        if (context.prefix().startsWith("test.executors.") && context.prefix().endsWith(".alpha")) {
+        if ("test.executors.alpha".equals(context.prefix())) {
             Object nThreads = context.instanceMap().get("n-threads");
             errors.add(new ConfigurationError(
                 context.prefix() + ".rule",

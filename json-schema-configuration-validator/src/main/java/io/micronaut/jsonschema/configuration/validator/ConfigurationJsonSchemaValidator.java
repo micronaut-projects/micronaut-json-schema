@@ -240,6 +240,7 @@ public final class ConfigurationJsonSchemaValidator {
             SchemaValidator.validateObject(ctx, root, instance, prefix, null, errors);
 
             applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, root, instance), errors);
+            applyRulesForNestedObjects(rules, environment, prefix, schema, root, instance, errors);
         }
 
         private void validateEachProperty(
@@ -276,6 +277,42 @@ public final class ConfigurationJsonSchemaValidator {
                 SchemaValidator.validateObject(ctx, entrySchema, instance, entryPrefix, entry, errors);
 
                 applyRules(rules, new ConfigurationValidationContext(environment, entryPrefix, schema, entrySchema, instance), errors);
+                applyRulesForNestedObjects(rules, environment, entryPrefix, schema, entrySchema, instance, errors);
+            }
+        }
+
+        private static void applyRulesForNestedObjects(
+            List<ConfigurationRule> rules,
+            Environment environment,
+            String parentPrefix,
+            ConfigurationSchema schema,
+            ConfigurationSchemaProperty parentProperty,
+            Map<String, Object> parentInstance,
+            Set<ConfigurationError> errors
+        ) {
+            if (rules.isEmpty()) {
+                return;
+            }
+            Map<String, ConfigurationSchemaProperty> properties = parentProperty.properties();
+            if (properties == null || properties.isEmpty() || parentInstance.isEmpty()) {
+                return;
+            }
+
+            for (Map.Entry<String, Object> entry : parentInstance.entrySet()) {
+                Object value = entry.getValue();
+                if (!(value instanceof Map)) {
+                    continue;
+                }
+                String key = entry.getKey();
+                ConfigurationSchemaProperty property = properties.get(key);
+                if (property == null) {
+                    continue;
+                }
+                @SuppressWarnings("unchecked")
+                Map<String, Object> instanceMap = (Map<String, Object>) value;
+
+                String prefix = parentPrefix + "." + key;
+                applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, property, instanceMap), errors);
             }
         }
 
@@ -284,6 +321,9 @@ public final class ConfigurationJsonSchemaValidator {
                 return;
             }
             for (ConfigurationRule rule : rules) {
+                if (!rule.supportsPrefix(context.prefix())) {
+                    continue;
+                }
                 try {
                     Set<ConfigurationError> additional = rule.validate(context);
                     if (additional != null && !additional.isEmpty()) {

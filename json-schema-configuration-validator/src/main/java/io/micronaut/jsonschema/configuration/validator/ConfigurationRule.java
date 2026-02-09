@@ -28,6 +28,16 @@ import java.util.Set;
 public interface ConfigurationRule {
 
     /**
+     * Whether this rule supports the given configuration prefix.
+     * <p>
+     * This is used to avoid executing rules for unrelated prefixes.
+     *
+     * @param prefix The prefix being validated
+     * @return True if this rule should be executed for the prefix
+     */
+    boolean supportsPrefix(@NonNull String prefix);
+
+    /**
      * Perform custom validation for a configuration prefix (or a single {@code @EachProperty}
      * entry) and return any additional {@link ConfigurationError}s.
      *

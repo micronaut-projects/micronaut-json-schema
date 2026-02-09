@@ -7,12 +7,17 @@ import io.micronaut.jsonschema.configuration.validator.ConfigurationValidationCo
 class ConfigurationRuleExample implements ConfigurationRule {
 
     // tag::rule[]
+
+    @Override
+    boolean supportsPrefix(String prefix) {
+        prefix == 'jpa.default.properties'
+    }
+
     @Override
     Set<ConfigurationError> validate(ConfigurationValidationContext context) {
         Set<ConfigurationError> errors = new LinkedHashSet<>()
 
-        if (context.environment().containsProperties('jpa.default.properties')
-                && !context.environment().containsProperty('datasources.default.url')) {
+        if (!context.environment().containsProperty('datasources.default.url')) {
             errors.add(new ConfigurationError(
                     'datasources.default.url',
                     'Required when jpa.default.properties is set',
