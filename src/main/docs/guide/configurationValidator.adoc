@@ -117,6 +117,40 @@ endpoints:
     sensitive: false
 ----
 
+=== Custom validation rules (ServiceLoader)
+
+Some validation rules cannot be expressed as JSON Schema keywords alone, for example validating dependent configuration entries.
+
+The configuration validator supports custom rules via the api:jsonschema.configuration.validator.ConfigurationRule[] SPI.
+Implementations are discovered using `ServiceLoader` from the same classloader used to load configuration schemas.
+
+==== Rule API
+
+Rules receive a api:jsonschema.configuration.validator.ConfigurationValidationContext[] that includes:
+
+* the `Environment`
+* the validated `prefix`
+* the loaded api:jsonschema.configuration.validator.model.ConfigurationSchema[]
+* the api:jsonschema.configuration.validator.model.ConfigurationSchemaProperty[] being validated
+* the computed nested `instanceMap`
+
+For `@EachProperty` schemas, the `prefix` is the fully qualified entry prefix (for example `test.executors.alpha`).
+
+==== Example: dependent configuration
+
+The following example requires `datasources.default.url` when `jpa.default.properties` is present:
+
+snippet::io.micronaut.jsonschema.test.ConfigurationRuleExample[tags=rule]
+
+To register the rule, add a `ServiceLoader` entry:
+
+[source]
+----
+META-INF/services/io.micronaut.jsonschema.configuration.validator.ConfigurationRule
+----
+
+and list your implementation class name in that file.
+
 === CLI
 
 ==== Full classpath entry point

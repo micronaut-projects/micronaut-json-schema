@@ -105,6 +105,8 @@ public final class ConfigurationJsonSchemaValidator {
         JsonSchemaClassPathResourceLoader loader = JsonSchemaClassPathResourceLoader.createDefault(classLoader);
         Map<String, Readable> schemaResources = loader.jsonSchemas();
 
+        List<ConfigurationRule> rules = ConfigurationRules.load(classLoader);
+
         Map<String, List<ConfigurationSchema>> schemasByPrefix = new LinkedHashMap<>();
         Set<ConfigurationError> errors = new LinkedHashSet<>();
         JsonMapper mapper = jsonMapper();
@@ -136,7 +138,7 @@ public final class ConfigurationJsonSchemaValidator {
         for (Map.Entry<String, List<ConfigurationSchema>> entry : schemasByPrefix.entrySet()) {
             String prefix = entry.getKey();
             for (ConfigurationSchema schema : entry.getValue()) {
-                engine.validateSchema(prefix, schema, classLoader, environment, mapper, failOnNotPresent, errors);
+                engine.validateSchema(prefix, schema, classLoader, environment, mapper, failOnNotPresent, rules, errors);
             }
         }
 
@@ -205,15 +207,16 @@ public final class ConfigurationJsonSchemaValidator {
             Environment environment,
             JsonMapper jsonMapper,
             boolean failOnNotPresent,
+            List<ConfigurationRule> rules,
             Set<ConfigurationError> errors
         ) {
             String kind = schema.micronaut() != null ? schema.micronaut().kind() : null;
             String container = schema.micronaut() != null ? schema.micronaut().container() : null;
 
             if ("each-property".equals(kind) && "map".equals(container)) {
-                validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, errors);
+                validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors);
             } else {
-                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, errors);
+                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors);
             }
         }
 
@@ -224,6 +227,7 @@ public final class ConfigurationJsonSchemaValidator {
             Environment environment,
             JsonMapper jsonMapper,
             boolean failOnNotPresent,
+            List<ConfigurationRule> rules,
             Set<ConfigurationError> errors
         ) {
             if (!environment.containsProperties(prefix)) {
@@ -234,6 +238,8 @@ public final class ConfigurationJsonSchemaValidator {
             ConfigurationSchemaProperty root = ConfigurationSchemaPropertyAdapter.fromRoot(schema);
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
             SchemaValidator.validateObject(ctx, root, instance, prefix, null, errors);
+
+            applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, root, instance), errors);
         }
 
         private void validateEachProperty(
@@ -243,6 +249,7 @@ public final class ConfigurationJsonSchemaValidator {
             Environment environment,
             JsonMapper jsonMapper,
             boolean failOnNotPresent,
+            List<ConfigurationRule> rules,
             Set<ConfigurationError> errors
         ) {
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
@@ -267,6 +274,24 @@ public final class ConfigurationJsonSchemaValidator {
                 Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
 
                 SchemaValidator.validateObject(ctx, entrySchema, instance, entryPrefix, entry, errors);
+
+                applyRules(rules, new ConfigurationValidationContext(environment, entryPrefix, schema, entrySchema, instance), errors);
+            }
+        }
+
+        private static void applyRules(List<ConfigurationRule> rules, ConfigurationValidationContext context, Set<ConfigurationError> errors) {
+            if (rules.isEmpty()) {
+                return;
+            }
+            for (ConfigurationRule rule : rules) {
+                try {
+                    Set<ConfigurationError> additional = rule.validate(context);
+                    if (additional != null && !additional.isEmpty()) {
+                        errors.addAll(additional);
+                    }
+                } catch (Exception e) {
+                    errors.add(new ConfigurationError(context.prefix(), "ConfigurationRule failed: " + e.getMessage(), null, null, null));
+                }
             }
         }
     }
