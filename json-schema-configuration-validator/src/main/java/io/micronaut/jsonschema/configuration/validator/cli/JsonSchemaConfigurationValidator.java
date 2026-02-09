@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.configuration.validator;
+package io.micronaut.jsonschema.configuration.validator.cli;
 
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.ApplicationContextConfiguration;
 import io.micronaut.context.env.Environment;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
 import io.micronaut.jsonschema.configuration.validator.report.ConfigurationErrorReporter;
 import org.jspecify.annotations.NonNull;
 

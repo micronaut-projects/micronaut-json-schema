@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.configuration.validator;
+package io.micronaut.jsonschema.configuration.validator.management;
 
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.management.endpoint.annotation.Endpoint;
 import io.micronaut.management.endpoint.annotation.Read;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationErrors;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NonNull;
 

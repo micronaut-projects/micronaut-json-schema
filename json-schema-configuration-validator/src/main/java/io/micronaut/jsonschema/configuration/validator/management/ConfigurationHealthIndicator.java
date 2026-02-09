@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.configuration.validator;
+package io.micronaut.jsonschema.configuration.validator.management;
 
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.health.HealthStatus;
 import io.micronaut.management.health.indicator.HealthIndicator;
 import io.micronaut.management.health.indicator.HealthResult;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationErrors;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration;
 import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
 

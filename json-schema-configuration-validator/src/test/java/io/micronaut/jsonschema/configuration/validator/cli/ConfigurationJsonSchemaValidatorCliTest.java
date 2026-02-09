@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.configuration.validator;
+package io.micronaut.jsonschema.configuration.validator.cli;
 
 import io.micronaut.json.JsonMapper;
 import io.micronaut.core.type.Argument;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

@@ -125,7 +125,7 @@ If the process classpath already contains all runtime dependencies, invoke:
 
 [source,bash]
 ----
-java -cp <full-classpath> io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidatorCli \
+java -cp <full-classpath> io.micronaut.jsonschema.configuration.validator.cli.ConfigurationJsonSchemaValidatorCli \
   --classpath <full-classpath> \
   --environments test \
   --out build/reports/config-schema \
@@ -138,7 +138,7 @@ If you want to run with a minimal process classpath that contains only the confi
 
 [source,bash]
 ----
-java -cp <validator-module-only> io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidatorCliBootstrap \
+java -cp <validator-module-only> io.micronaut.jsonschema.configuration.validator.cli.ConfigurationJsonSchemaValidatorCliBootstrap \
   --classpath <full-runtime-classpath> \
   --environments test \
   --out build/reports/config-schema

@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.ApplicationContextConfiguration;
+import io.micronaut.jsonschema.configuration.validator.cli.JsonSchemaConfigurationValidator;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
