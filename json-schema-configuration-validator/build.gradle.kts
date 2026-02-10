@@ -27,9 +27,9 @@ dependencies {
     testImplementation(mn.micronaut.context)
     testImplementation(mn.micronaut.http.server.netty)
     testImplementation(mn.micronaut.management)
-    testImplementation("io.micronaut:micronaut-http-client")
-    testImplementation("io.micronaut:micronaut-jackson-databind")
-    testImplementation("org.yaml:snakeyaml")
+    testImplementation(mn.micronaut.http.client)
+    testImplementation(mn.micronaut.jackson.databind)
+    testImplementation(mn.snakeyaml)
     testImplementation(libs.micronaut.toml)
 
     // Needed for @ConfigurationProperties schema generation in tests
