@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.configuration.validator.cli;
 
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.core.type.Argument;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
@@ -115,7 +116,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
         ConfigurationJsonSchemaValidatorCli.Options options = ConfigurationJsonSchemaValidatorCli.Options.parse(new String[] {
             "--classpath", "cp",
             "--out", tempDir.resolve("out").toString(),
-            "--deduce-environments", "true"
+            "--deduce-environments", StringUtils.TRUE
         });
 
         assertTrue(options.deduceEnvironments());
@@ -130,7 +131,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
             "--classpath", System.getProperty("java.class.path"),
             "--environments", "test",
             "--out", out.toString(),
-            "--fail-on-not-present", "true",
+            "--fail-on-not-present", StringUtils.TRUE,
             "--suppress", "micronaut.http.*",
             "--format", "json"
         }, System.out, System.err);

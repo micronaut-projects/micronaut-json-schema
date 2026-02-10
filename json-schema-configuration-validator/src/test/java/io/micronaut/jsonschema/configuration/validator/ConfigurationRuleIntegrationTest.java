@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator;
 import io.micronaut.context.env.Environment;
 import io.micronaut.context.ApplicationContextConfiguration;
 import io.micronaut.context.env.PropertySource;
+import io.micronaut.core.util.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +38,7 @@ class ConfigurationRuleIntegrationTest {
 
     @Test
     void configurationRuleCanReportDependentConfigurationErrors() {
-        System.setProperty(TestConfigurationRule.ENABLED_PROP, "true");
+        System.setProperty(TestConfigurationRule.ENABLED_PROP, StringUtils.TRUE);
 
         Environment env = createEnvironment(Map.of(
             "jpa.default.properties.hibernate.hbm2ddl.auto", "validate"
@@ -53,11 +54,11 @@ class ConfigurationRuleIntegrationTest {
 
     @Test
     void supportsPrefixFiltersRuleExecution() {
-        System.setProperty(TestConfigurationRule.ENABLED_PROP, "true");
+        System.setProperty(TestConfigurationRule.ENABLED_PROP, StringUtils.TRUE);
 
         Environment env = createEnvironment(Map.of(
             // Ensure a schema is validated so rules would run if not filtered.
-            "test.config.enabled", "true",
+            "test.config.enabled", StringUtils.TRUE,
             "test.config.count", "1",
             // Add the dependent config to avoid the jpa error.
             "datasources.default.url", "jdbc:h2:mem:test"
@@ -71,7 +72,7 @@ class ConfigurationRuleIntegrationTest {
 
     @Test
     void configurationRuleSeesFullyQualifiedEachPropertyPrefix() {
-        System.setProperty(TestConfigurationRule.ENABLED_PROP, "true");
+        System.setProperty(TestConfigurationRule.ENABLED_PROP, StringUtils.TRUE);
 
         Environment env = createEnvironment(Map.of(
             "test.executors.alpha.n-threads", "1"

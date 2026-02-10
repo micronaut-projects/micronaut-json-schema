@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator;
 import io.micronaut.context.ApplicationContextConfiguration;
 import io.micronaut.context.env.Environment;
 import io.micronaut.context.env.PropertySource;
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -76,7 +77,7 @@ class ConfigurationJsonSchemaValidatorTest {
     @Test
     void canIgnoreUnknownPropertiesWhenFailOnNotPresentIsFalse() {
         Environment environment = createEnvironment(Map.of(
-            "test.config.enabled", "true",
+            "test.config.enabled", StringUtils.TRUE,
             "test.config.count", "1",
             "test.config.extra", "x"
         ));
@@ -91,7 +92,7 @@ class ConfigurationJsonSchemaValidatorTest {
     @Test
     void resolvesPropertyPlaceholdersBeforeValidation() {
         Environment environment = createEnvironment(Map.of(
-            "source.enabled", "true",
+            "source.enabled", StringUtils.TRUE,
             "source.count", "2",
             "test.config.enabled", "${source.enabled}",
             "test.config.count", "${source.count}"
@@ -161,7 +162,7 @@ class ConfigurationJsonSchemaValidatorTest {
     @Test
     void suggestsSimilarPropertiesForUnknownKeys() {
         Environment environment = createEnvironment(Map.of(
-            "test.suggest.enabeld", "true",
+            "test.suggest.enabeld", StringUtils.TRUE,
             "test.suggest.read-timeout", "1s"
         ));
 
@@ -271,7 +272,7 @@ class ConfigurationJsonSchemaValidatorTest {
     @Test
     void validatesMinPropertiesForObjects() {
         Environment environment = createEnvironment(Map.of(
-            "test.config.enabled", "true",
+            "test.config.enabled", StringUtils.TRUE,
             "test.config.count", "1",
             "test.config.min-required.foo", "x"
         ));
@@ -285,7 +286,7 @@ class ConfigurationJsonSchemaValidatorTest {
     @Test
     void validatesMaxPropertiesForObjects() {
         Environment environment = createEnvironment(Map.of(
-            "test.config.enabled", "true",
+            "test.config.enabled", StringUtils.TRUE,
             "test.config.count", "1",
             "test.config.max-allowed.foo", "x",
             "test.config.max-allowed.bar", "y"

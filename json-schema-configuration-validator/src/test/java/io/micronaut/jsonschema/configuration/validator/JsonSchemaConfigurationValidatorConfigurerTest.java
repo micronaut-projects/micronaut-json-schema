@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.configuration.validator;
 
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.jsonschema.configuration.validator.cli.JsonSchemaConfigurationValidator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,7 @@ class JsonSchemaConfigurationValidatorConfigurerTest {
         Set<ConfigurationError> baseline = facade.validate();
         assertTrue(baseline.isEmpty(), () -> "Unexpected errors: " + baseline);
 
-        System.setProperty(TestApplicationContextConfigurer.ENABLED_PROP, "true");
+        System.setProperty(TestApplicationContextConfigurer.ENABLED_PROP, StringUtils.TRUE);
         Set<ConfigurationError> errors = facade.validate();
 
         assertTrue(TestApplicationContextConfigurer.INVOKED.get(), "Expected ApplicationContextConfigurer to be invoked");

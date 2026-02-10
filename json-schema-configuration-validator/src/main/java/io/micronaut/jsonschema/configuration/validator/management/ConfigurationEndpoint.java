@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.configuration.validator.management;
 
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.management.endpoint.annotation.Endpoint;
 import io.micronaut.management.endpoint.annotation.Read;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationErrors;
@@ -38,7 +39,7 @@ import java.util.Map;
  * </pre>
  */
 @Requires(classes = Endpoint.class)
-@Requires(property = ConfigurationValidatorConfiguration.PREFIX + ".endpoint.enabled", value = "true", defaultValue = "true")
+@Requires(property = ConfigurationValidatorConfiguration.PREFIX + ".endpoint.enabled", value = StringUtils.TRUE, defaultValue = StringUtils.TRUE)
 @Endpoint(id = "configurationerrors")
 @Singleton
 final class ConfigurationEndpoint {

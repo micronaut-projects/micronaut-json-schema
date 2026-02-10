@@ -17,6 +17,7 @@ package io.micronaut.jsonschema.configuration.validator.management;
 
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.core.async.publisher.Publishers;
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.health.HealthStatus;
 import io.micronaut.management.health.indicator.HealthIndicator;
 import io.micronaut.management.health.indicator.HealthResult;
@@ -40,7 +41,7 @@ import java.util.Set;
  * This bean is only loaded when the optional {@code micronaut-management} dependency is present.
  */
 @Requires(classes = HealthIndicator.class)
-@Requires(property = ConfigurationValidatorConfiguration.PREFIX + ".health.enabled", value = "true", defaultValue = "true")
+@Requires(property = ConfigurationValidatorConfiguration.PREFIX + ".health.enabled", value = StringUtils.TRUE, defaultValue = StringUtils.TRUE)
 @Singleton
 final class ConfigurationHealthIndicator implements HealthIndicator {
     private static final String NAME = "configuration";

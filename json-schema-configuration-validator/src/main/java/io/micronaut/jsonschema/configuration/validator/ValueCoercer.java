@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.type.Argument;
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
 import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaType;
 import org.jspecify.annotations.Nullable;
@@ -94,10 +95,10 @@ final class ValueCoercer {
         }
         if (type == ConfigurationSchemaType.BOOLEAN && value instanceof String s) {
             String normalized = s.trim().toLowerCase(Locale.ENGLISH);
-            if ("true".equals(normalized)) {
+            if (StringUtils.TRUE.equals(normalized)) {
                 return Boolean.TRUE;
             }
-            if ("false".equals(normalized)) {
+            if (StringUtils.FALSE.equals(normalized)) {
                 return Boolean.FALSE;
             }
             return value;
@@ -129,8 +130,8 @@ final class ValueCoercer {
 
     private static boolean isBooleanLiteral(String value) {
         String normalized = value.trim().toLowerCase(Locale.ENGLISH);
-        return "true".equals(normalized)
-            || "false".equals(normalized);
+        return StringUtils.TRUE.equals(normalized)
+            || StringUtils.FALSE.equals(normalized);
     }
 
     private static boolean isNumericLiteral(String value) {
