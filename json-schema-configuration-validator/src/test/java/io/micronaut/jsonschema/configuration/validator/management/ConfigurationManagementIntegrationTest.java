@@ -40,7 +40,7 @@ class ConfigurationManagementIntegrationTest {
             "test.config.enabled", "not-a-bool",
             "test.config.count", "1"
         ))) {
-            try (HttpClient client = HttpClient.create(server.getURL())) {
+            try (HttpClient client = server.getApplicationContext().createBean(HttpClient.class, server.getURL())) {
                 String json;
                 try {
                     json = client.toBlocking().retrieve(HttpRequest.GET("/health"));
@@ -62,7 +62,7 @@ class ConfigurationManagementIntegrationTest {
             "test.config.enabled", "not-a-bool",
             "test.config.count", "1"
         ))) {
-            try (HttpClient client = HttpClient.create(server.getURL())) {
+            try (HttpClient client = server.getApplicationContext().createBean(HttpClient.class, server.getURL())) {
                 String json = client.toBlocking().retrieve(HttpRequest.GET("/health"));
                 JsonMapper mapper = server.getApplicationContext().getBean(JsonMapper.class);
                 @SuppressWarnings("unchecked")
@@ -80,7 +80,7 @@ class ConfigurationManagementIntegrationTest {
             "test.config.enabled", "not-a-bool",
             "test.config.count", "1"
         ))) {
-            try (HttpClient client = HttpClient.create(server.getURL())) {
+            try (HttpClient client = server.getApplicationContext().createBean(HttpClient.class, server.getURL())) {
                 String json = client.toBlocking().retrieve(HttpRequest.GET("/configurationerrors"));
                 JsonMapper mapper = server.getApplicationContext().getBean(JsonMapper.class);
                 @SuppressWarnings("unchecked")
@@ -105,7 +105,7 @@ class ConfigurationManagementIntegrationTest {
             "test.config.enabled", "not-a-bool",
             "test.config.count", "1"
         ))) {
-            try (HttpClient client = HttpClient.create(server.getURL())) {
+            try (HttpClient client = server.getApplicationContext().createBean(HttpClient.class, server.getURL())) {
                 RuntimeException e = assertThrows(RuntimeException.class,
                     () -> client.toBlocking().retrieve(HttpRequest.GET("/configurationerrors")));
                 assertTrue(e instanceof HttpClientResponseException || e instanceof io.micronaut.http.client.exceptions.ResponseClosedException,
