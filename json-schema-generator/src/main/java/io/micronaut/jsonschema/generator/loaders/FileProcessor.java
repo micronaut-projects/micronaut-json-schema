@@ -27,6 +27,9 @@ import java.util.Optional;
 
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getClassName;
 
+/**
+ * A utility class for loading JSON schemas from the file system.
+ */
 @Internal
 public class FileProcessor {
 
@@ -49,7 +52,7 @@ public class FileProcessor {
             } else if (config.jsonFile() != null) {
                 loader = new FileLoader(config.jsonFile());
             } else {
-                throw new RuntimeException("Missing required config.jsonUrl(), config.inputStream(), or config.jsonFile().");
+                throw new RuntimeException("Missing required config.inputURL(), config.inputStream(), or config.inputFile().");
             }
             return loader.load();
         } catch (RuntimeException e) {

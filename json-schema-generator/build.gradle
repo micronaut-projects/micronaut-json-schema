@@ -11,6 +11,9 @@ dependencies {
     implementation(mnSourcegen.micronaut.sourcegen.annotations)
     implementation(mnSerde.micronaut.serde.jackson)
 
+    compileOnly(mnBuildPluginSourcegen.micronaut.build.plugin.sourcegen.annotations)
+    annotationProcessor(mnBuildPluginSourcegen.micronaut.build.plugin.sourcegen.generator)
+
     api(projects.micronautJsonSchemaAnnotations)
     api(projects.micronautJsonSchemaCommon)
 
@@ -24,4 +27,5 @@ micronautBuild {
     descriptor {
         parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-generator"
     }
+    binaryCompatibility.enabledAfter("2.0.0")
 }

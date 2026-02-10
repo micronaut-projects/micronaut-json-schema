@@ -2,6 +2,9 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
+        maven {
+            url("https://s01.oss.sonatype.org/content/repositories/snapshots")
+        }
     }
 }
 
@@ -13,6 +16,9 @@ dependencyResolutionManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
+        maven {
+            url("https://s01.oss.sonatype.org/content/repositories/snapshots")
+        }
     }
 }
 
@@ -40,4 +46,5 @@ micronautBuild {
     importMicronautCatalog('micronaut-validation')
     importMicronautCatalog('micronaut-serde')
     importMicronautCatalog('micronaut-sourcegen')
+    importMicronautCatalog('micronaut-build-plugin-sourcegen')
 }

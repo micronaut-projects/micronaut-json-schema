@@ -37,7 +37,7 @@ public class SourceGeneratorConfigBuilder {
     Path outputPath = null;
     String outputPackageName = "";
     String outputFileName = "";
-    JavadocConfig javadocConfig = new JavadocConfig();
+    JavadocConfig javadocConfig = new JavadocConfig(true);
     RecordAdoptionStrategy recordAdoptionStrategy = RecordAdoptionStrategy.PREFER_RECORD;
 
     /**
