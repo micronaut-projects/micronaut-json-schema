@@ -28,7 +28,6 @@ dependencies {
     testImplementation(mn.micronaut.http.server.netty)
     testImplementation(mn.micronaut.management)
     testImplementation("io.micronaut:micronaut-http-client")
-    testImplementation("io.micronaut:micronaut-http-client-core")
     testImplementation("io.micronaut:micronaut-jackson-databind")
     testImplementation("org.yaml:snakeyaml")
     testImplementation(libs.micronaut.toml)
