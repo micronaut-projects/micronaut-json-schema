@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.configuration.validator;
+package io.micronaut.jsonschema.configuration.validator.management;
 
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.core.type.Argument;
@@ -21,6 +21,7 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.json.JsonMapper;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration;
 import io.micronaut.runtime.server.EmbeddedServer;
 import org.junit.jupiter.api.Test;
 
