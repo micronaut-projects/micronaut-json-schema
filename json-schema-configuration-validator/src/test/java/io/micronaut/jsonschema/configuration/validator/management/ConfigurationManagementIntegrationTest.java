@@ -116,7 +116,6 @@ class ConfigurationManagementIntegrationTest {
 
     private static EmbeddedServer startServer(Map<String, Object> properties) {
         Map<String, Object> merged = new HashMap<>();
-        merged.put("micronaut.server.port", -1);
         merged.put("endpoints.all.enabled", true);
         merged.put("endpoints.all.sensitive", false);
         merged.put("endpoints.health.enabled", true);
