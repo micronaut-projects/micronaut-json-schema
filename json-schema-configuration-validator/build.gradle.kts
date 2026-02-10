@@ -14,7 +14,7 @@ dependencies {
 
     implementation(mnSerde.micronaut.serde.jackson)
 
-    compileOnly("io.micronaut:micronaut-management")
+    compileOnly(mn.micronaut.management)
 
     annotationProcessor(mnSerde.micronaut.serde.processor)
     annotationProcessor(mn.micronaut.inject.java)
@@ -26,7 +26,7 @@ dependencies {
     testImplementation(mn.micronaut.http)
     testImplementation(mn.micronaut.context)
     testImplementation(mn.micronaut.http.server.netty)
-    testImplementation("io.micronaut:micronaut-management")
+    testImplementation(mn.micronaut.management)
     testImplementation("io.micronaut:micronaut-http-client")
     testImplementation("io.micronaut:micronaut-http-client-core")
     testImplementation("io.micronaut:micronaut-jackson-databind")
