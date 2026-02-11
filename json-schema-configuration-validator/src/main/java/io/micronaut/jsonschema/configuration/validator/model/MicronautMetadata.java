@@ -19,6 +19,14 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.serde.annotation.Serdeable;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Micronaut-specific schema metadata.
+ *
+ * @param prefix The configuration prefix
+ * @param type The class name (if known)
+ * @param kind The schema kind (e.g. configuration-properties or each-property)
+ * @param container The container kind (e.g. map)
+ */
 @Serdeable
 @Internal
 public record MicronautMetadata(

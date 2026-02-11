@@ -37,8 +37,9 @@ public interface ConfigurationValidator {
 
     /**
      * Validates the environment configuration.
+     * @param classLoader The classloader used to resolve JSON schema resources
      * @param environment Micronaut Environment
-     * @return a set of configuration erros
+     * @return a set of configuration errors
      */
     @NonNull Set<@NonNull ConfigurationError> validate(@NonNull ClassLoader classLoader, @NonNull Environment environment);
 }
