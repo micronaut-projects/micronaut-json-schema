@@ -12,6 +12,8 @@ It is designed for:
 
 dependency:micronaut-json-schema-configuration-validator[groupId="io.micronaut.jsonschema"]
 
+You can use the api:jsonschema.configuration.validator.ConfigurationErrors[] API to access to configuration validation errors.
+
 === How schemas are discovered
 
 The validator loads schemas via api:jsonschema.utils.JsonSchemaClassPathResourceLoader[]:
@@ -62,46 +64,28 @@ These runtime integrations are enabled by default, but the health indicator and 
 
 NOTE: Invalid configuration often causes application startup failures (for example if required configuration is missing, or if a component fails during initialization due to invalid values). In those cases, the application may not start and the runtime beans (including the management endpoint and health indicator) will not be available.
 
-==== Dependencies
-
-To use the management endpoint and health indicator, add:
-
-dependency:micronaut-management[groupId="io.micronaut"]
-
 ==== Runtime API
 
 The module exposes a bean of type api:jsonschema.configuration.validator.ConfigurationErrors[] that returns a snapshot of the current validation errors:
 
 snippet::io.micronaut.jsonschema.test.ConfigurationErrorsExample[tags=runtime-api]
 
-By default the first computed validation result is cached for the lifetime of the application context.
+By default, the first computed validation result is cached for the lifetime of the application context.
 
 ==== Configuration
 
 All runtime configuration is under the `micronaut.jsonschema.configuration.validator` prefix:
 
-[configuration]
-----
-micronaut:
-  jsonschema:
-    configuration:
-      validator:
-        cache: true
-        fail-on-not-present: true
-        suppressions:
-          - micronaut.http.*
-        health:
-          enabled: true
-        endpoint:
-          enabled: true
-----
 
-==== Health indicator
-
-When enabled, the health indicator reports `DOWN` if any configuration validation errors are present.
-It also includes a bounded sample of the failing properties and messages in the response details.
+include::{includedir}configurationProperties/io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration.adoc[]
 
 ==== Management endpoint
+
+To use the configuration errors management endpoint and health indicator, add:
+
+dependency:micronaut-management[groupId="io.micronaut"]
+
+include::{includedir}configurationProperties/io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration$EndpointConfiguration.adoc[]
 
 When enabled, the management endpoint is available under id `configurationerrors` and returns a JSON response containing an `errors` namespace.
 
@@ -115,6 +99,13 @@ endpoints:
   configurationerrors:
     sensitive: false
 ----
+
+==== Health indicator
+
+include::{includedir}configurationProperties/io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration$HealthConfiguration.adoc[]
+
+When enabled, the health indicator reports `DOWN` if any configuration validation errors are present.
+It also includes a bounded sample of the failing properties and messages in the response details.
 
 === Custom validation rules (ServiceLoader)
 

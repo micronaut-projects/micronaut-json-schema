@@ -31,7 +31,6 @@ import java.util.Set;
  * management endpoints.
  */
 public interface ConfigurationErrors {
-
     /**
      * Validate the current {@code Environment} configuration and return the resulting errors.
      * <p>
@@ -39,6 +38,5 @@ public interface ConfigurationErrors {
      *
      * @return The current configuration validation errors
      */
-    @NonNull
-    Set<ConfigurationError> getCurrentErrors();
+    @NonNull Set<@NonNull ConfigurationError> getCurrentErrors();
 }
