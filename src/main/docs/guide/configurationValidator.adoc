@@ -1,5 +1,4 @@
 [[configurationValidator]]
-== Validating Configuration Against Schemas
 
 The Micronaut JSON Schema configuration validator validates application configuration against JSON Schemas discovered on the classpath.
 
