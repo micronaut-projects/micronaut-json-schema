@@ -23,7 +23,7 @@ import io.micronaut.management.health.indicator.HealthIndicator;
 import io.micronaut.management.health.indicator.HealthResult;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationErrors;
-import io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration;
+import io.micronaut.jsonschema.configuration.validator.HealthConfiguration;
 import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
 
@@ -41,7 +41,7 @@ import java.util.Set;
  * This bean is only loaded when the optional {@code micronaut-management} dependency is present.
  */
 @Requires(classes = HealthIndicator.class)
-@Requires(property = ConfigurationValidatorConfiguration.PREFIX + ".health.enabled", value = StringUtils.TRUE, defaultValue = StringUtils.TRUE)
+@Requires(property = HealthConfiguration.PREFIX + ".enabled", value = StringUtils.TRUE, defaultValue = StringUtils.TRUE)
 @Singleton
 final class ConfigurationHealthIndicator implements HealthIndicator {
     private static final String NAME = "configuration";

@@ -102,7 +102,7 @@ endpoints:
 
 ==== Health indicator
 
-include::{includedir}configurationProperties/io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration$HealthConfiguration.adoc[]
+include::{includedir}configurationProperties/io.micronaut.jsonschema.configuration.validator.HealthConfiguration.adoc[]
 
 When enabled, the health indicator reports `DOWN` if any configuration validation errors are present.
 It also includes a bounded sample of the failing properties and messages in the response details.

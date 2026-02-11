@@ -144,41 +144,86 @@ public record ConfigurationError(
             this.message = message;
         }
 
+        /**
+         * Set the error {@link Type}.
+         *
+         * @param type The type
+         * @return This builder
+         */
         public Builder type(Type type) {
             this.type = type;
             return this;
         }
 
+        /**
+         * Set the origin location for this error.
+         *
+         * @param originLocation The origin location (for example a file path or classpath resource)
+         * @return This builder
+         */
         public Builder originLocation(@Nullable String originLocation) {
             this.originLocation = originLocation;
             return this;
         }
 
+        /**
+         * Set the raw (non-normalized) property name.
+         *
+         * @param rawPropertyName The raw property name
+         * @return This builder
+         */
         public Builder rawPropertyName(@Nullable String rawPropertyName) {
             this.rawPropertyName = rawPropertyName;
             return this;
         }
 
+        /**
+         * Set the raw value.
+         *
+         * @param rawValue The raw value
+         * @return This builder
+         */
         public Builder rawValue(@Nullable Object rawValue) {
             this.rawValue = rawValue;
             return this;
         }
 
+        /**
+         * Set the 1-based line number in the origin file.
+         *
+         * @param lineNumber The line number, or {@code -1} if unknown
+         * @return This builder
+         */
         public Builder lineNumber(int lineNumber) {
             this.lineNumber = lineNumber;
             return this;
         }
 
+        /**
+         * Set a best-effort snippet showing the invalid definition.
+         *
+         * @param snippet The snippet
+         * @return This builder
+         */
         public Builder snippet(@Nullable String snippet) {
             this.snippet = snippet;
             return this;
         }
 
+        /**
+         * Set the snippet language.
+         *
+         * @param snippetLanguage The snippet language (for example {@code properties}, {@code yaml}, {@code toml})
+         * @return This builder
+         */
         public Builder snippetLanguage(@Nullable String snippetLanguage) {
             this.snippetLanguage = snippetLanguage;
             return this;
         }
 
+        /**
+         * @return A new {@link ConfigurationError} instance.
+         */
         public ConfigurationError build() {
             return new ConfigurationError(property, type, message, originLocation, rawPropertyName, rawValue, lineNumber, snippet, snippetLanguage);
         }

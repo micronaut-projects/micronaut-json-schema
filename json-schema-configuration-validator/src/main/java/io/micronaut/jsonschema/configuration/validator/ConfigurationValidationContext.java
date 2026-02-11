@@ -25,12 +25,12 @@ import java.util.Map;
  * Context object passed to {@link ConfigurationRule} implementations.
  *
  * @param environment The Micronaut environment being validated
- * @param prefix The prefix being validated. For {@code @EachProperty}, this is the fully-qualified
- *               entry prefix (for example {@code test.executors.alpha}).
- * @param schema The root configuration schema
- * @param property The schema property representing the node being validated (typically the root
- *                 property for configuration properties schemas, or the entry schema for
- *                 {@code @EachProperty})
+ * @param prefix      The prefix being validated. For {@code @EachProperty}, this is the fully-qualified
+ *                    entry prefix (for example {@code test.executors.alpha}).
+ * @param schema      The root configuration schema
+ * @param property    The schema property representing the node being validated (typically the root
+ *                    property for configuration properties schemas, or the entry schema for
+ *                    {@code @EachProperty})
  * @param instanceMap The nested instance map computed from the environment for the given prefix
  */
 public record ConfigurationValidationContext(

@@ -28,7 +28,7 @@ public interface ConfigurationValidator {
     /**
      * Validates the environment configuration.
      * @param environment Micronaut Environment
-     * @return a set of configuration erros
+     * @return a set of configuration errors
      */
     default Set<ConfigurationError> validate(Environment environment) {
         return validate(environment.getClassLoader(), environment);

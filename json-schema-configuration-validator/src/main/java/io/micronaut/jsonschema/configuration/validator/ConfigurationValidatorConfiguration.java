@@ -30,7 +30,6 @@ import java.util.List;
  *     <li>{@code micronaut.jsonschema.configuration.validator.cache}</li>
  *     <li>{@code micronaut.jsonschema.configuration.validator.fail-on-not-present}</li>
  *     <li>{@code micronaut.jsonschema.configuration.validator.suppressions}</li>
- *     <li>{@code micronaut.jsonschema.configuration.validator.health.enabled}</li>
  *     <li>{@code micronaut.jsonschema.configuration.validator.endpoint.enabled}</li>
  * </ul>
  */
@@ -45,8 +44,6 @@ public final class ConfigurationValidatorConfiguration {
     private boolean cache = DEFAULT_CACHE;
     private boolean failOnNotPresent = DEFAULT_FAIL_ON_NOT_PRESENT;
     private List<String> suppressions = List.of();
-    private HealthConfiguration health = new HealthConfiguration();
-    private EndpointConfiguration endpoint = new EndpointConfiguration();
 
     /**
      * Whether the validation result should be cached.
@@ -101,79 +98,5 @@ public final class ConfigurationValidatorConfiguration {
      */
     public void setSuppressions(@Nullable List<String> suppressions) {
         this.suppressions = suppressions != null ? List.copyOf(suppressions) : List.of();
-    }
-
-    /**
-     * @return Health indicator configuration
-     */
-    public HealthConfiguration getHealth() {
-        return health;
-    }
-
-    /**
-     * @param health Health indicator configuration
-     */
-    public void setHealth(HealthConfiguration health) {
-        this.health = health;
-    }
-
-    /**
-     * @return Endpoint configuration
-     */
-    public EndpointConfiguration getEndpoint() {
-        return endpoint;
-    }
-
-    /**
-     * @param endpoint Endpoint configuration
-     */
-    public void setEndpoint(EndpointConfiguration endpoint) {
-        this.endpoint = endpoint;
-    }
-
-    /**
-     * Health indicator configuration.
-     */
-    @ConfigurationProperties("health")
-    public static final class HealthConfiguration {
-        public static final boolean DEFAULT_HEALTH = true;
-        private boolean enabled = DEFAULT_HEALTH;
-
-        /**
-         * @return Whether the configuration validation health indicator is enabled. Default Value {@value #DEFAULT_HEALTH}
-         */
-        public boolean isEnabled() {
-            return enabled;
-        }
-
-        /**
-         * @param enabled Whether the configuration validation health indicator is enabled
-         */
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-    }
-
-    /**
-     * Management endpoint configuration.
-     */
-    @ConfigurationProperties("endpoint")
-    public static final class EndpointConfiguration {
-        public static final boolean DEFAULT_ENDPOINT = true;
-        private boolean enabled = DEFAULT_CACHE;
-
-        /**
-         * @return Whether the configuration validation management endpoint is enabled. Default Value {@value #DEFAULT_ENDPOINT}
-         */
-        public boolean isEnabled() {
-            return enabled;
-        }
-
-        /**
-         * @param enabled Whether the configuration validation management endpoint is enabled
-         */
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
     }
 }
