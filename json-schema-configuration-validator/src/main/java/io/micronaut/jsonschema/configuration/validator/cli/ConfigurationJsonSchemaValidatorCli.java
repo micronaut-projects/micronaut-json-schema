@@ -106,8 +106,10 @@ public final class ConfigurationJsonSchemaValidatorCli {
         Set<ConfigurationError> errors;
         try {
             errors = facade.validate();
-        } catch (IOException e) {
-            err.println("Validation failed: " + e.getMessage());
+        } catch (Exception e) {
+            err.println("Validation failed while loading configuration:");
+            printDiscoveredConfigFiles(err, options.classpath());
+            printThrowable(err, e);
             return 2;
         }
 
@@ -121,6 +123,80 @@ public final class ConfigurationJsonSchemaValidatorCli {
 
         // Non-zero when any ERRORs are present.
         return errors.stream().anyMatch(e -> e.type() == ConfigurationError.Type.ERROR) ? 1 : 0;
+    }
+
+    private static void printThrowable(PrintStream err, Throwable e) {
+        Throwable root = rootCause(e);
+        err.println("  " + formatThrowable(root));
+        if (root != e) {
+            err.println("  (wrapped by: " + formatThrowable(e) + ")");
+        }
+    }
+
+    private static void printDiscoveredConfigFiles(PrintStream err, String classpath) {
+        List<Path> files = discoverApplicationConfigFilesOnClasspath(classpath);
+        if (files.isEmpty()) {
+            return;
+        }
+        err.println("  Config files on classpath:");
+        for (Path path : files) {
+            err.println("    - " + path.toAbsolutePath());
+        }
+    }
+
+    private static List<Path> discoverApplicationConfigFilesOnClasspath(String classpath) {
+        if (classpath == null || classpath.isBlank()) {
+            return List.of();
+        }
+
+        List<Path> files = new ArrayList<>(2);
+        String[] parts = classpath.split(java.util.regex.Pattern.quote(java.io.File.pathSeparator));
+        for (String part : parts) {
+            if (part == null) {
+                continue;
+            }
+            String trimmed = part.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            Path entry;
+            try {
+                entry = Path.of(trimmed);
+            } catch (Exception ignored) {
+                continue;
+            }
+            if (!java.nio.file.Files.isDirectory(entry)) {
+                continue;
+            }
+
+            addIfExists(files, entry.resolve("application.yml"));
+            addIfExists(files, entry.resolve("application.yaml"));
+            addIfExists(files, entry.resolve("application.properties"));
+            addIfExists(files, entry.resolve("application.toml"));
+        }
+        return files;
+    }
+
+    private static void addIfExists(List<Path> files, Path path) {
+        if (java.nio.file.Files.exists(path)) {
+            files.add(path);
+        }
+    }
+
+    private static Throwable rootCause(Throwable e) {
+        Throwable root = e;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        return root;
+    }
+
+    private static String formatThrowable(Throwable e) {
+        String message = e.getMessage();
+        if (message == null || message.isBlank()) {
+            return e.getClass().getName();
+        }
+        return message;
     }
 
     private static ReportFiles writeReports(Set<ConfigurationError> errors, Options options) throws IOException {

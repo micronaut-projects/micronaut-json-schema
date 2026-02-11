@@ -500,4 +500,38 @@ class ConfigurationJsonSchemaValidatorCliTest {
         assertTrue(Pattern.compile("(?s)test\\.config\\.enabled.*?<td>5</td>").matcher(html).find());
         assertFalse(Pattern.compile("(?s)test\\.config\\.enabled.*?<td>2</td>").matcher(html).find());
     }
+
+    @Test
+    void cliReportsYamlSyntaxErrorsWithLocation() throws Exception {
+        Path cp = tempDir.resolve("cp-yaml-syntax");
+        Files.createDirectories(cp);
+        Files.writeString(cp.resolve("application.yml"), String.join("\n",
+            "test:",
+            "\tconfig:",
+            "    enabled: not-a-bool",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Path out = tempDir.resolve("out-yaml-syntax");
+        ByteArrayOutputStream errCapture = new ByteArrayOutputStream();
+        PrintStream err = new PrintStream(errCapture, true, StandardCharsets.UTF_8);
+
+        String classpath = cp + File.pathSeparator + System.getProperty("java.class.path");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", classpath,
+            "--environments", "test",
+            "--out", out.toString(),
+            "--format", "both"
+        }, System.out, err);
+
+        assertEquals(2, exit);
+        assertFalse(Files.exists(out.resolve("configuration-errors.json")));
+        assertFalse(Files.exists(out.resolve("configuration-errors.html")));
+
+        String stderr = errCapture.toString(StandardCharsets.UTF_8);
+        assertTrue(stderr.contains("Validation failed while loading configuration"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.toLowerCase().contains("application.yml"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.toLowerCase().contains("line"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.toLowerCase().contains("column"), () -> "Unexpected stderr:\n" + stderr);
+    }
 }
