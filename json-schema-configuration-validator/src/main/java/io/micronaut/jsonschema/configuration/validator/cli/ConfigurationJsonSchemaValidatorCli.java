@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.configuration.validator.cli;
 
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
@@ -47,6 +48,7 @@ import java.util.Set;
  *     <li>{@code --format <json|html|both>} (defaults to {@code both})</li>
  * </ul>
  */
+@Internal
 public final class ConfigurationJsonSchemaValidatorCli {
     private static final System.Logger LOG = System.getLogger(ConfigurationJsonSchemaValidatorCli.class.getName());
 

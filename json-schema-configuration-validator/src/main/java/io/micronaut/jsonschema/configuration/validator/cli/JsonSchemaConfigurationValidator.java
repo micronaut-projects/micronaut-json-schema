@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator.cli;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.ApplicationContextConfiguration;
 import io.micronaut.context.env.Environment;
+import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
 import io.micronaut.jsonschema.configuration.validator.report.ConfigurationErrorReporter;
@@ -37,6 +38,7 @@ import java.util.Set;
  * CLI-oriented facade that constructs a classloader and environment and delegates to
  * {@link ConfigurationJsonSchemaValidator}.
  */
+@Internal
 public final class JsonSchemaConfigurationValidator {
     private static final System.Logger LOG = System.getLogger(JsonSchemaConfigurationValidator.class.getName());
 

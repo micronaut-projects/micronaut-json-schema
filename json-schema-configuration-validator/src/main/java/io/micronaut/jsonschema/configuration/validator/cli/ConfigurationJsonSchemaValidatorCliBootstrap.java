@@ -15,6 +15,8 @@
  */
 package io.micronaut.jsonschema.configuration.validator.cli;
 
+import io.micronaut.core.annotation.Internal;
+
 import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -33,6 +35,7 @@ import java.util.regex.Pattern;
  * {@code micronaut-json-schema-configuration-validator} module, while providing the full runtime
  * classpath (including transitive dependencies) via {@code --classpath}.
  */
+@Internal
 public final class ConfigurationJsonSchemaValidatorCliBootstrap {
     private static final System.Logger LOG = System.getLogger(ConfigurationJsonSchemaValidatorCliBootstrap.class.getName());
 
