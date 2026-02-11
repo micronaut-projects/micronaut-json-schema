@@ -139,6 +139,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
 
         for (Map.Entry<String, List<ConfigurationSchema>> entry : schemasByPrefix.entrySet()) {
             String prefix = entry.getKey();
+            Set<String> overlappingPrefixKeys = overlappingPrefixKeys(entry.getValue());
             for (ConfigurationSchema schema : entry.getValue()) {
                 engine.validateSchema(
                     prefix,
@@ -149,7 +150,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     failOnNotPresent,
                     rules,
                     errors,
-                    nestedSchemaKeysByPrefix
+                    nestedSchemaKeysByPrefix,
+                    overlappingPrefixKeys
                 );
             }
         }
@@ -242,6 +244,20 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
         return keysByPrefix;
     }
 
+    private static Set<String> overlappingPrefixKeys(List<ConfigurationSchema> schemas) {
+        if (schemas == null || schemas.size() < 2) {
+            return Set.of();
+        }
+        Set<String> keys = new LinkedHashSet<>(8);
+        for (ConfigurationSchema schema : schemas) {
+            if (schema == null || schema.properties() == null || schema.properties().isEmpty()) {
+                continue;
+            }
+            keys.addAll(schema.properties().keySet());
+        }
+        return keys.isEmpty() ? Set.of() : keys;
+    }
+
     /**
      * Internal validation implementation.
      */
@@ -255,7 +271,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             boolean failOnNotPresent,
             List<ConfigurationRule> rules,
             Set<ConfigurationError> errors,
-            Map<String, Set<String>> nestedSchemaKeysByPrefix
+            Map<String, Set<String>> nestedSchemaKeysByPrefix,
+            Set<String> overlappingPrefixKeys
         ) {
             String kind = schema.micronaut() != null ? schema.micronaut().kind() : null;
             String container = schema.micronaut() != null ? schema.micronaut().container() : null;
@@ -263,7 +280,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             if ("each-property".equals(kind) && "map".equals(container)) {
                 validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaKeysByPrefix);
             } else {
-                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaKeysByPrefix);
+                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaKeysByPrefix, overlappingPrefixKeys);
             }
         }
 
@@ -276,7 +293,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             boolean failOnNotPresent,
             List<ConfigurationRule> rules,
             Set<ConfigurationError> errors,
-            Map<String, Set<String>> nestedSchemaKeysByPrefix
+            Map<String, Set<String>> nestedSchemaKeysByPrefix,
+            Set<String> overlappingPrefixKeys
         ) {
             if (!environment.containsProperties(prefix)) {
                 return;
@@ -286,11 +304,12 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             ConfigurationSchemaProperty root = ConfigurationSchemaPropertyAdapter.fromRoot(schema);
 
             Map<String, Object> effectiveInstance = removeNestedSchemaKeys(prefix, instance, root, nestedSchemaKeysByPrefix);
+            effectiveInstance = removeOverlappingSchemaKeys(effectiveInstance, root, overlappingPrefixKeys);
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
             SchemaValidator.validateObject(ctx, root, effectiveInstance, prefix, null, errors);
 
-            applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, root, effectiveInstance), errors);
-            applyRulesForNestedObjects(rules, environment, prefix, schema, root, effectiveInstance, errors);
+            applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, root, instance), errors);
+            applyRulesForNestedObjects(rules, environment, prefix, schema, root, instance, errors);
         }
 
         private void validateEachProperty(
@@ -407,6 +426,35 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     continue;
                 }
                 if (properties != null && properties.containsKey(key)) {
+                    continue;
+                }
+                if (filtered == null) {
+                    filtered = new LinkedHashMap<>(instance);
+                }
+                filtered.remove(key);
+            }
+            return filtered != null ? filtered : instance;
+        }
+
+        private static Map<String, Object> removeOverlappingSchemaKeys(
+            Map<String, Object> instance,
+            ConfigurationSchemaProperty root,
+            Set<String> overlappingPrefixKeys
+        ) {
+            if (instance.isEmpty() || overlappingPrefixKeys.isEmpty()) {
+                return instance;
+            }
+            Map<String, ConfigurationSchemaProperty> properties = root.properties();
+            if (properties == null || properties.isEmpty()) {
+                return instance;
+            }
+
+            Map<String, Object> filtered = null;
+            for (String key : overlappingPrefixKeys) {
+                if (properties.containsKey(key)) {
+                    continue;
+                }
+                if (!instance.containsKey(key)) {
                     continue;
                 }
                 if (filtered == null) {

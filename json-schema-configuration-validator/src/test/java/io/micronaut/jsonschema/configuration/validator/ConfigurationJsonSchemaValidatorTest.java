@@ -298,6 +298,35 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.config.max-allowed") && e.message().contains("at most")));
     }
 
+    @Test
+    void supportsOverlappingConfigurationPropertiesSchemasForSamePrefix() {
+        Environment environment = createEnvironment(Map.of(
+            "test.overlap.foo", "not-a-bool",
+            "test.overlap.bar", "not-an-int",
+            "test.overlap.extra", "x"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.overlap.foo") && e.message().contains("boolean"))
+            , () -> "Expected boolean validation error, got: " + errors);
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.overlap.bar") && e.message().contains("integer"))
+            , () -> "Expected integer validation error, got: " + errors);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.overlap.extra") && e.message().contains("not present"))
+            , () -> "Expected unknown property error for extra, got: " + errors);
+
+        // When multiple schemas share the same prefix, keys defined in any schema must not be
+        // reported as unknown just because they are not present in the current schema.
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.overlap.foo") && e.message().contains("not present"))
+            , () -> "Unexpected unknown-property error for foo, got: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.overlap.bar") && e.message().contains("not present"))
+            , () -> "Unexpected unknown-property error for bar, got: " + errors);
+    }
+
     private static Environment createEnvironment(Map<String, Object> properties) {
         return createEnvironment(properties, "test-origin");
     }
