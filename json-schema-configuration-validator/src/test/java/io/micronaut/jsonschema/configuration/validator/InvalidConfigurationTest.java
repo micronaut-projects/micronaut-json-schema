@@ -14,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @MicronautTest
 class InvalidConfigurationTest {
     @Test
-    void configurationValidation(EnvironmentConfigurationValidator validator) {
-        Set<ConfigurationError> errors = validator.validate();
+    void configurationValidation(ConfigurationErrors configurationErrors) {
+        Set<ConfigurationError> errors = configurationErrors.getCurrentErrors();
         assertNotNull(errors);
         assertFalse(errors.isEmpty());
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.server.ssl.enabled") && e.message().contains("boolean")));

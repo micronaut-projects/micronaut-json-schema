@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ValidConfigurationTest {
 
     @Test
-    void configurationValidation(EnvironmentConfigurationValidator validator) {
-        Set<ConfigurationError> errors = validator.validate();
+    void configurationValidation(ConfigurationErrors configurationErrors) {
+        Set<ConfigurationError> errors = configurationErrors.getCurrentErrors();
         assertNotNull(errors);
         assertTrue(errors.isEmpty());
     }
