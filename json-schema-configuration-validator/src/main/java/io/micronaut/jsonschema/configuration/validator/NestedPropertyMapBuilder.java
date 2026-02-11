@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.core.annotation.Internal;
-import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,8 +27,7 @@ final class NestedPropertyMapBuilder {
     private NestedPropertyMapBuilder() {
     }
 
-    @NonNull
-    static Map<String, Object> nest(@NonNull Map<String, Object> flat) {
+    static Map<String, Object> nest(Map<String, Object> flat) {
         Map<String, Object> root = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : flat.entrySet()) {
             String key = entry.getKey();

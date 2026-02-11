@@ -60,6 +60,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
      *
      * @param args The CLI arguments
      */
+    @SuppressWarnings("java:S1147") // CLI entry point: exit code must be propagated to the process.
     public static void main(String[] args) {
         int exitCode = run(args, System.out, System.err);
         if (exitCode != 0) {

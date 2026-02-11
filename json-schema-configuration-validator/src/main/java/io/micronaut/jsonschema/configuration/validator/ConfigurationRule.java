@@ -15,8 +15,6 @@
  */
 package io.micronaut.jsonschema.configuration.validator;
 
-import org.jspecify.annotations.NonNull;
-
 import java.util.Set;
 
 /**
@@ -35,7 +33,7 @@ public interface ConfigurationRule {
      * @param prefix The prefix being validated
      * @return True if this rule should be executed for the prefix
      */
-    boolean supportsPrefix(@NonNull String prefix);
+    boolean supportsPrefix(String prefix);
 
     /**
      * Perform custom validation for a configuration prefix (or a single {@code @EachProperty}
@@ -44,6 +42,5 @@ public interface ConfigurationRule {
      * @param context The validation context
      * @return A set of additional validation errors/warnings (may be empty)
      */
-    @NonNull
-    Set<ConfigurationError> validate(@NonNull ConfigurationValidationContext context);
+    Set<ConfigurationError> validate(ConfigurationValidationContext context);
 }

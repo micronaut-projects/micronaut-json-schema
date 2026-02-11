@@ -25,7 +25,6 @@ import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchema;
 import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -78,7 +77,6 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
      *
      * @return The suppression patterns
      */
-    @NonNull
     public List<String> getSuppressionPatterns() {
         return suppressionPatterns.get();
     }
@@ -101,7 +99,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
      * @return A set of validation errors (empty if valid)
      */
     @Override
-    public @NonNull Set<@NonNull ConfigurationError> validate(@NonNull ClassLoader classLoader, @NonNull Environment environment) {
+    public Set<ConfigurationError> validate(ClassLoader classLoader, Environment environment) {
         JsonSchemaClassPathResourceLoader loader = JsonSchemaClassPathResourceLoader.createDefault(classLoader);
         Map<String, Readable> schemaResources = loader.jsonSchemas();
 

@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.annotation.ConfigurationProperties;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -93,7 +92,6 @@ public final class ConfigurationValidatorConfiguration {
      *
      * @return Patterns used to suppress validation errors
      */
-    @NonNull
     public List<String> getSuppressions() {
         return suppressions;
     }
@@ -108,7 +106,6 @@ public final class ConfigurationValidatorConfiguration {
     /**
      * @return Health indicator configuration
      */
-    @NonNull
     public HealthConfiguration getHealth() {
         return health;
     }
@@ -123,7 +120,6 @@ public final class ConfigurationValidatorConfiguration {
     /**
      * @return Endpoint configuration
      */
-    @NonNull
     public EndpointConfiguration getEndpoint() {
         return endpoint;
     }

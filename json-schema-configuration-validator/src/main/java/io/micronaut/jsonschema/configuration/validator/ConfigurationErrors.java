@@ -15,8 +15,6 @@
  */
 package io.micronaut.jsonschema.configuration.validator;
 
-import org.jspecify.annotations.NonNull;
-
 import java.util.Set;
 
 /**
@@ -38,5 +36,5 @@ public interface ConfigurationErrors {
      *
      * @return The current configuration validation errors
      */
-    @NonNull Set<@NonNull ConfigurationError> getCurrentErrors();
+    Set<ConfigurationError> getCurrentErrors();
 }

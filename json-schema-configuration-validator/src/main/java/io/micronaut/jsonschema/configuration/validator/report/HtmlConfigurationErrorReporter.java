@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.configuration.validator.report;
 
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
-import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,7 +38,7 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
     /**
      * @param output The output stream
      */
-    public HtmlConfigurationErrorReporter(@NonNull OutputStream output) {
+    public HtmlConfigurationErrorReporter(OutputStream output) {
         this.output = output;
     }
 

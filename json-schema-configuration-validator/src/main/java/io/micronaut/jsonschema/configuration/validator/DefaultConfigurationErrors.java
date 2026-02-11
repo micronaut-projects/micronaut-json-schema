@@ -17,7 +17,6 @@ package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.env.Environment;
 import jakarta.inject.Singleton;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,7 +45,6 @@ final class DefaultConfigurationErrors implements ConfigurationErrors {
     }
 
     @Override
-    @NonNull
     public Set<ConfigurationError> getCurrentErrors() {
         if (!configuration.isCache()) {
             return validateNow();

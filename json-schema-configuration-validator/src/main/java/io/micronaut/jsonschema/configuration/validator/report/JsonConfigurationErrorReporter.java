@@ -18,7 +18,6 @@ package io.micronaut.jsonschema.configuration.validator.report;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.serde.annotation.Serdeable;
-import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,7 +37,7 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
      * @param jsonMapper The JSON mapper
      * @param output The output stream
      */
-    public JsonConfigurationErrorReporter(@NonNull JsonMapper jsonMapper, @NonNull OutputStream output) {
+    public JsonConfigurationErrorReporter(JsonMapper jsonMapper, OutputStream output) {
         this.jsonMapper = jsonMapper;
         this.output = output;
     }

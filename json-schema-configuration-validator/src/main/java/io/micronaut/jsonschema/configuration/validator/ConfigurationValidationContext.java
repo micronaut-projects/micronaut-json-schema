@@ -18,7 +18,6 @@ package io.micronaut.jsonschema.configuration.validator;
 import io.micronaut.context.env.Environment;
 import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchema;
 import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
 
@@ -35,10 +34,10 @@ import java.util.Map;
  * @param instanceMap The nested instance map computed from the environment for the given prefix
  */
 public record ConfigurationValidationContext(
-    @NonNull Environment environment,
-    @NonNull String prefix,
-    @NonNull ConfigurationSchema schema,
-    @NonNull ConfigurationSchemaProperty property,
-    @NonNull Map<String, Object> instanceMap
+    Environment environment,
+    String prefix,
+    ConfigurationSchema schema,
+    ConfigurationSchemaProperty property,
+    Map<String, Object> instanceMap
 ) {
 }

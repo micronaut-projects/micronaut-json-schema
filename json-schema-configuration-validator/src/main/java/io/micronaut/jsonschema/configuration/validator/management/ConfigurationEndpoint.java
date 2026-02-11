@@ -22,7 +22,6 @@ import io.micronaut.management.endpoint.annotation.Read;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationErrors;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration;
 import jakarta.inject.Singleton;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
 
@@ -53,7 +52,6 @@ final class ConfigurationEndpoint {
      * @return A map containing the {@code errors} namespace
      */
     @Read
-    @NonNull
     Map<String, Object> getErrors() {
         return Map.of("errors", configurationErrors.getCurrentErrors());
     }

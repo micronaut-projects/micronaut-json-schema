@@ -22,7 +22,6 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
 import io.micronaut.jsonschema.configuration.validator.report.ConfigurationErrorReporter;
-import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,10 +53,10 @@ public final class JsonSchemaConfigurationValidator {
      * @param validator The validator
      */
     public JsonSchemaConfigurationValidator(
-        @NonNull List<URL> classpath,
-        @NonNull List<String> environments,
+        List<URL> classpath,
+        List<String> environments,
         boolean deduceEnvironment,
-        @NonNull ConfigurationJsonSchemaValidator validator
+        ConfigurationJsonSchemaValidator validator
     ) {
         this.classpath = List.copyOf(classpath);
         this.environments = List.copyOf(environments);
@@ -66,18 +65,18 @@ public final class JsonSchemaConfigurationValidator {
     }
 
     public static JsonSchemaConfigurationValidator forClasspath(
-        @NonNull String classpath,
-        @NonNull List<String> environments,
+        String classpath,
+        List<String> environments,
         boolean deduceEnvironment,
-        @NonNull ConfigurationJsonSchemaValidator validator
+        ConfigurationJsonSchemaValidator validator
     ) {
         return new JsonSchemaConfigurationValidator(parseClasspath(classpath), environments, deduceEnvironment, validator);
     }
 
     public static JsonSchemaConfigurationValidator forClasspath(
-        @NonNull String classpath,
-        @NonNull List<String> environments,
-        @NonNull ConfigurationJsonSchemaValidator validator
+        String classpath,
+        List<String> environments,
+        ConfigurationJsonSchemaValidator validator
     ) {
         return forClasspath(classpath, environments, false, validator);
     }
@@ -88,7 +87,6 @@ public final class JsonSchemaConfigurationValidator {
      * @return A set of validation errors/warnings (empty if valid)
      * @throws IOException If validation fails
      */
-    @NonNull
     public Set<ConfigurationError> validate() throws IOException {
         try (URLClassLoader classLoader = new URLClassLoader(classpath.toArray(URL[]::new), JsonSchemaConfigurationValidator.class.getClassLoader());
              Environment environment = Environment.create(createEnvironmentConfiguration(classLoader, environments, deduceEnvironment)).start()) {

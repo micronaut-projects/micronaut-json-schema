@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.env.Environment;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Set;
 
@@ -31,7 +30,7 @@ public interface ConfigurationValidator {
      * @param environment Micronaut Environment
      * @return a set of configuration erros
      */
-    default @NonNull Set<@NonNull ConfigurationError> validate(@NonNull Environment environment) {
+    default Set<ConfigurationError> validate(Environment environment) {
         return validate(environment.getClassLoader(), environment);
     }
 
@@ -41,5 +40,5 @@ public interface ConfigurationValidator {
      * @param environment Micronaut Environment
      * @return a set of configuration errors
      */
-    @NonNull Set<@NonNull ConfigurationError> validate(@NonNull ClassLoader classLoader, @NonNull Environment environment);
+    Set<ConfigurationError> validate(ClassLoader classLoader, Environment environment);
 }
