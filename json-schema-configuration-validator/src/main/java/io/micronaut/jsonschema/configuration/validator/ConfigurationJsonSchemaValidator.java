@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 /**
  * Validates Micronaut configuration ({@link Environment}) against JSON schemas on the classpath.
  */
-public final class ConfigurationJsonSchemaValidator {
+public final class ConfigurationJsonSchemaValidator implements ConfigurationValidator {
     private static final Argument<ConfigurationSchema> CONFIGURATION_SCHEMA_ARGUMENT = Argument.of(ConfigurationSchema.class);
 
     private final SchemaValidationEngine engine = new SchemaValidationEngine();
@@ -100,8 +100,8 @@ public final class ConfigurationJsonSchemaValidator {
      * @param environment The Micronaut environment
      * @return A set of validation errors (empty if valid)
      */
-    @NonNull
-    public Set<ConfigurationError> validate(@NonNull ClassLoader classLoader, @NonNull Environment environment) {
+    @Override
+    public @NonNull Set<@NonNull ConfigurationError> validate(@NonNull ClassLoader classLoader, @NonNull Environment environment) {
         JsonSchemaClassPathResourceLoader loader = JsonSchemaClassPathResourceLoader.createDefault(classLoader);
         Map<String, Readable> schemaResources = loader.jsonSchemas();
 

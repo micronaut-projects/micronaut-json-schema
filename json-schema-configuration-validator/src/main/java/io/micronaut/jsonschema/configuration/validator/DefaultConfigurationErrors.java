@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.env.Environment;
-import io.micronaut.json.JsonMapper;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NonNull;
 
@@ -33,23 +32,17 @@ import java.util.concurrent.atomic.AtomicReference;
 @Singleton
 final class DefaultConfigurationErrors implements ConfigurationErrors {
     private final Environment environment;
-    private final ConfigurationJsonSchemaValidator validator;
+    private final ConfigurationValidator validator;
     private final ConfigurationValidatorConfiguration configuration;
     private final AtomicReference<Set<ConfigurationError>> cached = new AtomicReference<>();
 
     DefaultConfigurationErrors(
         Environment environment,
-        JsonMapper jsonMapper,
-        ConfigurationValidatorConfiguration configuration
-    ) {
+        ConfigurationValidatorConfiguration configuration,
+        ConfigurationValidator validator) {
         this.environment = environment;
         this.configuration = configuration;
-
-        ConfigurationJsonSchemaValidator configured = new ConfigurationJsonSchemaValidator();
-        configured.setJsonMapper(jsonMapper);
-        configured.setFailOnNotPresent(configuration.isFailOnNotPresent());
-        configured.setSuppressionPatterns(configuration.getSuppressions());
-        this.validator = configured;
+        this.validator = validator;
     }
 
     @Override
