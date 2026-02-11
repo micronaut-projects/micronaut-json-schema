@@ -12,6 +12,8 @@ It is designed for:
 
 dependency:micronaut-json-schema-configuration-validator[groupId="io.micronaut.jsonschema"]
 
+You can use the api:jsonschema.configuration.validator.ConfigurationErrors[] API to access to configuration validation errors.
+
 === How schemas are discovered
 
 The validator loads schemas via api:jsonschema.utils.JsonSchemaClassPathResourceLoader[]:
