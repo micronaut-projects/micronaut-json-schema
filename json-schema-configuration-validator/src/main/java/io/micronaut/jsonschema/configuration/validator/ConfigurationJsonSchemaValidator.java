@@ -135,10 +135,22 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             }
         }
 
+        Map<String, Set<String>> nestedSchemaKeysByPrefix = nestedSchemaKeysByPrefix(schemasByPrefix.keySet());
+
         for (Map.Entry<String, List<ConfigurationSchema>> entry : schemasByPrefix.entrySet()) {
             String prefix = entry.getKey();
             for (ConfigurationSchema schema : entry.getValue()) {
-                engine.validateSchema(prefix, schema, classLoader, environment, mapper, failOnNotPresent, rules, errors);
+                engine.validateSchema(
+                    prefix,
+                    schema,
+                    classLoader,
+                    environment,
+                    mapper,
+                    failOnNotPresent,
+                    rules,
+                    errors,
+                    nestedSchemaKeysByPrefix
+                );
             }
         }
 
@@ -196,6 +208,40 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
         }
     }
 
+    private static Map<String, Set<String>> nestedSchemaKeysByPrefix(Set<String> schemaPrefixes) {
+        if (schemaPrefixes.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Set<String>> keysByPrefix = new LinkedHashMap<>(schemaPrefixes.size());
+        Set<String> prefixes = new LinkedHashSet<>(schemaPrefixes);
+
+        for (String fullPrefix : prefixes) {
+            int dot = fullPrefix.indexOf('.');
+            if (dot == -1) {
+                continue;
+            }
+            String parentPrefix = fullPrefix.substring(0, dot);
+            int start = dot + 1;
+
+            while (start < fullPrefix.length()) {
+                dot = fullPrefix.indexOf('.', start);
+                String segment = dot == -1 ? fullPrefix.substring(start) : fullPrefix.substring(start, dot);
+
+                if (prefixes.contains(parentPrefix) && !StringUtils.isEmpty(segment)) {
+                    keysByPrefix.computeIfAbsent(parentPrefix, p -> new LinkedHashSet<>()).add(segment);
+                }
+
+                if (dot == -1) {
+                    break;
+                }
+                parentPrefix = parentPrefix + "." + segment;
+                start = dot + 1;
+            }
+        }
+
+        return keysByPrefix;
+    }
+
     /**
      * Internal validation implementation.
      */
@@ -208,15 +254,16 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             JsonMapper jsonMapper,
             boolean failOnNotPresent,
             List<ConfigurationRule> rules,
-            Set<ConfigurationError> errors
+            Set<ConfigurationError> errors,
+            Map<String, Set<String>> nestedSchemaKeysByPrefix
         ) {
             String kind = schema.micronaut() != null ? schema.micronaut().kind() : null;
             String container = schema.micronaut() != null ? schema.micronaut().container() : null;
 
             if ("each-property".equals(kind) && "map".equals(container)) {
-                validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors);
+                validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaKeysByPrefix);
             } else {
-                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors);
+                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaKeysByPrefix);
             }
         }
 
@@ -228,7 +275,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             JsonMapper jsonMapper,
             boolean failOnNotPresent,
             List<ConfigurationRule> rules,
-            Set<ConfigurationError> errors
+            Set<ConfigurationError> errors,
+            Map<String, Set<String>> nestedSchemaKeysByPrefix
         ) {
             if (!environment.containsProperties(prefix)) {
                 return;
@@ -236,11 +284,13 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             Map<String, Object> flat = environment.getProperties(prefix, StringConvention.HYPHENATED);
             Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
             ConfigurationSchemaProperty root = ConfigurationSchemaPropertyAdapter.fromRoot(schema);
-            SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
-            SchemaValidator.validateObject(ctx, root, instance, prefix, null, errors);
 
-            applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, root, instance), errors);
-            applyRulesForNestedObjects(rules, environment, prefix, schema, root, instance, errors);
+            Map<String, Object> effectiveInstance = removeNestedSchemaKeys(prefix, instance, root, nestedSchemaKeysByPrefix);
+            SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
+            SchemaValidator.validateObject(ctx, root, effectiveInstance, prefix, null, errors);
+
+            applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, root, effectiveInstance), errors);
+            applyRulesForNestedObjects(rules, environment, prefix, schema, root, effectiveInstance, errors);
         }
 
         private void validateEachProperty(
@@ -251,7 +301,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             JsonMapper jsonMapper,
             boolean failOnNotPresent,
             List<ConfigurationRule> rules,
-            Set<ConfigurationError> errors
+            Set<ConfigurationError> errors,
+            Map<String, Set<String>> nestedSchemaKeysByPrefix
         ) {
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
             ConfigurationSchemaProperty entrySchema = ctx.refResolver().resolveAdditionalPropertiesSchema(ConfigurationSchemaPropertyAdapter.fromRoot(schema));
@@ -333,6 +384,37 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     errors.add(new ConfigurationError(context.prefix(), "ConfigurationRule failed: " + e.getMessage(), null, null, null));
                 }
             }
+        }
+
+        private static Map<String, Object> removeNestedSchemaKeys(
+            String prefix,
+            Map<String, Object> instance,
+            ConfigurationSchemaProperty root,
+            Map<String, Set<String>> nestedSchemaKeysByPrefix
+        ) {
+            if (instance.isEmpty() || nestedSchemaKeysByPrefix.isEmpty()) {
+                return instance;
+            }
+            Set<String> nestedKeys = nestedSchemaKeysByPrefix.get(prefix);
+            if (nestedKeys == null || nestedKeys.isEmpty()) {
+                return instance;
+            }
+
+            Map<String, ConfigurationSchemaProperty> properties = root.properties();
+            Map<String, Object> filtered = null;
+            for (String key : nestedKeys) {
+                if (!instance.containsKey(key)) {
+                    continue;
+                }
+                if (properties != null && properties.containsKey(key)) {
+                    continue;
+                }
+                if (filtered == null) {
+                    filtered = new LinkedHashMap<>(instance);
+                }
+                filtered.remove(key);
+            }
+            return filtered != null ? filtered : instance;
         }
     }
 
