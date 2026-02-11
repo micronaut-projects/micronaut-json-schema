@@ -41,9 +41,10 @@ public final class ConfigurationValidatorConfiguration {
      * Configuration prefix.
      */
     public static final String PREFIX = "micronaut.jsonschema.configuration.validator";
-
-    private boolean cache = true;
-    private boolean failOnNotPresent = true;
+    public static final boolean DEFAULT_CACHE = true;
+    public static final boolean DEFAULT_FAIL_ON_NOT_PRESENT = true;
+    private boolean cache = DEFAULT_CACHE;
+    private boolean failOnNotPresent = DEFAULT_FAIL_ON_NOT_PRESENT;
     private List<String> suppressions = List.of();
     private HealthConfiguration health = new HealthConfiguration();
     private EndpointConfiguration endpoint = new EndpointConfiguration();
@@ -54,14 +55,14 @@ public final class ConfigurationValidatorConfiguration {
      * When enabled, the first computed validation result is cached and returned for subsequent
      * invocations.
      *
-     * @return Whether the validation result should be cached
+     * @return Whether the validation result should be cached. Default value {@value #DEFAULT_CACHE}
      */
     public boolean isCache() {
         return cache;
     }
 
     /**
-     * @param cache Whether the validation result should be cached
+     * @param cache Whether the validation result should be cached.
      */
     public void setCache(boolean cache) {
         this.cache = cache;
@@ -72,7 +73,7 @@ public final class ConfigurationValidatorConfiguration {
      * <p>
      * Note that some schemas may also enforce this via {@code additionalProperties: false}.
      *
-     * @return Whether to fail when configuration contains keys not present in schema
+     * @return Whether to fail when configuration contains keys not present in schema. Default value {@value #DEFAULT_FAIL_ON_NOT_PRESENT}
      */
     public boolean isFailOnNotPresent() {
         return failOnNotPresent;
@@ -139,10 +140,11 @@ public final class ConfigurationValidatorConfiguration {
      */
     @ConfigurationProperties("health")
     public static final class HealthConfiguration {
-        private boolean enabled = true;
+        public static final boolean DEFAULT_HEALTH = true;
+        private boolean enabled = DEFAULT_HEALTH;
 
         /**
-         * @return Whether the configuration validation health indicator is enabled
+         * @return Whether the configuration validation health indicator is enabled. Default Value {@value #DEFAULT_HEALTH}
          */
         public boolean isEnabled() {
             return enabled;
@@ -161,10 +163,11 @@ public final class ConfigurationValidatorConfiguration {
      */
     @ConfigurationProperties("endpoint")
     public static final class EndpointConfiguration {
-        private boolean enabled = true;
+        public static final boolean DEFAULT_ENDPOINT = true;
+        private boolean enabled = DEFAULT_CACHE;
 
         /**
-         * @return Whether the configuration validation management endpoint is enabled
+         * @return Whether the configuration validation management endpoint is enabled. Default Value {@value #DEFAULT_ENDPOINT}
          */
         public boolean isEnabled() {
             return enabled;
