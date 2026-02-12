@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.configuration.validator.report;
 
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -165,7 +166,7 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
         output.flush();
     }
 
-    private static String escape(String s) {
+    private static String escape(@Nullable String s) {
         if (s == null) {
             return "";
         }

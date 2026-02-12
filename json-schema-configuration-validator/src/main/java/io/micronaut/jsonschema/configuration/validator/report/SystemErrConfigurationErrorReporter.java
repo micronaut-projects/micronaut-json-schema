@@ -152,7 +152,7 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
         return System.console() != null;
     }
 
-    private static String sanitize(String s) {
+    private static String sanitize(@Nullable String s) {
         if (s == null) {
             return "-";
         }
@@ -257,7 +257,7 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
             return "| " + property + " | " + type + " | " + message + " | " + origin + " | " + value + " |";
         }
 
-        private static String pad(String s, int width) {
+        private static String pad(@Nullable String s, int width) {
             if (s == null) {
                 s = "";
             }
@@ -267,7 +267,7 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
             return s + " ".repeat(width - s.length());
         }
 
-        private static String truncate(String s, int width) {
+        private static String truncate(@Nullable String s, int width) {
             if (s == null) {
                 return "";
             }

@@ -22,6 +22,7 @@ import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaVa
 import io.micronaut.jsonschema.configuration.validator.report.HtmlConfigurationErrorReporter;
 import io.micronaut.jsonschema.configuration.validator.report.JsonConfigurationErrorReporter;
 import io.micronaut.jsonschema.configuration.validator.report.SystemErrConfigurationErrorReporter;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -376,7 +377,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
             return result;
         }
 
-        private static Format parseFormat(String value) {
+        private static Format parseFormat(@Nullable String value) {
             if (value == null) {
                 return Format.BOTH;
             }

@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.configuration.validator.cli;
 
 import io.micronaut.core.annotation.Internal;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -107,6 +108,7 @@ public final class ConfigurationJsonSchemaValidatorCliBootstrap {
         return urls;
     }
 
+    @Nullable
     private static String parseClasspathArg(String[] args) {
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -126,6 +128,7 @@ public final class ConfigurationJsonSchemaValidatorCliBootstrap {
         return null;
     }
 
+    @Nullable
     private static String parseEqualsSyntax(String arg) {
         int eq = arg.indexOf('=');
         if (eq < 0) {
@@ -138,6 +141,7 @@ public final class ConfigurationJsonSchemaValidatorCliBootstrap {
         return arg.substring(eq + 1);
     }
 
+    @Nullable
     private static String parseNextValue(String[] args, int index) {
         if (index + 1 >= args.length) {
             return null;

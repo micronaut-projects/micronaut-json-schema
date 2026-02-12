@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.micronaut.core.annotation.Internal;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Locale;
 
@@ -45,7 +46,8 @@ public enum ConfigurationSchemaType {
     }
 
     @JsonCreator
-    public static ConfigurationSchemaType of(String value) {
+    @Nullable
+    public static ConfigurationSchemaType of(@Nullable String value) {
         if (value == null) {
             return null;
         }

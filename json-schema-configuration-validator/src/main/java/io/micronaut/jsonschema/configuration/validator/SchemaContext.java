@@ -543,6 +543,7 @@ final class SchemaContext {
             return null;
         }
 
+        @Nullable
         private static Object resolveFromRoot(ConfigurationSchema schema, String token) {
             if (TOKEN_DEFS.equals(token)) {
                 return schema.defs();
@@ -553,6 +554,7 @@ final class SchemaContext {
             return null;
         }
 
+        @Nullable
         private static Object resolveFromProperty(ConfigurationSchemaProperty schema, String token) {
             if (TOKEN_DEFS.equals(token)) {
                 return schema.defs();

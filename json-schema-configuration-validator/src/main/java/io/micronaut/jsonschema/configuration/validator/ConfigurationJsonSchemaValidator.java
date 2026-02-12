@@ -204,7 +204,11 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
     private static ConfigurationSchema readSchema(JsonMapper jsonMapper, Readable readable) throws IOException {
         try (InputStream inputStream = readable.asInputStream()) {
             String schema = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-            return jsonMapper.readValue(schema, CONFIGURATION_SCHEMA_ARGUMENT);
+            ConfigurationSchema decoded = jsonMapper.readValue(schema, CONFIGURATION_SCHEMA_ARGUMENT);
+            if (decoded == null) {
+                throw new IOException("Failed to decode configuration schema");
+            }
+            return decoded;
         }
     }
 
@@ -216,30 +220,34 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
         Set<String> prefixes = new LinkedHashSet<>(schemaPrefixes);
 
         for (String fullPrefix : prefixes) {
-            int dot = fullPrefix.indexOf('.');
-            if (dot == -1) {
-                continue;
-            }
-            String parentPrefix = fullPrefix.substring(0, dot);
-            int start = dot + 1;
-
-            while (start < fullPrefix.length()) {
-                dot = fullPrefix.indexOf('.', start);
-                String segment = dot == -1 ? fullPrefix.substring(start) : fullPrefix.substring(start, dot);
-
-                if (prefixes.contains(parentPrefix) && !StringUtils.isEmpty(segment)) {
-                    keysByPrefix.computeIfAbsent(parentPrefix, p -> new LinkedHashSet<>()).add(segment);
-                }
-
-                if (dot == -1) {
-                    break;
-                }
-                parentPrefix = parentPrefix + "." + segment;
-                start = dot + 1;
-            }
+            addNestedSchemaKeys(prefixes, keysByPrefix, fullPrefix);
         }
 
         return keysByPrefix;
+    }
+
+    private static void addNestedSchemaKeys(Set<String> prefixes, Map<String, Set<String>> keysByPrefix, String fullPrefix) {
+        int dot = fullPrefix.indexOf('.');
+        if (dot == -1) {
+            return;
+        }
+        String parentPrefix = fullPrefix.substring(0, dot);
+        int start = dot + 1;
+
+        while (start < fullPrefix.length()) {
+            int nextDot = fullPrefix.indexOf('.', start);
+            String segment = nextDot == -1 ? fullPrefix.substring(start) : fullPrefix.substring(start, nextDot);
+
+            if (prefixes.contains(parentPrefix) && !StringUtils.isEmpty(segment)) {
+                keysByPrefix.computeIfAbsent(parentPrefix, p -> new LinkedHashSet<>()).add(segment);
+            }
+
+            if (nextDot == -1) {
+                break;
+            }
+            parentPrefix = parentPrefix + "." + segment;
+            start = nextDot + 1;
+        }
     }
 
     private static Set<String> overlappingPrefixKeys(List<ConfigurationSchema> schemas) {
