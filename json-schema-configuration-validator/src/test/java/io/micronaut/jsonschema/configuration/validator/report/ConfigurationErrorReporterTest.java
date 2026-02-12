@@ -53,7 +53,7 @@ class ConfigurationErrorReporterTest {
         assertTrue(out.contains("Origin"));
         assertTrue(out.contains("msg"));
         assertTrue(out.contains("origin"));
-        assertTrue(out.contains("origin:-1"));
+        assertFalse(out.contains("origin:-1"), () -> "Unexpected origin line number formatting: " + out);
         assertTrue(out.contains("<bad>"));
     }
 

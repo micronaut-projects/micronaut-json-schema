@@ -21,7 +21,10 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.PrintStream;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -39,6 +42,11 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
     private final Path jsonReport;
 
     private final PrintStream err;
+
+    @Nullable
+    private final Path projectBaseDir;
+
+    private final List<Path> resourcesDirs;
 
     /**
      * Creates a reporter that writes to {@link System#err}.
@@ -65,9 +73,32 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
      * @param jsonReport The JSON report file location (optional)
      */
     public SystemErrConfigurationErrorReporter(PrintStream err, @Nullable Path htmlReport, @Nullable Path jsonReport) {
+        this(err, htmlReport, jsonReport, null, List.of());
+    }
+
+    /**
+     * Creates a reporter that writes to the given stream and optionally prints the location of
+     * written report files.
+     *
+     * @param err The error stream
+     * @param htmlReport The HTML report file location (optional)
+     * @param jsonReport The JSON report file location (optional)
+     * @param projectBaseDir The project base directory used to render relative origin paths (optional)
+     * @param resourcesDirs Resource directories (relative to base dir) used to resolve classpath origins
+     */
+    public SystemErrConfigurationErrorReporter(
+        PrintStream err,
+        @Nullable Path htmlReport,
+        @Nullable Path jsonReport,
+        @Nullable Path projectBaseDir,
+        List<Path> resourcesDirs
+    ) {
         this.err = Objects.requireNonNull(err, "err");
         this.htmlReport = htmlReport;
         this.jsonReport = jsonReport;
+
+        this.projectBaseDir = projectBaseDir != null ? projectBaseDir.toAbsolutePath().normalize() : null;
+        this.resourcesDirs = normalizeResourceDirs(this.projectBaseDir, resourcesDirs);
     }
 
     @Override
@@ -86,7 +117,7 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
         writer.flush();
     }
 
-    private static void writeTable(PrintWriter writer, Set<ConfigurationError> errors, boolean useAnsi) {
+    private void writeTable(PrintWriter writer, Set<ConfigurationError> errors, boolean useAnsi) {
         if (errors.isEmpty()) {
             writer.println("No configuration validation errors.");
             return;
@@ -109,10 +140,13 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
         table.print(writer, useAnsi);
     }
 
-    private static Row toRow(ConfigurationError error) {
+    private Row toRow(ConfigurationError error) {
         String origin = "-";
         if (error.originLocation() != null) {
-            origin = error.originLocation() + ":" + error.lineNumber();
+            origin = rewriteOriginIfPossible(error.originLocation());
+            if (error.lineNumber() > 0) {
+                origin = origin + ":" + error.lineNumber();
+            }
         }
 
         String value = "-";
@@ -127,6 +161,87 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
             sanitize(origin),
             value
         );
+    }
+
+    private static List<Path> normalizeResourceDirs(@Nullable Path baseDir, @Nullable List<Path> resourcesDirs) {
+        if (baseDir == null || resourcesDirs == null || resourcesDirs.isEmpty()) {
+            return List.of();
+        }
+        List<Path> resolved = new ArrayList<>(resourcesDirs.size());
+        for (Path p : resourcesDirs) {
+            if (p == null) {
+                continue;
+            }
+            Path dir = p.isAbsolute() ? p : baseDir.resolve(p);
+            resolved.add(dir.normalize());
+        }
+        return List.copyOf(resolved);
+    }
+
+    private String rewriteOriginIfPossible(String origin) {
+        if (projectBaseDir == null || resourcesDirs.isEmpty()) {
+            return origin;
+        }
+        return rewriteOrigin(origin, projectBaseDir, resourcesDirs);
+    }
+
+    private static String rewriteOrigin(String origin, Path baseDir, List<Path> resourcesDirs) {
+        Path originPath = tryParseAbsolutePath(origin);
+        if (originPath != null) {
+            Path normalized = originPath.toAbsolutePath().normalize();
+            if (normalized.startsWith(baseDir)) {
+                return baseDir.relativize(normalized).toString();
+            }
+            return origin;
+        }
+
+        String resourceName = stripClasspathPrefix(origin).trim();
+        if (resourceName.startsWith("/")) {
+            resourceName = resourceName.substring(1);
+        }
+        if (resourceName.isEmpty() || resourceName.contains("!") || resourceName.contains("://")) {
+            return origin;
+        }
+
+        for (Path dir : resourcesDirs) {
+            Path candidate = dir.resolve(resourceName).normalize();
+            if (Files.exists(candidate)) {
+                Path absolute = candidate.toAbsolutePath().normalize();
+                if (absolute.startsWith(baseDir)) {
+                    return baseDir.relativize(absolute).toString();
+                }
+                return candidate.toString();
+            }
+        }
+        return origin;
+    }
+
+    @Nullable
+    private static Path tryParseAbsolutePath(String origin) {
+        String trimmed = origin.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.startsWith("file:")) {
+            try {
+                return Paths.get(URI.create(trimmed));
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
+        }
+        try {
+            Path p = Path.of(trimmed);
+            return p.isAbsolute() ? p : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static String stripClasspathPrefix(String origin) {
+        if (origin.startsWith("classpath:")) {
+            return origin.substring("classpath:".length());
+        }
+        return origin;
     }
 
     private void printReportLocationIfPresent(PrintWriter writer, boolean useAnsi) {
