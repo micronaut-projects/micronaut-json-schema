@@ -1,0 +1,171 @@
+[[configurationValidator]]
+
+The Micronaut JSON Schema configuration validator validates application configuration against JSON Schemas discovered on the classpath.
+
+It is designed for:
+
+* CI checks (fail builds when invalid configuration is committed)
+* local troubleshooting (human-friendly HTML reports with file/line/snippet information)
+* validating Micronaut's shipped configuration schemas as well as schemas generated from `@ConfigurationProperties`
+
+=== Dependency
+
+dependency:micronaut-json-schema-configuration-validator[groupId="io.micronaut.jsonschema"]
+
+You can use the api:jsonschema.configuration.validator.ConfigurationErrors[] API to access to configuration validation errors.
+
+=== How schemas are discovered
+
+The validator loads schemas via api:jsonschema.utils.JsonSchemaClassPathResourceLoader[]:
+
+* `META-INF/micronaut-configuration-schemas/` (Micronaut-shipped configuration schemas)
+* generated configuration schemas on the classpath (when using the Micronaut JSON Schema annotation processor)
+
+Schemas are grouped by the Micronaut metadata prefix (`x-micronaut.prefix`).
+
+=== Placeholder resolution
+
+Configuration is read from Micronaut's api:context.env.Environment[]; placeholder values (for example `${some.other.property}`) are validated after Micronaut resolves them.
+
+=== Deprecated properties
+
+If a schema property is marked as deprecated (`"deprecated": true`), the validator emits a WARNING when the property is present.
+
+=== Unknown properties and suppressions
+
+By default unknown properties are treated as errors (and some schemas also enforce this via `additionalProperties: false`).
+
+You can downgrade matching errors to warnings by configuring suppression patterns (for example `micronaut.http.*`).
+
+=== Reports
+
+The CLI writes reports into the output directory:
+
+* `configuration-errors.json`
+* `configuration-errors.html`
+
+If an error originates from a resolvable file (for example `application.properties`, `application.yml`, `application.toml`), the validator attempts to include:
+
+* origin location
+* 1-based line number
+* a small code snippet
+
+The HTML report includes an expandable snippet preview with syntax highlighting. The JSON report includes only the line number.
+
+=== Runtime integration (optional)
+
+In addition to the CLI, the configuration validator module also provides optional runtime integrations:
+
+* a runtime API to access current configuration validation errors
+* a health indicator (reports DOWN when configuration has errors)
+* a management endpoint that exposes the validation errors
+
+These runtime integrations are enabled by default, but the health indicator and endpoint are only loaded when the application includes the optional `micronaut-management` dependency.
+
+NOTE: Invalid configuration often causes application startup failures (for example if required configuration is missing, or if a component fails during initialization due to invalid values). In those cases, the application may not start and the runtime beans (including the management endpoint and health indicator) will not be available.
+
+==== Runtime API
+
+The module exposes a bean of type api:jsonschema.configuration.validator.ConfigurationErrors[] that returns a snapshot of the current validation errors:
+
+snippet::io.micronaut.jsonschema.test.ConfigurationErrorsExample[tags=runtime-api]
+
+By default, the first computed validation result is cached for the lifetime of the application context.
+
+==== Configuration
+
+All runtime configuration is under the `micronaut.jsonschema.configuration.validator` prefix:
+
+
+include::{includedir}configurationProperties/io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration.adoc[]
+
+==== Management endpoint
+
+To use the configuration errors management endpoint and health indicator, add:
+
+dependency:micronaut-management[groupId="io.micronaut"]
+
+include::{includedir}configurationProperties/io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration$EndpointConfiguration.adoc[]
+
+When enabled, the management endpoint is available under id `configurationerrors` and returns a JSON response containing an `errors` namespace.
+
+NOTE: Management endpoints are sensitive by default. For tests and local development you may want to disable sensitivity:
+
+[configuration]
+----
+endpoints:
+  all:
+    sensitive: false
+  configurationerrors:
+    sensitive: false
+----
+
+==== Health indicator
+
+include::{includedir}configurationProperties/io.micronaut.jsonschema.configuration.validator.HealthConfiguration.adoc[]
+
+When enabled, the health indicator reports `DOWN` if any configuration validation errors are present.
+It also includes a bounded sample of the failing properties and messages in the response details.
+
+=== Custom validation rules (ServiceLoader)
+
+Some validation rules cannot be expressed as JSON Schema keywords alone, for example validating dependent configuration entries.
+
+The configuration validator supports custom rules via the api:jsonschema.configuration.validator.ConfigurationRule[] SPI.
+Implementations are discovered using `ServiceLoader` from the same classloader used to load configuration schemas.
+
+==== Rule API
+
+Rules receive a api:jsonschema.configuration.validator.ConfigurationValidationContext[] that includes:
+
+* the `Environment`
+* the validated `prefix`
+* the loaded api:jsonschema.configuration.validator.model.ConfigurationSchema[]
+* the api:jsonschema.configuration.validator.model.ConfigurationSchemaProperty[] being validated
+* the computed nested `instanceMap`
+
+For `@EachProperty` schemas, the `prefix` is the fully qualified entry prefix (for example `test.executors.alpha`).
+
+==== Example: dependent configuration
+
+The following example requires `datasources.default.url` when `jpa.default.properties` is present:
+
+snippet::io.micronaut.jsonschema.test.ConfigurationRuleExample[tags=rule]
+
+To register the rule, add a `ServiceLoader` entry:
+
+[source]
+----
+META-INF/services/io.micronaut.jsonschema.configuration.validator.ConfigurationRule
+----
+
+and list your implementation class name in that file.
+
+=== CLI
+
+==== Full classpath entry point
+
+If the process classpath already contains all runtime dependencies, invoke:
+
+[source,bash]
+----
+java -cp <full-classpath> io.micronaut.jsonschema.configuration.validator.cli.ConfigurationJsonSchemaValidatorCli \
+  --classpath <full-classpath> \
+  --environments test \
+  --out build/reports/config-schema \
+  --format both
+----
+
+==== Minimal classpath bootstrap entry point
+
+If you want to run with a minimal process classpath that contains only the configuration validator module, invoke:
+
+[source,bash]
+----
+java -cp <validator-module-only> io.micronaut.jsonschema.configuration.validator.cli.ConfigurationJsonSchemaValidatorCliBootstrap \
+  --classpath <full-runtime-classpath> \
+  --environments test \
+  --out build/reports/config-schema
+----
+
+The bootstrap entry point only parses `--classpath` and forwards all remaining arguments to `ConfigurationJsonSchemaValidatorCli`.

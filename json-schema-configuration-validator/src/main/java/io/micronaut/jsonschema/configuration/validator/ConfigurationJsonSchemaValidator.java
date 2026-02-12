@@ -1,0 +1,516 @@
+/*
+ * Copyright 2017-2026 original authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.micronaut.jsonschema.configuration.validator;
+
+import io.micronaut.context.env.Environment;
+import io.micronaut.core.io.Readable;
+import io.micronaut.core.naming.conventions.StringConvention;
+import io.micronaut.core.type.Argument;
+import io.micronaut.core.util.StringUtils;
+import io.micronaut.core.value.PropertyCatalog;
+import io.micronaut.json.JsonMapper;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchema;
+import io.micronaut.jsonschema.configuration.validator.model.ConfigurationSchemaProperty;
+import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
+import org.jspecify.annotations.Nullable;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
+
+/**
+ * Validates Micronaut configuration ({@link Environment}) against JSON schemas on the classpath.
+ */
+public final class ConfigurationJsonSchemaValidator implements ConfigurationValidator {
+    private static final Argument<ConfigurationSchema> CONFIGURATION_SCHEMA_ARGUMENT = Argument.of(ConfigurationSchema.class);
+
+    private final SchemaValidationEngine engine = new SchemaValidationEngine();
+
+    private final AtomicReference<JsonMapper> jsonMapper = new AtomicReference<>();
+    private boolean failOnNotPresent = true;
+    private final AtomicReference<List<String>> suppressionPatterns = new AtomicReference<>(List.of());
+
+    /**
+     * @return Whether to fail when configuration contains keys not present in schema.
+     */
+    public boolean isFailOnNotPresent() {
+        return failOnNotPresent;
+    }
+
+    /**
+     * @param failOnNotPresent Whether to fail when configuration contains keys not present in schema.
+     */
+    public void setFailOnNotPresent(boolean failOnNotPresent) {
+        this.failOnNotPresent = failOnNotPresent;
+    }
+
+    /**
+     * @param jsonMapper A mapper used to deserialize JSON schemas.
+     */
+    public void setJsonMapper(@Nullable JsonMapper jsonMapper) {
+        this.jsonMapper.set(jsonMapper);
+    }
+
+    /**
+     * Patterns used to suppress validation errors. Matching errors are downgraded to warnings.
+     *
+     * @return The suppression patterns
+     */
+    public List<String> getSuppressionPatterns() {
+        return suppressionPatterns.get();
+    }
+
+    /**
+     * Set patterns used to suppress validation errors. Matching errors are downgraded to warnings.
+     * Patterns may include {@code *} wildcards (for example {@code micronaut.http.*}).
+     *
+     * @param suppressionPatterns The suppression patterns
+     */
+    public void setSuppressionPatterns(@Nullable List<String> suppressionPatterns) {
+        this.suppressionPatterns.set(suppressionPatterns != null ? List.copyOf(suppressionPatterns) : List.of());
+    }
+
+    /**
+     * Validate the given environment against schemas resolvable from the given classloader.
+     *
+     * @param classLoader The classloader used to discover JSON schemas
+     * @param environment The Micronaut environment
+     * @return A set of validation errors (empty if valid)
+     */
+    @Override
+    public Set<ConfigurationError> validate(ClassLoader classLoader, Environment environment) {
+        JsonSchemaClassPathResourceLoader loader = JsonSchemaClassPathResourceLoader.createDefault(classLoader);
+        Map<String, Readable> schemaResources = loader.jsonSchemas();
+
+        List<ConfigurationRule> rules = ConfigurationRules.load(classLoader);
+
+        Map<String, List<ConfigurationSchema>> schemasByPrefix = new LinkedHashMap<>();
+        Set<ConfigurationError> errors = new LinkedHashSet<>();
+        JsonMapper mapper = jsonMapper();
+
+        for (Map.Entry<String, Readable> entry : schemaResources.entrySet()) {
+            String schemaName = entry.getKey();
+            Readable readable = entry.getValue();
+            if (readable == null || !readable.exists()) {
+                continue;
+            }
+            try {
+                ConfigurationSchema schema = readSchema(mapper, readable);
+                String prefix = schema.micronaut() != null ? schema.micronaut().prefix() : null;
+                if (StringUtils.isEmpty(prefix)) {
+                    continue;
+                }
+                schemasByPrefix.computeIfAbsent(prefix, p -> new ArrayList<>(1)).add(schema);
+            } catch (Exception e) {
+                errors.add(new ConfigurationError(
+                    schemaName,
+                    "Failed to parse JSON schema: " + e.getMessage(),
+                    null,
+                    null,
+                    null
+                ));
+            }
+        }
+
+        Map<String, Set<String>> nestedSchemaKeysByPrefix = nestedSchemaKeysByPrefix(schemasByPrefix.keySet());
+
+        for (Map.Entry<String, List<ConfigurationSchema>> entry : schemasByPrefix.entrySet()) {
+            String prefix = entry.getKey();
+            Set<String> overlappingPrefixKeys = overlappingPrefixKeys(entry.getValue());
+            for (ConfigurationSchema schema : entry.getValue()) {
+                engine.validateSchema(
+                    prefix,
+                    schema,
+                    classLoader,
+                    environment,
+                    mapper,
+                    failOnNotPresent,
+                    rules,
+                    errors,
+                    nestedSchemaKeysByPrefix,
+                    overlappingPrefixKeys
+                );
+            }
+        }
+
+        return applySuppressions(errors);
+    }
+
+    private Set<ConfigurationError> applySuppressions(Set<ConfigurationError> errors) {
+        List<String> patterns = suppressionPatterns.get();
+        if (patterns.isEmpty() || errors.isEmpty()) {
+            return errors;
+        }
+
+        List<SuppressionMatcher> matchers = SuppressionMatcher.compileAll(patterns);
+        if (matchers.isEmpty()) {
+            return errors;
+        }
+
+        Set<ConfigurationError> result = new LinkedHashSet<>(errors.size());
+        for (ConfigurationError error : errors) {
+            if (error.type() == ConfigurationError.Type.ERROR && matchesAny(matchers, error.property())) {
+                result.add(error.withType(ConfigurationError.Type.WARNING));
+            } else {
+                result.add(error);
+            }
+        }
+        return result;
+    }
+
+    private static boolean matchesAny(List<SuppressionMatcher> matchers, String property) {
+        for (SuppressionMatcher matcher : matchers) {
+            if (matcher.matches(property)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private JsonMapper jsonMapper() {
+        JsonMapper mapper = jsonMapper.get();
+        if (mapper != null) {
+            return mapper;
+        }
+
+        JsonMapper created = JsonMapper.createDefault();
+        if (jsonMapper.compareAndSet(null, created)) {
+            return created;
+        }
+        return jsonMapper.get();
+    }
+
+    private static ConfigurationSchema readSchema(JsonMapper jsonMapper, Readable readable) throws IOException {
+        try (InputStream inputStream = readable.asInputStream()) {
+            String schema = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            ConfigurationSchema decoded = jsonMapper.readValue(schema, CONFIGURATION_SCHEMA_ARGUMENT);
+            if (decoded == null) {
+                throw new IOException("Failed to decode configuration schema");
+            }
+            return decoded;
+        }
+    }
+
+    private static Map<String, Set<String>> nestedSchemaKeysByPrefix(Set<String> schemaPrefixes) {
+        if (schemaPrefixes.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Set<String>> keysByPrefix = new LinkedHashMap<>(schemaPrefixes.size());
+        Set<String> prefixes = new LinkedHashSet<>(schemaPrefixes);
+
+        for (String fullPrefix : prefixes) {
+            addNestedSchemaKeys(prefixes, keysByPrefix, fullPrefix);
+        }
+
+        return keysByPrefix;
+    }
+
+    private static void addNestedSchemaKeys(Set<String> prefixes, Map<String, Set<String>> keysByPrefix, String fullPrefix) {
+        int dot = fullPrefix.indexOf('.');
+        if (dot == -1) {
+            return;
+        }
+        String parentPrefix = fullPrefix.substring(0, dot);
+        int start = dot + 1;
+
+        while (start < fullPrefix.length()) {
+            int nextDot = fullPrefix.indexOf('.', start);
+            String segment = nextDot == -1 ? fullPrefix.substring(start) : fullPrefix.substring(start, nextDot);
+
+            if (prefixes.contains(parentPrefix) && !StringUtils.isEmpty(segment)) {
+                keysByPrefix.computeIfAbsent(parentPrefix, p -> new LinkedHashSet<>()).add(segment);
+            }
+
+            if (nextDot == -1) {
+                break;
+            }
+            parentPrefix = parentPrefix + "." + segment;
+            start = nextDot + 1;
+        }
+    }
+
+    private static Set<String> overlappingPrefixKeys(List<ConfigurationSchema> schemas) {
+        if (schemas == null || schemas.size() < 2) {
+            return Set.of();
+        }
+        Set<String> keys = new LinkedHashSet<>(8);
+        for (ConfigurationSchema schema : schemas) {
+            if (schema == null || schema.properties() == null || schema.properties().isEmpty()) {
+                continue;
+            }
+            keys.addAll(schema.properties().keySet());
+        }
+        return keys.isEmpty() ? Set.of() : keys;
+    }
+
+    /**
+     * Internal validation implementation.
+     */
+    private static final class SchemaValidationEngine {
+        void validateSchema(
+            String prefix,
+            ConfigurationSchema schema,
+            ClassLoader classLoader,
+            Environment environment,
+            JsonMapper jsonMapper,
+            boolean failOnNotPresent,
+            List<ConfigurationRule> rules,
+            Set<ConfigurationError> errors,
+            Map<String, Set<String>> nestedSchemaKeysByPrefix,
+            Set<String> overlappingPrefixKeys
+        ) {
+            String kind = schema.micronaut() != null ? schema.micronaut().kind() : null;
+            String container = schema.micronaut() != null ? schema.micronaut().container() : null;
+
+            if ("each-property".equals(kind) && "map".equals(container)) {
+                validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaKeysByPrefix);
+            } else {
+                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaKeysByPrefix, overlappingPrefixKeys);
+            }
+        }
+
+        private void validateConfigurationProperties(
+            String prefix,
+            ConfigurationSchema schema,
+            ClassLoader classLoader,
+            Environment environment,
+            JsonMapper jsonMapper,
+            boolean failOnNotPresent,
+            List<ConfigurationRule> rules,
+            Set<ConfigurationError> errors,
+            Map<String, Set<String>> nestedSchemaKeysByPrefix,
+            Set<String> overlappingPrefixKeys
+        ) {
+            if (!environment.containsProperties(prefix)) {
+                return;
+            }
+            Map<String, Object> flat = environment.getProperties(prefix, StringConvention.HYPHENATED);
+            Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
+            ConfigurationSchemaProperty root = ConfigurationSchemaPropertyAdapter.fromRoot(schema);
+
+            Map<String, Object> effectiveInstance = removeNestedSchemaKeys(prefix, instance, root, nestedSchemaKeysByPrefix);
+            effectiveInstance = removeOverlappingSchemaKeys(effectiveInstance, root, overlappingPrefixKeys);
+            SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
+            SchemaValidator.validateObject(ctx, root, effectiveInstance, prefix, null, errors);
+
+            applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, root, instance), errors);
+            applyRulesForNestedObjects(rules, environment, prefix, schema, root, instance, errors);
+        }
+
+        private void validateEachProperty(
+            String prefix,
+            ConfigurationSchema schema,
+            ClassLoader classLoader,
+            Environment environment,
+            JsonMapper jsonMapper,
+            boolean failOnNotPresent,
+            List<ConfigurationRule> rules,
+            Set<ConfigurationError> errors,
+            Map<String, Set<String>> nestedSchemaKeysByPrefix
+        ) {
+            SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
+            ConfigurationSchemaProperty entrySchema = ctx.refResolver().resolveAdditionalPropertiesSchema(ConfigurationSchemaPropertyAdapter.fromRoot(schema));
+            if (entrySchema == null) {
+                errors.add(new ConfigurationError(prefix, "EachProperty schema missing additionalProperties entry schema", null, null, null));
+                return;
+            }
+
+            Set<String> entries = new LinkedHashSet<>(environment.getPropertyEntries(prefix, PropertyCatalog.NORMALIZED));
+            if (entries.isEmpty() && !environment.containsProperties(prefix)) {
+                return;
+            }
+            Integer minProperties = schema.minProperties();
+            if (minProperties != null && entries.size() < minProperties) {
+                errors.add(ctx.error(prefix, "Expected at least " + minProperties + " entries but found " + entries.size()));
+            }
+
+            for (String entry : entries) {
+                String entryPrefix = prefix + "." + entry;
+                Map<String, Object> flat = environment.getProperties(entryPrefix, StringConvention.HYPHENATED);
+                Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
+
+                SchemaValidator.validateObject(ctx, entrySchema, instance, entryPrefix, entry, errors);
+
+                applyRules(rules, new ConfigurationValidationContext(environment, entryPrefix, schema, entrySchema, instance), errors);
+                applyRulesForNestedObjects(rules, environment, entryPrefix, schema, entrySchema, instance, errors);
+            }
+        }
+
+        private static void applyRulesForNestedObjects(
+            List<ConfigurationRule> rules,
+            Environment environment,
+            String parentPrefix,
+            ConfigurationSchema schema,
+            ConfigurationSchemaProperty parentProperty,
+            Map<String, Object> parentInstance,
+            Set<ConfigurationError> errors
+        ) {
+            if (rules.isEmpty()) {
+                return;
+            }
+            Map<String, ConfigurationSchemaProperty> properties = parentProperty.properties();
+            if (properties == null || properties.isEmpty() || parentInstance.isEmpty()) {
+                return;
+            }
+
+            for (Map.Entry<String, Object> entry : parentInstance.entrySet()) {
+                Object value = entry.getValue();
+                if (!(value instanceof Map)) {
+                    continue;
+                }
+                String key = entry.getKey();
+                ConfigurationSchemaProperty property = properties.get(key);
+                if (property == null) {
+                    continue;
+                }
+                @SuppressWarnings("unchecked")
+                Map<String, Object> instanceMap = (Map<String, Object>) value;
+
+                String prefix = parentPrefix + "." + key;
+                applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, property, instanceMap), errors);
+            }
+        }
+
+        private static void applyRules(List<ConfigurationRule> rules, ConfigurationValidationContext context, Set<ConfigurationError> errors) {
+            if (rules.isEmpty()) {
+                return;
+            }
+            for (ConfigurationRule rule : rules) {
+                if (!rule.supportsPrefix(context.prefix())) {
+                    continue;
+                }
+                try {
+                    Set<ConfigurationError> additional = rule.validate(context);
+                    if (additional != null && !additional.isEmpty()) {
+                        errors.addAll(additional);
+                    }
+                } catch (Exception e) {
+                    errors.add(new ConfigurationError(context.prefix(), "ConfigurationRule failed: " + e.getMessage(), null, null, null));
+                }
+            }
+        }
+
+        private static Map<String, Object> removeNestedSchemaKeys(
+            String prefix,
+            Map<String, Object> instance,
+            ConfigurationSchemaProperty root,
+            Map<String, Set<String>> nestedSchemaKeysByPrefix
+        ) {
+            if (instance.isEmpty() || nestedSchemaKeysByPrefix.isEmpty()) {
+                return instance;
+            }
+            Set<String> nestedKeys = nestedSchemaKeysByPrefix.get(prefix);
+            if (nestedKeys == null || nestedKeys.isEmpty()) {
+                return instance;
+            }
+
+            Map<String, ConfigurationSchemaProperty> properties = root.properties();
+            Map<String, Object> filtered = null;
+            for (String key : nestedKeys) {
+                if (!instance.containsKey(key)) {
+                    continue;
+                }
+                if (properties != null && properties.containsKey(key)) {
+                    continue;
+                }
+                if (filtered == null) {
+                    filtered = new LinkedHashMap<>(instance);
+                }
+                filtered.remove(key);
+            }
+            return filtered != null ? filtered : instance;
+        }
+
+        private static Map<String, Object> removeOverlappingSchemaKeys(
+            Map<String, Object> instance,
+            ConfigurationSchemaProperty root,
+            Set<String> overlappingPrefixKeys
+        ) {
+            if (instance.isEmpty() || overlappingPrefixKeys.isEmpty()) {
+                return instance;
+            }
+            Map<String, ConfigurationSchemaProperty> properties = root.properties();
+            if (properties == null || properties.isEmpty()) {
+                return instance;
+            }
+
+            Map<String, Object> filtered = null;
+            for (String key : overlappingPrefixKeys) {
+                if (properties.containsKey(key)) {
+                    continue;
+                }
+                if (!instance.containsKey(key)) {
+                    continue;
+                }
+                if (filtered == null) {
+                    filtered = new LinkedHashMap<>(instance);
+                }
+                filtered.remove(key);
+            }
+            return filtered != null ? filtered : instance;
+        }
+    }
+
+    private interface SuppressionMatcher {
+        boolean matches(String property);
+
+        static List<SuppressionMatcher> compileAll(List<String> patterns) {
+            List<SuppressionMatcher> matchers = new ArrayList<>(patterns.size());
+            for (String pattern : patterns) {
+                if (StringUtils.isEmpty(pattern)) {
+                    continue;
+                }
+                matchers.add(compile(pattern));
+            }
+            return matchers;
+        }
+
+        static SuppressionMatcher compile(String pattern) {
+            if (pattern.indexOf('*') > -1) {
+                Pattern regex = Pattern.compile("^" + toRegex(pattern) + "$");
+                return property -> regex.matcher(property).matches();
+            }
+            return property -> property.equals(pattern)
+                || property.startsWith(pattern + '.')
+                || property.startsWith(pattern + '[');
+        }
+
+        private static String toRegex(String wildcardPattern) {
+            StringBuilder regex = new StringBuilder(wildcardPattern.length() * 2);
+            for (int i = 0; i < wildcardPattern.length(); i++) {
+                char c = wildcardPattern.charAt(i);
+                if (c == '*') {
+                    regex.append(".*");
+                } else {
+                    // Escape regex meta characters
+                    if ("\\.^$|?+()[]{}".indexOf(c) != -1) {
+                        regex.append('\\');
+                    }
+                    regex.append(c);
+                }
+            }
+            return regex.toString();
+        }
+    }
+}

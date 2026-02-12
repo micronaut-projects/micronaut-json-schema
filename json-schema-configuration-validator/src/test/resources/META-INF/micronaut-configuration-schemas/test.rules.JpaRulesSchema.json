@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "test.rules.JpaRulesSchema",
+  "title": "Test JPA rules schema",
+  "type": "object",
+  "properties": {
+    "properties": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true,
+  "x-micronaut": {
+    "prefix": "jpa.default"
+  }
+}

@@ -17,6 +17,7 @@ package io.micronaut.jsonschema.generator.aggregator;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
@@ -207,9 +208,9 @@ public class AnnotationsAggregator {
             annotations.add(AnnotationDef.builder(ClassTypeDef.of(EMAIL_ANN)).build());
         }
         if (schema.getConstValue() != null && propertyType.equals(TypeDef.Primitive.BOOLEAN)) {
-            if (schema.getConstValue().toString().equals("true")) {
+            if (schema.getConstValue().toString().equals(StringUtils.TRUE)) {
                 annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_TRUE_ANN)).build());
-            } else if (schema.getConstValue().toString().equals("false")) {
+            } else if (schema.getConstValue().toString().equals(StringUtils.FALSE)) {
                 annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_FALSE_ANN)).build());
             }
         }

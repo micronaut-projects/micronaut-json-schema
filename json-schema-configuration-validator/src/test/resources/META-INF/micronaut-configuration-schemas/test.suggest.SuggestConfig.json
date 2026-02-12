@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.suggest.SuggestConfig",
+  "title": "test.suggest.SuggestConfig",
+  "x-micronaut": {
+    "prefix": "test.suggest",
+    "type": "test.suggest.SuggestConfig",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "x-micronaut-path": "test.suggest.enabled"
+    },
+    "read-timeout": {
+      "type": "string",
+      "format": "duration",
+      "x-micronaut-path": "test.suggest.read-timeout"
+    }
+  },
+  "required": ["enabled"]
+}

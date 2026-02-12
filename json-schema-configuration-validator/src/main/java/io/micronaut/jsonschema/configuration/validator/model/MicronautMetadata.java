@@ -1,0 +1,38 @@
+/*
+ * Copyright 2017-2026 original authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.micronaut.jsonschema.configuration.validator.model;
+
+import io.micronaut.core.annotation.Internal;
+import io.micronaut.serde.annotation.Serdeable;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Micronaut-specific schema metadata.
+ *
+ * @param prefix The configuration prefix
+ * @param type The class name (if known)
+ * @param kind The schema kind (e.g. configuration-properties or each-property)
+ * @param container The container kind (e.g. map)
+ */
+@Serdeable
+@Internal
+public record MicronautMetadata(
+    @Nullable String prefix,
+    @Nullable String type,
+    @Nullable String kind,
+    @Nullable String container
+) {
+}

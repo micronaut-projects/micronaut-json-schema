@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.overlap.OverlapA",
+  "title": "test.overlap.OverlapA",
+  "x-micronaut": {
+    "prefix": "test.overlap",
+    "type": "test.overlap.OverlapA",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "foo": {
+      "type": "boolean",
+      "x-micronaut-javaType": "java.lang.Boolean",
+      "x-micronaut-path": "test.overlap.foo"
+    }
+  },
+  "required": ["foo"]
+}

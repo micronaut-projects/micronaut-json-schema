@@ -16,9 +16,13 @@
 package io.micronaut.jsonschema.utils;
 
 import io.micronaut.core.io.Readable;
+import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.core.io.scan.ClassPathResourceLoader;
 import org.jspecify.annotations.NonNull;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -26,6 +30,72 @@ import java.util.Optional;
  * @since 1.7.0
  */
 public interface JsonSchemaClassPathResourceLoader {
+
+    /**
+     * Constant for null-check messages.
+     */
+    String CLASS_LOADER_REQUIRED = "classLoader";
+
+    /**
+     * Create a default {@link JsonSchemaClassPathResourceLoader} for the given {@link ClassLoader}.
+     *
+     * <p>This factory is intended for usage outside of the Micronaut DI framework (for example, CLI tools).
+     * It composes the built-in schema loaders that are normally registered as beans.</p>
+     *
+     * @param classLoader The classloader
+     * @return The default loader
+     * @since 2.1.0
+     */
+    @NonNull
+    static JsonSchemaClassPathResourceLoader createDefault(@NonNull ClassLoader classLoader) {
+        Objects.requireNonNull(classLoader, CLASS_LOADER_REQUIRED);
+
+        ResourceLoader resourceLoader = ClassPathResourceLoader.defaultLoader(classLoader);
+        JsonSchemaClassPathResourceLoader configurationLoader = new ConfigurationJsonSchemaClassPathResourceLoader(resourceLoader);
+        JsonSchemaConfiguration jsonSchemaConfiguration = new JsonSchemaConfiguration() {
+        };
+        JsonSchemaClassPathResourceLoader generatedLoader = new DefaultJsonSchemaClassPathResourceLoader(resourceLoader, jsonSchemaConfiguration);
+
+        return createComposite(configurationLoader, generatedLoader);
+    }
+
+    /**
+     * Compose multiple non-empty loaders into one.
+     */
+    @NonNull
+    private static JsonSchemaClassPathResourceLoader createComposite(@NonNull JsonSchemaClassPathResourceLoader... loaders) {
+        Objects.requireNonNull(loaders, "loaders");
+
+        return new JsonSchemaClassPathResourceLoader() {
+            @Override
+            public <T> Optional<String> jsonSchemaStringForClass(@NonNull Class<T> type) {
+                for (JsonSchemaClassPathResourceLoader loader : loaders) {
+                    if (loader == null) {
+                        continue;
+                    }
+                    Optional<String> schema = loader.jsonSchemaStringForClass(type);
+                    if (schema.isPresent()) {
+                        return schema;
+                    }
+                }
+                return Optional.empty();
+            }
+
+            @Override
+            @NonNull
+            public Map<String, Readable> jsonSchemas() {
+                Map<String, Readable> schemas = new LinkedHashMap<>();
+                for (JsonSchemaClassPathResourceLoader loader : loaders) {
+                    if (loader == null) {
+                        continue;
+                    }
+                    loader.jsonSchemas().forEach(schemas::putIfAbsent);
+                }
+                return schemas;
+            }
+        };
+    }
+
     /**
      * This method retrieves the JSON Schema for a class for which a JSON Schema was generated.
      * Micronaut JSON Schema annotation processor generates a JSON Schema at compilation-time for classes annotated with {@link io.micronaut.jsonschema.JsonSchema}.
