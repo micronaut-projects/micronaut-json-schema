@@ -85,7 +85,7 @@ To use the configuration errors management endpoint and health indicator, add:
 
 dependency:micronaut-management[groupId="io.micronaut"]
 
-The endpoint can be enabled or disabled via the `micronaut.jsonschema.configuration.validator.endpoint.enabled` property (default: `true`).
+The endpoint can be enabled or disabled via the `endpoints.configurationerrors.enabled` property (default: `true`).
 
 When enabled, the management endpoint is available under id `configurationerrors` and returns a JSON response containing an `errors` namespace.
 
@@ -98,6 +98,7 @@ endpoints:
     sensitive: false
   configurationerrors:
     sensitive: false
+    enabled: true
 ----
 
 ==== Health indicator
