@@ -534,4 +534,76 @@ class ConfigurationJsonSchemaValidatorCliTest {
         assertTrue(stderr.toLowerCase().contains("line"), () -> "Unexpected stderr:\n" + stderr);
         assertTrue(stderr.toLowerCase().contains("column"), () -> "Unexpected stderr:\n" + stderr);
     }
+
+    @Test
+    void cliRendersRelativeOriginPathsWhenConfigured() throws Exception {
+        Path project = tempDir.resolve("project");
+        Path resources = project.resolve("src/main/resources");
+        Files.createDirectories(resources);
+        Files.writeString(resources.resolve("application.yml"), String.join("\n",
+            "test:",
+            "  config:",
+            "    enabled: not-a-bool",
+            "    count: 1",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Path out = tempDir.resolve("out-relative-origin");
+        ByteArrayOutputStream errCapture = new ByteArrayOutputStream();
+        PrintStream err = new PrintStream(errCapture, true, StandardCharsets.UTF_8);
+
+        String classpath = resources + File.pathSeparator + System.getProperty("java.class.path");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", classpath,
+            "--environments", "test",
+            "--out", out.toString(),
+            "--format", "json",
+            "--project-base-dir", project.toString(),
+            "--resources-dirs", "src/main/resources"
+        }, System.out, err);
+
+        assertEquals(1, exit);
+
+        String stderr = errCapture.toString(StandardCharsets.UTF_8);
+        assertTrue(Pattern.compile("src/main/resources/application\\.yml:[0-9]+", Pattern.CASE_INSENSITIVE).matcher(stderr).find(),
+            () -> "Expected relative origin path with line number in stderr, got:\n" + stderr);
+    }
+
+    @Test
+    void cliSupportsMultipleResourcesDirsForOriginRewriting() throws Exception {
+        Path project = tempDir.resolve("project-multi-resources");
+        Path mainResources = project.resolve("src/main/resources");
+        Path extraResources = project.resolve("config");
+        Files.createDirectories(mainResources);
+        Files.createDirectories(extraResources);
+
+        Files.writeString(extraResources.resolve("application.yml"), String.join("\n",
+            "test:",
+            "  config:",
+            "    enabled: not-a-bool",
+            "    count: 1",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Path out = tempDir.resolve("out-multi-resources");
+        ByteArrayOutputStream errCapture = new ByteArrayOutputStream();
+        PrintStream err = new PrintStream(errCapture, true, StandardCharsets.UTF_8);
+
+        String classpath = extraResources + File.pathSeparator + System.getProperty("java.class.path");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", classpath,
+            "--environments", "test",
+            "--out", out.toString(),
+            "--format", "json",
+            "--project-base-dir", project.toString(),
+            "--resources-dirs", "src/main/resources",
+            "--resources-dirs", "config"
+        }, System.out, err);
+
+        assertEquals(1, exit);
+
+        String stderr = errCapture.toString(StandardCharsets.UTF_8);
+        assertTrue(Pattern.compile("config/application\\.yml:[0-9]+", Pattern.CASE_INSENSITIVE).matcher(stderr).find(),
+            () -> "Expected origin to be rewritten using second resources dir, got:\n" + stderr);
+    }
 }

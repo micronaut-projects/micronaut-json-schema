@@ -116,7 +116,13 @@ public final class ConfigurationJsonSchemaValidatorCli {
 
         try {
             ReportFiles reportFiles = writeReports(errors, options);
-            new SystemErrConfigurationErrorReporter(err, reportFiles.htmlReport(), reportFiles.jsonReport()).report(errors);
+            new SystemErrConfigurationErrorReporter(
+                err,
+                reportFiles.htmlReport(),
+                reportFiles.jsonReport(),
+                options.projectBaseDir(),
+                options.resourcesDirs()
+            ).report(errors);
         } catch (IOException e) {
             err.println("Failed to write report: " + e.getMessage());
             return 2;
@@ -236,7 +242,9 @@ public final class ConfigurationJsonSchemaValidatorCli {
         boolean failOnNotPresent,
         boolean deduceEnvironments,
         Path outDir,
-        Format format
+        Format format,
+        @Nullable Path projectBaseDir,
+        List<Path> resourcesDirs
     ) {
         @SuppressWarnings("java:S3776")
         static Options parse(String[] args) {
@@ -248,6 +256,8 @@ public final class ConfigurationJsonSchemaValidatorCli {
             boolean deduceEnvironments = false;
             Path outDir = null;
             Format format = Format.BOTH;
+            Path projectBaseDir = null;
+            List<Path> resourcesDirs = new ArrayList<>(0);
 
             List<String> list = Arrays.asList(args);
             for (int i = 0; i < list.size(); i++) {
@@ -311,12 +321,22 @@ public final class ConfigurationJsonSchemaValidatorCli {
                         value = value != null ? value : nextValue(list, ++i, key);
                         format = parseFormat(value);
                     }
+                    case "--project-base-dir" -> {
+                        value = value != null ? value : nextValue(list, ++i, key);
+                        projectBaseDir = parsePath(value, key);
+                    }
+                    case "--resources-dirs" -> {
+                        value = value != null ? value : nextValue(list, ++i, key);
+                        for (String d : splitCsv(value)) {
+                            resourcesDirs.add(parsePath(d, key));
+                        }
+                    }
                     default -> throw new IllegalArgumentException("Unknown argument: " + key);
                 }
             }
 
             if (help) {
-                return new Options(true, "", List.of(), List.of(), true, false, Path.of("."), Format.BOTH);
+                return new Options(true, "", List.of(), List.of(), true, false, Path.of("."), Format.BOTH, null, List.of());
             }
             if (classpath == null || classpath.isBlank()) {
                 throw new IllegalArgumentException("Missing required argument: --classpath");
@@ -333,7 +353,9 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 failOnNotPresent,
                 deduceEnvironments,
                 outDir,
-                format
+                format,
+                projectBaseDir,
+                List.copyOf(resourcesDirs)
             );
         }
 
@@ -352,7 +374,17 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 "  --no-deduce-environments         Convenience flag to disable environment deduction\n" +
                 "  --out <dir>                      Output directory to write reports\n" +
                 "  --format <json|html|both>        Report format(s) (default: both)\n" +
+                "  --project-base-dir <dir>         Project base directory used to render relative origin paths\n" +
+                "  --resources-dirs <csv>           Comma-separated resource directories under the project base dir\n" +
                 "  --help                           Print this help\n";
+        }
+
+        private static Path parsePath(String value, String key) {
+            try {
+                return Path.of(value);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid path for " + key + ": " + value);
+            }
         }
 
         private static String nextValue(List<String> args, int index, String key) {
