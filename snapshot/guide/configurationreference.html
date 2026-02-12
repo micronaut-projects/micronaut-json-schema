@@ -46,14 +46,83 @@
         <div class="docs-content">
             <div class="project">
                 <h1>Configuration Reference</h1>
-                <p><strong>Version:</strong>2.0.0-SNAPSHOT</p>
+                <p><strong>Version:</strong>2.0.0-M2</p>
                 <p></p>
             </div>
+<div class="sect2">
+<h3 id="_micronaut_json_schema_configuration_validator_config_properties">Micronaut Json Schema Configuration Validator Config Properties</h3>
+<a id="io.micronaut.jsonschema.configuration.validator.HealthConfiguration" href="#io.micronaut.jsonschema.configuration.validator.HealthConfiguration">&#128279;</a>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Configuration Properties for <a href="../api/io/micronaut/jsonschema/configuration/validator/HealthConfiguration.html">HealthConfiguration</a></caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>endpoints.health.configurationerrors.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the configuration validation health indicator is enabled. Default value true</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+<a id="io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration" href="#io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration">&#128279;</a>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Configuration Properties for <a href="../api/io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html">ConfigurationValidatorConfiguration</a></caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.cache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the validation result should be cached. Default value true</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.fail-on-not-present</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether to fail when configuration contains keys not present in schema. Default value true</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.suppressions</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.List</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Patterns used to suppress validation errors</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+</div>
 <div class="sect2">
 <h3 id="_micronaut_json_schema_utils_config_properties">Micronaut Json Schema Utils Config Properties</h3>
 <a id="io.micronaut.jsonschema.utils.JsonSchemaConfigurationProperties" href="#io.micronaut.jsonschema.utils.JsonSchemaConfigurationProperties">&#128279;</a>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 1. Configuration Properties for <a href="../api/io/micronaut/jsonschema/utils/JsonSchemaConfigurationProperties.html">JsonSchemaConfigurationProperties</a></caption>
+<caption class="title">Table 3. Configuration Properties for <a href="../api/io/micronaut/jsonschema/utils/JsonSchemaConfigurationProperties.html">JsonSchemaConfigurationProperties</a></caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 25%;">
@@ -83,7 +152,7 @@
 <h3 id="_micronaut_json_schema_validation_config_properties">Micronaut Json Schema Validation Config Properties</h3>
 <a id="io.micronaut.jsonschema.validation.JsonSchemaValidatorConfiguration" href="#io.micronaut.jsonschema.validation.JsonSchemaValidatorConfiguration">&#128279;</a>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 2. Configuration Properties for <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html">JsonSchemaValidatorConfiguration</a></caption>
+<caption class="title">Table 4. Configuration Properties for <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html">JsonSchemaValidatorConfiguration</a></caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 25%;">

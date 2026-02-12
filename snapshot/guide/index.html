@@ -56,9 +56,11 @@
                                 
                                 <div class="toc-item" style="margin-left:0"><a href="#generator"><strong>5</strong><span>Generating Beans from Schema</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>6</strong><span>Repository</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#configurationValidator"><strong>6</strong><span>Validating Configuration Against Schemas</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#releaseHistory"><strong>7</strong><span>Release History</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>7</strong><span>Repository</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#releaseHistory"><strong>8</strong><span>Release History</span></a></div>
                                 
                             </div>
                         </div>
@@ -125,9 +127,11 @@
         
         <div class="toc-item" style="margin-left:10px" id="toc-item-example"><a href="#example"><strong>5.4</strong><span>Example Output of Generation</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>6</strong><span>Repository</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-configurationValidator"><a href="#configurationValidator"><strong>6</strong><span>Validating Configuration Against Schemas</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-releaseHistory"><a href="#releaseHistory"><strong>7</strong><span>Release History</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>7</strong><span>Repository</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-releaseHistory"><a href="#releaseHistory"><strong>8</strong><span>Release History</span></a></div>
         
         </div>
     </div>
@@ -137,7 +141,7 @@
         <h1>Micronaut JSON schema</h1>
         <p></p>
         <p>JSON schema support for Micronaut</p>
-        <p><strong>Version:</strong> 2.0.0-SNAPSHOT </p>
+        <p><strong>Version:</strong> 2.0.0-M2 </p>
     </div>
     
 <h1 id="introduction"><a class="anchor" href="#introduction"></a>1 Introduction</h1>
@@ -155,6 +159,9 @@ JSON data consistency, validity and interoperability.</p>
 </div>
 <div class="paragraph">
 <p>Micronaut JSON Schema assists transforming schemas to beans and beans to schemas in your applications.</p>
+</div>
+<div class="paragraph">
+<p>It also includes a configuration validator that can validate Micronaut configuration against JSON Schemas on the classpath.</p>
 </div>
 
 <h1 id="dependencies"><a class="anchor" href="#dependencies"></a>2 Dependencies</h1>
@@ -1873,7 +1880,544 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 </div>
 </div>
 
-<h1 id="repository"><a class="anchor" href="#repository"></a>6 Repository</h1>
+<h1 id="configurationValidator"><a class="anchor" href="#configurationValidator"></a>6 Validating Configuration Against Schemas</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/configurationValidator.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div id="configurationValidator" class="paragraph">
+<p>The Micronaut JSON Schema configuration validator validates application configuration against JSON Schemas discovered on the classpath.</p>
+</div>
+<div class="paragraph">
+<p>It is designed for:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>CI checks (fail builds when invalid configuration is committed)</p>
+</li>
+<li>
+<p>local troubleshooting (human-friendly HTML reports with file/line/snippet information)</p>
+</li>
+<li>
+<p>validating Micronaut&#8217;s shipped configuration schemas as well as schemas generated from <code>@ConfigurationProperties</code></p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_dependency">Dependency</h3>
+<div class="paragraph">
+<p>        <div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">implementation(<span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-configuration-validator")</span></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;dependency&gt;
+    &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
+    &lt;artifactId&gt;micronaut-json-schema-configuration-validator&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div>
+</p>
+</div>
+<div class="paragraph">
+<p>You can use the <a href="../api/io/micronaut/jsonschema/configuration/validator/ConfigurationErrors.html">ConfigurationErrors</a> API to access to configuration validation errors.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_how_schemas_are_discovered">How schemas are discovered</h3>
+<div class="paragraph">
+<p>The validator loads schemas via <a href="../api/io/micronaut/jsonschema/utils/JsonSchemaClassPathResourceLoader.html">JsonSchemaClassPathResourceLoader</a>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>META-INF/micronaut-configuration-schemas/</code> (Micronaut-shipped configuration schemas)</p>
+</li>
+<li>
+<p>generated configuration schemas on the classpath (when using the Micronaut JSON Schema annotation processor)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Schemas are grouped by the Micronaut metadata prefix (<code>x-micronaut.prefix</code>).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_placeholder_resolution">Placeholder resolution</h3>
+<div class="paragraph">
+<p>Configuration is read from Micronaut&#8217;s <a href="../api/io/micronaut/context/env/Environment.html">Environment</a>; placeholder values (for example <code>${some.other.property}</code>) are validated after Micronaut resolves them.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_deprecated_properties">Deprecated properties</h3>
+<div class="paragraph">
+<p>If a schema property is marked as deprecated (<code>"deprecated": true</code>), the validator emits a WARNING when the property is present.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_unknown_properties_and_suppressions">Unknown properties and suppressions</h3>
+<div class="paragraph">
+<p>By default unknown properties are treated as errors (and some schemas also enforce this via <code>additionalProperties: false</code>).</p>
+</div>
+<div class="paragraph">
+<p>You can downgrade matching errors to warnings by configuring suppression patterns (for example <code>micronaut.http.*</code>).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_reports">Reports</h3>
+<div class="paragraph">
+<p>The CLI writes reports into the output directory:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>configuration-errors.json</code></p>
+</li>
+<li>
+<p><code>configuration-errors.html</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If an error originates from a resolvable file (for example <code>application.properties</code>, <code>application.yml</code>, <code>application.toml</code>), the validator attempts to include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>origin location</p>
+</li>
+<li>
+<p>1-based line number</p>
+</li>
+<li>
+<p>a small code snippet</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The HTML report includes an expandable snippet preview with syntax highlighting. The JSON report includes only the line number.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_runtime_integration_optional">Runtime integration (optional)</h3>
+<div class="paragraph">
+<p>In addition to the CLI, the configuration validator module also provides optional runtime integrations:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a runtime API to access current configuration validation errors</p>
+</li>
+<li>
+<p>a health indicator (reports DOWN when configuration has errors)</p>
+</li>
+<li>
+<p>a management endpoint that exposes the validation errors</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These runtime integrations are enabled by default, but the health indicator and endpoint are only loaded when the application includes the optional <code>micronaut-management</code> dependency.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Invalid configuration often causes application startup failures (for example if required configuration is missing, or if a component fails during initialization due to invalid values). In those cases, the application may not start and the runtime beans (including the management endpoint and health indicator) will not be available.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_runtime_api">Runtime API</h4>
+<div class="paragraph">
+<p>The module exposes a bean of type <a href="../api/io/micronaut/jsonschema/configuration/validator/ConfigurationErrors.html">ConfigurationErrors</a> that returns a snapshot of the current validation errors:</p>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">    void logConfigurationErrors() {
+        configurationErrors.getCurrentErrors().forEach(System.out::println);
+    }</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">    fun logConfigurationErrors() {
+        configurationErrors.currentErrors.forEach(::println)
+    }</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">    void logConfigurationErrors() {
+        configurationErrors.currentErrors.each { println(it) }
+    }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, the first computed validation result is cached for the lifetime of the application context.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_configuration">Configuration</h4>
+<div class="paragraph">
+<p>All runtime configuration is under the <code>micronaut.jsonschema.configuration.validator</code> prefix:</p>
+</div>
+<a id="io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration" href="#io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration">&#128279;</a>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Configuration Properties for <a href="../api/io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html">ConfigurationValidatorConfiguration</a></caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.cache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the validation result should be cached. Default value true</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.fail-on-not-present</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether to fail when configuration contains keys not present in schema. Default value true</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.suppressions</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.List</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Patterns used to suppress validation errors</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_management_endpoint">Management endpoint</h4>
+<div class="paragraph">
+<p>To use the configuration errors management endpoint and health indicator, add:</p>
+</div>
+<div class="paragraph">
+<p>        <div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">implementation(<span class="hljs-string">"io.micronaut:micronaut-management")</span></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;dependency&gt;
+    &lt;groupId&gt;io.micronaut&lt;/groupId&gt;
+    &lt;artifactId&gt;micronaut-management&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div>
+</p>
+</div>
+<div class="paragraph">
+<p>The endpoint can be enabled or disabled via the <code>endpoints.configurationerrors.enabled</code> property (default: <code>true</code>).</p>
+</div>
+<div class="paragraph">
+<p>When enabled, the management endpoint is available under id <code>configurationerrors</code> and returns a JSON response containing an <code>errors</code> namespace.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Management endpoints are sensitive by default. For tests and local development you may want to disable sensitivity:
+</td>
+</tr>
+</table>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">endpoints.all.sensitive=false
+endpoints.configurationerrors.sensitive=false
+endpoints.configurationerrors.enabled=true</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">endpoints:
+  all:
+    sensitive: false
+  configurationerrors:
+    sensitive: false
+    enabled: true</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">[endpoints]
+  [endpoints.all]
+    sensitive=false
+  [endpoints.configurationerrors]
+    sensitive=false
+    enabled=true</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy-config hljs" data-lang="groovy-config">endpoints {
+  all {
+    sensitive = false
+  }
+  configurationerrors {
+    sensitive = false
+    enabled = true
+  }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-hocon hljs" data-lang="hocon">{
+  endpoints {
+    all {
+      sensitive = false
+    }
+    configurationerrors {
+      sensitive = false
+      enabled = true
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json-config hljs" data-lang="json-config">{
+  "endpoints": {
+    "all": {
+      "sensitive": false
+    },
+    "configurationerrors": {
+      "sensitive": false,
+      "enabled": true
+    }
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_health_indicator">Health indicator</h4>
+<a id="io.micronaut.jsonschema.configuration.validator.HealthConfiguration" href="#io.micronaut.jsonschema.configuration.validator.HealthConfiguration">&#128279;</a>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Configuration Properties for <a href="../api/io/micronaut/jsonschema/configuration/validator/HealthConfiguration.html">HealthConfiguration</a></caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>endpoints.health.configurationerrors.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the configuration validation health indicator is enabled. Default value true</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>When enabled, the health indicator reports <code>DOWN</code> if any configuration validation errors are present.
+It also includes a bounded sample of the failing properties and messages in the response details.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_custom_validation_rules_serviceloader">Custom validation rules (ServiceLoader)</h3>
+<div class="paragraph">
+<p>Some validation rules cannot be expressed as JSON Schema keywords alone, for example validating dependent configuration entries.</p>
+</div>
+<div class="paragraph">
+<p>The configuration validator supports custom rules via the <a href="../api/io/micronaut/jsonschema/configuration/validator/ConfigurationRule.html">ConfigurationRule</a> SPI.
+Implementations are discovered using <code>ServiceLoader</code> from the same classloader used to load configuration schemas.</p>
+</div>
+<div class="sect3">
+<h4 id="_rule_api">Rule API</h4>
+<div class="paragraph">
+<p>Rules receive a <a href="../api/io/micronaut/jsonschema/configuration/validator/ConfigurationValidationContext.html">ConfigurationValidationContext</a> that includes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>the <code>Environment</code></p>
+</li>
+<li>
+<p>the validated <code>prefix</code></p>
+</li>
+<li>
+<p>the loaded <a href="../api/io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchema.html">ConfigurationSchema</a></p>
+</li>
+<li>
+<p>the <a href="../api/io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchemaProperty.html">ConfigurationSchemaProperty</a> being validated</p>
+</li>
+<li>
+<p>the computed nested <code>instanceMap</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For <code>@EachProperty</code> schemas, the <code>prefix</code> is the fully qualified entry prefix (for example <code>test.executors.alpha</code>).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_example_dependent_configuration">Example: dependent configuration</h4>
+<div class="paragraph">
+<p>The following example requires <code>datasources.default.url</code> when <code>jpa.default.properties</code> is present:</p>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">    @Override
+    public boolean supportsPrefix(String prefix) {
+        return "jpa.default.properties".equals(prefix);
+    }
+
+    @Override
+    public Set&lt;ConfigurationError&gt; validate(ConfigurationValidationContext context) {
+        Set&lt;ConfigurationError&gt; errors = new LinkedHashSet&lt;&gt;();
+
+        if (!context.environment().containsProperty("datasources.default.url")) {
+            errors.add(ConfigurationError.builder(
+                "datasources.default.url",
+                "Required when jpa.default.properties is set"
+            ).build());
+        }
+
+        return errors;
+    }</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">    override fun supportsPrefix(prefix: String): Boolean = prefix == "jpa.default.properties"
+
+    override fun validate(context: ConfigurationValidationContext): Set&lt;ConfigurationError&gt; {
+        val errors = LinkedHashSet&lt;ConfigurationError&gt;()
+
+        if (!context.environment.containsProperty("datasources.default.url")) {
+            errors.add(
+                ConfigurationError.builder(
+                    "datasources.default.url",
+                    "Required when jpa.default.properties is set"
+                ).build()
+            )
+        }
+
+        return errors
+    }</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">    @Override
+    boolean supportsPrefix(String prefix) {
+        prefix == 'jpa.default.properties'
+    }
+
+    @Override
+    Set&lt;ConfigurationError&gt; validate(ConfigurationValidationContext context) {
+        Set&lt;ConfigurationError&gt; errors = new LinkedHashSet&lt;&gt;()
+
+        if (!context.environment().containsProperty('datasources.default.url')) {
+            errors.add(ConfigurationError.builder(
+                    'datasources.default.url',
+                    'Required when jpa.default.properties is set'
+            ).build())
+        }
+
+        return errors
+    }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To register the rule, add a <code>ServiceLoader</code> entry:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">META-INF/services/io.micronaut.jsonschema.configuration.validator.ConfigurationRule</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and list your implementation class name in that file.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cli">CLI</h3>
+<div class="sect3">
+<h4 id="_full_classpath_entry_point">Full classpath entry point</h4>
+<div class="paragraph">
+<p>If the process classpath already contains all runtime dependencies, invoke:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">java -cp &lt;full-classpath&gt; io.micronaut.jsonschema.configuration.validator.cli.ConfigurationJsonSchemaValidatorCli \
+  --classpath &lt;full-classpath&gt; \
+  --environments test \
+  --out build/reports/config-schema \
+  --format both</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_minimal_classpath_bootstrap_entry_point">Minimal classpath bootstrap entry point</h4>
+<div class="paragraph">
+<p>If you want to run with a minimal process classpath that contains only the configuration validator module, invoke:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">java -cp &lt;validator-module-only&gt; io.micronaut.jsonschema.configuration.validator.cli.ConfigurationJsonSchemaValidatorCliBootstrap \
+  --classpath &lt;full-runtime-classpath&gt; \
+  --environments test \
+  --out build/reports/config-schema</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The bootstrap entry point only parses <code>--classpath</code> and forwards all remaining arguments to <code>ConfigurationJsonSchemaValidatorCli</code>.</p>
+</div>
+</div>
+</div>
+
+<h1 id="repository"><a class="anchor" href="#repository"></a>7 Repository</h1>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/repository.adoc"'>
@@ -1889,7 +2433,7 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 <p><a href="https://github.com/micronaut-projects/micronaut-json-schema">https://github.com/micronaut-projects/micronaut-json-schema</a></p>
 </div>
 
-<h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>7 Release History</h1>
+<h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>8 Release History</h1>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/releaseHistory.adoc"'>
