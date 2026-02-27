@@ -20,6 +20,7 @@ import io.micronaut.core.naming.NameUtils;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
 import io.micronaut.serde.annotation.Serdeable;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -75,11 +76,11 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
         output.flush();
     }
 
-    private static String shortName(String typeName) {
+    private static String shortName(@Nullable String typeName) {
         return typeName == null ? "" : NameUtils.getShortenedName(typeName);
     }
 
-    private static String formatDetails(String message, String disabledReason) {
+    private static String formatDetails(String message, @Nullable String disabledReason) {
         if (disabledReason == null || disabledReason.isBlank()) {
             return message;
         }

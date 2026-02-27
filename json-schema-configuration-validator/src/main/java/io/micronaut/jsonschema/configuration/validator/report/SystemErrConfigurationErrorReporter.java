@@ -174,7 +174,7 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
         table.print(writer, useAnsi);
     }
 
-    private static String shortName(String typeName) {
+    private static String shortName(@Nullable String typeName) {
         return typeName == null ? "" : NameUtils.getShortenedName(typeName);
     }
 
@@ -219,7 +219,7 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
         return nodes;
     }
 
-    private static String cleanPathNode(String pathEntry) {
+    private static String cleanPathNode(@Nullable String pathEntry) {
         if (pathEntry == null) {
             return "";
         }

@@ -15,6 +15,7 @@ public final class FixtureStartupListenerBean implements ApplicationEventListene
     }
 
     @Override
+    @SuppressWarnings("java:S1186")
     public void onApplicationEvent(ServerStartupEvent event) {
     }
 }

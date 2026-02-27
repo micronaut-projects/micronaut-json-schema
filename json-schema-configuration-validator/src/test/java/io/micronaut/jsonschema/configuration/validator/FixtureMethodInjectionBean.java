@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 @Requires(env = "di-validator-test")
 public final class FixtureMethodInjectionBean {
     @Inject
+    @SuppressWarnings("java:S1186")
     void inject(FixtureMissingDependency missingDependency) {
     }
 }

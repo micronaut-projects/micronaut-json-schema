@@ -13,6 +13,7 @@ public final class FixtureEachBeanChainNamedConsumer {
     }
 
     @Executable(processOnStartup = true)
+    @SuppressWarnings("java:S1186")
     void entrypoint() {
     }
 }

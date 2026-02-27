@@ -32,6 +32,7 @@ import java.util.Set;
 /**
  * Reports errors as an HTML document.
  */
+@SuppressWarnings("java:S1192")
 public final class HtmlConfigurationErrorReporter implements ConfigurationErrorReporter {
     private static final String HTML_DIV_CLOSE = "</div>";
     private static final String HTML_DIV_DIV_CLOSE = "</div></div>";
@@ -50,6 +51,7 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
     }
 
     @Override
+    @SuppressWarnings("java:S3776")
     public void report(Set<ConfigurationError> errors, Set<DependencyInjectionError> dependencyInjectionErrors) throws IOException {
         long errorCount = errors.stream().filter(e -> e.type() == ConfigurationError.Type.ERROR).count();
         long warningCount = errors.stream().filter(e -> e.type() == ConfigurationError.Type.WARNING).count();
@@ -246,13 +248,13 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
         output.flush();
     }
 
-    private static String shortName(String typeName) {
+    private static String shortName(@Nullable String typeName) {
         return typeName == null ? "" : NameUtils.getShortenedName(typeName);
     }
 
     private static String failurePathGraphDataUri(DependencyInjectionError error) {
         List<String> nodes = normalizedPathNodes(error);
-        String svg = renderPathSvg(nodes);
+        String svg = renderPathSvg(nodes, Integer.toHexString(error.hashCode()));
         String encoded = Base64.getEncoder().encodeToString(svg.getBytes(StandardCharsets.UTF_8));
         return "data:image/svg+xml;base64," + encoded;
     }
@@ -268,7 +270,7 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
         return nodes;
     }
 
-    private static String cleanPathNode(String pathEntry) {
+    private static String cleanPathNode(@Nullable String pathEntry) {
         if (pathEntry == null) {
             return "";
         }
@@ -279,17 +281,18 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
         return cleaned;
     }
 
-    private static String renderPathSvg(List<String> nodes) {
+    private static String renderPathSvg(List<String> nodes, String idSuffix) {
         int width = 960;
         int headerHeight = 24;
         int rowHeight = 50;
         int height = Math.max(140, headerHeight + (nodes.size() * rowHeight) + 30);
 
+        String markerId = "arrow-" + idSuffix;
         StringBuilder svg = new StringBuilder(1024);
         svg.append("<svg xmlns='http://www.w3.org/2000/svg' width='").append(width).append("' height='").append(height).append("' viewBox='0 0 ")
             .append(width).append(' ').append(height).append("'>")
             .append("<rect width='100%' height='100%' fill='#ffffff'/>")
-            .append("<defs><marker id='arrow' markerWidth='10' markerHeight='8' refX='9' refY='4' orient='auto'>")
+            .append("<defs><marker id='").append(markerId).append("' markerWidth='10' markerHeight='8' refX='9' refY='4' orient='auto'>")
             .append("<polygon points='0 0, 10 4, 0 8' fill='#475467'/></marker></defs>");
 
         int x = 24;
@@ -301,14 +304,14 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
                 .append("' rx='6' ry='6' fill='#f8f9fb' stroke='#d0d5dd'/>")
                 .append("<text x='").append(x + 10).append("' y='").append(y + 20)
                 .append("' font-family='ui-monospace, SFMono-Regular, Menlo, monospace' font-size='12' fill='#101828'>")
-                .append(escapeSvg(nodes.get(i))).append("</text>");
+                .append(escapeSvg(truncateForSvg(nodes.get(i), 118))).append("</text>");
 
             if (i < nodes.size() - 1) {
                 int lineY1 = y + boxHeight;
                 int lineY2 = y + rowHeight - 6;
                 int lineX = x + (boxWidth / 2);
                 svg.append("<line x1='").append(lineX).append("' y1='").append(lineY1).append("' x2='").append(lineX).append("' y2='").append(lineY2)
-                    .append("' stroke='#475467' stroke-width='1.5' marker-end='url(#arrow)'/>");
+                    .append("' stroke='#475467' stroke-width='1.5' marker-end='url(#").append(markerId).append(")'/>");
             }
             y += rowHeight;
         }
@@ -318,6 +321,16 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
 
     private static String escapeSvg(String value) {
         return escape(value);
+    }
+
+    private static String truncateForSvg(String value, int maxChars) {
+        if (value.length() <= maxChars) {
+            return value;
+        }
+        if (maxChars < 4) {
+            return value.substring(0, maxChars);
+        }
+        return value.substring(0, maxChars - 3) + "...";
     }
 
     private static String formatDetails(String message, @Nullable String disabledReason) {

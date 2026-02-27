@@ -46,10 +46,15 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -57,8 +62,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.HashSet;
-import java.lang.reflect.Modifier;
 import java.util.stream.Collectors;
 
 /**
@@ -70,6 +73,8 @@ import java.util.stream.Collectors;
  */
 @Singleton
 public final class DefaultDependencyInjectionValidator implements DependencyInjectionValidator {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultDependencyInjectionValidator.class);
+
     private static final String STARTUP_EVENT = "io.micronaut.runtime.event.StartupEvent";
     private static final String SERVER_STARTUP_EVENT = "io.micronaut.runtime.server.event.ServerStartupEvent";
 
@@ -116,7 +121,8 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     private static void ensureConfigured(ConfigurableBeanContext beanContext) {
         try {
             beanContext.configure();
-        } catch (Exception ignored) {
+        } catch (RuntimeException e) {
+            LOG.debug("Bean context configure() failed during metadata DI validation; continuing with available definitions", e);
         }
     }
 
@@ -477,7 +483,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
                 continue;
             }
 
-            Optional<EachPropertyOrigin> origin = resolveEachPropertyOrigin(candidate, definitions, new HashSet<>());
+            Optional<EachPropertyOrigin> origin = resolveEachPropertyOrigin(candidate, definitions, new HashSet<>(), new HashMap<>());
             if (origin.isEmpty() || origin.get().prefix().isBlank()) {
                 continue;
             }
@@ -493,20 +499,26 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         return Optional.empty();
     }
 
+    @SuppressWarnings("java:S3776")
     private static Optional<EachPropertyOrigin> resolveEachPropertyOrigin(
         BeanDefinition<Object> candidate,
         Collection<BeanDefinition<Object>> definitions,
-        Set<String> visited
+        Set<String> visited,
+        Map<Class<?>, List<BeanDefinition<Object>>> candidatesByType
     ) {
         if (!visited.add(candidate.getName())) {
             return Optional.empty();
         }
 
         for (Argument<?> constructorArgument : candidate.getConstructor().getArguments()) {
-            for (BeanDefinition<Object> definition : definitions) {
-                if (!constructorArgument.getType().isAssignableFrom(definition.getBeanType())) {
-                    continue;
-                }
+            List<BeanDefinition<Object>> candidatesForArgument = candidatesByType.computeIfAbsent(
+                constructorArgument.getType(),
+                type -> definitions.stream()
+                    .filter(definition -> type.isAssignableFrom(definition.getBeanType()))
+                    .toList()
+            );
+
+            for (BeanDefinition<Object> definition : candidatesForArgument) {
                 if (definition.getAnnotationMetadata().hasStereotype(EachProperty.class)) {
                     Optional<String> prefix = definition.getAnnotationMetadata().stringValue(EachProperty.class);
                     if (prefix.isPresent() && !prefix.get().isBlank()) {
@@ -518,14 +530,11 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
                 }
             }
 
-            for (BeanDefinition<Object> definition : definitions) {
-                if (!constructorArgument.getType().isAssignableFrom(definition.getBeanType())) {
-                    continue;
-                }
+            for (BeanDefinition<Object> definition : candidatesForArgument) {
                 if (!definition.getAnnotationMetadata().hasStereotype(EachBean.class)) {
                     continue;
                 }
-                Optional<EachPropertyOrigin> nested = resolveEachPropertyOrigin(definition, definitions, visited);
+                Optional<EachPropertyOrigin> nested = resolveEachPropertyOrigin(definition, definitions, visited, candidatesByType);
                 if (nested.isPresent()) {
                     return nested;
                 }
@@ -685,7 +694,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
                 if (requiredType.isAssignableFrom(candidateType)) {
                     matched.put(candidateName, new DisabledCandidate(candidateName, entry.getValue()));
                 }
-            } catch (Throwable ignored) {
+            } catch (ClassNotFoundException | LinkageError ignored) {
             }
         }
         return matched.values().stream()

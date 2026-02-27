@@ -15,6 +15,7 @@ public final class FixtureScheduledBean {
     FixtureMissingDependency missingDependency;
 
     @Scheduled(fixedDelay = "10m")
+    @SuppressWarnings("java:S1186")
     void run() {
     }
 }
