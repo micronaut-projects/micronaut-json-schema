@@ -75,6 +75,17 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
         output.flush();
     }
 
+    private static String shortName(String typeName) {
+        return typeName == null ? "" : NameUtils.getShortenedName(typeName);
+    }
+
+    private static String formatDetails(String message, String disabledReason) {
+        if (disabledReason == null || disabledReason.isBlank()) {
+            return message;
+        }
+        return message + " | Disabled: " + disabledReason;
+    }
+
     @Serdeable
     private record JsonReport(
         List<JsonConfigurationError> configurationErrors,
@@ -103,16 +114,5 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
         String snippet,
         String snippetLanguage
     ) {
-    }
-
-    private static String shortName(String typeName) {
-        return typeName == null ? "" : NameUtils.getShortenedName(typeName);
-    }
-
-    private static String formatDetails(String message, String disabledReason) {
-        if (disabledReason == null || disabledReason.isBlank()) {
-            return message;
-        }
-        return message + " | Disabled: " + disabledReason;
     }
 }
