@@ -154,7 +154,10 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
 
         writer.println(style(useAnsi, Ansi.BOLD) + "Dependency Injection Errors" + style(useAnsi, Ansi.RESET));
         List<DependencyInjectionError> ordered = errors.stream()
-            .sorted(Comparator.comparing(DependencyInjectionError::injectionPoint).thenComparing(DependencyInjectionError::bean))
+            .sorted(Comparator.comparing(
+                DependencyInjectionError::injectionPoint,
+                Comparator.nullsLast(Comparator.naturalOrder())
+            ).thenComparing(DependencyInjectionError::bean))
             .toList();
 
         List<DependencyRow> rows = new ArrayList<>(ordered.size());

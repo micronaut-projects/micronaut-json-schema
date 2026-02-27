@@ -36,6 +36,7 @@ import java.util.Set;
 
 @Requires(classes = HealthIndicator.class)
 @Requires(property = ConfigurationValidatorConfiguration.PREFIX + ".dependency-injection.enabled", value = StringUtils.TRUE)
+@Requires(property = ConfigurationValidatorConfiguration.ENDPOINT_PREFIX + ".enabled", value = StringUtils.TRUE, defaultValue = StringUtils.TRUE)
 @Singleton
 final class InjectErrorsHealthIndicator implements HealthIndicator {
     private static final String NAME = "injecterrors";

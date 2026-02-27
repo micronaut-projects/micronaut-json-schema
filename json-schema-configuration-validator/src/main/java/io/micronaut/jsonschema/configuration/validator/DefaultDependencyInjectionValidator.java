@@ -223,8 +223,6 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
                     continue;
                 }
 
-                missingEachPropertyConfigurationKey(beanContext, argument);
-
                 Optional<BeanDefinition<?>> target;
                 try {
                     target = findBeanDefinition(beanContext, argument, Qualifiers.forArgument(argument));
@@ -475,6 +473,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             return Optional.empty();
         }
 
+        Map<Class<?>, List<BeanDefinition<Object>>> candidatesByType = new HashMap<>();
         for (BeanDefinition<Object> candidate : definitions) {
             if (!argument.getType().isAssignableFrom(candidate.getBeanType())) {
                 continue;
@@ -483,7 +482,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
                 continue;
             }
 
-            Optional<EachPropertyOrigin> origin = resolveEachPropertyOrigin(candidate, definitions, new HashSet<>(), new HashMap<>());
+            Optional<EachPropertyOrigin> origin = resolveEachPropertyOrigin(candidate, definitions, new HashSet<>(), candidatesByType);
             if (origin.isEmpty() || origin.get().prefix().isBlank()) {
                 continue;
             }
