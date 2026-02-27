@@ -19,6 +19,7 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
+import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
 import io.micronaut.jsonschema.configuration.validator.report.HtmlConfigurationErrorReporter;
 import io.micronaut.jsonschema.configuration.validator.report.JsonConfigurationErrorReporter;
 import io.micronaut.jsonschema.configuration.validator.report.SystemErrConfigurationErrorReporter;
@@ -45,6 +46,7 @@ import java.util.Set;
  *     <li>{@code --suppress <pattern>} (repeatable) or {@code --suppressions <csv>}</li>
  *     <li>{@code --fail-on-not-present <true|false>} (defaults to {@code true})</li>
  *     <li>{@code --deduce-environments <true|false>} (defaults to {@code false})</li>
+ *     <li>{@code --validate-dependency-injection} (defaults to {@code false})</li>
  *     <li>{@code --out <directory>} (required)</li>
  *     <li>{@code --format <json|html|both>} (defaults to {@code both})</li>
  * </ul>
@@ -105,6 +107,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
         );
 
         Set<ConfigurationError> errors;
+        Set<DependencyInjectionError> dependencyInjectionErrors = Set.of();
         try {
             errors = facade.validate();
         } catch (Exception e) {
@@ -114,22 +117,39 @@ public final class ConfigurationJsonSchemaValidatorCli {
             return 2;
         }
 
+        if (options.validateDependencyInjection()) {
+            try {
+                dependencyInjectionErrors = DependencyInjectionConfigurationValidator.forClasspath(
+                    options.classpath(),
+                    options.environments(),
+                    options.deduceEnvironments()
+                ).validate();
+            } catch (Exception e) {
+                err.println("Dependency injection validation failed while loading configuration:");
+                printDiscoveredConfigFiles(err, options.classpath());
+                printThrowable(err, e);
+                return 2;
+            }
+        }
+
         try {
-            ReportFiles reportFiles = writeReports(errors, options);
+            ReportFiles reportFiles = writeReports(errors, dependencyInjectionErrors, options);
             new SystemErrConfigurationErrorReporter(
                 err,
                 reportFiles.htmlReport(),
                 reportFiles.jsonReport(),
                 options.projectBaseDir(),
                 options.resourcesDirs()
-            ).report(errors);
+            ).report(errors, dependencyInjectionErrors);
         } catch (IOException e) {
             err.println("Failed to write report: " + e.getMessage());
             return 2;
         }
 
-        // Non-zero when any ERRORs are present.
-        return errors.stream().anyMatch(e -> e.type() == ConfigurationError.Type.ERROR) ? 1 : 0;
+        if (errors.stream().anyMatch(e -> e.type() == ConfigurationError.Type.ERROR)) {
+            return 1;
+        }
+        return dependencyInjectionErrors.isEmpty() ? 0 : 1;
     }
 
     private static void printThrowable(PrintStream err, Throwable e) {
@@ -206,20 +226,24 @@ public final class ConfigurationJsonSchemaValidatorCli {
         return message;
     }
 
-    private static ReportFiles writeReports(Set<ConfigurationError> errors, Options options) throws IOException {
+    private static ReportFiles writeReports(
+        Set<ConfigurationError> errors,
+        Set<DependencyInjectionError> dependencyInjectionErrors,
+        Options options
+    ) throws IOException {
         Path jsonFile = null;
         Path htmlFile = null;
 
         if (options.format() == Format.JSON || options.format() == Format.BOTH) {
             jsonFile = options.outDir().resolve("configuration-errors.json");
             try (OutputStream os = Files.newOutputStream(jsonFile)) {
-                new JsonConfigurationErrorReporter(JsonMapper.createDefault(), os).report(errors);
+                new JsonConfigurationErrorReporter(JsonMapper.createDefault(), os).report(errors, dependencyInjectionErrors);
             }
         }
         if (options.format() == Format.HTML || options.format() == Format.BOTH) {
             htmlFile = options.outDir().resolve("configuration-errors.html");
             try (OutputStream os = Files.newOutputStream(htmlFile)) {
-                new HtmlConfigurationErrorReporter(os).report(errors);
+                new HtmlConfigurationErrorReporter(os).report(errors, dependencyInjectionErrors);
             }
         }
         return new ReportFiles(htmlFile, jsonFile);
@@ -241,6 +265,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
         List<String> suppressions,
         boolean failOnNotPresent,
         boolean deduceEnvironments,
+        boolean validateDependencyInjection,
         Path outDir,
         Format format,
         @Nullable Path projectBaseDir,
@@ -254,6 +279,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
             List<String> suppressions = new ArrayList<>(0);
             boolean failOnNotPresent = true;
             boolean deduceEnvironments = false;
+            boolean validateDependencyInjection = false;
             Path outDir = null;
             Format format = Format.BOTH;
             Path projectBaseDir = null;
@@ -313,6 +339,13 @@ public final class ConfigurationJsonSchemaValidatorCli {
                         deduceEnvironments = Boolean.parseBoolean(value);
                     }
                     case "--no-deduce-environments" -> deduceEnvironments = false;
+                    case "--validate-dependency-injection" -> {
+                        if (value == null) {
+                            validateDependencyInjection = true;
+                        } else {
+                            validateDependencyInjection = Boolean.parseBoolean(value);
+                        }
+                    }
                     case "--out" -> {
                         value = value != null ? value : nextValue(list, ++i, key);
                         outDir = Path.of(value);
@@ -336,7 +369,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
             }
 
             if (help) {
-                return new Options(true, "", List.of(), List.of(), true, false, Path.of("."), Format.BOTH, null, List.of());
+                return new Options(true, "", List.of(), List.of(), true, false, false, Path.of("."), Format.BOTH, null, List.of());
             }
             if (classpath == null || classpath.isBlank()) {
                 throw new IllegalArgumentException("Missing required argument: --classpath");
@@ -352,6 +385,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 List.copyOf(suppressions),
                 failOnNotPresent,
                 deduceEnvironments,
+                validateDependencyInjection,
                 outDir,
                 format,
                 projectBaseDir,
@@ -372,6 +406,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 "  --no-fail-on-not-present         Convenience flag to disable unknown property errors\n" +
                 "  --deduce-environments <bool>     Whether to deduce environments (default: false)\n" +
                 "  --no-deduce-environments         Convenience flag to disable environment deduction\n" +
+                "  --validate-dependency-injection  Enable dependency injection validation (default: false)\n" +
                 "  --out <dir>                      Output directory to write reports\n" +
                 "  --format <json|html|both>        Report format(s) (default: both)\n" +
                 "  --project-base-dir <dir>         Project base directory used to render relative origin paths\n" +

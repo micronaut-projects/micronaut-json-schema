@@ -50,6 +50,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
         System.clearProperty("test.config.extra");
         System.clearProperty("micronaut.http.client.unknown");
         System.clearProperty("micronaut.environments");
+        System.clearProperty("spec.name");
     }
 
     @Test
@@ -123,6 +124,17 @@ class ConfigurationJsonSchemaValidatorCliTest {
     }
 
     @Test
+    void optionsCanEnableDependencyInjectionValidation() {
+        ConfigurationJsonSchemaValidatorCli.Options options = ConfigurationJsonSchemaValidatorCli.Options.parse(new String[] {
+            "--classpath", "cp",
+            "--out", tempDir.resolve("out").toString(),
+            "--validate-dependency-injection"
+        });
+
+        assertTrue(options.validateDependencyInjection());
+    }
+
+    @Test
     void suppressionPatternsDowngradeErrorsToWarnings() throws Exception {
         System.setProperty("micronaut.http.client.unknown", "x");
 
@@ -141,13 +153,82 @@ class ConfigurationJsonSchemaValidatorCliTest {
         String json = Files.readString(out.resolve("configuration-errors.json"), StandardCharsets.UTF_8);
         Object decoded = JsonMapper.createDefault().readValue(json, Argument.of(Object.class));
         assertNotNull(decoded);
+        assertInstanceOf(Map.class, decoded);
 
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> list = (List<Map<String, Object>>) decoded;
+        List<Map<String, Object>> list = (List<Map<String, Object>>) ((Map<String, Object>) decoded).get("configurationErrors");
         assertFalse(list.isEmpty());
         assertTrue(list.stream().anyMatch(m -> "micronaut.http.client.unknown".equals(m.get("property"))));
         assertTrue(list.stream().anyMatch(m -> "WARNING".equals(m.get("type"))));
         assertFalse(list.stream().anyMatch(m -> "ERROR".equals(m.get("type"))));
+    }
+
+    @Test
+    void dependencyInjectionValidationCanBeEnabledFromCli() throws Exception {
+        Path out = tempDir.resolve("out-di");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--environments", "test,di-validator-test",
+            "--out", out.toString(),
+            "--validate-dependency-injection",
+            "--format", "json"
+        }, System.out, System.err);
+
+        assertEquals(1, exit);
+        String json = Files.readString(out.resolve("configuration-errors.json"), StandardCharsets.UTF_8);
+        Object decoded = JsonMapper.createDefault().readValue(json, Argument.of(Object.class));
+        assertInstanceOf(Map.class, decoded);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> diErrors = (List<Map<String, Object>>) ((Map<String, Object>) decoded).get("dependencyInjectionErrors");
+        assertFalse(diErrors.isEmpty(), () -> "Expected dependency injection errors, got: " + decoded);
+        assertTrue(diErrors.stream().allMatch(e -> e.containsKey("injectionPoint") && e.containsKey("bean") && e.containsKey("details")),
+            () -> "Expected aligned DI JSON fields (injectionPoint, bean, details), got: " + diErrors);
+        assertTrue(diErrors.stream().noneMatch(e -> e.containsKey("rootBean") || e.containsKey("sourceLocation") || e.containsKey("message") || e.containsKey("disabledReason")),
+            () -> "Expected legacy DI JSON fields removed, got: " + diErrors);
+        assertTrue(diErrors.stream().anyMatch(e -> {
+            Object snippet = e.get("snippet");
+            return snippet != null && !String.valueOf(snippet).isBlank();
+        }), () -> "Expected DI errors to include snippet, got: " + diErrors);
+        assertTrue(diErrors.stream().noneMatch(e -> {
+            Object bean = e.get("bean");
+            if (bean == null) {
+                return false;
+            }
+            String value = String.valueOf(bean);
+            return value.contains("io.micronaut.context.env.Environment")
+                || value.contains("io.micronaut.core.value.PropertyResolver");
+        }), () -> "Implicit infrastructure beans should be excluded from DI errors, got: " + diErrors);
+    }
+
+    @Test
+    void dependencyInjectionHtmlReportIncludesSourceSnippetForFailingBean() throws Exception {
+        Path out = tempDir.resolve("out-di-html");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--environments", "test,di-validator-test",
+            "--out", out.toString(),
+            "--validate-dependency-injection",
+            "--format", "html"
+        }, System.out, System.err);
+
+        assertEquals(1, exit);
+        String html = Files.readString(out.resolve("configuration-errors.html"), StandardCharsets.UTF_8);
+        assertTrue(html.contains("Dependency injection errors"));
+        assertFalse(html.contains("<th style='width:10%'>Source</th>"), () -> "Source column should be removed, got:\n" + html);
+        assertFalse(html.contains("<th style='width:14%'>Root</th>"), () -> "Root column should be removed, got:\n" + html);
+        assertTrue(html.contains("<th style='width:42%'>Details</th>"), () -> "Details column missing, got:\n" + html);
+        assertTrue(html.contains("No bean of type [io.micronaut.jsonschema.configuration.validator.FixtureMissingDependency] exists"),
+            () -> "Expected metadata DI error message in HTML, got:\n" + html);
+        assertTrue(html.contains("method FixtureMethodInjectionBean.inject(missingDependency)")
+                || html.contains("field FixtureFieldInjectionBean.missingDependency"),
+            () -> "Expected injection point column first content, got:\n" + html);
+        assertTrue(html.contains("<details>"), () -> "Expected details snippet block in HTML, got:\n" + html);
+        assertTrue(html.contains("FixtureCliDisabledCandidateProperty"), () -> "Expected disabled property candidate in HTML, got:\n" + html);
+        assertTrue(html.contains("FixtureCliDisabledCandidateBean"), () -> "Expected disabled bean candidate in HTML, got:\n" + html);
+        assertTrue(html.contains("More details") || html.contains("mn-detail-main"),
+            () -> "Expected expanded details formatting for DI details column, got:\n" + html);
+        assertFalse(html.contains("missing io.micronaut.context.env.Environment"), () -> "Environment should not be reported as missing, got:\n" + html);
+        assertFalse(html.contains("missing io.micronaut.core.value.PropertyResolver"), () -> "PropertyResolver should not be reported as missing, got:\n" + html);
     }
 
     @Test
@@ -606,4 +687,5 @@ class ConfigurationJsonSchemaValidatorCliTest {
         assertTrue(Pattern.compile("config/application\\.yml:[0-9]+", Pattern.CASE_INSENSITIVE).matcher(stderr).find(),
             () -> "Expected origin to be rewritten using second resources dir, got:\n" + stderr);
     }
+
 }

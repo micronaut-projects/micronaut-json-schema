@@ -16,6 +16,8 @@
 package io.micronaut.jsonschema.configuration.validator.report;
 
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
+import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
+import io.micronaut.core.naming.NameUtils;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -102,16 +104,20 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
     }
 
     @Override
-    public void report(Set<ConfigurationError> errors) throws IOException {
+    public void report(Set<ConfigurationError> errors, Set<DependencyInjectionError> dependencyInjectionErrors) throws IOException {
         PrintWriter writer = new PrintWriter(err);
         boolean useAnsi = shouldUseAnsi(err);
 
-        if (!errors.isEmpty()) {
-            writer.println(style(useAnsi, Ansi.BOLD) + "Configuration Validation Errors Present" + style(useAnsi, Ansi.RESET));
+        if (!errors.isEmpty() || !dependencyInjectionErrors.isEmpty()) {
+            writer.println(style(useAnsi, Ansi.BOLD) + "Validation Errors Present" + style(useAnsi, Ansi.RESET));
             writer.println();
         }
 
         writeTable(writer, errors, useAnsi);
+        writer.println();
+        writeDependencyInjectionTable(writer, dependencyInjectionErrors, useAnsi);
+        writer.println();
+        writeDependencyInjectionGraph(writer, dependencyInjectionErrors);
         writer.println();
         printReportLocationIfPresent(writer, useAnsi);
         writer.flush();
@@ -138,6 +144,90 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
             List.of(60, 8, 80, 40, 40)
         );
         table.print(writer, useAnsi);
+    }
+
+    private static void writeDependencyInjectionTable(PrintWriter writer, Set<DependencyInjectionError> errors, boolean useAnsi) {
+        if (errors.isEmpty()) {
+            writer.println("No dependency injection validation errors.");
+            return;
+        }
+
+        writer.println(style(useAnsi, Ansi.BOLD) + "Dependency Injection Errors" + style(useAnsi, Ansi.RESET));
+        List<DependencyInjectionError> ordered = errors.stream()
+            .sorted(Comparator.comparing(DependencyInjectionError::injectionPoint).thenComparing(DependencyInjectionError::bean))
+            .toList();
+
+        List<DependencyRow> rows = new ArrayList<>(ordered.size());
+        for (DependencyInjectionError error : ordered) {
+            rows.add(new DependencyRow(
+                sanitize(error.injectionPoint()),
+                sanitize(shortName(error.bean())),
+                sanitize(formatDetails(error.message(), error.disabledReason()))
+            ));
+        }
+
+        DependencyTable table = DependencyTable.of(
+            List.of("Injection Point", "Bean", "Details"),
+            rows,
+            List.of(50, 40, 120)
+        );
+        table.print(writer, useAnsi);
+    }
+
+    private static String shortName(String typeName) {
+        return typeName == null ? "" : NameUtils.getShortenedName(typeName);
+    }
+
+    private static String formatDetails(String message, @Nullable String disabledReason) {
+        if (disabledReason == null || disabledReason.isBlank()) {
+            return message;
+        }
+        return message + " | Disabled: " + disabledReason;
+    }
+
+    private static void writeDependencyInjectionGraph(PrintWriter writer, Set<DependencyInjectionError> errors) {
+        if (errors.isEmpty()) {
+            return;
+        }
+        writer.println("Dependency Injection Failure Paths:");
+        List<DependencyInjectionError> ordered = errors.stream()
+            .sorted(Comparator.comparing(DependencyInjectionError::rootBean).thenComparing(DependencyInjectionError::bean))
+            .toList();
+        for (DependencyInjectionError error : ordered) {
+            writer.println("- root: " + error.rootBean());
+            List<String> nodes = normalizedPathNodes(error);
+            if (nodes.isEmpty()) {
+                writer.println("  +--> " + error.bean() + " (failed)");
+                continue;
+            }
+            writer.println("  +--> " + sanitize(nodes.get(0)));
+            for (int i = 1; i < nodes.size(); i++) {
+                writer.println("  |    |");
+                writer.println("  |    +--> " + sanitize(nodes.get(i)));
+            }
+        }
+    }
+
+    private static List<String> normalizedPathNodes(DependencyInjectionError error) {
+        if (error.failingPath().isEmpty()) {
+            return List.of(error.rootBean(), error.bean() + " (failed)");
+        }
+        List<String> nodes = new ArrayList<>(error.failingPath().size());
+        for (String pathEntry : error.failingPath()) {
+            nodes.add(cleanPathNode(pathEntry));
+        }
+        return nodes;
+    }
+
+    private static String cleanPathNode(String pathEntry) {
+        if (pathEntry == null) {
+            return "";
+        }
+        String cleaned = pathEntry.trim();
+        if (cleaned.startsWith("*")) {
+            cleaned = cleaned.substring(1).trim();
+        }
+        return cleaned;
     }
 
     private Row toRow(ConfigurationError error) {
@@ -289,6 +379,9 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
     private record Row(String property, String type, String message, String origin, String value) {
     }
 
+    private record DependencyRow(String injectionPoint, String bean, String details) {
+    }
+
     private static final class Table {
         private final List<String> headers;
         private final List<Row> rows;
@@ -393,6 +486,57 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
                 return s.substring(0, width);
             }
             return s.substring(0, width - 3) + "...";
+        }
+    }
+
+    private static final class DependencyTable {
+        private final List<String> headers;
+        private final List<DependencyRow> rows;
+        private final List<Integer> maxWidths;
+
+        private DependencyTable(List<String> headers, List<DependencyRow> rows, List<Integer> maxWidths) {
+            this.headers = headers;
+            this.rows = rows;
+            this.maxWidths = maxWidths;
+        }
+
+        static DependencyTable of(List<String> headers, List<DependencyRow> rows, List<Integer> maxWidths) {
+            return new DependencyTable(headers, rows, maxWidths);
+        }
+
+        void print(PrintWriter writer, boolean useAnsi) {
+            int wInjectionPoint = Table.computeWidth(headers.get(0), rows.stream().map(DependencyRow::injectionPoint).toList(), maxWidths.get(0));
+            int wBean = Table.computeWidth(headers.get(1), rows.stream().map(DependencyRow::bean).toList(), maxWidths.get(1));
+            int wDetails = Table.computeWidth(headers.get(2), rows.stream().map(DependencyRow::details).toList(), maxWidths.get(2));
+
+            String sep = border(wInjectionPoint, wBean, wDetails);
+            writer.println(sep);
+            writer.println(rowLine(
+                style(useAnsi, Ansi.BOLD) + Table.pad(headers.get(0), wInjectionPoint) + style(useAnsi, Ansi.RESET),
+                style(useAnsi, Ansi.BOLD) + Table.pad(headers.get(1), wBean) + style(useAnsi, Ansi.RESET),
+                style(useAnsi, Ansi.BOLD) + Table.pad(headers.get(2), wDetails) + style(useAnsi, Ansi.RESET)
+            ));
+            writer.println(sep);
+
+            for (DependencyRow r : rows) {
+                writer.println(rowLine(
+                    Table.pad(Table.truncate(r.injectionPoint(), wInjectionPoint), wInjectionPoint),
+                    Table.pad(Table.truncate(r.bean(), wBean), wBean),
+                    Table.pad(Table.truncate(r.details(), wDetails), wDetails)
+                ));
+            }
+            writer.println(sep);
+        }
+
+        private static String border(int wInjectionPoint, int wBean, int wDetails) {
+            return "+" + "-".repeat(wInjectionPoint + 2)
+                + "+" + "-".repeat(wBean + 2)
+                + "+" + "-".repeat(wDetails + 2)
+                + "+";
+        }
+
+        private static String rowLine(String injectionPoint, String bean, String details) {
+            return "| " + injectionPoint + " | " + bean + " | " + details + " |";
         }
     }
 }

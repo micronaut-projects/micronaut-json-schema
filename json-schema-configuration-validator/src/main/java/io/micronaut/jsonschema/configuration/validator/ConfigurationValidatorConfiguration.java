@@ -39,10 +39,17 @@ public final class ConfigurationValidatorConfiguration {
      * Configuration prefix.
      */
     public static final String PREFIX = "micronaut.jsonschema.configuration.validator";
+    /**
+     * Configuration prefix used by this health-indicator configuration.
+     */
+    public static final String ENDPOINT_PREFIX = "endpoints.health.injecterrors";
+
     public static final boolean DEFAULT_CACHE = true;
     public static final boolean DEFAULT_FAIL_ON_NOT_PRESENT = true;
+    public static final boolean DEFAULT_DEPENDENCY_INJECTION_ENABLED = false;
     private boolean cache = DEFAULT_CACHE;
     private boolean failOnNotPresent = DEFAULT_FAIL_ON_NOT_PRESENT;
+    private boolean dependencyInjectionEnabled = DEFAULT_DEPENDENCY_INJECTION_ENABLED;
     private List<String> suppressions = List.of();
 
     /**
@@ -80,6 +87,14 @@ public final class ConfigurationValidatorConfiguration {
      */
     public void setFailOnNotPresent(boolean failOnNotPresent) {
         this.failOnNotPresent = failOnNotPresent;
+    }
+
+    public boolean isDependencyInjectionEnabled() {
+        return dependencyInjectionEnabled;
+    }
+
+    public void setDependencyInjectionEnabled(boolean dependencyInjectionEnabled) {
+        this.dependencyInjectionEnabled = dependencyInjectionEnabled;
     }
 
     /**

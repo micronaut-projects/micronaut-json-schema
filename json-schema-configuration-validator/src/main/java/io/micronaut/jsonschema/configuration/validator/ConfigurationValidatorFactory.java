@@ -33,4 +33,9 @@ class ConfigurationValidatorFactory {
         validator.setSuppressionPatterns(configuration.getSuppressions());
         return validator;
     }
+
+    @Singleton
+    DependencyInjectionValidator dependencyInjectionValidator() {
+        return new DefaultDependencyInjectionValidator();
+    }
 }
