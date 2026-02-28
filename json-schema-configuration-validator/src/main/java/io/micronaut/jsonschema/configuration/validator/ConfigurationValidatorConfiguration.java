@@ -30,7 +30,10 @@ import java.util.List;
  *     <li>{@code micronaut.jsonschema.configuration.validator.cache}</li>
  *     <li>{@code micronaut.jsonschema.configuration.validator.fail-on-not-present}</li>
  *     <li>{@code micronaut.jsonschema.configuration.validator.suppressions}</li>
- *     <li>{@code micronaut.jsonschema.configuration.validator.endpoint.enabled}</li>
+ *     <li>{@code micronaut.jsonschema.configuration.validator.dependency-injection.enabled}</li>
+ *     <li>{@code micronaut.jsonschema.configuration.validator.injecterrors.endpoint.enabled}</li>
+ *     <li>{@code endpoints.health.injecterrors.enabled}</li>
+ *     <li>{@code endpoints.health.configurationerrors.enabled} (see {@link io.micronaut.jsonschema.configuration.validator.HealthConfiguration})</li>
  * </ul>
  */
 @ConfigurationProperties(ConfigurationValidatorConfiguration.PREFIX)
@@ -40,16 +43,14 @@ public final class ConfigurationValidatorConfiguration {
      */
     public static final String PREFIX = "micronaut.jsonschema.configuration.validator";
     /**
-     * Configuration prefix used by this health-indicator configuration.
+     * Configuration prefix used by the inject-errors health-indicator configuration.
      */
     public static final String ENDPOINT_PREFIX = "endpoints.health.injecterrors";
 
     public static final boolean DEFAULT_CACHE = true;
     public static final boolean DEFAULT_FAIL_ON_NOT_PRESENT = true;
-    public static final boolean DEFAULT_DEPENDENCY_INJECTION_ENABLED = false;
     private boolean cache = DEFAULT_CACHE;
     private boolean failOnNotPresent = DEFAULT_FAIL_ON_NOT_PRESENT;
-    private boolean dependencyInjectionEnabled = DEFAULT_DEPENDENCY_INJECTION_ENABLED;
     private List<String> suppressions = List.of();
 
     /**
@@ -87,14 +88,6 @@ public final class ConfigurationValidatorConfiguration {
      */
     public void setFailOnNotPresent(boolean failOnNotPresent) {
         this.failOnNotPresent = failOnNotPresent;
-    }
-
-    public boolean isDependencyInjectionEnabled() {
-        return dependencyInjectionEnabled;
-    }
-
-    public void setDependencyInjectionEnabled(boolean dependencyInjectionEnabled) {
-        this.dependencyInjectionEnabled = dependencyInjectionEnabled;
     }
 
     /**
