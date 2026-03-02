@@ -16,7 +16,9 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.ApplicationContext;
+import io.micronaut.context.BeanContext;
 import io.micronaut.context.BeanProvider;
+import io.micronaut.context.BeanResolutionContext;
 import io.micronaut.context.ConfigurableBeanContext;
 import io.micronaut.context.annotation.ConfigurationReader;
 import io.micronaut.context.annotation.EachBean;
@@ -31,7 +33,9 @@ import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Executable;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.context.event.ApplicationEventListener;
+import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.EntryPoint;
+import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.reflect.ClassUtils;
 import io.micronaut.core.type.Argument;
 import io.micronaut.core.type.TypeInformation;
@@ -63,6 +67,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Default metadata-only implementation of {@link DependencyInjectionValidator}.
@@ -350,24 +355,22 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     }
 
     private static boolean isInternalArgument(Argument<?> argument) {
-        String typeName = argument.getType().getName();
-        return "io.micronaut.context.BeanContext".equals(typeName)
-            || "io.micronaut.context.ApplicationContext".equals(typeName)
-            || "io.micronaut.context.BeanResolutionContext".equals(typeName)
-            || "io.micronaut.context.DefaultBeanContext".equals(typeName)
-            || "io.micronaut.context.env.Environment".equals(typeName)
-            || "io.micronaut.core.value.PropertyResolver".equals(typeName)
-            || "java.lang.ClassLoader".equals(typeName)
-            || "io.micronaut.core.convert.ConversionService".equals(typeName);
+        Class<?> type = argument.getType();
+        return BeanContext.class == type
+            || ApplicationContext.class == type
+            || BeanResolutionContext.class == type
+            || Environment.class == type
+            || PropertyResolver.class == type
+            || ConversionService.class == type;
     }
 
     private static boolean isContainerArgument(Argument<?> argument) {
         Class<?> type = argument.getType();
         return type.isArray()
             || Iterable.class.isAssignableFrom(type)
-            || java.util.Collection.class.isAssignableFrom(type)
-            || java.util.Map.class.isAssignableFrom(type)
-            || java.util.stream.Stream.class.isAssignableFrom(type);
+            || Collection.class.isAssignableFrom(type)
+            || Map.class.isAssignableFrom(type)
+            || Stream.class.isAssignableFrom(type);
     }
 
     private static boolean isPrimitiveOrSimple(Argument<?> argument) {
@@ -379,9 +382,10 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     }
 
     private static boolean hasPropertyBinding(Argument<?> argument) {
-        return argument.getAnnotationMetadata().hasStereotype(Value.class)
-            || argument.getAnnotationMetadata().hasStereotype(Property.class)
-            || argument.getAnnotationMetadata().hasStereotype(Parameter.class);
+        AnnotationMetadata annotationMetadata = argument.getAnnotationMetadata();
+        return annotationMetadata.hasStereotype(Value.class)
+            || annotationMetadata.hasStereotype(Property.class)
+            || annotationMetadata.hasStereotype(Parameter.class);
     }
 
     private static boolean hasInternalName(Argument<?> argument) {
