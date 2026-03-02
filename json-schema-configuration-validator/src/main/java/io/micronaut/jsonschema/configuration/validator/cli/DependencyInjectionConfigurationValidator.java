@@ -96,6 +96,7 @@ public final class DependencyInjectionConfigurationValidator {
                 .build();
             try {
                 ConfigurableApplicationContext configurableContext = (ConfigurableApplicationContext) context;
+                configurableContext.getEnvironment().start();
                 configurableContext.configure();
                 return validator.validate(configurableContext);
             } finally {
