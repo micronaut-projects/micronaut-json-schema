@@ -124,17 +124,9 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
 
         Set<DependencyInjectionError> errors = new LinkedHashSet<>();
         Set<String> dedupe = new LinkedHashSet<>();
+        TraversalState traversalState = new TraversalState(beanContext, disabledByBeanName, errors, dedupe);
         for (BeanDefinition<Object> root : roots) {
-            traverse(
-                beanContext,
-                root,
-                root,
-                new LinkedHashSet<>(),
-                new ArrayList<>(),
-                errors,
-                dedupe,
-                disabledByBeanName
-            );
+            traverse(traversalState, root, root, new LinkedHashSet<>(), new ArrayList<>());
         }
         return errors;
     }
@@ -198,7 +190,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     }
 
     private static Map<String, List<String>> disabledReasonsByBeanName(Collection<DisabledBean<?>> disabledBeans) {
-        Map<String, List<String>> map = new LinkedHashMap<>(disabledBeans.size());
+        Map<String, List<String>> map = new LinkedHashMap<>();
         for (DisabledBean<?> disabledBean : disabledBeans) {
             map.put(disabledBean.getName(), disabledBean.reasons());
         }
@@ -206,14 +198,11 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     }
 
     private void traverse(
-        ConfigurableBeanContext beanContext,
+        TraversalState state,
         BeanDefinition<?> root,
         BeanDefinition<?> current,
         Set<String> stack,
-        List<String> path,
-        Set<DependencyInjectionError> errors,
-        Set<String> dedupe,
-        Map<String, List<String>> disabledByBeanName
+        List<String> path
     ) {
         String currentName = current.getName();
         if (!stack.add(currentName)) {
@@ -222,74 +211,83 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         path.add(currentName);
         try {
             for (DependencyRequirement requirement : dependenciesOf(current)) {
-                Argument<?> argument = requirement.argument();
-                if (isSuppressed(argument)) {
-                    continue;
+                Optional<BeanDefinition<?>> target = resolveDependencyTarget(state, root, current, requirement, path);
+                if (target.isPresent()) {
+                    BeanDefinition<?> targetDefinition = target.get();
+                    if (stack.contains(targetDefinition.getName())) {
+                        addCircularDependencyError(
+                            root,
+                            requirement,
+                            targetDefinition,
+                            path,
+                            state.errors(),
+                            state.dedupe()
+                        );
+                    } else {
+                        traverse(state, root, targetDefinition, stack, path);
+                    }
                 }
-
-                String missingPropertyMessage = resolveMissingPropertyMessage(beanContext, current, argument);
-                if (missingPropertyMessage != null) {
-                    addError(
-                        root,
-                        argument,
-                        requirement,
-                        missingPropertyMessage,
-                        path,
-                        errors,
-                        dedupe,
-                        disabledByBeanName
-                    );
-                    continue;
-                }
-
-                if (skipInjection(requirement, argument, current)) {
-                    continue;
-                }
-
-                Optional<BeanDefinition<?>> target;
-                try {
-                    target = resolveBeanDefinition(beanContext, argument, Qualifiers.forArgument(argument));
-                } catch (Exception e) {
-                    addError(
-                        root,
-                        argument,
-                        requirement,
-                        sanitizeMessage(e),
-                        path,
-                        errors,
-                        dedupe,
-                        disabledByBeanName
-                    );
-                    continue;
-                }
-
-                if (target.isEmpty()) {
-                    String message = missingBeanMessage(beanContext, argument, requirement, disabledByBeanName);
-                    addError(root, argument, requirement, message, path, errors, dedupe, disabledByBeanName);
-                    continue;
-                }
-
-                BeanDefinition<?> targetDefinition = target.get();
-                if (isSuppressed(targetDefinition)) {
-                    continue;
-                }
-                if (stack.contains(targetDefinition.getName())) {
-                    addCircularDependencyError(
-                        root,
-                        requirement,
-                        targetDefinition,
-                        path,
-                        errors,
-                        dedupe
-                    );
-                    continue;
-                }
-                traverse(beanContext, root, targetDefinition, stack, path, errors, dedupe, disabledByBeanName);
             }
         } finally {
             path.removeLast();
             stack.remove(currentName);
         }
+    }
+
+    private Optional<BeanDefinition<?>> resolveDependencyTarget(
+        TraversalState state,
+        BeanDefinition<?> root,
+        BeanDefinition<?> current,
+        DependencyRequirement requirement,
+        List<String> path
+    ) {
+        Argument<?> argument = requirement.argument();
+        if (isSuppressed(argument)) {
+            return Optional.empty();
+        }
+        String missingPropertyMessage = resolveMissingPropertyMessage(state.beanContext(), current, argument);
+        if (missingPropertyMessage != null) {
+            addError(
+                root,
+                argument,
+                requirement,
+                missingPropertyMessage,
+                path,
+                state.errors(),
+                state.dedupe(),
+                state.disabledByBeanName()
+            );
+            return Optional.empty();
+        }
+        if (skipInjection(requirement, argument, current)) {
+            return Optional.empty();
+        }
+        Optional<BeanDefinition<?>> target;
+        try {
+            target = resolveBeanDefinition(state.beanContext(), argument, Qualifiers.forArgument(argument));
+        } catch (Exception e) {
+            addError(
+                root,
+                argument,
+                requirement,
+                sanitizeMessage(e),
+                path,
+                state.errors(),
+                state.dedupe(),
+                state.disabledByBeanName()
+            );
+            return Optional.empty();
+        }
+        if (target.isEmpty()) {
+            String message = missingBeanMessage(state.beanContext(), argument, requirement, state.disabledByBeanName());
+            addError(root, argument, requirement, message, path, state.errors(), state.dedupe(), state.disabledByBeanName());
+            return Optional.empty();
+        }
+        BeanDefinition<?> targetDefinition = target.get();
+        if (isSuppressed(targetDefinition)) {
+            return Optional.empty();
+        }
+        return target;
     }
 
     private boolean isSuppressed(BeanDefinition<?> definition) {
@@ -900,6 +898,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
                     matched.put(candidateName, new DisabledCandidate(candidateName, entry.getValue()));
                 }
             } catch (ClassNotFoundException | LinkageError ignored) {
+                LOG.trace("Unable to load disabled candidate type {} while matching {}", className, requiredTypeName, ignored);
             }
         }
         return matched.values().stream()
@@ -933,6 +932,14 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     }
 
     private record EachPropertyOrigin(String prefix, Optional<String> primary) {
+    }
+
+    private record TraversalState(
+        ConfigurableBeanContext beanContext,
+        Map<String, List<String>> disabledByBeanName,
+        Set<DependencyInjectionError> errors,
+        Set<String> dedupe
+    ) {
     }
 
     private interface ClassSuppressionMatcher {
