@@ -39,7 +39,6 @@ import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.EntryPoint;
 import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.order.OrderUtil;
-import io.micronaut.core.reflect.ClassUtils;
 import io.micronaut.core.type.Argument;
 import io.micronaut.core.type.TypeInformation;
 import io.micronaut.core.value.PropertyResolver;
@@ -283,7 +282,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         for (Argument<?> argument : constructor.getArguments()) {
             requirements.add(new DependencyRequirement(
                 argument,
-                "constructor " + constructorDescription(definition, argument),
+                constructorInjectionPointDescription(definition, constructor, argument),
                 constructorSnippet(definition, argument),
                 definition.getBeanType()
             ));
@@ -335,11 +334,64 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             || !isRequiredInjection(argument)
             || isInternalArgument(argument)
             || isContainerArgument(argument)
-            || isPrimitiveOrSimple(argument)
             || isConfigurationBean(current)
             || hasPropertyBinding(argument)
             || hasInternalName(argument)
             || requirement.injectionPoint().startsWith("method set");
+    }
+
+    private static String constructorInjectionPointDescription(
+        BeanDefinition<?> definition,
+        ConstructorInjectionPoint<?> constructor,
+        Argument<?> argument
+    ) {
+        Optional<Class<?>> declaringType = definition.getDeclaringType();
+        if (constructor instanceof MethodInjectionPoint<?, ?> methodInjectionPoint) {
+            Class<?> methodDeclaringType = declaringType.orElse(methodInjectionPoint.getDeclaringType());
+            return "method "
+                + methodDeclaringType.getSimpleName()
+                + "."
+                + methodInjectionPoint.getName()
+                + "("
+                + argument.getName()
+                + ")";
+        }
+        if (constructor instanceof FieldInjectionPoint<?, ?> fieldInjectionPoint) {
+            Class<?> fieldDeclaringType = declaringType.orElse(fieldInjectionPoint.getDeclaringBean().getBeanType());
+            return "field "
+                + fieldDeclaringType.getSimpleName()
+                + "."
+                + fieldInjectionPoint.getName();
+        }
+
+        if (declaringType.isPresent() && !declaringType.get().equals(definition.getBeanType())) {
+            String factoryMemberName = resolveFactoryMemberName(definition);
+            if (factoryMemberName != null) {
+                return "method "
+                    + declaringType.get().getSimpleName()
+                    + "."
+                    + factoryMemberName
+                    + "("
+                    + argument.getName()
+                    + ")";
+            }
+        }
+
+        return "constructor " + constructorDescription(definition, argument);
+    }
+
+    @Nullable
+    private static String resolveFactoryMemberName(BeanDefinition<?> definition) {
+        String beanDescription = definition.getBeanDescription(TypeInformation.TypeFormat.SHORTENED, false);
+        int factoryQualifierStart = beanDescription.lastIndexOf(' ');
+        String memberReference = factoryQualifierStart >= 0
+            ? beanDescription.substring(factoryQualifierStart + 1)
+            : beanDescription;
+        int lastDot = memberReference.lastIndexOf('.');
+        if (lastDot < 0 || lastDot == memberReference.length() - 1) {
+            return null;
+        }
+        return memberReference.substring(lastDot + 1);
     }
 
     private static String constructorDescription(BeanDefinition<?> definition, Argument<?> argument) {
@@ -374,10 +426,6 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             || Collection.class.isAssignableFrom(type)
             || Map.class.isAssignableFrom(type)
             || Stream.class.isAssignableFrom(type);
-    }
-
-    private static boolean isPrimitiveOrSimple(Argument<?> argument) {
-        return ClassUtils.isJavaBasicType(argument.getType());
     }
 
     private static boolean isConfigurationBean(BeanDefinition<?> definition) {

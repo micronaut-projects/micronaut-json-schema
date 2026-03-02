@@ -232,6 +232,62 @@ class ConfigurationJsonSchemaValidatorCliTest {
     }
 
     @Test
+    void dependencyInjectionJsonReportsFactoryMethodInjectionPointForProducedBeanFailures() throws Exception {
+        System.setProperty("spec.name", "factory-method-missing-arg");
+        Path out = tempDir.resolve("out-di-factory-json");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--environments", "test,di-validator-test",
+            "--out", out.toString(),
+            "--validate-dependency-injection",
+            "--format", "json"
+        }, System.out, System.err);
+
+        assertEquals(1, exit);
+        String json = Files.readString(out.resolve("configuration-errors.json"), StandardCharsets.UTF_8);
+        Object decoded = JsonMapper.createDefault().readValue(json, Argument.of(Object.class));
+        assertInstanceOf(Map.class, decoded);
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> diErrors = (List<Map<String, Object>>) ((Map<String, Object>) decoded).get("dependencyInjectionErrors");
+        assertTrue(diErrors.stream().anyMatch(e -> {
+            Object details = e.get("details");
+            Object injectionPoint = e.get("injectionPoint");
+            Object snippet = e.get("snippet");
+            if (details == null || injectionPoint == null || snippet == null) {
+                return false;
+            }
+            String detailsText = String.valueOf(details);
+            String injectionPointText = String.valueOf(injectionPoint);
+            String snippetText = String.valueOf(snippet);
+            return detailsText.contains("No bean of type [java.lang.String] exists")
+                && injectionPointText.contains("method FixtureFactoryMethodMissingArgFactory.greeter(str)")
+                && snippetText.contains("FixtureFactoryMethodMissingArgFactory.greeter")
+                && !injectionPointText.contains("constructor FixtureFactoryMethodMissingArgGreeter(str)");
+        }), () -> "Expected factory method DI injection point in JSON output, got: " + diErrors);
+    }
+
+    @Test
+    void dependencyInjectionHtmlReportsFactoryMethodInjectionPointForProducedBeanFailures() throws Exception {
+        System.setProperty("spec.name", "factory-method-missing-arg");
+        Path out = tempDir.resolve("out-di-factory-html");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--environments", "test,di-validator-test",
+            "--out", out.toString(),
+            "--validate-dependency-injection",
+            "--format", "html"
+        }, System.out, System.err);
+
+        assertEquals(1, exit);
+        String html = Files.readString(out.resolve("configuration-errors.html"), StandardCharsets.UTF_8);
+        assertTrue(html.contains("No bean of type [java.lang.String] exists"), () -> "Expected missing String DI error, got:\n" + html);
+        assertTrue(html.contains("method FixtureFactoryMethodMissingArgFactory.greeter(str)"), () -> "Expected factory method injection point in HTML, got:\n" + html);
+        assertTrue(html.contains("FixtureFactoryMethodMissingArgFactory.greeter"), () -> "Expected factory method snippet in HTML details, got:\n" + html);
+        assertFalse(html.contains("constructor FixtureFactoryMethodMissingArgGreeter(str)"), () -> "Should not report produced bean constructor injection point for factory method dependency failures, got:\n" + html);
+    }
+
+    @Test
     void bootstrapCliCanRunWithMinimalProcessClasspath() throws Exception {
         Path cpDir = tempDir.resolve("cp-bootstrap");
         Files.createDirectories(cpDir);

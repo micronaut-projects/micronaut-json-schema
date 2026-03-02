@@ -285,6 +285,20 @@ class DependencyInjectionValidatorTest {
             ), () -> "Did not expect non-unique candidate error when only one non-secondary bean exists, got: " + errors);
     }
 
+    @Test
+    void factoryMethodMissingBeanDependencyIsReported() {
+        Set<DependencyInjectionError> errors = validate("factory-method-missing-arg", Map.of());
+        assertTrue(errors.stream().anyMatch(e ->
+                e.rootBean().contains("FixtureFactoryMethodMissingArgConsumer")
+                    && e.bean().contains("java.lang.String")
+                    && e.message().contains("No bean of type [java.lang.String] exists")
+                    && e.injectionPoint() != null
+                    && e.injectionPoint().contains("method FixtureFactoryMethodMissingArgFactory.greeter(str)")
+                    && e.snippet() != null
+                    && e.snippet().contains("FixtureFactoryMethodMissingArgFactory.greeter")
+            ), () -> "Expected missing String bean dependency from @Factory method argument to be reported, got: " + errors);
+    }
+
     private static void assertHasError(Set<DependencyInjectionError> errors, String root, String bean, String injectionPoint) {
         assertTrue(errors.stream().anyMatch(e ->
                 e.rootBean().contains(root)
@@ -333,6 +347,7 @@ class DependencyInjectionValidatorTest {
             case "non-unique-primary" -> FixtureMultipleCandidatePrimaryConsumer.class;
             case "non-unique-order" -> FixtureMultipleCandidateOrderConsumer.class;
             case "non-unique-secondary" -> FixtureMultipleCandidateSecondaryConsumer.class;
+            case "factory-method-missing-arg" -> FixtureFactoryMethodMissingArgConsumer.class;
             default -> null;
         };
         if (expected != null) {
