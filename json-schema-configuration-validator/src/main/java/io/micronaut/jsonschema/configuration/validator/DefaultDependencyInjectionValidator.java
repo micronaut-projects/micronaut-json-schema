@@ -20,6 +20,7 @@ import io.micronaut.context.BeanContext;
 import io.micronaut.context.BeanProvider;
 import io.micronaut.context.BeanResolutionContext;
 import io.micronaut.context.ConfigurableBeanContext;
+import io.micronaut.context.annotation.Secondary;
 import io.micronaut.context.annotation.ConfigurationReader;
 import io.micronaut.context.annotation.EachBean;
 import io.micronaut.context.annotation.EachProperty;
@@ -33,9 +34,11 @@ import io.micronaut.context.annotation.Context;
 import io.micronaut.context.annotation.Executable;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.context.event.ApplicationEventListener;
+import io.micronaut.context.exceptions.NonUniqueBeanException;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.EntryPoint;
 import io.micronaut.core.convert.ConversionService;
+import io.micronaut.core.order.OrderUtil;
 import io.micronaut.core.reflect.ClassUtils;
 import io.micronaut.core.type.Argument;
 import io.micronaut.core.type.TypeInformation;
@@ -230,7 +233,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
 
                 Optional<BeanDefinition<?>> target;
                 try {
-                    target = findBeanDefinition(beanContext, argument, Qualifiers.forArgument(argument));
+                    target = resolveBeanDefinition(beanContext, argument, Qualifiers.forArgument(argument));
                 } catch (Exception e) {
                     addError(
                         root,
@@ -442,12 +445,88 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static Optional<BeanDefinition<?>> findBeanDefinition(
+    private static Optional<BeanDefinition<?>> resolveBeanDefinition(
         ConfigurableBeanContext beanContext,
         Argument<?> argument,
         @Nullable Qualifier<?> qualifier
     ) {
-        return (Optional) beanContext.findBeanDefinition((Argument) argument, (Qualifier) qualifier);
+        Collection<BeanDefinition<?>> candidates = findBeanDefinitions(beanContext, argument, qualifier);
+        if (candidates.isEmpty()) {
+            return Optional.empty();
+        }
+        if (candidates.size() == 1) {
+            return Optional.of(candidates.iterator().next());
+        }
+        return Optional.of(lastChanceResolve(argument, candidates));
+    }
+
+    private static BeanDefinition<?> lastChanceResolve(Argument<?> argument, Collection<BeanDefinition<?>> candidates) {
+        Collection<BeanDefinition<?>> narrowedCandidates = candidates;
+        if (narrowedCandidates.size() > 1) {
+            List<BeanDefinition<?>> primary = narrowedCandidates.stream()
+                .filter(BeanDefinition::isPrimary)
+                .toList();
+            if (!primary.isEmpty()) {
+                narrowedCandidates = primary;
+            }
+        }
+        if (narrowedCandidates.size() == 1) {
+            return narrowedCandidates.iterator().next();
+        }
+
+        Collection<BeanDefinition<?>> originalCandidates = narrowedCandidates;
+        narrowedCandidates = narrowedCandidates.stream()
+            .filter(candidate -> !candidate.hasDeclaredStereotype(Secondary.class))
+            .toList();
+        if (narrowedCandidates.size() == 1) {
+            return narrowedCandidates.iterator().next();
+        }
+        if (narrowedCandidates.isEmpty()) {
+            throw newNonUniqueBeanException(argument, originalCandidates);
+        }
+
+        List<BeanDefinition<?>> orderedCandidates = new ArrayList<>(narrowedCandidates);
+        orderedCandidates.sort(OrderUtil.ORDERED_COMPARATOR);
+        BeanDefinition<?> bean = orderedCandidates.getFirst();
+        BeanDefinition<?> next = orderedCandidates.get(1);
+        if (bean.getOrder() != next.getOrder()) {
+            return bean;
+        }
+
+        Class<?> defaultImplementation = bean.getDefaultImplementation();
+        if (defaultImplementation != null) {
+            for (BeanDefinition<?> candidate : narrowedCandidates) {
+                if (candidate.getBeanType().equals(defaultImplementation)) {
+                    return candidate;
+                }
+            }
+        }
+
+        List<BeanDefinition<?>> exactMatches = narrowedCandidates.stream()
+            .filter(candidate -> candidate.getBeanType().equals(argument.getType()))
+            .toList();
+        if (exactMatches.size() == 1) {
+            return exactMatches.getFirst();
+        }
+
+        throw newNonUniqueBeanException(argument, narrowedCandidates);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static NonUniqueBeanException newNonUniqueBeanException(
+        Argument<?> argument,
+        Collection<BeanDefinition<?>> candidates
+    ) {
+        return new NonUniqueBeanException((Class) argument.getType(), (java.util.Iterator) candidates.iterator());
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Collection<BeanDefinition<?>> findBeanDefinitions(
+        ConfigurableBeanContext beanContext,
+        Argument<?> argument,
+        @Nullable Qualifier<?> qualifier
+    ) {
+        return (Collection) beanContext.getBeanDefinitions((Argument) argument, (Qualifier) qualifier);
     }
 
     private static String missingBeanMessage(

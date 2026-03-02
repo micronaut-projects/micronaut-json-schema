@@ -246,6 +246,45 @@ class DependencyInjectionValidatorTest {
         ), () -> "Did not expect Environment/PropertyResolver to be reported missing, got: " + errors);
     }
 
+    @Test
+    void nonUniqueCandidatesFailureIsReported() {
+        Set<DependencyInjectionError> errors = validate("non-unique", Map.of());
+        assertTrue(errors.stream().anyMatch(e ->
+                e.rootBean().contains("FixtureMultipleCandidateConsumer")
+                    && e.bean().contains("FixtureMultipleCandidateService")
+                    && e.message().contains("Multiple possible bean candidates found")
+                    && e.message().contains("FixtureMultipleCandidateOne")
+                    && e.message().contains("FixtureMultipleCandidateTwo")
+            ), () -> "Expected non-unique candidate error to be reported, got: " + errors);
+    }
+
+    @Test
+    void primaryCandidateNarrowingResolvesSingleBean() {
+        Set<DependencyInjectionError> errors = validate("non-unique-primary", Map.of());
+        assertFalse(errors.stream().anyMatch(e ->
+                e.rootBean().contains("FixtureMultipleCandidatePrimaryConsumer")
+                    && e.bean().contains("FixtureMultipleCandidateService")
+            ), () -> "Did not expect non-unique candidate error when a primary bean exists, got: " + errors);
+    }
+
+    @Test
+    void orderedCandidateNarrowingResolvesSingleBean() {
+        Set<DependencyInjectionError> errors = validate("non-unique-order", Map.of());
+        assertFalse(errors.stream().anyMatch(e ->
+                e.rootBean().contains("FixtureMultipleCandidateOrderConsumer")
+                    && e.bean().contains("FixtureMultipleCandidateService")
+            ), () -> "Did not expect non-unique candidate error when bean order differs, got: " + errors);
+    }
+
+    @Test
+    void secondaryCandidatesAreIgnoredWhenPrimaryCandidatesExist() {
+        Set<DependencyInjectionError> errors = validate("non-unique-secondary", Map.of());
+        assertFalse(errors.stream().anyMatch(e ->
+                e.rootBean().contains("FixtureMultipleCandidateSecondaryConsumer")
+                    && e.bean().contains("FixtureMultipleCandidateService")
+            ), () -> "Did not expect non-unique candidate error when only one non-secondary bean exists, got: " + errors);
+    }
+
     private static void assertHasError(Set<DependencyInjectionError> errors, String root, String bean, String injectionPoint) {
         assertTrue(errors.stream().anyMatch(e ->
                 e.rootBean().contains(root)
@@ -290,6 +329,10 @@ class DependencyInjectionValidatorTest {
             case "conditional-multi" -> FixtureConditionalMultiConsumer.class;
             case "nested" -> FixtureNestedDependencyA.class;
             case "implicit-infrastructure" -> FixtureImplicitInfrastructureBean.class;
+            case "non-unique" -> FixtureMultipleCandidateConsumer.class;
+            case "non-unique-primary" -> FixtureMultipleCandidatePrimaryConsumer.class;
+            case "non-unique-order" -> FixtureMultipleCandidateOrderConsumer.class;
+            case "non-unique-secondary" -> FixtureMultipleCandidateSecondaryConsumer.class;
             default -> null;
         };
         if (expected != null) {
