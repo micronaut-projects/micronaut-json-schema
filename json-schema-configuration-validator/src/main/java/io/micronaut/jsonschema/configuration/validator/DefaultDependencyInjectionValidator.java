@@ -81,6 +81,7 @@ import java.util.stream.Stream;
 @Singleton
 public final class DefaultDependencyInjectionValidator implements DependencyInjectionValidator {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultDependencyInjectionValidator.class);
+    private static final String METHOD_INJECTION_POINT_PREFIX = "method ";
 
     private static final String STARTUP_EVENT = "io.micronaut.runtime.event.StartupEvent";
     private static final String SERVER_STARTUP_EVENT = "io.micronaut.runtime.server.event.ServerStartupEvent";
@@ -302,7 +303,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             for (Argument<?> argument : method.getArguments()) {
                 requirements.add(new DependencyRequirement(
                     argument,
-                    "method " + definition.getBeanType().getSimpleName() + "." + method.getName() + "(" + argument.getName() + ")",
+                    METHOD_INJECTION_POINT_PREFIX + definition.getBeanType().getSimpleName() + "." + method.getName() + "(" + argument.getName() + ")",
                     methodSnippet(method, argument),
                     definition.getBeanType()
                 ));
@@ -348,7 +349,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         Optional<Class<?>> declaringType = definition.getDeclaringType();
         if (constructor instanceof MethodInjectionPoint<?, ?> methodInjectionPoint) {
             Class<?> methodDeclaringType = declaringType.orElse(methodInjectionPoint.getDeclaringType());
-            return "method "
+            return METHOD_INJECTION_POINT_PREFIX
                 + methodDeclaringType.getSimpleName()
                 + "."
                 + methodInjectionPoint.getName()
@@ -367,7 +368,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         if (declaringType.isPresent() && !declaringType.get().equals(definition.getBeanType())) {
             String factoryMemberName = resolveFactoryMemberName(definition);
             if (factoryMemberName != null) {
-                return "method "
+                return METHOD_INJECTION_POINT_PREFIX
                     + declaringType.get().getSimpleName()
                     + "."
                     + factoryMemberName
