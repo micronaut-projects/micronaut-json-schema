@@ -213,11 +213,15 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
 
     private static List<String> normalizedPathNodes(DependencyInjectionError error) {
         if (error.failingPath().isEmpty()) {
-            return List.of(error.rootBean(), error.bean() + " (failed)");
+            return List.of(error.bean() + " (failed)");
         }
         List<String> nodes = new ArrayList<>(error.failingPath().size());
         for (String pathEntry : error.failingPath()) {
             nodes.add(cleanPathNode(pathEntry));
+        }
+        // Skip the first node if it duplicates the already-printed root
+        if (!nodes.isEmpty() && nodes.get(0).equals(error.rootBean())) {
+            nodes.remove(0);
         }
         return nodes;
     }
