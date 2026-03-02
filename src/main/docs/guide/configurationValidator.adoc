@@ -52,6 +52,74 @@ If an error originates from a resolvable file (for example `application.properti
 
 The HTML report includes an expandable snippet preview with syntax highlighting. The JSON report includes only the line number.
 
+=== Dependency injection validation
+
+In addition to schema/property validation, the validator can also perform metadata-only dependency injection checks.
+
+This catches wiring issues before application startup, including:
+
+* missing bean dependencies
+* circular dependencies
+* disabled candidate beans (with `@Requires` reasons)
+* ambiguous candidates that would fail with a non-unique bean error at runtime
+* unresolved dependencies of `@Factory`-produced beans
+
+==== CLI usage
+
+Enable DI validation by adding `--validate-dependency-injection`:
+
+[source,bash]
+----
+java -cp <full-classpath> io.micronaut.jsonschema.configuration.validator.cli.ConfigurationJsonSchemaValidatorCli \
+  --classpath <full-classpath> \
+  --environments test \
+  --out build/reports/config-schema \
+  --format both \
+  --validate-dependency-injection
+----
+
+When enabled, console, JSON, and HTML outputs include a dedicated DI section (errors + dependency failure paths).
+
+The JSON report (`configuration-errors.json`) adds a `dependencyInjectionErrors` array containing entries such as:
+
+* `rootBean`
+* `bean`
+* `injectionPoint`
+* `details`
+* `disabledReason` (when applicable)
+* `failingPath`
+
+==== Runtime API and management integration
+
+When `micronaut-management` is present and DI validation is enabled, the module also exposes DI results at runtime:
+
+* api:jsonschema.configuration.validator.DependencyInjectionErrors[] API
+* management endpoint id `injecterrors` (property: `micronaut.jsonschema.configuration.validator.injecterrors.endpoint.enabled`)
+* health indicator id `injecterrors` (property: `endpoints.health.injecterrors.enabled`)
+
+Example endpoint configuration:
+
+[configuration]
+----
+micronaut:
+  jsonschema:
+    configuration:
+      validator:
+        dependency-injection:
+          enabled: true
+        injecterrors:
+          endpoint:
+            enabled: true
+endpoints:
+  all:
+    sensitive: false
+  injecterrors:
+    sensitive: false
+  health:
+    injecterrors:
+      enabled: true
+----
+
 === Runtime integration (optional)
 
 In addition to the CLI, the configuration validator module also provides optional runtime integrations:
