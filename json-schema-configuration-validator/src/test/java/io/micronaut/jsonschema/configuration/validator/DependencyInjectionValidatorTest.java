@@ -501,7 +501,6 @@ class DependencyInjectionValidatorTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static BeanDefinition<?> beanDefinitionProxy(Optional<Class<?>> declaringType, Class<?> beanType, String beanDescription) {
         InvocationHandler handler = (proxy, method, args) -> switch (method.getName()) {
             case "getDeclaringType" -> declaringType;
@@ -516,7 +515,6 @@ class DependencyInjectionValidatorTest {
         );
     }
 
-    @SuppressWarnings("unchecked")
     private static ConstructorInjectionPoint<?> constructorProxy() {
         InvocationHandler handler = (proxy, method, args) -> defaultValue(method.getReturnType());
         return (ConstructorInjectionPoint<?>) Proxy.newProxyInstance(
@@ -526,7 +524,6 @@ class DependencyInjectionValidatorTest {
         );
     }
 
-    @SuppressWarnings("unchecked")
     private static ConstructorInjectionPoint<?> fieldConstructorProxy(String fieldName) {
         BeanDefinition<?> declaringBean = beanDefinitionProxy(Optional.empty(), DeclaringFixture.class, "DeclaringFixture");
         InvocationHandler handler = (proxy, method, args) -> {
