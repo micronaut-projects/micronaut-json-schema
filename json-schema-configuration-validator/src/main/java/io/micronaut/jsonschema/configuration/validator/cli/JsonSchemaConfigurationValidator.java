@@ -22,6 +22,8 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
 import io.micronaut.jsonschema.configuration.validator.report.ConfigurationErrorReporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +41,7 @@ import java.util.Set;
  */
 @Internal
 public final class JsonSchemaConfigurationValidator {
-    private static final System.Logger LOG = System.getLogger(JsonSchemaConfigurationValidator.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(JsonSchemaConfigurationValidator.class.getName());
 
     private final List<URL> classpath;
     private final List<String> environments;
@@ -123,9 +125,6 @@ public final class JsonSchemaConfigurationValidator {
         String[] parts = classpath.split(java.util.regex.Pattern.quote(File.pathSeparator));
         List<URL> urls = new ArrayList<>(parts.length);
         for (String part : parts) {
-            if (part == null) {
-                continue;
-            }
             String trimmed = part.trim();
             if (trimmed.isEmpty()) {
                 continue;
@@ -133,7 +132,7 @@ public final class JsonSchemaConfigurationValidator {
             try {
                 urls.add(Path.of(trimmed).toUri().toURL());
             } catch (MalformedURLException e) {
-                LOG.log(System.Logger.Level.DEBUG, "Invalid classpath entry: " + trimmed, e);
+                LOG.debug("Invalid classpath entry: " + trimmed, e);
             }
         }
         return urls;

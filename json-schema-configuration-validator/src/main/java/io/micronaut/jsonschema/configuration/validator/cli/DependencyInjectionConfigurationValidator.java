@@ -17,10 +17,13 @@ package io.micronaut.jsonschema.configuration.validator.cli;
 
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.ConfigurableApplicationContext;
+import io.micronaut.context.env.Environment;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.configuration.validator.DefaultDependencyInjectionValidator;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -30,6 +33,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * CLI-oriented dependency-injection validator that builds an application context from a supplied
@@ -37,7 +41,7 @@ import java.util.Set;
  */
 @Internal
 public final class DependencyInjectionConfigurationValidator {
-    private static final System.Logger LOG = System.getLogger(DependencyInjectionConfigurationValidator.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(DependencyInjectionConfigurationValidator.class.getName());
 
     private final List<URL> classpath;
     private final List<String> environments;
@@ -90,17 +94,15 @@ public final class DependencyInjectionConfigurationValidator {
      */
     public Set<DependencyInjectionError> validate() {
         try (URLClassLoader classLoader = new URLClassLoader(classpath.toArray(URL[]::new), JsonSchemaConfigurationValidator.class.getClassLoader())) {
-            ApplicationContext context = ApplicationContext.builder(environments.toArray(String[]::new))
+            try (ApplicationContext context = ApplicationContext.builder(environments.toArray(String[]::new))
                 .classLoader(classLoader)
                 .deduceEnvironment(deduceEnvironment)
-                .build();
-            try {
+                .build()) {
                 ConfigurableApplicationContext configurableContext = (ConfigurableApplicationContext) context;
-                configurableContext.getEnvironment().start();
-                configurableContext.configure();
-                return validator.validate(configurableContext);
-            } finally {
-                context.close();
+                try (Environment ignore = configurableContext.getEnvironment().start()) {
+                    configurableContext.configure();
+                    return validator.validate(configurableContext);
+                }
             }
         } catch (Exception e) {
             throw new IllegalStateException("Dependency injection validation failed", e);
@@ -108,12 +110,9 @@ public final class DependencyInjectionConfigurationValidator {
     }
 
     private static List<URL> parseClasspath(String classpath) {
-        String[] parts = classpath.split(java.util.regex.Pattern.quote(File.pathSeparator));
+        String[] parts = classpath.split(Pattern.quote(File.pathSeparator));
         List<URL> urls = new ArrayList<>(parts.length);
         for (String part : parts) {
-            if (part == null) {
-                continue;
-            }
             String trimmed = part.trim();
             if (trimmed.isEmpty()) {
                 continue;
@@ -121,7 +120,7 @@ public final class DependencyInjectionConfigurationValidator {
             try {
                 urls.add(Path.of(trimmed).toUri().toURL());
             } catch (MalformedURLException e) {
-                LOG.log(System.Logger.Level.DEBUG, "Invalid classpath entry: " + trimmed, e);
+                LOG.debug("Invalid classpath entry: " + trimmed, e);
             }
         }
         return urls;

@@ -172,16 +172,13 @@ public final class ConfigurationJsonSchemaValidatorCli {
     }
 
     private static List<Path> discoverApplicationConfigFilesOnClasspath(String classpath) {
-        if (classpath == null || classpath.isBlank()) {
+        if (classpath.isBlank()) {
             return List.of();
         }
 
         List<Path> files = new ArrayList<>(2);
         String[] parts = classpath.split(java.util.regex.Pattern.quote(java.io.File.pathSeparator));
         for (String part : parts) {
-            if (part == null) {
-                continue;
-            }
             String trimmed = part.trim();
             if (trimmed.isEmpty()) {
                 continue;
