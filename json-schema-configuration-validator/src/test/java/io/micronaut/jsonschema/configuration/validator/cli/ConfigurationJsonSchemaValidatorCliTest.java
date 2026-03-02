@@ -18,7 +18,6 @@ package io.micronaut.jsonschema.configuration.validator.cli;
 import io.micronaut.core.util.StringUtils;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.core.type.Argument;
-import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
