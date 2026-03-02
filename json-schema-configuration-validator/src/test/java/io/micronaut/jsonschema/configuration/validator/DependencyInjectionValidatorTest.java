@@ -2,15 +2,24 @@ package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.ConfigurableApplicationContext;
+import io.micronaut.core.type.Argument;
+import io.micronaut.inject.BeanDefinition;
+import io.micronaut.inject.ConstructorInjectionPoint;
+import io.micronaut.inject.FieldInjectionPoint;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DependencyInjectionValidatorTest {
 
@@ -299,6 +308,43 @@ class DependencyInjectionValidatorTest {
             ), () -> "Expected missing String bean dependency from @Factory method argument to be reported, got: " + errors);
     }
 
+    @Test
+    void constructorInjectionPointDescriptionUsesFieldInjectionPointWhenPresent() {
+        BeanDefinition<?> definition = beanDefinitionProxy(Optional.of(DeclaringFixture.class), FallbackGreeterFixture.class, "Fixture");
+        ConstructorInjectionPoint<?> fieldInjectionPoint = fieldConstructorProxy("greeter");
+        Argument<?> argument = Argument.of(String.class, "str");
+
+        String description = invokeConstructorInjectionPointDescription(definition, fieldInjectionPoint, argument);
+
+        assertEquals("field DeclaringFixture.greeter", description);
+    }
+
+    @Test
+    void constructorInjectionPointDescriptionUsesFactoryMemberFallback() {
+        BeanDefinition<?> definition = beanDefinitionProxy(
+            Optional.of(FallbackFactoryFixture.class),
+            FallbackGreeterFixture.class,
+            "@j.i.Singleton i.m.m.e.g.FallbackGreeterFixture i.m.m.e.g.FallbackFactoryFixture.greeter"
+        );
+        ConstructorInjectionPoint<?> constructor = constructorProxy();
+        Argument<?> argument = Argument.of(String.class, "str");
+
+        String description = invokeConstructorInjectionPointDescription(definition, constructor, argument);
+
+        assertEquals("method FallbackFactoryFixture.greeter(str)", description);
+    }
+
+    @Test
+    void constructorInjectionPointDescriptionFallsBackToConstructorWhenFactoryMemberCannotBeResolved() {
+        BeanDefinition<?> definition = beanDefinitionProxy(Optional.of(FallbackFactoryFixture.class), FallbackGreeterFixture.class, "FallbackGreeterFixture");
+        ConstructorInjectionPoint<?> constructor = constructorProxy();
+        Argument<?> argument = Argument.of(String.class, "str");
+
+        String description = invokeConstructorInjectionPointDescription(definition, constructor, argument);
+
+        assertEquals("constructor FallbackGreeterFixture(str)", description);
+    }
+
     private static void assertHasError(Set<DependencyInjectionError> errors, String root, String bean, String injectionPoint) {
         assertTrue(errors.stream().anyMatch(e ->
                 e.rootBean().contains(root)
@@ -388,6 +434,106 @@ class DependencyInjectionValidatorTest {
                     .collect(Collectors.toList())
             );
         }
+    }
+
+    private static String invokeConstructorInjectionPointDescription(
+        BeanDefinition<?> definition,
+        ConstructorInjectionPoint<?> constructor,
+        Argument<?> argument
+    ) {
+        try {
+            Method method = DefaultDependencyInjectionValidator.class.getDeclaredMethod(
+                "constructorInjectionPointDescription",
+                BeanDefinition.class,
+                ConstructorInjectionPoint.class,
+                Argument.class
+            );
+            method.setAccessible(true);
+            return (String) method.invoke(null, definition, constructor, argument);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("Failed to invoke constructorInjectionPointDescription", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static BeanDefinition<?> beanDefinitionProxy(Optional<Class<?>> declaringType, Class<?> beanType, String beanDescription) {
+        InvocationHandler handler = (proxy, method, args) -> switch (method.getName()) {
+            case "getDeclaringType" -> declaringType;
+            case "getBeanType" -> beanType;
+            case "getBeanDescription" -> beanDescription;
+            default -> defaultValue(method.getReturnType());
+        };
+        return (BeanDefinition<?>) Proxy.newProxyInstance(
+            DependencyInjectionValidatorTest.class.getClassLoader(),
+            new Class<?>[] {BeanDefinition.class},
+            handler
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ConstructorInjectionPoint<?> constructorProxy() {
+        InvocationHandler handler = (proxy, method, args) -> defaultValue(method.getReturnType());
+        return (ConstructorInjectionPoint<?>) Proxy.newProxyInstance(
+            DependencyInjectionValidatorTest.class.getClassLoader(),
+            new Class<?>[] {ConstructorInjectionPoint.class},
+            handler
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ConstructorInjectionPoint<?> fieldConstructorProxy(String fieldName) {
+        BeanDefinition<?> declaringBean = beanDefinitionProxy(Optional.empty(), DeclaringFixture.class, "DeclaringFixture");
+        InvocationHandler handler = (proxy, method, args) -> {
+            if ("getName".equals(method.getName())) {
+                return fieldName;
+            }
+            if ("getDeclaringBean".equals(method.getName())) {
+                return declaringBean;
+            }
+            return defaultValue(method.getReturnType());
+        };
+        return (ConstructorInjectionPoint<?>) Proxy.newProxyInstance(
+            DependencyInjectionValidatorTest.class.getClassLoader(),
+            new Class<?>[] {ConstructorInjectionPoint.class, FieldInjectionPoint.class},
+            handler
+        );
+    }
+
+    private static Object defaultValue(Class<?> returnType) {
+        if (!returnType.isPrimitive()) {
+            return null;
+        }
+        if (returnType == boolean.class) {
+            return false;
+        }
+        if (returnType == char.class) {
+            return '\0';
+        }
+        if (returnType == byte.class) {
+            return (byte) 0;
+        }
+        if (returnType == short.class) {
+            return (short) 0;
+        }
+        if (returnType == int.class) {
+            return 0;
+        }
+        if (returnType == long.class) {
+            return 0L;
+        }
+        if (returnType == float.class) {
+            return 0f;
+        }
+        return 0d;
+    }
+
+    private static final class DeclaringFixture {
+    }
+
+    private static final class FallbackFactoryFixture {
+    }
+
+    private static final class FallbackGreeterFixture {
     }
 
 }
