@@ -75,10 +75,13 @@ java -cp <full-classpath> io.micronaut.jsonschema.configuration.validator.cli.Co
   --environments test \
   --out build/reports/config-schema \
   --format both \
+  --suppress-inject-errors com.example.LegacyBean,com.example.generated.* \
   --validate-dependency-injection
 ----
 
 When enabled, console, JSON, and HTML outputs include a dedicated DI section (errors + dependency failure paths).
+
+Use `--suppress-inject-errors` to suppress DI errors for specific bean classes or packages. Patterns support exact fully-qualified class names and `*` wildcards (for example `com.example.LegacyBean` or `com.example.generated.*`).
 
 The JSON report (`configuration-errors.json`) adds a `dependencyInjectionErrors` array containing entries such as:
 

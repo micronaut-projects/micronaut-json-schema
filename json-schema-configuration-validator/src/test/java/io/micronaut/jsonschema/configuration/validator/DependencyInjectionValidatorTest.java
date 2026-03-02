@@ -12,6 +12,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -65,6 +66,18 @@ class DependencyInjectionValidatorTest {
                     && (e.injectionPoint().contains("constructor FixtureConfigurationPropertiesRecord(")
                     || e.injectionPoint().contains("constructor ReactorConfiguration("))
             ), () -> "Did not expect missing Boolean DI failures for @ConfigurationProperties constructor args, got: " + errors);
+    }
+
+    @Test
+    void validatorClassSuppressionSkipsMatchingRootsAndDependencies() {
+        Set<DependencyInjectionError> errors = validate(
+            "context",
+            Map.of(),
+            new DefaultDependencyInjectionValidator(List.of("io.micronaut.jsonschema.configuration.validator.FixtureContextBean"))
+        );
+        assertFalse(errors.isEmpty(), () -> "Expected other fixture DI errors to still be present, got: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.rootBean().contains("FixtureContextBean")),
+            () -> "Expected FixtureContextBean root to be suppressed in validator, got: " + errors);
     }
 
     @Test
@@ -378,6 +391,14 @@ class DependencyInjectionValidatorTest {
     }
 
     private Set<DependencyInjectionError> validate(String name, Map<String, Object> additionalProperties) {
+        return validate(name, additionalProperties, validator);
+    }
+
+    private Set<DependencyInjectionError> validate(
+        String name,
+        Map<String, Object> additionalProperties,
+        DependencyInjectionValidator validationDelegate
+    ) {
         Map<String, Object> properties = new LinkedHashMap<>(additionalProperties.size() + 1);
         properties.put("spec.name", name);
         properties.put("spec.di.validator.test", "true");
@@ -388,7 +409,7 @@ class DependencyInjectionValidatorTest {
             context.getEnvironment().start();
             context.configure();
             assertExpectedFixtureLoaded(context, name);
-            return validator.validate(context);
+            return validationDelegate.validate(context);
         }
     }
 

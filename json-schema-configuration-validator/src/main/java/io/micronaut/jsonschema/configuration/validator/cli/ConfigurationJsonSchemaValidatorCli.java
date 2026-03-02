@@ -122,7 +122,8 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 dependencyInjectionErrors = DependencyInjectionConfigurationValidator.forClasspath(
                     options.classpath(),
                     options.environments(),
-                    options.deduceEnvironments()
+                    options.deduceEnvironments(),
+                    options.suppressedInjectionErrors()
                 ).validate();
             } catch (Exception e) {
                 err.println("Dependency injection validation failed while loading configuration:");
@@ -260,6 +261,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
         String classpath,
         List<String> environments,
         List<String> suppressions,
+        List<String> suppressedInjectionErrors,
         boolean failOnNotPresent,
         boolean deduceEnvironments,
         boolean validateDependencyInjection,
@@ -274,6 +276,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
             String classpath = null;
             List<String> environments = new ArrayList<>(1);
             List<String> suppressions = new ArrayList<>(0);
+            List<String> suppressedInjectionErrors = new ArrayList<>(0);
             boolean failOnNotPresent = true;
             boolean deduceEnvironments = false;
             boolean validateDependencyInjection = false;
@@ -326,6 +329,10 @@ public final class ConfigurationJsonSchemaValidatorCli {
                         value = value != null ? value : nextValue(list, ++i, key);
                         suppressions.addAll(splitCsv(value));
                     }
+                    case "--suppress-inject-errors" -> {
+                        value = value != null ? value : nextValue(list, ++i, key);
+                        suppressedInjectionErrors.addAll(splitCsv(value));
+                    }
                     case "--fail-on-not-present" -> {
                         value = value != null ? value : nextValue(list, ++i, key);
                         failOnNotPresent = Boolean.parseBoolean(value);
@@ -366,7 +373,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
             }
 
             if (help) {
-                return new Options(true, "", List.of(), List.of(), true, false, false, Path.of("."), Format.BOTH, null, List.of());
+                return new Options(true, "", List.of(), List.of(), List.of(), true, false, false, Path.of("."), Format.BOTH, null, List.of());
             }
             if (classpath == null || classpath.isBlank()) {
                 throw new IllegalArgumentException("Missing required argument: --classpath");
@@ -380,6 +387,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 classpath,
                 List.copyOf(environments),
                 List.copyOf(suppressions),
+                List.copyOf(suppressedInjectionErrors),
                 failOnNotPresent,
                 deduceEnvironments,
                 validateDependencyInjection,
@@ -399,6 +407,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 "  --environments <csv>             Comma-separated environments\n" +
                 "  --suppress <pattern>             Suppression pattern (repeatable)\n" +
                 "  --suppressions <csv>             Comma-separated suppression patterns\n" +
+                "  --suppress-inject-errors <csv>   Comma-separated DI class-name suppression patterns\n" +
                 "  --fail-on-not-present <bool>     Whether unknown properties are errors (default: true)\n" +
                 "  --no-fail-on-not-present         Convenience flag to disable unknown property errors\n" +
                 "  --deduce-environments <bool>     Whether to deduce environments (default: false)\n" +
@@ -454,4 +463,5 @@ public final class ConfigurationJsonSchemaValidatorCli {
             };
         }
     }
+
 }

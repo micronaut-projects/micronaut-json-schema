@@ -79,11 +79,20 @@ public final class DependencyInjectionConfigurationValidator {
         List<String> environments,
         boolean deduceEnvironment
     ) {
+        return forClasspath(classpath, environments, deduceEnvironment, List.of());
+    }
+
+    public static DependencyInjectionConfigurationValidator forClasspath(
+        String classpath,
+        List<String> environments,
+        boolean deduceEnvironment,
+        List<String> suppressedInjectionErrors
+    ) {
         return new DependencyInjectionConfigurationValidator(
             parseClasspath(classpath),
             environments,
             deduceEnvironment,
-            new DefaultDependencyInjectionValidator()
+            new DefaultDependencyInjectionValidator(suppressedInjectionErrors)
         );
     }
 

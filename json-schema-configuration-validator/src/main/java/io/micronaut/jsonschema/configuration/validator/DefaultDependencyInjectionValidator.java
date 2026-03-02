@@ -68,6 +68,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -85,6 +86,17 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
 
     private static final String STARTUP_EVENT = "io.micronaut.runtime.event.StartupEvent";
     private static final String SERVER_STARTUP_EVENT = "io.micronaut.runtime.server.event.ServerStartupEvent";
+    private final List<ClassSuppressionMatcher> suppressedClassMatchers;
+
+    public DefaultDependencyInjectionValidator() {
+        this(List.of());
+    }
+
+    public DefaultDependencyInjectionValidator(@Nullable List<String> suppressedClassPatterns) {
+        this.suppressedClassMatchers = ClassSuppressionMatcher.compileAll(
+            suppressedClassPatterns == null ? List.of() : suppressedClassPatterns
+        );
+    }
 
     /**
      * Validates dependency wiring for reachable roots discovered in the given context.
@@ -106,6 +118,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         List<BeanDefinition<Object>> roots = definitions.stream()
             .filter(this::isReachableRoot)
             .filter(this::isConcreteRoot)
+            .filter(root -> !isSuppressed(root))
             .sorted(Comparator.comparing(BeanDefinition::getName))
             .toList();
 
@@ -210,12 +223,14 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         try {
             for (DependencyRequirement requirement : dependenciesOf(current)) {
                 Argument<?> argument = requirement.argument();
+                if (isSuppressed(argument)) {
+                    continue;
+                }
 
                 String missingPropertyMessage = resolveMissingPropertyMessage(beanContext, current, argument);
                 if (missingPropertyMessage != null) {
                     addError(
                         root,
-                        current,
                         argument,
                         requirement,
                         missingPropertyMessage,
@@ -237,7 +252,6 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
                 } catch (Exception e) {
                     addError(
                         root,
-                        current,
                         argument,
                         requirement,
                         sanitizeMessage(e),
@@ -251,15 +265,17 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
 
                 if (target.isEmpty()) {
                     String message = missingBeanMessage(beanContext, argument, requirement, disabledByBeanName);
-                    addError(root, current, argument, requirement, message, path, errors, dedupe, disabledByBeanName);
+                    addError(root, argument, requirement, message, path, errors, dedupe, disabledByBeanName);
                     continue;
                 }
 
                 BeanDefinition<?> targetDefinition = target.get();
+                if (isSuppressed(targetDefinition)) {
+                    continue;
+                }
                 if (stack.contains(targetDefinition.getName())) {
                     addCircularDependencyError(
                         root,
-                        current,
                         requirement,
                         targetDefinition,
                         path,
@@ -274,6 +290,27 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             path.removeLast();
             stack.remove(currentName);
         }
+    }
+
+    private boolean isSuppressed(BeanDefinition<?> definition) {
+        return matchesSuppressionPattern(normalizeBeanClassName(definition.getName()))
+            || matchesSuppressionPattern(definition.getBeanType().getName());
+    }
+
+    private boolean isSuppressed(Argument<?> argument) {
+        return matchesSuppressionPattern(argument.getType().getName());
+    }
+
+    private boolean matchesSuppressionPattern(String className) {
+        if (suppressedClassMatchers.isEmpty()) {
+            return false;
+        }
+        for (ClassSuppressionMatcher matcher : suppressedClassMatchers) {
+            if (matcher.matches(className)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<DependencyRequirement> dependenciesOf(BeanDefinition<?> definition) {
@@ -533,7 +570,6 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         return Optional.of(message.substring(start, end + 1));
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private static Optional<BeanDefinition<?>> resolveBeanDefinition(
         ConfigurableBeanContext beanContext,
         Argument<?> argument,
@@ -740,7 +776,6 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
 
     private void addError(
         BeanDefinition<?> root,
-        BeanDefinition<?> current,
         Argument<?> missingArgument,
         DependencyRequirement requirement,
         String message,
@@ -777,7 +812,6 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
 
     private void addCircularDependencyError(
         BeanDefinition<?> root,
-        BeanDefinition<?> current,
         DependencyRequirement requirement,
         BeanDefinition<?> cycleTarget,
         List<String> path,
@@ -899,5 +933,44 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     }
 
     private record EachPropertyOrigin(String prefix, Optional<String> primary) {
+    }
+
+    private interface ClassSuppressionMatcher {
+        boolean matches(String className);
+
+        static List<ClassSuppressionMatcher> compileAll(List<String> patterns) {
+            List<ClassSuppressionMatcher> matchers = new ArrayList<>(patterns.size());
+            for (String pattern : patterns) {
+                if (pattern.isBlank()) {
+                    continue;
+                }
+                matchers.add(compile(pattern));
+            }
+            return matchers;
+        }
+
+        static ClassSuppressionMatcher compile(String pattern) {
+            if (pattern.indexOf('*') > -1) {
+                Pattern regex = Pattern.compile("^" + wildcardToRegex(pattern) + "$");
+                return className -> regex.matcher(className).matches();
+            }
+            return className -> className.equals(pattern);
+        }
+
+        private static String wildcardToRegex(String wildcardPattern) {
+            StringBuilder regex = new StringBuilder(wildcardPattern.length() * 2);
+            for (int i = 0; i < wildcardPattern.length(); i++) {
+                char c = wildcardPattern.charAt(i);
+                if (c == '*') {
+                    regex.append(".*");
+                } else {
+                    if ("\\.^$|?+()[]{}".indexOf(c) != -1) {
+                        regex.append('\\');
+                    }
+                    regex.append(c);
+                }
+            }
+            return regex.toString();
+        }
     }
 }

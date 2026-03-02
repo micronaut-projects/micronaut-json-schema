@@ -135,6 +135,18 @@ class ConfigurationJsonSchemaValidatorCliTest {
     }
 
     @Test
+    void optionsCanParseSuppressInjectErrorsPatterns() {
+        ConfigurationJsonSchemaValidatorCli.Options options = ConfigurationJsonSchemaValidatorCli.Options.parse(new String[] {
+            "--classpath", "cp",
+            "--out", tempDir.resolve("out").toString(),
+            "--suppress-inject-errors", "com.example.Foo,com.example.*",
+            "--suppress-inject-errors", "org.example.Bar"
+        });
+
+        assertEquals(List.of("com.example.Foo", "com.example.*", "org.example.Bar"), options.suppressedInjectionErrors());
+    }
+
+    @Test
     void suppressionPatternsDowngradeErrorsToWarnings() throws Exception {
         System.setProperty("micronaut.http.client.unknown", "x");
 
@@ -198,6 +210,59 @@ class ConfigurationJsonSchemaValidatorCliTest {
             return value.contains("io.micronaut.context.env.Environment")
                 || value.contains("io.micronaut.core.value.PropertyResolver");
         }), () -> "Implicit infrastructure beans should be excluded from DI errors, got: " + diErrors);
+    }
+
+    @Test
+    void dependencyInjectionErrorsCanBeSuppressedByExactClassName() throws Exception {
+        Path baselineOut = tempDir.resolve("out-di-baseline");
+        int baselineExit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--environments", "test,di-validator-test",
+            "--out", baselineOut.toString(),
+            "--validate-dependency-injection",
+            "--format", "json"
+        }, System.out, System.err);
+        assertEquals(1, baselineExit);
+        List<Map<String, Object>> baselineDiErrors = readDependencyInjectionErrors(baselineOut);
+        assertTrue(baselineDiErrors.stream().anyMatch(e -> {
+                Object injectionPoint = e.get("injectionPoint");
+                return injectionPoint != null && String.valueOf(injectionPoint).contains("constructor FixtureContextBean(");
+            }),
+            () -> "Expected baseline DI errors to include FixtureContextBean root, got: " + baselineDiErrors);
+
+        Path suppressedOut = tempDir.resolve("out-di-exact-suppressed");
+        int suppressedExit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--environments", "test,di-validator-test",
+            "--out", suppressedOut.toString(),
+            "--validate-dependency-injection",
+            "--suppress-inject-errors", "io.micronaut.jsonschema.configuration.validator.FixtureContextBean",
+            "--format", "json"
+        }, System.out, System.err);
+        assertEquals(1, suppressedExit);
+        List<Map<String, Object>> suppressedDiErrors = readDependencyInjectionErrors(suppressedOut);
+        assertFalse(suppressedDiErrors.stream().anyMatch(e -> {
+                Object injectionPoint = e.get("injectionPoint");
+                return injectionPoint != null && String.valueOf(injectionPoint).contains("constructor FixtureContextBean(");
+            }),
+            () -> "Expected FixtureContextBean DI errors to be suppressed, got: " + suppressedDiErrors);
+    }
+
+    @Test
+    void dependencyInjectionErrorsCanBeSuppressedByPackagePattern() throws Exception {
+        Path out = tempDir.resolve("out-di-package-suppressed");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--environments", "test,di-validator-test",
+            "--out", out.toString(),
+            "--validate-dependency-injection",
+            "--suppress-inject-errors", "io.micronaut.jsonschema.configuration.validator.*",
+            "--format", "json"
+        }, System.out, System.err);
+
+        assertEquals(0, exit);
+        List<Map<String, Object>> diErrors = readDependencyInjectionErrors(out);
+        assertTrue(diErrors.isEmpty(), () -> "Expected package-suppressed DI errors to be empty, got: " + diErrors);
     }
 
     @Test
@@ -742,6 +807,18 @@ class ConfigurationJsonSchemaValidatorCliTest {
         String stderr = errCapture.toString(StandardCharsets.UTF_8);
         assertTrue(Pattern.compile("config/application\\.yml:[0-9]+", Pattern.CASE_INSENSITIVE).matcher(stderr).find(),
             () -> "Expected origin to be rewritten using second resources dir, got:\n" + stderr);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> readDependencyInjectionErrors(Path out) throws Exception {
+        String json = Files.readString(out.resolve("configuration-errors.json"), StandardCharsets.UTF_8);
+        Object decoded = JsonMapper.createDefault().readValue(json, Argument.of(Object.class));
+        assertInstanceOf(Map.class, decoded);
+        Object errors = ((Map<String, Object>) decoded).get("dependencyInjectionErrors");
+        if (errors == null) {
+            return List.of();
+        }
+        return (List<Map<String, Object>>) errors;
     }
 
 }
