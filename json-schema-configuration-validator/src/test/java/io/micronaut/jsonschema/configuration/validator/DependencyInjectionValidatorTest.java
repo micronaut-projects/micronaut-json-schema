@@ -45,6 +45,29 @@ class DependencyInjectionValidatorTest {
     }
 
     @Test
+    void propertyInjectionFailureIsReported() {
+        Set<DependencyInjectionError> errors = validate("property", Map.of());
+        assertFalse(errors.isEmpty());
+        assertTrue(errors.stream().anyMatch(e ->
+                e.rootBean().contains("FixturePropertyInjectionBean")
+                    && e.injectionPoint() != null
+                    && e.injectionPoint().contains("field FixturePropertyInjectionBean.value")
+                    && e.message().contains("Missing required property [spec.missing.property] for @Property injection")
+            ), () -> "Expected missing @Property value error, got: " + errors);
+    }
+
+    @Test
+    void configurationPropertiesConstructorArgumentsAreNotReportedAsDiFailures() {
+        Set<DependencyInjectionError> errors = validate("configuration-properties-record", Map.of());
+        assertFalse(errors.stream().anyMatch(e ->
+                e.bean().contains("java.lang.Boolean")
+                    && e.injectionPoint() != null
+                    && (e.injectionPoint().contains("constructor FixtureConfigurationPropertiesRecord(")
+                    || e.injectionPoint().contains("constructor ReactorConfiguration("))
+            ), () -> "Did not expect missing Boolean DI failures for @ConfigurationProperties constructor args, got: " + errors);
+    }
+
+    @Test
     void constructorInjectionFailureIsReported() {
         Set<DependencyInjectionError> errors = validate("constructor", Map.of());
         assertFalse(errors.isEmpty());
@@ -373,6 +396,8 @@ class DependencyInjectionValidatorTest {
         Class<?> expected = switch (name) {
             case "field" -> FixtureFieldInjectionBean.class;
             case "value" -> FixtureValueInjectionBean.class;
+            case "property" -> FixturePropertyInjectionBean.class;
+            case "configuration-properties-record" -> FixtureConfigurationPropertiesConsumer.class;
             case "constructor" -> FixtureConstructorInjectionBean.class;
             case "method" -> FixtureMethodInjectionBean.class;
             case "eachbean" -> FixtureEachBeanTarget.class;

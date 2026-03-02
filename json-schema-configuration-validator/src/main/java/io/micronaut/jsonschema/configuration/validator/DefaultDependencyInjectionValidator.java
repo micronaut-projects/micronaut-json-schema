@@ -211,14 +211,14 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             for (DependencyRequirement requirement : dependenciesOf(current)) {
                 Argument<?> argument = requirement.argument();
 
-                String unresolvedProperty = resolveMissingValueProperty(beanContext, argument);
-                if (unresolvedProperty != null) {
+                String missingPropertyMessage = resolveMissingPropertyMessage(beanContext, current, argument);
+                if (missingPropertyMessage != null) {
                     addError(
                         root,
                         current,
                         argument,
                         requirement,
-                        "Missing required property [" + unresolvedProperty + "] for @Value injection",
+                        missingPropertyMessage,
                         path,
                         errors,
                         dedupe,
@@ -440,6 +440,26 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             || annotationMetadata.hasStereotype(Parameter.class);
     }
 
+    @Nullable
+    private static String resolveMissingPropertyMessage(
+        ConfigurableBeanContext beanContext,
+        BeanDefinition<?> current,
+        Argument<?> argument
+    ) {
+        if (isConfigurationBean(current) || !isRequiredInjection(argument)) {
+            return null;
+        }
+        String missingValueProperty = resolveMissingValueProperty(beanContext, argument);
+        if (missingValueProperty != null) {
+            return "Missing required property [" + missingValueProperty + "] for @Value injection";
+        }
+        String missingPropertyInjection = resolveMissingPropertyInjection(beanContext, argument);
+        if (missingPropertyInjection != null) {
+            return "Missing required property [" + missingPropertyInjection + "] for @Property injection";
+        }
+        return null;
+    }
+
     private static boolean hasInternalName(Argument<?> argument) {
         String name = argument.getName();
         return name.startsWith("$");
@@ -476,6 +496,26 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             return propertyResolver.containsProperty(property) ? null : property;
         }
         return null;
+    }
+
+    @Nullable
+    private static String resolveMissingPropertyInjection(ConfigurableBeanContext beanContext, Argument<?> argument) {
+        AnnotationMetadata annotationMetadata = argument.getAnnotationMetadata();
+        if (!annotationMetadata.hasStereotype(Property.class)) {
+            return null;
+        }
+        Optional<String> propertyName = annotationMetadata.stringValue(Property.class, "name")
+            .filter(name -> !name.isBlank());
+        if (propertyName.isEmpty()) {
+            return null;
+        }
+        boolean hasDefault = annotationMetadata.stringValue(Property.class, "defaultValue")
+            .filter(defaultValue -> !defaultValue.isBlank())
+            .isPresent();
+        if (hasDefault) {
+            return null;
+        }
+        return containsProperty(beanContext, propertyName.get()) ? null : propertyName.get();
     }
 
     private static Optional<String> extractPlaceholderExpression(@Nullable String message) {
