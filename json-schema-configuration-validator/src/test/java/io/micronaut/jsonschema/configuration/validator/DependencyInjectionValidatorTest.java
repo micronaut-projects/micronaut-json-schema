@@ -130,6 +130,47 @@ class DependencyInjectionValidatorTest {
     }
 
     @Test
+    void reachableStrategyDoesNotValidateNonReachableApplicationBeans() {
+        Set<DependencyInjectionError> errors = validate(
+            "strategy-singleton-only",
+            Map.of(),
+            new DefaultDependencyInjectionValidator(List.of(), DependencyInjectionValidationStrategy.REACHABLE)
+        );
+        assertFalse(errors.stream().anyMatch(e -> e.rootBean().contains("FixtureStrategySingletonOnlyBean")),
+            () -> "Did not expect non-reachable singleton bean to be validated with REACHABLE strategy, got: " + errors);
+    }
+
+    @Test
+    void applicationBeansStrategyValidatesNonReachableApplicationBeans() {
+        Set<DependencyInjectionError> errors = validate(
+            "strategy-singleton-only",
+            Map.of(),
+            new DefaultDependencyInjectionValidator(List.of(), DependencyInjectionValidationStrategy.APPLICATION_BEANS)
+        );
+        assertHasError(
+            errors,
+            "FixtureStrategySingletonOnlyBean",
+            "FixtureMissingDependency",
+            "constructor FixtureStrategySingletonOnlyBean(missingDependency)"
+        );
+    }
+
+    @Test
+    void allBeansStrategyValidatesNonReachableApplicationBeans() {
+        Set<DependencyInjectionError> errors = validate(
+            "strategy-singleton-only",
+            Map.of(),
+            new DefaultDependencyInjectionValidator(List.of(), DependencyInjectionValidationStrategy.ALL_BEANS)
+        );
+        assertHasError(
+            errors,
+            "FixtureStrategySingletonOnlyBean",
+            "FixtureMissingDependency",
+            "constructor FixtureStrategySingletonOnlyBean(missingDependency)"
+        );
+    }
+
+    @Test
     void eachBeanPrimaryInjectionReportsMissingConfigurationKey() {
         Set<DependencyInjectionError> errors = validate("eachbean-primary", Map.of());
         assertTrue(errors.stream().anyMatch(e ->
@@ -426,6 +467,7 @@ class DependencyInjectionValidatorTest {
             case "controller" -> FixtureControllerBean.class;
             case "context" -> FixtureContextBean.class;
             case "startup-listener" -> FixtureStartupListenerBean.class;
+            case "strategy-singleton-only" -> FixtureStrategySingletonOnlyBean.class;
             case "circular" -> FixtureCircularBeanA.class;
             case "eachbean-primary" -> FixtureEachBeanPrimaryConsumer.class;
             case "eachbean-named" -> FixtureEachBeanNamedConsumer.class;

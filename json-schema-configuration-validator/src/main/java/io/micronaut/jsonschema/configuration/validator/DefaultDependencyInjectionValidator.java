@@ -51,11 +51,14 @@ import io.micronaut.inject.qualifiers.Qualifiers;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
+import jakarta.inject.Inject;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -87,15 +90,35 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     private static final String STARTUP_EVENT = "io.micronaut.runtime.event.StartupEvent";
     private static final String SERVER_STARTUP_EVENT = "io.micronaut.runtime.server.event.ServerStartupEvent";
     private final List<ClassSuppressionMatcher> suppressedClassMatchers;
+    private final DependencyInjectionValidationStrategy validationStrategy;
+
+    @Inject
+    public DefaultDependencyInjectionValidator(ConfigurationValidatorConfiguration configuration) {
+        this(List.of(), configuration.getDependencyInjectionValidationStrategy());
+    }
 
     public DefaultDependencyInjectionValidator() {
-        this(List.of());
+        this(List.of(), DependencyInjectionValidationStrategy.REACHABLE);
     }
 
     public DefaultDependencyInjectionValidator(@Nullable List<String> suppressedClassPatterns) {
+        this(suppressedClassPatterns, DependencyInjectionValidationStrategy.REACHABLE);
+    }
+
+    public DefaultDependencyInjectionValidator(DependencyInjectionValidationStrategy validationStrategy) {
+        this(List.of(), validationStrategy);
+    }
+
+    public DefaultDependencyInjectionValidator(
+        @Nullable List<String> suppressedClassPatterns,
+        @Nullable DependencyInjectionValidationStrategy validationStrategy
+    ) {
         this.suppressedClassMatchers = ClassSuppressionMatcher.compileAll(
             suppressedClassPatterns == null ? List.of() : suppressedClassPatterns
         );
+        this.validationStrategy = validationStrategy != null
+            ? validationStrategy
+            : DependencyInjectionValidationStrategy.REACHABLE;
     }
 
     /**
@@ -115,12 +138,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         }
 
         Map<String, List<String>> disabledByBeanName = disabledReasonsByBeanName(beanContext.getDisabledBeans());
-        List<BeanDefinition<Object>> roots = definitions.stream()
-            .filter(this::isReachableRoot)
-            .filter(this::isConcreteRoot)
-            .filter(root -> !isSuppressed(root))
-            .sorted(Comparator.comparing(BeanDefinition::getName))
-            .toList();
+        List<BeanDefinition<Object>> roots = validationRoots(definitions);
 
         Set<DependencyInjectionError> errors = new LinkedHashSet<>();
         Set<String> dedupe = new LinkedHashSet<>();
@@ -129,6 +147,19 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             traverse(traversalState, root, root, new LinkedHashSet<>(), new ArrayList<>());
         }
         return errors;
+    }
+
+    private List<BeanDefinition<Object>> validationRoots(Collection<BeanDefinition<Object>> definitions) {
+        Stream<BeanDefinition<Object>> stream = switch (validationStrategy) {
+            case REACHABLE -> definitions.stream().filter(this::isReachableRoot);
+            case APPLICATION_BEANS -> definitions.stream().filter(DefaultDependencyInjectionValidator::isApplicationBean);
+            case ALL_BEANS -> definitions.stream();
+        };
+        return stream
+            .filter(this::isConcreteRoot)
+            .filter(root -> !isSuppressed(root))
+            .sorted(Comparator.comparing(BeanDefinition::getName))
+            .toList();
     }
 
     private static void ensureConfigured(ConfigurableBeanContext beanContext) {
@@ -287,7 +318,29 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         if (isSuppressed(targetDefinition)) {
             return Optional.empty();
         }
+        if (validationStrategy == DependencyInjectionValidationStrategy.APPLICATION_BEANS && !isApplicationBean(targetDefinition)) {
+            return Optional.empty();
+        }
         return target;
+    }
+
+    private static boolean isApplicationBean(BeanDefinition<?> definition) {
+        return isApplicationClass(definition.getClass()) || isApplicationClass(definition.getBeanType());
+    }
+
+    private static boolean isApplicationClass(Class<?> type) {
+        URL location = type.getProtectionDomain() != null && type.getProtectionDomain().getCodeSource() != null
+            ? type.getProtectionDomain().getCodeSource().getLocation()
+            : null;
+        if (location == null) {
+            return false;
+        }
+        try {
+            return !Path.of(location.toURI()).toString().endsWith(".jar");
+        } catch (Exception e) {
+            LOG.trace("Unable to determine code source path for {}", type.getName(), e);
+            return false;
+        }
     }
 
     private boolean isSuppressed(BeanDefinition<?> definition) {

@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator.cli;
 import io.micronaut.core.util.StringUtils;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.core.type.Argument;
+import io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -131,6 +132,20 @@ class ConfigurationJsonSchemaValidatorCliTest {
         });
 
         assertTrue(options.validateDependencyInjection());
+        assertEquals(DependencyInjectionValidationStrategy.REACHABLE, options.dependencyInjectionValidationStrategy());
+    }
+
+    @Test
+    void optionsCanParseDependencyInjectionValidationStrategy() {
+        ConfigurationJsonSchemaValidatorCli.Options options = ConfigurationJsonSchemaValidatorCli.Options.parse(new String[] {
+            "--classpath", "cp",
+            "--out", tempDir.resolve("out").toString(),
+            "--validate-dependency-injection",
+            "--dependency-injection-validation-strategy", "application-beans"
+        });
+
+        assertTrue(options.validateDependencyInjection());
+        assertEquals(DependencyInjectionValidationStrategy.APPLICATION_BEANS, options.dependencyInjectionValidationStrategy());
     }
 
     @Test

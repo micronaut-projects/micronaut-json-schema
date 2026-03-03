@@ -31,6 +31,7 @@ import java.util.List;
  *     <li>{@code micronaut.jsonschema.configuration.validator.fail-on-not-present}</li>
  *     <li>{@code micronaut.jsonschema.configuration.validator.suppressions}</li>
  *     <li>{@code micronaut.jsonschema.configuration.validator.dependency-injection.enabled}</li>
+ *     <li>{@code micronaut.jsonschema.configuration.validator.dependency-injection.validation-strategy}</li>
  *     <li>{@code micronaut.jsonschema.configuration.validator.injecterrors.endpoint.enabled}</li>
  *     <li>{@code endpoints.health.injecterrors.enabled}</li>
  *     <li>{@code endpoints.health.configurationerrors.enabled} (see {@link io.micronaut.jsonschema.configuration.validator.HealthConfiguration})</li>
@@ -49,9 +50,11 @@ public final class ConfigurationValidatorConfiguration {
 
     public static final boolean DEFAULT_CACHE = true;
     public static final boolean DEFAULT_FAIL_ON_NOT_PRESENT = true;
+    public static final DependencyInjectionValidationStrategy DEFAULT_DI_VALIDATION_STRATEGY = DependencyInjectionValidationStrategy.REACHABLE;
     private boolean cache = DEFAULT_CACHE;
     private boolean failOnNotPresent = DEFAULT_FAIL_ON_NOT_PRESENT;
     private List<String> suppressions = List.of();
+    private DependencyInjectionValidationStrategy dependencyInjectionValidationStrategy = DEFAULT_DI_VALIDATION_STRATEGY;
 
     /**
      * Whether the validation result should be cached.
@@ -106,5 +109,24 @@ public final class ConfigurationValidatorConfiguration {
      */
     public void setSuppressions(@Nullable List<String> suppressions) {
         this.suppressions = suppressions != null ? List.copyOf(suppressions) : List.of();
+    }
+
+    /**
+     * Strategy used to determine which bean definitions should be validated for dependency
+     * injection consistency.
+     *
+     * @return The DI validation strategy. Default value {@code REACHABLE}
+     */
+    public DependencyInjectionValidationStrategy getDependencyInjectionValidationStrategy() {
+        return dependencyInjectionValidationStrategy;
+    }
+
+    /**
+     * @param dependencyInjectionValidationStrategy DI validation strategy
+     */
+    public void setDependencyInjectionValidationStrategy(@Nullable DependencyInjectionValidationStrategy dependencyInjectionValidationStrategy) {
+        this.dependencyInjectionValidationStrategy = dependencyInjectionValidationStrategy != null
+            ? dependencyInjectionValidationStrategy
+            : DEFAULT_DI_VALIDATION_STRATEGY;
     }
 }

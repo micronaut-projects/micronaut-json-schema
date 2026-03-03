@@ -21,6 +21,7 @@ import io.micronaut.context.env.Environment;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.configuration.validator.DefaultDependencyInjectionValidator;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
+import io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidator;
 
 import java.io.File;
@@ -86,11 +87,27 @@ public final class DependencyInjectionConfigurationValidator {
         boolean deduceEnvironment,
         List<String> suppressedInjectionErrors
     ) {
+        return forClasspath(
+            classpath,
+            environments,
+            deduceEnvironment,
+            suppressedInjectionErrors,
+            DependencyInjectionValidationStrategy.REACHABLE
+        );
+    }
+
+    public static DependencyInjectionConfigurationValidator forClasspath(
+        String classpath,
+        List<String> environments,
+        boolean deduceEnvironment,
+        List<String> suppressedInjectionErrors,
+        DependencyInjectionValidationStrategy validationStrategy
+    ) {
         return new DependencyInjectionConfigurationValidator(
             parseClasspath(classpath),
             environments,
             deduceEnvironment,
-            new DefaultDependencyInjectionValidator(suppressedInjectionErrors)
+            new DefaultDependencyInjectionValidator(suppressedInjectionErrors, validationStrategy)
         );
     }
 

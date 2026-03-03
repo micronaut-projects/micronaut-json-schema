@@ -20,6 +20,7 @@ import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
+import io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy;
 import io.micronaut.jsonschema.configuration.validator.report.HtmlConfigurationErrorReporter;
 import io.micronaut.jsonschema.configuration.validator.report.JsonConfigurationErrorReporter;
 import io.micronaut.jsonschema.configuration.validator.report.SystemErrConfigurationErrorReporter;
@@ -47,6 +48,7 @@ import java.util.Set;
  *     <li>{@code --fail-on-not-present <true|false>} (defaults to {@code true})</li>
  *     <li>{@code --deduce-environments <true|false>} (defaults to {@code false})</li>
  *     <li>{@code --validate-dependency-injection} (defaults to {@code false})</li>
+ *     <li>{@code --dependency-injection-validation-strategy <reachable|application-beans|all-beans>} (defaults to {@code reachable})</li>
  *     <li>{@code --out <directory>} (required)</li>
  *     <li>{@code --format <json|html|both>} (defaults to {@code both})</li>
  * </ul>
@@ -123,7 +125,8 @@ public final class ConfigurationJsonSchemaValidatorCli {
                     options.classpath(),
                     options.environments(),
                     options.deduceEnvironments(),
-                    options.suppressedInjectionErrors()
+                    options.suppressedInjectionErrors(),
+                    options.dependencyInjectionValidationStrategy()
                 ).validate();
             } catch (Exception e) {
                 err.println("Dependency injection validation failed while loading configuration:");
@@ -265,6 +268,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
         boolean failOnNotPresent,
         boolean deduceEnvironments,
         boolean validateDependencyInjection,
+        DependencyInjectionValidationStrategy dependencyInjectionValidationStrategy,
         Path outDir,
         Format format,
         @Nullable Path projectBaseDir,
@@ -280,6 +284,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
             boolean failOnNotPresent = true;
             boolean deduceEnvironments = false;
             boolean validateDependencyInjection = false;
+            DependencyInjectionValidationStrategy dependencyInjectionValidationStrategy = DependencyInjectionValidationStrategy.REACHABLE;
             Path outDir = null;
             Format format = Format.BOTH;
             Path projectBaseDir = null;
@@ -350,6 +355,10 @@ public final class ConfigurationJsonSchemaValidatorCli {
                             validateDependencyInjection = Boolean.parseBoolean(value);
                         }
                     }
+                    case "--dependency-injection-validation-strategy" -> {
+                        value = value != null ? value : nextValue(list, ++i, key);
+                        dependencyInjectionValidationStrategy = parseDependencyInjectionValidationStrategy(value);
+                    }
                     case "--out" -> {
                         value = value != null ? value : nextValue(list, ++i, key);
                         outDir = Path.of(value);
@@ -373,7 +382,21 @@ public final class ConfigurationJsonSchemaValidatorCli {
             }
 
             if (help) {
-                return new Options(true, "", List.of(), List.of(), List.of(), true, false, false, Path.of("."), Format.BOTH, null, List.of());
+                return new Options(
+                    true,
+                    "",
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    true,
+                    false,
+                    false,
+                    DependencyInjectionValidationStrategy.REACHABLE,
+                    Path.of("."),
+                    Format.BOTH,
+                    null,
+                    List.of()
+                );
             }
             if (classpath == null || classpath.isBlank()) {
                 throw new IllegalArgumentException("Missing required argument: --classpath");
@@ -391,6 +414,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 failOnNotPresent,
                 deduceEnvironments,
                 validateDependencyInjection,
+                dependencyInjectionValidationStrategy,
                 outDir,
                 format,
                 projectBaseDir,
@@ -413,6 +437,8 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 "  --deduce-environments <bool>     Whether to deduce environments (default: false)\n" +
                 "  --no-deduce-environments         Convenience flag to disable environment deduction\n" +
                 "  --validate-dependency-injection  Enable dependency injection validation (default: false)\n" +
+                "  --dependency-injection-validation-strategy <reachable|application-beans|all-beans>\n" +
+                "                                   DI validation scope (default: reachable)\n" +
                 "  --out <dir>                      Output directory to write reports\n" +
                 "  --format <json|html|both>        Report format(s) (default: both)\n" +
                 "  --project-base-dir <dir>         Project base directory used to render relative origin paths\n" +
@@ -460,6 +486,15 @@ public final class ConfigurationJsonSchemaValidatorCli {
                 case "html" -> Format.HTML;
                 case "both" -> Format.BOTH;
                 default -> throw new IllegalArgumentException("Invalid format: " + value);
+            };
+        }
+
+        private static DependencyInjectionValidationStrategy parseDependencyInjectionValidationStrategy(String value) {
+            return switch (value.trim().toUpperCase(Locale.ENGLISH).replace('-', '_')) {
+                case "REACHABLE" -> DependencyInjectionValidationStrategy.REACHABLE;
+                case "APPLICATION_BEANS" -> DependencyInjectionValidationStrategy.APPLICATION_BEANS;
+                case "ALL_BEANS" -> DependencyInjectionValidationStrategy.ALL_BEANS;
+                default -> throw new IllegalArgumentException("Invalid dependency injection validation strategy: " + value);
             };
         }
     }
