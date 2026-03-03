@@ -141,7 +141,7 @@
         <h1>Micronaut JSON schema</h1>
         <p></p>
         <p>JSON schema support for Micronaut</p>
-        <p><strong>Version:</strong> 2.0.0-M2 </p>
+        <p><strong>Version:</strong> 2.0.0-SNAPSHOT </p>
     </div>
     
 <h1 id="introduction"><a class="anchor" href="#introduction"></a>1 Introduction</h1>
@@ -2004,6 +2004,262 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 </div>
 <div class="paragraph">
 <p>The HTML report includes an expandable snippet preview with syntax highlighting. The JSON report includes only the line number.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dependency_injection_validation">Dependency injection validation</h3>
+<div class="paragraph">
+<p>In addition to schema/property validation, the validator can also perform metadata-only dependency injection checks.</p>
+</div>
+<div class="paragraph">
+<p>This catches wiring issues before application startup, including:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>missing bean dependencies</p>
+</li>
+<li>
+<p>circular dependencies</p>
+</li>
+<li>
+<p>disabled candidate beans (with <code>@Requires</code> reasons)</p>
+</li>
+<li>
+<p>ambiguous candidates that would fail with a non-unique bean error at runtime</p>
+</li>
+<li>
+<p>unresolved dependencies of <code>@Factory</code>-produced beans</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_cli_usage">CLI usage</h4>
+<div class="paragraph">
+<p>Enable DI validation by adding <code>--validate-dependency-injection</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">java -cp &lt;full-classpath&gt; io.micronaut.jsonschema.configuration.validator.cli.ConfigurationJsonSchemaValidatorCli \
+  --classpath &lt;full-classpath&gt; \
+  --environments test \
+  --out build/reports/config-schema \
+  --format both \
+  --suppress-inject-errors com.example.LegacyBean,com.example.generated.* \
+  --validate-dependency-injection</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When enabled, console, JSON, and HTML outputs include a dedicated DI section (errors + dependency failure paths).</p>
+</div>
+<div class="paragraph">
+<p>Use <code>--suppress-inject-errors</code> to suppress DI errors for specific bean classes or packages. Patterns support exact fully-qualified class names and <code><strong></code> wildcards (for example <code>com.example.LegacyBean</code> or <code>com.example.generated.</strong></code>).</p>
+</div>
+<div class="paragraph">
+<p>The JSON report (<code>configuration-errors.json</code>) adds a <code>dependencyInjectionErrors</code> array containing entries such as:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>rootBean</code></p>
+</li>
+<li>
+<p><code>bean</code></p>
+</li>
+<li>
+<p><code>injectionPoint</code></p>
+</li>
+<li>
+<p><code>details</code></p>
+</li>
+<li>
+<p><code>disabledReason</code> (when applicable)</p>
+</li>
+<li>
+<p><code>failingPath</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_runtime_api_and_management_integration">Runtime API and management integration</h4>
+<div class="paragraph">
+<p>When <code>micronaut-management</code> is present and DI validation is enabled, the module also exposes DI results at runtime:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="../api/io/micronaut/jsonschema/configuration/validator/DependencyInjectionErrors.html">DependencyInjectionErrors</a> API</p>
+</li>
+<li>
+<p>management endpoint id <code>injecterrors</code> (property: <code>micronaut.jsonschema.configuration.validator.injecterrors.endpoint.enabled</code>)</p>
+</li>
+<li>
+<p>health indicator id <code>injecterrors</code> (property: <code>endpoints.health.injecterrors.enabled</code>)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Example endpoint configuration:</p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.jsonschema.configuration.validator.dependency-injection.enabled=true
+micronaut.jsonschema.configuration.validator.injecterrors.endpoint.enabled=true
+endpoints.all.sensitive=false
+endpoints.injecterrors.sensitive=false
+endpoints.health.injecterrors.enabled=true</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">micronaut:
+  jsonschema:
+    configuration:
+      validator:
+        dependency-injection:
+          enabled: true
+        injecterrors:
+          endpoint:
+            enabled: true
+endpoints:
+  all:
+    sensitive: false
+  injecterrors:
+    sensitive: false
+  health:
+    injecterrors:
+      enabled: true</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">[micronaut]
+  [micronaut.jsonschema]
+    [micronaut.jsonschema.configuration]
+      [micronaut.jsonschema.configuration.validator]
+        [micronaut.jsonschema.configuration.validator.dependency-injection]
+          enabled=true
+        [micronaut.jsonschema.configuration.validator.injecterrors]
+          [micronaut.jsonschema.configuration.validator.injecterrors.endpoint]
+            enabled=true
+[endpoints]
+  [endpoints.all]
+    sensitive=false
+  [endpoints.injecterrors]
+    sensitive=false
+  [endpoints.health]
+    [endpoints.health.injecterrors]
+      enabled=true</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy-config hljs" data-lang="groovy-config">micronaut {
+  jsonschema {
+    configuration {
+      validator {
+        dependencyInjection {
+          enabled = true
+        }
+        injecterrors {
+          endpoint {
+            enabled = true
+          }
+        }
+      }
+    }
+  }
+}
+endpoints {
+  all {
+    sensitive = false
+  }
+  injecterrors {
+    sensitive = false
+  }
+  health {
+    injecterrors {
+      enabled = true
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-hocon hljs" data-lang="hocon">{
+  micronaut {
+    jsonschema {
+      configuration {
+        validator {
+          dependency-injection {
+            enabled = true
+          }
+          injecterrors {
+            endpoint {
+              enabled = true
+            }
+          }
+        }
+      }
+    }
+  }
+  endpoints {
+    all {
+      sensitive = false
+    }
+    injecterrors {
+      sensitive = false
+    }
+    health {
+      injecterrors {
+        enabled = true
+      }
+    }
+  }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json-config hljs" data-lang="json-config">{
+  "micronaut": {
+    "jsonschema": {
+      "configuration": {
+        "validator": {
+          "dependency-injection": {
+            "enabled": true
+          },
+          "injecterrors": {
+            "endpoint": {
+              "enabled": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "endpoints": {
+    "all": {
+      "sensitive": false
+    },
+    "injecterrors": {
+      "sensitive": false
+    },
+    "health": {
+      "injecterrors": {
+        "enabled": true
+      }
+    }
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect2">
