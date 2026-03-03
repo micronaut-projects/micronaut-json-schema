@@ -16,7 +16,7 @@
 # a managed version (a version which alias starts with "managed-"
 
 [versions]
-micronaut = "5.0.0-M14"
+micronaut = "5.0.0-M15"
 micronaut-serde = "3.0.0-M2"
 micronaut-sourcegen = "2.0.0-M2"
 micronaut-validation = "5.0.0-M1"
