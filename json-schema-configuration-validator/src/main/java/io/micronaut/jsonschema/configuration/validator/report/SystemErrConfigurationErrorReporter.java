@@ -141,7 +141,7 @@ public final class SystemErrConfigurationErrorReporter implements ConfigurationE
         Table table = Table.of(
             List.of("Property", "Type", "Message", "Origin", "Value"),
             rows,
-            List.of(60, 8, 80, 40, 40)
+            List.of(60, 8, 80, Integer.MAX_VALUE, 40)
         );
         table.print(writer, useAnsi);
     }

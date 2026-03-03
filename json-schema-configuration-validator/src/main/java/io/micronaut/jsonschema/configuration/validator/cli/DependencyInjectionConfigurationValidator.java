@@ -22,8 +22,6 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.jsonschema.configuration.validator.DefaultDependencyInjectionValidator;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -41,7 +39,7 @@ import java.util.regex.Pattern;
  */
 @Internal
 public final class DependencyInjectionConfigurationValidator {
-    private static final Logger LOG = LoggerFactory.getLogger(DependencyInjectionConfigurationValidator.class.getName());
+    private static final System.Logger LOG = System.getLogger(DependencyInjectionConfigurationValidator.class.getName());
 
     private final List<URL> classpath;
     private final List<String> environments;
@@ -129,7 +127,7 @@ public final class DependencyInjectionConfigurationValidator {
             try {
                 urls.add(Path.of(trimmed).toUri().toURL());
             } catch (MalformedURLException e) {
-                LOG.debug("Invalid classpath entry: " + trimmed, e);
+                LOG.log(System.Logger.Level.DEBUG, "Invalid classpath entry: " + trimmed, e);
             }
         }
         return urls;

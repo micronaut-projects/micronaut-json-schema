@@ -148,4 +148,29 @@ class ConfigurationErrorReporterTest {
 
         assertTrue(html.contains("No configuration validation errors"));
     }
+
+    @Test
+    void systemErrReporterDoesNotTruncateOriginPathAndLineReference() throws Exception {
+        String origin = "src/main/resources/application.properties";
+        Set<ConfigurationError> errors = Set.of(new ConfigurationError(
+            "micronaut.server.port",
+            ConfigurationError.Type.ERROR,
+            "must be integer",
+            origin,
+            "micronaut.server.port",
+            "junk",
+            123,
+            null,
+            null
+        ));
+
+        String out;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             PrintStream ps = new PrintStream(baos, true, StandardCharsets.UTF_8)) {
+            new SystemErrConfigurationErrorReporter(ps).report(errors, Set.of());
+            out = baos.toString(StandardCharsets.UTF_8);
+        }
+
+        assertTrue(out.contains(origin + ":123"), () -> "Expected full origin path with line number, got:\n" + out);
+    }
 }
