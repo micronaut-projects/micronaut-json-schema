@@ -16,8 +16,11 @@
 package io.micronaut.jsonschema.configuration.validator.report;
 
 import io.micronaut.json.JsonMapper;
+import io.micronaut.core.naming.NameUtils;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
+import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
 import io.micronaut.serde.annotation.Serdeable;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -43,7 +46,7 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
     }
 
     @Override
-    public void report(Set<ConfigurationError> errors) throws IOException {
+    public void report(Set<ConfigurationError> errors, Set<DependencyInjectionError> dependencyInjectionErrors) throws IOException {
         List<JsonConfigurationError> view = new ArrayList<>(errors.size());
         for (ConfigurationError error : errors) {
             view.add(new JsonConfigurationError(
@@ -56,10 +59,39 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
                 error.lineNumber()
             ));
         }
-        String json = jsonMapper.writeValueAsString(view);
+        List<JsonDependencyInjectionError> diView = new ArrayList<>(dependencyInjectionErrors.size());
+        for (DependencyInjectionError error : dependencyInjectionErrors) {
+            diView.add(new JsonDependencyInjectionError(
+                error.injectionPoint(),
+                shortName(error.bean()),
+                formatDetails(error.message(), error.disabledReason()),
+                error.failingPath(),
+                error.snippet(),
+                error.snippetLanguage()
+            ));
+        }
+        String json = jsonMapper.writeValueAsString(new JsonReport(view, diView));
         output.write(json.getBytes(StandardCharsets.UTF_8));
         output.write('\n');
         output.flush();
+    }
+
+    private static String shortName(@Nullable String typeName) {
+        return typeName == null ? "" : NameUtils.getShortenedName(typeName);
+    }
+
+    private static String formatDetails(String message, @Nullable String disabledReason) {
+        if (disabledReason == null || disabledReason.isBlank()) {
+            return message;
+        }
+        return message + " | Disabled: " + disabledReason;
+    }
+
+    @Serdeable
+    private record JsonReport(
+        List<JsonConfigurationError> configurationErrors,
+        List<JsonDependencyInjectionError> dependencyInjectionErrors
+    ) {
     }
 
     @Serdeable
@@ -71,6 +103,17 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
         String rawPropertyName,
         Object rawValue,
         int lineNumber
+    ) {
+    }
+
+    @Serdeable
+    private record JsonDependencyInjectionError(
+        String injectionPoint,
+        String bean,
+        String details,
+        List<String> failingPath,
+        String snippet,
+        String snippetLanguage
     ) {
     }
 }

@@ -16,16 +16,23 @@
 package io.micronaut.jsonschema.configuration.validator.report;
 
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
+import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
+import io.micronaut.core.naming.NameUtils;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
  * Reports errors as an HTML document.
  */
+@SuppressWarnings("java:S1192")
 public final class HtmlConfigurationErrorReporter implements ConfigurationErrorReporter {
     private static final String HTML_DIV_CLOSE = "</div>";
     private static final String HTML_DIV_DIV_CLOSE = "</div></div>";
@@ -44,9 +51,11 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
     }
 
     @Override
-    public void report(Set<ConfigurationError> errors) throws IOException {
+    @SuppressWarnings("java:S3776")
+    public void report(Set<ConfigurationError> errors, Set<DependencyInjectionError> dependencyInjectionErrors) throws IOException {
         long errorCount = errors.stream().filter(e -> e.type() == ConfigurationError.Type.ERROR).count();
         long warningCount = errors.stream().filter(e -> e.type() == ConfigurationError.Type.WARNING).count();
+        long dependencyInjectionErrorCount = dependencyInjectionErrors.size();
 
         StringBuilder html = new StringBuilder(8192);
         html.append("<!doctype html><html lang='en'><head><meta charset='utf-8'>")
@@ -69,6 +78,8 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             .append(".col-raw{width:13%;}")
             .append(".col-value{width:13%;}")
             .append(".mn-wrap{word-break:break-word;white-space:normal;}")
+            .append(".mn-detail-main{margin-bottom:.25rem;}")
+            .append(".mn-detail-list{margin:.5rem 0 0 1rem;padding-left:.6rem;}")
             .append("pre{margin:0;}")
             .append("code.hljs{padding:12px;border-radius:8px;}")
             .append("</style>")
@@ -98,9 +109,13 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             .append("<div class='text-secondary small'>Warnings</div>")
             .append("<div class='h4 mb-0 text-warning'>").append(warningCount).append(HTML_DIV_CLOSE)
             .append(HTML_DIV_DIV_CLOSE)
+            .append(HTML_CARD_OPEN)
+            .append("<div class='text-secondary small'>Dependency Injection Errors</div>")
+            .append("<div class='h4 mb-0 text-danger'>").append(dependencyInjectionErrorCount).append(HTML_DIV_CLOSE)
+            .append(HTML_DIV_DIV_CLOSE)
             .append(HTML_DIV_CLOSE);
 
-        if (errors.isEmpty()) {
+        if (errors.isEmpty() && dependencyInjectionErrors.isEmpty()) {
             html.append("<div class='alert alert-success' role='alert'>No configuration validation errors.</div>")
                 .append("</main></body></html>");
 
@@ -109,7 +124,8 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             return;
         }
 
-        html.append("<div class='table-responsive'>")
+        html.append("<h2 class='h5 mb-3'>Configuration errors</h2>")
+            .append("<div class='table-responsive'>")
             .append("<table class='table table-striped table-hover align-middle table-fixed'>")
             .append("<thead class='table-light'><tr>")
             .append("<th class='col-prop'>Property</th>")
@@ -157,13 +173,221 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
         }
 
         html.append("</tbody></table></div>")
-            .append("</main>")
+            .append("<h2 class='h5 mt-4 mb-3'>Dependency injection errors</h2>")
+            .append("<div class='table-responsive'>")
+            .append("<table class='table table-striped table-hover align-middle table-fixed'>")
+            .append("<thead class='table-light'><tr>")
+            .append("<th style='width:24%'>Injection Point</th>")
+            .append("<th style='width:16%'>Bean</th>")
+            .append("<th style='width:42%'>Details</th>")
+            .append("<th style='width:18%'>Snippet</th>")
+            .append("</tr></thead><tbody>");
+
+        if (dependencyInjectionErrors.isEmpty()) {
+            html.append("<tr><td colspan='4' class='text-secondary'>No dependency injection validation errors.</td></tr>");
+        } else {
+            for (DependencyInjectionError error : dependencyInjectionErrors) {
+                html.append("<tr>")
+                    .append(HTML_TD_CODE_OPEN).append(escape(error.injectionPoint())).append(HTML_TD_CODE_CLOSE)
+                    .append(HTML_TD_CODE_OPEN).append(escape(shortName(error.bean()))).append(HTML_TD_CODE_CLOSE)
+                    .append(renderDetailsCell(error));
+
+                String snippet = error.snippet();
+                if (snippet != null && !snippet.isBlank()) {
+                    String language = error.snippetLanguage() != null ? error.snippetLanguage() : "plaintext";
+                    html.append("<td>")
+                        .append("<details>")
+                        .append("<summary>View</summary>")
+                        .append("<div class='mt-2'>")
+                        .append("<pre><code class='hljs language-").append(escape(language)).append("'>")
+                        .append(escape(snippet))
+                        .append("</code></pre>")
+                        .append(HTML_DIV_CLOSE)
+                        .append("</details>")
+                        .append(HTML_TD_CLOSE);
+                } else {
+                    html.append("<td class='text-secondary'>-</td>");
+                }
+
+                html.append("</tr>");
+            }
+        }
+
+        html.append("</tbody></table></div>")
+            .append("<h2 class='h5 mt-4 mb-3'>Dependency injection failure paths</h2>");
+
+        if (dependencyInjectionErrors.isEmpty()) {
+            html.append("<div class='text-secondary'>No failing dependency injection paths.</div>");
+        } else {
+            for (DependencyInjectionError error : dependencyInjectionErrors) {
+                html.append("<details class='mb-2'><summary><code>")
+                    .append(escape(error.rootBean()))
+                    .append("</code></summary>")
+                    .append("<pre class='mt-2'><code class='hljs language-plaintext'>");
+                if (error.failingPath().isEmpty()) {
+                    html.append(escape(error.bean())).append(" (failed)");
+                } else {
+                    for (String pathEntry : error.failingPath()) {
+                        html.append(escape(pathEntry)).append('\n');
+                    }
+                }
+                html.append("</code></pre>")
+                    .append("<div class='mt-2'><img alt='Dependency injection graph' class='img-fluid border rounded p-2 bg-white' src='")
+                    .append(escape(failurePathGraphDataUri(error)))
+                    .append("'></div>")
+                    .append("</details>");
+            }
+        }
+
+        html.append("</main>")
             .append("<script src='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js'></script>")
             .append("<script>try{hljs.highlightAll();}catch(e){}</script>")
             .append("</body></html>");
 
         output.write(html.toString().getBytes(StandardCharsets.UTF_8));
         output.flush();
+    }
+
+    private static String shortName(@Nullable String typeName) {
+        return typeName == null ? "" : NameUtils.getShortenedName(typeName);
+    }
+
+    private static String failurePathGraphDataUri(DependencyInjectionError error) {
+        List<String> nodes = normalizedPathNodes(error);
+        String svg = renderPathSvg(nodes, Integer.toHexString(error.hashCode()));
+        String encoded = Base64.getEncoder().encodeToString(svg.getBytes(StandardCharsets.UTF_8));
+        return "data:image/svg+xml;base64," + encoded;
+    }
+
+    private static List<String> normalizedPathNodes(DependencyInjectionError error) {
+        if (error.failingPath().isEmpty()) {
+            return List.of(error.rootBean(), error.bean() + " (failed)");
+        }
+        List<String> nodes = new ArrayList<>(error.failingPath().size());
+        for (String pathEntry : error.failingPath()) {
+            nodes.add(cleanPathNode(pathEntry));
+        }
+        return nodes;
+    }
+
+    private static String cleanPathNode(@Nullable String pathEntry) {
+        if (pathEntry == null) {
+            return "";
+        }
+        String cleaned = pathEntry.trim();
+        if (cleaned.startsWith("*")) {
+            cleaned = cleaned.substring(1).trim();
+        }
+        return cleaned;
+    }
+
+    private static String renderPathSvg(List<String> nodes, String idSuffix) {
+        int width = 960;
+        int headerHeight = 24;
+        int rowHeight = 50;
+        int height = Math.max(140, headerHeight + (nodes.size() * rowHeight) + 30);
+
+        String markerId = "arrow-" + idSuffix;
+        StringBuilder svg = new StringBuilder(1024);
+        svg.append("<svg xmlns='http://www.w3.org/2000/svg' width='").append(width).append("' height='").append(height).append("' viewBox='0 0 ")
+            .append(width).append(' ').append(height).append("'>")
+            .append("<rect width='100%' height='100%' fill='#ffffff'/>")
+            .append("<defs><marker id='").append(markerId).append("' markerWidth='10' markerHeight='8' refX='9' refY='4' orient='auto'>")
+            .append("<polygon points='0 0, 10 4, 0 8' fill='#475467'/></marker></defs>");
+
+        int x = 24;
+        int y = 20;
+        int boxWidth = width - 48;
+        int boxHeight = 30;
+        for (int i = 0; i < nodes.size(); i++) {
+            svg.append("<rect x='").append(x).append("' y='").append(y).append("' width='").append(boxWidth).append("' height='").append(boxHeight)
+                .append("' rx='6' ry='6' fill='#f8f9fb' stroke='#d0d5dd'/>")
+                .append("<text x='").append(x + 10).append("' y='").append(y + 20)
+                .append("' font-family='ui-monospace, SFMono-Regular, Menlo, monospace' font-size='12' fill='#101828'>")
+                .append(escapeSvg(truncateForSvg(nodes.get(i), 118))).append("</text>");
+
+            if (i < nodes.size() - 1) {
+                int lineY1 = y + boxHeight;
+                int lineY2 = y + rowHeight - 6;
+                int lineX = x + (boxWidth / 2);
+                svg.append("<line x1='").append(lineX).append("' y1='").append(lineY1).append("' x2='").append(lineX).append("' y2='").append(lineY2)
+                    .append("' stroke='#475467' stroke-width='1.5' marker-end='url(#").append(markerId).append(")'/>");
+            }
+            y += rowHeight;
+        }
+        svg.append("</svg>");
+        return svg.toString();
+    }
+
+    private static String escapeSvg(String value) {
+        return escape(value);
+    }
+
+    private static String truncateForSvg(String value, int maxChars) {
+        if (value.length() <= maxChars) {
+            return value;
+        }
+        if (maxChars < 4) {
+            return value.substring(0, maxChars);
+        }
+        return value.substring(0, maxChars - 3) + "...";
+    }
+
+    private static String formatDetails(String message, @Nullable String disabledReason) {
+        if (disabledReason == null || disabledReason.isBlank()) {
+            return message;
+        }
+        return message + " | Disabled: " + disabledReason;
+    }
+
+    private static String renderDetailsCell(DependencyInjectionError error) {
+        String details = formatDetails(error.message(), error.disabledReason());
+        int disabledIndex = details.indexOf(". Disabled candidate beans:");
+
+        if (disabledIndex < 0 && details.length() < 220) {
+            return "<td class='mn-wrap'>" + escape(details) + HTML_TD_CLOSE;
+        }
+
+        String summary = details;
+        String expanded = "";
+        if (disabledIndex > -1) {
+            summary = details.substring(0, disabledIndex + 1).trim();
+            expanded = details.substring(disabledIndex + ". Disabled candidate beans:".length()).trim();
+        } else if (details.length() >= 220) {
+            int split = details.indexOf('.', Math.min(120, details.length() - 1));
+            if (split > -1 && split + 1 < details.length()) {
+                summary = details.substring(0, split + 1).trim();
+                expanded = details.substring(split + 1).trim();
+            }
+        }
+
+        LinkedHashSet<String> bullets = new LinkedHashSet<>();
+        if (!expanded.isBlank()) {
+            for (String part : expanded.split(";\\s+")) {
+                String item = part.trim();
+                if (!item.isBlank()) {
+                    bullets.add(item);
+                }
+            }
+        }
+
+        if (bullets.isEmpty()) {
+            return "<td class='mn-wrap'>" + escape(details) + HTML_TD_CLOSE;
+        }
+
+        StringBuilder out = new StringBuilder(256);
+        out.append("<td class='mn-wrap'>")
+            .append("<div class='mn-detail-main'>")
+            .append(escape(summary))
+            .append("</div>")
+            .append("<details>")
+            .append("<summary>More details</summary>")
+            .append("<ul class='mn-detail-list'>");
+        for (String bullet : bullets) {
+            out.append("<li>").append(escape(bullet)).append("</li>");
+        }
+        out.append("</ul></details></td>");
+        return out.toString();
     }
 
     private static String escape(@Nullable String s) {
@@ -176,4 +400,5 @@ public final class HtmlConfigurationErrorReporter implements ConfigurationErrorR
             .replace("\"", "&quot;")
             .replace("'", "&#39;");
     }
+
 }

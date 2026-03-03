@@ -1,0 +1,12 @@
+package io.micronaut.jsonschema.configuration.validator;
+
+import io.micronaut.context.annotation.Requires;
+import io.micronaut.core.annotation.Order;
+import jakarta.inject.Singleton;
+
+@Singleton
+@Order(20)
+@Requires(property = "spec.name", value = "non-unique-order")
+@Requires(env = "di-validator-test")
+final class FixtureMultipleCandidateOrderLowPrecedence implements FixtureMultipleCandidateService {
+}

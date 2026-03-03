@@ -16,8 +16,10 @@
 package io.micronaut.jsonschema.configuration.validator.report;
 
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
+import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -30,5 +32,9 @@ public interface ConfigurationErrorReporter {
      * @param errors The errors to report
      * @throws IOException If the reporter fails to write the report
      */
-    void report(Set<ConfigurationError> errors) throws IOException;
+    default void report(Set<ConfigurationError> errors) throws IOException {
+        report(errors, Collections.emptySet());
+    }
+
+    void report(Set<ConfigurationError> errors, Set<DependencyInjectionError> dependencyInjectionErrors) throws IOException;
 }

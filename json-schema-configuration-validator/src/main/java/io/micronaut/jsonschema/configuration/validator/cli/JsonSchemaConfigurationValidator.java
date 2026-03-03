@@ -123,9 +123,6 @@ public final class JsonSchemaConfigurationValidator {
         String[] parts = classpath.split(java.util.regex.Pattern.quote(File.pathSeparator));
         List<URL> urls = new ArrayList<>(parts.length);
         for (String part : parts) {
-            if (part == null) {
-                continue;
-            }
             String trimmed = part.trim();
             if (trimmed.isEmpty()) {
                 continue;

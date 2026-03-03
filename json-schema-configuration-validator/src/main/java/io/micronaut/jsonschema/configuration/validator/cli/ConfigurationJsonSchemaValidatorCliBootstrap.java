@@ -92,9 +92,6 @@ public final class ConfigurationJsonSchemaValidatorCliBootstrap {
         String[] parts = classpath.split(Pattern.quote(File.pathSeparator));
         List<URL> urls = new ArrayList<>(parts.length);
         for (String part : parts) {
-            if (part == null) {
-                continue;
-            }
             String trimmed = part.trim();
             if (trimmed.isEmpty()) {
                 continue;
@@ -112,9 +109,6 @@ public final class ConfigurationJsonSchemaValidatorCliBootstrap {
     private static String parseClasspathArg(String[] args) {
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
-            if (arg == null) {
-                continue;
-            }
 
             String equalsValue = parseEqualsSyntax(arg);
             if (equalsValue != null) {
@@ -147,9 +141,6 @@ public final class ConfigurationJsonSchemaValidatorCliBootstrap {
             return null;
         }
         String next = args[index + 1];
-        if (next == null) {
-            return "";
-        }
         if (next.startsWith("-")) {
             return null;
         }
