@@ -62,6 +62,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#ENDPOINT_PREFIX" tabindex="0">ENDPOINT_PREFIX</a></li>
 <li><a href="#DEFAULT_CACHE" tabindex="0">DEFAULT_CACHE</a></li>
 <li><a href="#DEFAULT_FAIL_ON_NOT_PRESENT" tabindex="0">DEFAULT_FAIL_ON_NOT_PRESENT</a></li>
+<li><a href="#DEFAULT_DI_VALIDATION_STRATEGY" tabindex="0">DEFAULT_DI_VALIDATION_STRATEGY</a></li>
 </ol>
 </li>
 <li><a href="#constructor-detail" tabindex="0">Constructor Details</a>
@@ -77,6 +78,8 @@ loadScripts(document, 'script');</script>
 <li><a href="#setFailOnNotPresent(boolean)" tabindex="0">setFailOnNotPresent(boolean)</a></li>
 <li><a href="#getSuppressions()" tabindex="0">getSuppressions()</a></li>
 <li><a href="#setSuppressions(java.util.List)" tabindex="0">setSuppressions(List)</a></li>
+<li><a href="#getDependencyInjectionValidationStrategy()" tabindex="0">getDependencyInjectionValidationStrategy()</a></li>
+<li><a href="#setDependencyInjectionValidationStrategy(io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)" tabindex="0">setDependencyInjectionValidationStrategy(DependencyInjectionValidationStrategy)</a></li>
 </ol>
 </li>
 </ol>
@@ -105,6 +108,7 @@ Supported keys:
     <li><code>micronaut.jsonschema.configuration.validator.fail-on-not-present</code></li>
     <li><code>micronaut.jsonschema.configuration.validator.suppressions</code></li>
     <li><code>micronaut.jsonschema.configuration.validator.dependency-injection.enabled</code></li>
+    <li><code>micronaut.jsonschema.configuration.validator.dependency-injection.validation-strategy</code></li>
     <li><code>micronaut.jsonschema.configuration.validator.injecterrors.endpoint.enabled</code></li>
     <li><code>endpoints.health.injecterrors.enabled</code></li>
     <li><code>endpoints.health.configurationerrors.enabled</code> (see <a href="HealthConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator"><code>HealthConfiguration</code></a>)</li>
@@ -125,17 +129,20 @@ Supported keys:
 <div class="col-first even-row-color"><code>static final boolean</code></div>
 <div class="col-second even-row-color"><code><a href="#DEFAULT_CACHE" class="member-name-link">DEFAULT_CACHE</a></code></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><code>static final boolean</code></div>
-<div class="col-second odd-row-color"><code><a href="#DEFAULT_FAIL_ON_NOT_PRESENT" class="member-name-link">DEFAULT_FAIL_ON_NOT_PRESENT</a></code></div>
+<div class="col-first odd-row-color"><code>static final <a href="DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#DEFAULT_DI_VALIDATION_STRATEGY" class="member-name-link">DEFAULT_DI_VALIDATION_STRATEGY</a></code></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color"><code><a href="#ENDPOINT_PREFIX" class="member-name-link">ENDPOINT_PREFIX</a></code></div>
-<div class="col-last even-row-color">
+<div class="col-first even-row-color"><code>static final boolean</code></div>
+<div class="col-second even-row-color"><code><a href="#DEFAULT_FAIL_ON_NOT_PRESENT" class="member-name-link">DEFAULT_FAIL_ON_NOT_PRESENT</a></code></div>
+<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#ENDPOINT_PREFIX" class="member-name-link">ENDPOINT_PREFIX</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">Configuration prefix used by the inject-errors health-indicator configuration.</div>
 </div>
-<div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#PREFIX" class="member-name-link">PREFIX</a></code></div>
-<div class="col-last odd-row-color">
+<div class="col-first even-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color"><code><a href="#PREFIX" class="member-name-link">PREFIX</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">Configuration prefix.</div>
 </div>
 </div>
@@ -165,23 +172,32 @@ Supported keys:
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSuppressions()" class="member-name-link">getSuppressions</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDependencyInjectionValidationStrategy()" class="member-name-link">getDependencyInjectionValidationStrategy</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Strategy used to determine which bean definitions should be validated for dependency
+injection consistency.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSuppressions()" class="member-name-link">getSuppressions</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Patterns used to suppress validation errors.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isCache()" class="member-name-link">isCache</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isCache()" class="member-name-link">isCache</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Whether the validation result should be cached.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isFailOnNotPresent()" class="member-name-link">isFailOnNotPresent</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isFailOnNotPresent()" class="member-name-link">isFailOnNotPresent</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Whether to fail when configuration contains keys not present in schema.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCache(boolean)" class="member-name-link">setCache</a><wbr>(boolean&nbsp;cache)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCache(boolean)" class="member-name-link">setCache</a><wbr>(boolean&nbsp;cache)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setDependencyInjectionValidationStrategy(io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)" class="member-name-link">setDependencyInjectionValidationStrategy</a><wbr>(@Nullable <a href="DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a>&nbsp;dependencyInjectionValidationStrategy)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setFailOnNotPresent(boolean)" class="member-name-link">setFailOnNotPresent</a><wbr>(boolean&nbsp;failOnNotPresent)</code></div>
@@ -269,6 +285,14 @@ Supported keys:
 </ul>
 </dd>
 </dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="DEFAULT_DI_VALIDATION_STRATEGY">
+<h3>DEFAULT_DI_VALIDATION_STRATEGY</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a></span>&nbsp;<span class="element-name">DEFAULT_DI_VALIDATION_STRATEGY</span></div>
 </div>
 </section>
 </li>
@@ -374,6 +398,32 @@ Matching errors are downgraded to warnings.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>suppressions</code> - Patterns used to suppress validation errors</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getDependencyInjectionValidationStrategy()">
+<h3>getDependencyInjectionValidationStrategy</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a></span>&nbsp;<span class="element-name">getDependencyInjectionValidationStrategy</span>()</div>
+<div class="block">Strategy used to determine which bean definitions should be validated for dependency
+injection consistency.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>The DI validation strategy. Default value <code>REACHABLE</code></dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setDependencyInjectionValidationStrategy(io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)">
+<h3>setDependencyInjectionValidationStrategy</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setDependencyInjectionValidationStrategy</span><wbr><span class="parameters">(@Nullable <a href="DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a>&nbsp;dependencyInjectionValidationStrategy)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>dependencyInjectionValidationStrategy</code> - DI validation strategy</dd>
 </dl>
 </div>
 </section>

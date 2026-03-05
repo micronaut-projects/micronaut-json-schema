@@ -64,6 +64,7 @@ loadScripts(document, 'script');</script>
 <ol class="toc-list">
 <li><a href="#forClasspath(java.lang.String,java.util.List,boolean)" tabindex="0">forClasspath(String, List, boolean)</a></li>
 <li><a href="#forClasspath(java.lang.String,java.util.List,boolean,java.util.List)" tabindex="0">forClasspath(String, List, boolean, List)</a></li>
+<li><a href="#forClasspath(java.lang.String,java.util.List,boolean,java.util.List,io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)" tabindex="0">forClasspath(String, List, boolean, List, DependencyInjectionValidationStrategy)</a></li>
 <li><a href="#validate()" tabindex="0">validate()</a></li>
 </ol>
 </li>
@@ -129,9 +130,16 @@ runtime classpath and environment set, then validates bean wiring metadata.</div
  boolean&nbsp;deduceEnvironment,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;suppressedInjectionErrors)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a><wbr>&lt;<a href="../DependencyInjectionError.html" title="class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionError</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validate()" class="member-name-link">validate</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="DependencyInjectionConfigurationValidator.html" title="class in io.micronaut.jsonschema.configuration.validator.cli">DependencyInjectionConfigurationValidator</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forClasspath(java.lang.String,java.util.List,boolean,java.util.List,io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)" class="member-name-link">forClasspath</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;classpath,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;environments,
+ boolean&nbsp;deduceEnvironment,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;suppressedInjectionErrors,
+ <a href="../DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a>&nbsp;validationStrategy)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a><wbr>&lt;<a href="../DependencyInjectionError.html" title="class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionError</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#validate()" class="member-name-link">validate</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Executes dependency-injection validation for the configured classpath and environments.</div>
 </div>
 </div>
@@ -204,6 +212,18 @@ runtime classpath and environment set, then validates bean wiring metadata.</div
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;environments,
  boolean&nbsp;deduceEnvironment,
  <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;suppressedInjectionErrors)</span></div>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="forClasspath(java.lang.String,java.util.List,boolean,java.util.List,io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)">
+<h3>forClasspath</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="DependencyInjectionConfigurationValidator.html" title="class in io.micronaut.jsonschema.configuration.validator.cli">DependencyInjectionConfigurationValidator</a></span>&nbsp;<span class="element-name">forClasspath</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;classpath,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;environments,
+ boolean&nbsp;deduceEnvironment,
+ <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;suppressedInjectionErrors,
+ <a href="../DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a>&nbsp;validationStrategy)</span></div>
 </div>
 </section>
 </li>

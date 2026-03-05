@@ -94,6 +94,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#addType(io.micronaut.jsonschema.model.Schema.Type)" class="member-name-link">addType(Schema.Type)</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html#ALL_BEANS" class="member-name-link">ALL_BEANS</a> - Enum constant in enum class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a></dt>
+<dd>
+<div class="block">Validate all bean definitions available on the classpath.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/utils/SourceGeneratorConfig.RecordAdoptionStrategy.html#ALWAYS_CLASS" class="member-name-link">ALWAYS_CLASS</a> - Enum constant in enum class io.micronaut.jsonschema.generator.utils.<a href="io/micronaut/jsonschema/generator/utils/SourceGeneratorConfig.RecordAdoptionStrategy.html" title="enum class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.RecordAdoptionStrategy</a></dt>
 <dd>
 <div class="block">Will always generate classes.</div>
@@ -104,6 +108,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/micronaut/jsonschema/generator/aggregator/AnnotationsAggregator.html#%3Cinit%3E()" class="member-name-link">AnnotationsAggregator()</a> - Constructor for class io.micronaut.jsonschema.generator.aggregator.<a href="io/micronaut/jsonschema/generator/aggregator/AnnotationsAggregator.html" title="class in io.micronaut.jsonschema.generator.aggregator">AnnotationsAggregator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html#APPLICATION_BEANS" class="member-name-link">APPLICATION_BEANS</a> - Enum constant in enum class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a></dt>
+<dd>
+<div class="block">Validate only bean definitions that originate from application classes generated in the
+current project (typically classes loaded from directories, not dependency JARs).</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#array()" class="member-name-link">array()</a> - Static method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchemaType.html#ARRAY" class="member-name-link">ARRAY</a> - Enum constant in enum class io.micronaut.jsonschema.configuration.validator.model.<a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchemaType.html" title="enum class in io.micronaut.jsonschema.configuration.validator.model">ConfigurationSchemaType</a></dt>
@@ -311,6 +320,8 @@ custom logic that goes beyond JSON Schema keywords.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html#DEFAULT_CACHE" class="member-name-link">DEFAULT_CACHE</a> - Static variable in class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator">ConfigurationValidatorConfiguration</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html#DEFAULT_DI_VALIDATION_STRATEGY" class="member-name-link">DEFAULT_DI_VALIDATION_STRATEGY</a> - Static variable in class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator">ConfigurationValidatorConfiguration</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/HealthConfiguration.html#DEFAULT_ENABLED" class="member-name-link">DEFAULT_ENABLED</a> - Static variable in class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/HealthConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator">HealthConfiguration</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html#DEFAULT_FAIL_ON_NOT_PRESENT" class="member-name-link">DEFAULT_FAIL_ON_NOT_PRESENT</a> - Static variable in class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator">ConfigurationValidatorConfiguration</a></dt>
@@ -325,7 +336,13 @@ custom logic that goes beyond JSON Schema keywords.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html#%3Cinit%3E()" class="member-name-link">DefaultDependencyInjectionValidator()</a> - Constructor for class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html" title="class in io.micronaut.jsonschema.configuration.validator">DefaultDependencyInjectionValidator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html#%3Cinit%3E(io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration)" class="member-name-link">DefaultDependencyInjectionValidator(ConfigurationValidatorConfiguration)</a> - Constructor for class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html" title="class in io.micronaut.jsonschema.configuration.validator">DefaultDependencyInjectionValidator</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html#%3Cinit%3E(io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)" class="member-name-link">DefaultDependencyInjectionValidator(DependencyInjectionValidationStrategy)</a> - Constructor for class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html" title="class in io.micronaut.jsonschema.configuration.validator">DefaultDependencyInjectionValidator</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html#%3Cinit%3E(java.util.List)" class="member-name-link">DefaultDependencyInjectionValidator(List)</a> - Constructor for class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html" title="class in io.micronaut.jsonschema.configuration.validator">DefaultDependencyInjectionValidator</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html#%3Cinit%3E(java.util.List,io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)" class="member-name-link">DefaultDependencyInjectionValidator(List, DependencyInjectionValidationStrategy)</a> - Constructor for class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DefaultDependencyInjectionValidator.html" title="class in io.micronaut.jsonschema.configuration.validator">DefaultDependencyInjectionValidator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchema.html#defs()" class="member-name-link">defs()</a> - Method in record class io.micronaut.jsonschema.configuration.validator.model.<a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchema.html" title="class in io.micronaut.jsonschema.configuration.validator.model">ConfigurationSchema</a></dt>
 <dd>
@@ -353,6 +370,10 @@ runtime classpath and environment set, then validates bean wiring metadata.</div
 <dt><a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionErrors.html" class="type-name-link" title="interface in io.micronaut.jsonschema.configuration.validator">DependencyInjectionErrors</a> - Interface in <a href="io/micronaut/jsonschema/configuration/validator/package-summary.html">io.micronaut.jsonschema.configuration.validator</a></dt>
 <dd>
 <div class="block">Provides the current dependency-injection validation result set.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html" class="type-name-link" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a> - Enum Class in <a href="io/micronaut/jsonschema/configuration/validator/package-summary.html">io.micronaut.jsonschema.configuration.validator</a></dt>
+<dd>
+<div class="block">Strategy used to choose which bean definitions are validated for dependency injection.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidator.html" class="type-name-link" title="interface in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidator</a> - Interface in <a href="io/micronaut/jsonschema/configuration/validator/package-summary.html">io.micronaut.jsonschema.configuration.validator</a></dt>
 <dd>
@@ -502,6 +523,8 @@ runtime classpath and environment set, then validates bean wiring metadata.</div
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/cli/DependencyInjectionConfigurationValidator.html#forClasspath(java.lang.String,java.util.List,boolean,java.util.List)" class="member-name-link">forClasspath(String, List, boolean, List)</a> - Static method in class io.micronaut.jsonschema.configuration.validator.cli.<a href="io/micronaut/jsonschema/configuration/validator/cli/DependencyInjectionConfigurationValidator.html" title="class in io.micronaut.jsonschema.configuration.validator.cli">DependencyInjectionConfigurationValidator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/cli/DependencyInjectionConfigurationValidator.html#forClasspath(java.lang.String,java.util.List,boolean,java.util.List,io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)" class="member-name-link">forClasspath(String, List, boolean, List, DependencyInjectionValidationStrategy)</a> - Static method in class io.micronaut.jsonschema.configuration.validator.cli.<a href="io/micronaut/jsonschema/configuration/validator/cli/DependencyInjectionConfigurationValidator.html" title="class in io.micronaut.jsonschema.configuration.validator.cli">DependencyInjectionConfigurationValidator</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/cli/JsonSchemaConfigurationValidator.html#forClasspath(java.lang.String,java.util.List,io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator)" class="member-name-link">forClasspath(String, List, ConfigurationJsonSchemaValidator)</a> - Static method in class io.micronaut.jsonschema.configuration.validator.cli.<a href="io/micronaut/jsonschema/configuration/validator/cli/JsonSchemaConfigurationValidator.html" title="class in io.micronaut.jsonschema.configuration.validator.cli">JsonSchemaConfigurationValidator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchema.html#format()" class="member-name-link">format()</a> - Method in record class io.micronaut.jsonschema.configuration.validator.model.<a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchema.html" title="class in io.micronaut.jsonschema.configuration.validator.model">ConfigurationSchema</a></dt>
@@ -576,6 +599,11 @@ what the Source Generation from Json Schema plugin would do.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/utils/GeneratorContext.html#getDefinitionType(java.lang.String)" class="member-name-link">getDefinitionType(String)</a> - Method in class io.micronaut.jsonschema.generator.utils.<a href="io/micronaut/jsonschema/generator/utils/GeneratorContext.html" title="class in io.micronaut.jsonschema.generator.utils">GeneratorContext</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html#getDependencyInjectionValidationStrategy()" class="member-name-link">getDependencyInjectionValidationStrategy()</a> - Method in class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator">ConfigurationValidatorConfiguration</a></dt>
+<dd>
+<div class="block">Strategy used to determine which bean definitions should be validated for dependency
+injection consistency.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getDescription()" class="member-name-link">getDescription()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getDiscriminator()" class="member-name-link">getDiscriminator()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
@@ -1335,6 +1363,11 @@ what the Source Generation from Json Schema plugin would do.</div>
 <dd>
 <div class="block">Set the raw value.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html#REACHABLE" class="member-name-link">REACHABLE</a> - Enum constant in enum class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a></dt>
+<dd>
+<div class="block">Validate only reachable roots (for example <code>@Context</code>, controllers, startup listeners,
+and beans with executable entry points) and their traversed dependencies.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/utils/SourceGeneratorConfig.html#recordAdoptionStrategy()" class="member-name-link">recordAdoptionStrategy()</a> - Method in record class io.micronaut.jsonschema.generator.utils.<a href="io/micronaut/jsonschema/generator/utils/SourceGeneratorConfig.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./io/micronaut/jsonschema/generator/utils/SourceGeneratorConfig.html#param-recordAdoptionStrategy"><code>recordAdoptionStrategy</code></a> record component.</div>
@@ -1449,6 +1482,8 @@ what the Source Generation from Json Schema plugin would do.</div>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#setContains(io.micronaut.jsonschema.model.Schema)" class="member-name-link">setContains(Schema)</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#setDefaultValue(java.lang.Object)" class="member-name-link">setDefaultValue(Object)</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html#setDependencyInjectionValidationStrategy(io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy)" class="member-name-link">setDependencyInjectionValidationStrategy(DependencyInjectionValidationStrategy)</a> - Method in class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator">ConfigurationValidatorConfiguration</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#setDeprecated(boolean)" class="member-name-link">setDeprecated(boolean)</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
@@ -1838,6 +1873,10 @@ entry) and return any additional <a href="io/micronaut/jsonschema/configuration/
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchemaType.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.micronaut.jsonschema.configuration.validator.model.<a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchemaType.html" title="enum class in io.micronaut.jsonschema.configuration.validator.model">ConfigurationSchemaType</a></dt>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
@@ -1855,6 +1894,11 @@ entry) and return any additional <a href="io/micronaut/jsonschema/configuration/
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/ConfigurationError.Type.html#values()" class="member-name-link">values()</a> - Static method in enum class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/ConfigurationError.Type.html" title="enum class in io.micronaut.jsonschema.configuration.validator">ConfigurationError.Type</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html#values()" class="member-name-link">values()</a> - Static method in enum class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html" title="enum class in io.micronaut.jsonschema.configuration.validator">DependencyInjectionValidationStrategy</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>

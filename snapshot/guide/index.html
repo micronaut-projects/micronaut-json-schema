@@ -2056,6 +2056,22 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 <p>Use <code>--suppress-inject-errors</code> to suppress DI errors for specific bean classes or packages. Patterns support exact fully-qualified class names and <code><strong></code> wildcards (for example <code>com.example.LegacyBean</code> or <code>com.example.generated.</strong></code>).</p>
 </div>
 <div class="paragraph">
+<p>Use <code>--dependency-injection-validation-strategy</code> to control validation scope:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>reachable</code> (default): validates only reachable roots (<code>@Context</code>, controllers, startup listeners, and entry points)</p>
+</li>
+<li>
+<p><code>application-beans</code>: validates only application bean definitions generated in the current project (and ignores dependency JAR bean definitions)</p>
+</li>
+<li>
+<p><code>all-beans</code>: validates all bean definitions on the classpath (slowest option)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
 <p>The JSON report (<code>configuration-errors.json</code>) adds a <code>dependencyInjectionErrors</code> array containing entries such as:</p>
 </div>
 <div class="ulist">
@@ -2107,6 +2123,7 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 <div class="listingblock multi-language-sample">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.jsonschema.configuration.validator.dependency-injection.enabled=true
+micronaut.jsonschema.configuration.validator.dependency-injection.validation-strategy=reachable
 micronaut.jsonschema.configuration.validator.injecterrors.endpoint.enabled=true
 endpoints.all.sensitive=false
 endpoints.injecterrors.sensitive=false
@@ -2121,6 +2138,7 @@ endpoints.health.injecterrors.enabled=true</code></pre>
       validator:
         dependency-injection:
           enabled: true
+          validation-strategy: reachable
         injecterrors:
           endpoint:
             enabled: true
@@ -2142,6 +2160,7 @@ endpoints:
       [micronaut.jsonschema.configuration.validator]
         [micronaut.jsonschema.configuration.validator.dependency-injection]
           enabled=true
+          validation-strategy="reachable"
         [micronaut.jsonschema.configuration.validator.injecterrors]
           [micronaut.jsonschema.configuration.validator.injecterrors.endpoint]
             enabled=true
@@ -2163,6 +2182,7 @@ endpoints:
       validator {
         dependencyInjection {
           enabled = true
+          validationStrategy = "reachable"
         }
         injecterrors {
           endpoint {
@@ -2197,6 +2217,7 @@ endpoints {
         validator {
           dependency-injection {
             enabled = true
+            validation-strategy = "reachable"
           }
           injecterrors {
             endpoint {
@@ -2231,7 +2252,8 @@ endpoints {
       "configuration": {
         "validator": {
           "dependency-injection": {
-            "enabled": true
+            "enabled": true,
+            "validation-strategy": "reachable"
           },
           "injecterrors": {
             "endpoint": {
@@ -2364,6 +2386,12 @@ Invalid configuration often causes application startup failures (for example if 
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.suppressions</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.util.List</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Patterns used to suppress validation errors</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.dependency-injection-validation-strategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../api/io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html">DependencyInjectionValidationStrategy</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The DI validation strategy. Default value {@code REACHABLE}</p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 </tbody>
