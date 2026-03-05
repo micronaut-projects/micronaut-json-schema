@@ -83,6 +83,12 @@ When enabled, console, JSON, and HTML outputs include a dedicated DI section (er
 
 Use `--suppress-inject-errors` to suppress DI errors for specific bean classes or packages. Patterns support exact fully-qualified class names and `*` wildcards (for example `com.example.LegacyBean` or `com.example.generated.*`).
 
+Use `--dependency-injection-validation-strategy` to control validation scope:
+
+* `reachable` (default): validates only reachable roots (`@Context`, controllers, startup listeners, and entry points)
+* `application-beans`: validates only application bean definitions generated in the current project (and ignores dependency JAR bean definitions)
+* `all-beans`: validates all bean definitions on the classpath (slowest option)
+
 The JSON report (`configuration-errors.json`) adds a `dependencyInjectionErrors` array containing entries such as:
 
 * `rootBean`
@@ -110,6 +116,7 @@ micronaut:
       validator:
         dependency-injection:
           enabled: true
+          validation-strategy: reachable
         injecterrors:
           endpoint:
             enabled: true
