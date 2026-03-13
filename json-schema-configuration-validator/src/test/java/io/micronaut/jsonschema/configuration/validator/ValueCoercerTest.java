@@ -170,6 +170,7 @@ class ValueCoercerTest {
             null,
             null,
             null,
+            null,
             javaType,
             null,
             null,
@@ -191,6 +192,7 @@ class ValueCoercerTest {
 
     private static ConfigurationSchema emptyRootSchema() {
         return new ConfigurationSchema(
+            null,
             null,
             null,
             null,

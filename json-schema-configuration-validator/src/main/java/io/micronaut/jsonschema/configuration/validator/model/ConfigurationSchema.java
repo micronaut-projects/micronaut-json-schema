@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.configuration.validator.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.serde.annotation.Serdeable;
@@ -50,6 +51,7 @@ import java.util.Map;
  * @param uniqueItems Whether array items must be unique
  * @param multipleOf Numeric multiple-of constraint
  * @param constValue Constant value constraint
+ * @param defaultValue Default value mapped from {@code default} / {@code defaultValue}
  * @param properties Object properties mapped from {@code properties}
  * @param required Required property names mapped from {@code required}
  * @param minProperties Minimum number of properties for object values
@@ -146,6 +148,11 @@ public record ConfigurationSchema(
      * Constant value constraint.
      */
     @Nullable @JsonProperty("const") Object constValue,
+
+    /**
+     * Default value for the root schema node.
+     */
+    @Nullable @JsonProperty("defaultValue") @JsonAlias("default") Object defaultValue,
 
     /**
      * Object properties mapped from {@code properties}.
