@@ -45,6 +45,24 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(schemas.containsKey("test.enum.EnumConfig.json"));
         assertTrue(schemas.containsKey("test.pattern.PatternConfig.json"));
         assertTrue(schemas.containsKey("test.url.UrlConfig.json"));
+        assertTrue(schemas.containsKey("test.bindable.BindableDefaultsConfig.json"));
+    }
+
+    @Test
+    void doesNotReportMissingRequiredForPropertiesWithSchemaDefault() {
+        Environment environment = createEnvironment(Map.of(
+            "test.bindable.enabled", StringUtils.TRUE
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.bindable.initial-pool-size")
+            && e.message().contains("Missing required")), () -> "Unexpected missing required error for initial-pool-size: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.bindable.max-pool-size")
+            && e.message().contains("Missing required")), () -> "Unexpected missing required error for max-pool-size: " + errors);
     }
 
     @Test

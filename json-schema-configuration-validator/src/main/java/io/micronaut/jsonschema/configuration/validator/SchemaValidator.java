@@ -94,6 +94,13 @@ final class SchemaValidator {
         List<String> required = schema.required();
         if (required != null) {
             for (String req : required) {
+                ConfigurationSchemaProperty requiredProperty = properties.get(req);
+                if (requiredProperty != null) {
+                    ConfigurationSchemaProperty resolvedRequiredProperty = ctx.refResolver().resolveRef(requiredProperty);
+                    if ((resolvedRequiredProperty != null && resolvedRequiredProperty.defaultValue() != null) || requiredProperty.defaultValue() != null) {
+                        continue;
+                    }
+                }
                 if (!instance.containsKey(req)) {
                     String missingComputed = computedPropertyName + "." + req;
                     String missingResolved = ctx.resolvedPropertyName(missingComputed, null, wildcardReplacement);

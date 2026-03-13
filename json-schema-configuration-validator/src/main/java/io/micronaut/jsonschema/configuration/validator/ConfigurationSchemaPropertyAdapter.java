@@ -38,6 +38,7 @@ final class ConfigurationSchemaPropertyAdapter {
             schema.uniqueItems(),
             schema.multipleOf(),
             schema.constValue(),
+            schema.defaultValue(),
             null,
             null,
             null,

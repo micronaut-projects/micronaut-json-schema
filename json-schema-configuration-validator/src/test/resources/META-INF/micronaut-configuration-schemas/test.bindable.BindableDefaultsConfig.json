@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.bindable.BindableDefaultsConfig",
+  "title": "test.bindable.BindableDefaultsConfig",
+  "x-micronaut": {
+    "prefix": "test.bindable",
+    "type": "test.bindable.BindableDefaultsConfig",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "initial-pool-size": {
+      "type": "integer",
+      "default": 1,
+      "x-micronaut-javaType": "java.lang.Integer",
+      "x-micronaut-path": "test.bindable.initial-pool-size"
+    },
+    "max-pool-size": {
+      "type": "integer",
+      "default": 8,
+      "x-micronaut-javaType": "java.lang.Integer",
+      "x-micronaut-path": "test.bindable.max-pool-size"
+    },
+    "enabled": {
+      "type": "boolean",
+      "x-micronaut-javaType": "java.lang.Boolean",
+      "x-micronaut-path": "test.bindable.enabled"
+    }
+  },
+  "required": [
+    "initial-pool-size",
+    "max-pool-size"
+  ]
+}
