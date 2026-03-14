@@ -401,6 +401,68 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['speed'].type == [Schema.Type.NUMBER]
     }
 
+    void "schema with JsonUnwrapped and JsonSchema on unwrapped type"() {
+        given:
+        def schema = buildJsonSchema('test.Whale', 'whale', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import io.micronaut.jsonschema.JsonSchema;
+        import java.util.*;
+
+        @JsonSchema
+        record Aquatic(
+                float finLength,
+                double speed
+        ) {
+        }
+
+        @JsonSchema
+        public record Whale (
+                String color,
+                double weight,
+                @JsonUnwrapped
+                Aquatic otherProperties
+        ) {
+        }
+""")
+        expect:
+        schema.title == "Whale"
+        schema.properties.size() == 4
+        schema.properties['color'].type == [Schema.Type.STRING]
+        schema.properties['weight'].type == [Schema.Type.NUMBER]
+        schema.properties['finLength'].type == [Schema.Type.NUMBER]
+        schema.properties['speed'].type == [Schema.Type.NUMBER]
+    }
+
+    void "schema with JsonUnwrapped and no properties on unwrapped type"() {
+        given:
+        def schema = buildJsonSchema('test.Whale', 'whale', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import io.micronaut.jsonschema.JsonSchema;
+        import java.util.*;
+
+        record EmptyAquatic() {
+        }
+
+        @JsonSchema
+        public record Whale (
+                String color,
+                double weight,
+                @JsonUnwrapped
+                EmptyAquatic otherProperties
+        ) {
+        }
+""")
+        expect:
+        schema.title == "Whale"
+        schema.properties.size() == 2
+        schema.properties['color'].type == [Schema.Type.STRING]
+        schema.properties['weight'].type == [Schema.Type.NUMBER]
+    }
+
     void "schema with JsonGetter and JsonSetter"() {
         given:
         def schema = buildJsonSchema('test.Turtle', 'turtle', """
