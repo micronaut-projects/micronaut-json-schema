@@ -32,7 +32,6 @@ import java.util.Map;
 /**
  * A JSON schema.
  */
-@SuppressWarnings({"checkstyle:MethodName", "checkstyle:ParameterName"})
 @Internal
 public final class Schema {
 
