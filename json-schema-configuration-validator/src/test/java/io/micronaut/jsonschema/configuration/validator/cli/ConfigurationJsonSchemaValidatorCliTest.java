@@ -752,6 +752,34 @@ class ConfigurationJsonSchemaValidatorCliTest {
     }
 
     @Test
+    void cliResolvesAutoTestResourcesPlaceholdersDuringConfigurationValidation() throws Exception {
+        Path cp = tempDir.resolve("cp-auto-test-resources");
+        Files.createDirectories(cp);
+        Files.writeString(cp.resolve("application.properties"), String.join("\n",
+            "micronaut.application.name=${auto.test.resources.micronaut.application.name}",
+            ""
+        ), StandardCharsets.UTF_8);
+
+        Path out = tempDir.resolve("out-auto-test-resources");
+        ByteArrayOutputStream errCapture = new ByteArrayOutputStream();
+        PrintStream err = new PrintStream(errCapture, true, StandardCharsets.UTF_8);
+
+        String classpath = cp + File.pathSeparator + System.getProperty("java.class.path");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", classpath,
+            "--environments", "test",
+            "--out", out.toString(),
+            "--format", "json"
+        }, System.out, err);
+
+        assertEquals(0, exit, () -> "Unexpected stderr:\n" + errCapture.toString(StandardCharsets.UTF_8));
+        assertTrue(Files.exists(out.resolve("configuration-errors.json")));
+
+        String stderr = errCapture.toString(StandardCharsets.UTF_8);
+        assertFalse(stderr.contains("Could not resolve placeholder"), () -> "Unexpected stderr:\n" + stderr);
+    }
+
+    @Test
     void cliRendersRelativeOriginPathsWhenConfigured() throws Exception {
         Path project = tempDir.resolve("project");
         Path resources = project.resolve("src/main/resources");
