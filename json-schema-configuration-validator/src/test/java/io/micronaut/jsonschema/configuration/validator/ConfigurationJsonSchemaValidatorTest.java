@@ -143,6 +143,43 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
+    void validatesMicronautSqlDatasourceConfigurationFromPublishedRelease() {
+        Environment environment = createEnvironment(Map.of(
+            "datasources.default.driver-class-name", "org.h2.Driver",
+            "datasources.default.url", "jdbc:h2:mem:devDb;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE",
+            "datasources.default.username", "sa",
+            "datasources.default.password", ""
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertFalse(errors.stream().anyMatch(e -> e.property().startsWith("datasources.default") && e.message().contains("not present")),
+            () -> "Unexpected datasource unknown-key validation error(s): " + errors);
+    }
+
+    @Test
+    void validatesIssue316ApplicationPropertiesSnippetWithDataJdbcFixture() {
+        Environment environment = createEnvironment(Map.of(
+            "datasources.default.dialect", "H2",
+            "datasources.default.driver-class-name", "org.h2.Driver",
+            "datasources.default.url", "jdbc:h2:mem:devDb;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE",
+            "datasources.default.username", "sa",
+            "datasources.default.password", ""
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertFalse(errors.stream().anyMatch(e -> e.property().startsWith("datasources.default") && e.message().contains("not present")),
+            () -> "Unexpected datasource unknown-key validation error(s): " + errors);
+    }
+
+    @Test
     void validatesAdditionalPropertiesSchemaEvenWhenFailOnNotPresentIsFalse() {
         Environment environment = createEnvironment(Map.of(
             "test.executors.alpha.n-threads", "0"

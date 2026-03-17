@@ -29,6 +29,7 @@ dependencies {
     testImplementation(mn.micronaut.management)
     testImplementation(mn.micronaut.http.client)
     testImplementation(mn.micronaut.jackson.databind)
+    testImplementation(libs.micronaut.sql.jdbc.hikari)
     testImplementation(mn.snakeyaml)
     testImplementation(libs.micronaut.toml)
 
