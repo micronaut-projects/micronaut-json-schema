@@ -23,6 +23,7 @@ micronaut-validation = "5.0.0-M1"
 managed-json-schema-validator = "1.5.9"
 java-parser = "3.28.0"
 micronaut-toml = "2.8.0"
+micronaut-sql = "7.0.0-M7"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
@@ -35,6 +36,7 @@ managed-json-schema-validator = { module = "com.networknt:json-schema-validator"
 java-parser = { module = "com.github.javaparser:javaparser-core", version.ref = "java-parser" }
 
 micronaut-toml = { module = "io.micronaut.toml:micronaut-toml", version.ref = "micronaut-toml" }
+micronaut-sql-jdbc-hikari = { module = "io.micronaut.sql:micronaut-jdbc-hikari", version.ref = "micronaut-sql" }
 
 [bundles]
 
