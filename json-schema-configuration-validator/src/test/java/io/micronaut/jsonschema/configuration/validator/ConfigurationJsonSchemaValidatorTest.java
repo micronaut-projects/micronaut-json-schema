@@ -156,8 +156,7 @@ class ConfigurationJsonSchemaValidatorTest {
 
         Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
 
-        assertFalse(errors.stream().anyMatch(e -> e.property().startsWith("datasources.default") && e.message().contains("not present")),
-            () -> "Unexpected datasource unknown-key validation error(s): " + errors);
+        assertTrue(errors.isEmpty(), () -> "Expected no errors, got: " + errors);
     }
 
     @Test
@@ -175,8 +174,7 @@ class ConfigurationJsonSchemaValidatorTest {
 
         Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
 
-        assertFalse(errors.stream().anyMatch(e -> e.property().startsWith("datasources.default") && e.message().contains("not present")),
-            () -> "Unexpected datasource unknown-key validation error(s): " + errors);
+        assertTrue(errors.isEmpty(), () -> "Expected no errors, got: " + errors);
     }
 
     @Test
