@@ -116,7 +116,19 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                     .ifPresent(propertySchema::setDescription);
                 if (property.hasAnnotation(JsonUnwrapped.class)) {
                     schema.getProperties().remove(property.getName());
-                    schema.getProperties().putAll(propertySchema.getProperties());
+                    Map<String, Schema> unwrappedProperties = propertySchema.getProperties();
+                    if (unwrappedProperties == null && propertySchema.has$ref()) {
+                        Schema resolvedSchema = context.createdSchemasByType().get(property.getGenericType().getName());
+                        if (resolvedSchema == null) {
+                            resolvedSchema = JsonSchemaVisitor.createTopLevelSchema(property, visitorContext, context);
+                        }
+                        if (resolvedSchema != null) {
+                            unwrappedProperties = resolvedSchema.getProperties();
+                        }
+                    }
+                    if (unwrappedProperties != null) {
+                        schema.getProperties().putAll(unwrappedProperties);
+                    }
                 } else if (!name.equals(property.getName())) {
                     schema.getProperties().remove(property.getName());
                     schema.putProperty(name, propertySchema);
