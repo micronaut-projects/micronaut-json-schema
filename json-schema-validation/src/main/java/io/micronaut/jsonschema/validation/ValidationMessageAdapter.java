@@ -15,36 +15,39 @@
  */
 package io.micronaut.jsonschema.validation;
 
+import com.networknt.schema.Error;
 import io.micronaut.core.annotation.Internal;
+import org.jspecify.annotations.NonNull;
 
 /**
- * Adapter from {@link com.networknt.schema.ValidationMessage} into {@link ValidationMessage}.
+ * Adapter from {@link Error} into {@link ValidationMessage}.
+ *
  * @author Sergio del Amo
  * @since 1.0.0
  */
 @Internal
 public class ValidationMessageAdapter implements ValidationMessage {
-    private final com.networknt.schema.ValidationMessage validationMessage;
+    private final Error error;
 
     /**
-     *
-     * @param validationMessage Original validation message.
+     * @param error Original validation error.
      */
-    public ValidationMessageAdapter(com.networknt.schema.ValidationMessage validationMessage) {
-        this.validationMessage = validationMessage;
+    public ValidationMessageAdapter(Error error) {
+        this.error = error;
     }
 
     @Override
+    @NonNull
     public String getMessage() {
-        return validationMessage.getMessage();
+        return error.toString();
     }
 
     /**
-     *
-     * @return Original validation message.
+     * @return Original validation error.
      */
-    public com.networknt.schema.ValidationMessage getValidationMessage() {
-        return validationMessage;
+    @NonNull
+    public Error getError() {
+        return error;
     }
 
     @Override

@@ -15,14 +15,15 @@
  */
 package io.micronaut.jsonschema.validation;
 
-import com.networknt.schema.PathType;
-import com.networknt.schema.SchemaValidatorsConfig;
+import com.networknt.schema.SchemaRegistryConfig;
+import com.networknt.schema.path.PathType;
 import io.micronaut.context.annotation.Bean;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.core.annotation.Internal;
 
 /**
- * {@link Factory} to instantiate {@link SchemaValidatorsConfig} beans related to JSON Schema validation.
+ * {@link Factory} to instantiate {@link SchemaRegistryConfig} beans related to JSON Schema validation.
+ *
  * @author Sergio del Amo
  * @since 1.0.0
  */
@@ -30,9 +31,10 @@ import io.micronaut.core.annotation.Internal;
 @Factory
 class JsonSchemaValidationFactory {
     @Bean
-    SchemaValidatorsConfig jsonSchemaValidator() {
-        var config = new SchemaValidatorsConfig();
-        config.setPathType(PathType.JSON_POINTER);
-        return config;
+    SchemaRegistryConfig jsonSchemaValidator() {
+        return SchemaRegistryConfig.builder()
+            .pathType(PathType.JSON_POINTER)
+            .formatAssertionsEnabled(true)
+            .build();
     }
 }
