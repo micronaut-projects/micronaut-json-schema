@@ -31,7 +31,7 @@ import io.micronaut.core.annotation.Internal;
 @Factory
 class JsonSchemaValidationFactory {
     @Bean
-    SchemaRegistryConfig jsonSchemaValidator() {
+    SchemaRegistryConfig schemaRegistryConfig() {
         return SchemaRegistryConfig.builder()
             .pathType(PathType.JSON_POINTER)
             .formatAssertionsEnabled(true)
