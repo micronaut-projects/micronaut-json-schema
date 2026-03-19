@@ -63,8 +63,13 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         this.jsonMapper = jsonMapper;
         this.jsonSchemaClassPathResourceLoader = jsonSchemaClassPathResourceLoader;
         this.schemaRegistry = SchemaRegistry.withDialect(Dialects.getDraft202012(), builder -> builder
-            .schemaRegistryConfig(schemaRegistryConfig)
-            .resourceLoaders(resourceLoaders -> resourceLoaders.add(new ClasspathSchemaResourceLoader(jsonSchemaConfiguration))));
+                .schemaRegistryConfig(schemaRegistryConfig)
+                .resourceLoaders(resourceLoaders -> resourceLoaders.add(new ClasspathSchemaResourceLoader(
+                        jsonSchemaConfiguration,
+                        config.baseUri(),
+                        config.classpathFolder(),
+                        resourceLoader
+                ))));
     }
 
     @Override
