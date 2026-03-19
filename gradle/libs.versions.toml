@@ -23,7 +23,7 @@ micronaut-validation = "5.0.0-M1"
 managed-json-schema-validator = "3.0.1"
 java-parser = "3.28.0"
 micronaut-toml = "2.8.0"
-micronaut-sql = "7.0.0"
+micronaut-sql = "7.0.0-M8"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
