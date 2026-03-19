@@ -39,7 +39,7 @@ public class ValidationMessageAdapter implements ValidationMessage {
     @Override
     @NonNull
     public String getMessage() {
-        return error.toString();
+        return error.getMessage();
     }
 
     /**
