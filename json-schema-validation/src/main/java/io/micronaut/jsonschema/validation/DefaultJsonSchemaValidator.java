@@ -133,21 +133,35 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         return messages;
     }
 
-    private final class ClasspathSchemaResourceLoader implements com.networknt.schema.resource.ResourceLoader {
+    private static final class ClasspathSchemaResourceLoader implements com.networknt.schema.resource.ResourceLoader {
         private final JsonSchemaConfiguration jsonSchemaConfiguration;
+        private final String baseUri;
+        private final String fallbackClasspathFolder;
+        private final ResourceLoader resourceLoader;
 
-        private ClasspathSchemaResourceLoader(JsonSchemaConfiguration jsonSchemaConfiguration) {
+        private ClasspathSchemaResourceLoader(JsonSchemaConfiguration jsonSchemaConfiguration,
+                                             String baseUri,
+                                             String fallbackClasspathFolder,
+                                             ResourceLoader resourceLoader) {
             this.jsonSchemaConfiguration = jsonSchemaConfiguration;
+            this.baseUri = baseUri;
+            this.fallbackClasspathFolder = fallbackClasspathFolder;
+            this.resourceLoader = resourceLoader;
         }
 
         @Override
         public InputStreamSource getResource(AbsoluteIri absoluteIri) {
             String path = URI.create(absoluteIri.toString()).toString();
-            if (path.startsWith(config.baseUri())) {
-                path = path.substring(config.baseUri().length());
+            if (baseUri != null && !baseUri.isEmpty() && path.startsWith(baseUri)) {
+                path = path.substring(baseUri.length());
             }
             String classpathFolder = JsonSchemaResourceUtils.generatedSchemasFolder(jsonSchemaConfiguration);
-            String filePath = JsonSchemaResourceUtils.resolvePathWithinFolder(classpathFolder, path, absoluteIri.toString(), config.classpathFolder());
+            String filePath = JsonSchemaResourceUtils.resolvePathWithinFolder(
+                classpathFolder,
+                path,
+                absoluteIri.toString(),
+                fallbackClasspathFolder
+            );
             return () -> resourceLoader.getResourceAsStream(JsonSchemaResourceUtils.CLASSPATH_PREFIX + filePath)
                 .orElseThrow(() -> new IllegalArgumentException("No schema found for uri: " + absoluteIri + " at path: " + filePath));
         }
