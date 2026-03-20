@@ -628,6 +628,8 @@ injection consistency.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getEnumValues()" class="member-name-link">getEnumValues()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#getError()" class="member-name-link">getError()</a> - Method in class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getExamples()" class="member-name-link">getExamples()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getExclusiveMaximum()" class="member-name-link">getExclusiveMaximum()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
@@ -724,8 +726,6 @@ injection consistency.</div>
 <dd>
 <div class="block">Extracts a Java type definition (<code>TypeDef</code>) from a given JSON schema.</div>
 </dd>
-<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#getValidationMessage()" class="member-name-link">getValidationMessage()</a> - Method in class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/JsonSchemaVisitor.html#getVisitorKind()" class="member-name-link">getVisitorKind()</a> - Method in class io.micronaut.jsonschema.visitor.<a href="io/micronaut/jsonschema/visitor/JsonSchemaVisitor.html" title="class in io.micronaut.jsonschema.visitor">JsonSchemaVisitor</a></dt>
 <dd>&nbsp;</dd>
 </dl>
@@ -1879,9 +1879,9 @@ entry) and return any additional <a href="io/micronaut/jsonschema/configuration/
 </dd>
 <dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" class="type-name-link" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a> - Class in <a href="io/micronaut/jsonschema/validation/package-summary.html">io.micronaut.jsonschema.validation</a></dt>
 <dd>
-<div class="block">Adapter from <code>ValidationMessage</code> into <a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation"><code>ValidationMessage</code></a>.</div>
+<div class="block">Adapter from <code>Error</code> into <a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation"><code>ValidationMessage</code></a>.</div>
 </dd>
-<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#%3Cinit%3E(com.networknt.schema.ValidationMessage)" class="member-name-link">ValidationMessageAdapter(ValidationMessage)</a> - Constructor for class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#%3Cinit%3E(com.networknt.schema.Error)" class="member-name-link">ValidationMessageAdapter(Error)</a> - Constructor for class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchemaType.html#value()" class="member-name-link">value()</a> - Method in enum class io.micronaut.jsonschema.configuration.validator.model.<a href="io/micronaut/jsonschema/configuration/validator/model/ConfigurationSchemaType.html" title="enum class in io.micronaut.jsonschema.configuration.validator.model">ConfigurationSchemaType</a></dt>
 <dd>&nbsp;</dd>
