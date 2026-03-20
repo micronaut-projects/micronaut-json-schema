@@ -124,7 +124,7 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
-    void unresolvedPlaceholderReportedAsWarningInsteadOfCrash() {
+    void unresolvedPlaceholderProducesWarningWithoutException() {
         Environment environment = createEnvironment(Map.of(
             "test.config.enabled", "${nonexistent.placeholder}",
             "test.config.count", "1"
@@ -141,7 +141,7 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
-    void unresolvedPlaceholderInEachPropertyReportedAsWarningInsteadOfCrash() {
+    void unresolvedPlaceholderInEachPropertyProducesWarningWithoutException() {
         Environment environment = createEnvironment(Map.of(
             "test.executors.alpha.n-threads", "${nonexistent.threads}",
             "test.executors.alpha.type", "FIXED"
