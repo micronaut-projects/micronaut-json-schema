@@ -347,7 +347,11 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             try {
                 flat = environment.getProperties(prefix, StringConvention.HYPHENATED);
             } catch (ConfigurationException e) {
-                errors.add(ConfigurationError.builder(prefix, e.getMessage())
+                String message = e.getMessage();
+                if (message == null) {
+                    message = "Failed to read configuration properties for prefix '" + prefix + "': " + e.getClass().getName();
+                }
+                errors.add(ConfigurationError.builder(prefix, message)
                     .type(ConfigurationError.Type.WARNING)
                     .build());
                 return;
@@ -398,9 +402,10 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                 try {
                     flat = environment.getProperties(entryPrefix, StringConvention.HYPHENATED);
                 } catch (ConfigurationException e) {
-                    errors.add(ConfigurationError.builder(entryPrefix, e.getMessage())
-                        .type(ConfigurationError.Type.WARNING)
-                        .build());
+                    String message = e.getMessage() != null
+                        ? e.getMessage()
+                        : "Configuration error while reading properties for prefix '" + entryPrefix + "'";
+                    errors.add(ctx.warning(entryPrefix, message));
                     continue;
                 }
                 Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
