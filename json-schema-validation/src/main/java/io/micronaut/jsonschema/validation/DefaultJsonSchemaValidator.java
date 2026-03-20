@@ -15,90 +15,91 @@
  */
 package io.micronaut.jsonschema.validation;
 
-import com.networknt.schema.SpecVersion;
 import com.networknt.schema.AbsoluteIri;
+import com.networknt.schema.Error;
 import com.networknt.schema.InputFormat;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SchemaValidatorsConfig;
-import com.networknt.schema.ExecutionContextCustomizer;
-import com.networknt.schema.JsonSchema;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SchemaRegistryConfig;
+import com.networknt.schema.dialect.Dialects;
 import com.networknt.schema.resource.InputStreamSource;
-import com.networknt.schema.resource.SchemaLoader;
 import io.micronaut.core.annotation.Internal;
-import org.jspecify.annotations.NonNull;
 import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import io.micronaut.jsonschema.utils.JsonSchemaConfiguration;
 import io.micronaut.jsonschema.utils.JsonSchemaResourceUtils;
 import jakarta.inject.Singleton;
+import org.jspecify.annotations.NonNull;
+
 import java.io.IOException;
 import java.net.URI;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Singleton
 @Internal
 final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
-    private static final ExecutionContextCustomizer CONTEXT_CUSTOMIZER = (executionContext, validationContext) -> {
-        // By default, since Draft 2019-09 the format keyword only generates annotations and not assertions
-        validationContext.getConfig().setFormatAssertionsEnabled(true);
-    };
-
-    private final Map<Class<?>, JsonSchema> jsonSchemaCache = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Schema> jsonSchemaCache = new ConcurrentHashMap<>();
     private final JsonSchemaValidatorConfiguration config;
     private final ResourceLoader resourceLoader;
     private final JsonMapper jsonMapper;
-    private final SchemaValidatorsConfig schemaValidatorsConfig;
+    private final SchemaRegistry schemaRegistry;
     private final JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader;
-    private final JsonSchemaConfiguration jsonSchemaConfiguration;
 
     DefaultJsonSchemaValidator(
         JsonSchemaValidatorConfiguration config,
         ResourceLoader resourceLoader,
         JsonMapper jsonMapper,
-        SchemaValidatorsConfig schemaValidatorsConfig,
+        SchemaRegistryConfig schemaRegistryConfig,
         JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader,
         JsonSchemaConfiguration jsonSchemaConfiguration
     ) {
         this.config = config;
         this.resourceLoader = resourceLoader;
         this.jsonMapper = jsonMapper;
-        this.schemaValidatorsConfig = schemaValidatorsConfig;
         this.jsonSchemaClassPathResourceLoader = jsonSchemaClassPathResourceLoader;
-        this.jsonSchemaConfiguration = jsonSchemaConfiguration;
+        this.schemaRegistry = SchemaRegistry.withDialect(Dialects.getDraft202012(), builder -> builder
+                .schemaRegistryConfig(schemaRegistryConfig)
+                .resourceLoaders(resourceLoaders -> resourceLoaders.add(new ClasspathSchemaResourceLoader(
+                        jsonSchemaConfiguration,
+                        config.baseUri(),
+                        config.classpathFolder(),
+                        resourceLoader
+                ))));
     }
 
     @Override
     public <T> Set<? extends ValidationMessage> validate(@NonNull String json, @NonNull Class<T> type) {
-        JsonSchema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchema);
+        Schema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchema);
         return validate(schema, json);
     }
 
     @Override
     @NonNull
     public Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull Map<String, Object> jsonSchema) throws IOException {
-        JsonSchema schema = jsonSchema(jsonSchema);
+        Schema schema = jsonSchema(jsonSchema);
         return validate(schema, value);
     }
 
     @Override
     @NonNull
     public Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull String jsonSchema) throws IOException {
-        JsonSchema schema = jsonSchema(jsonSchema);
+        Schema schema = jsonSchema(jsonSchema);
         return validate(schema, value);
     }
 
     @Override
     @NonNull
     public <T> Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull Class<T> type) throws IOException {
-        JsonSchema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchema);
+        Schema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchema);
         return validate(schema, value);
     }
 
-    private <T> JsonSchema jsonSchema(@NonNull Class<T> type) {
+    private <T> Schema jsonSchema(@NonNull Class<T> type) {
         String jsonSchema = jsonSchemaClassPathResourceLoader.jsonSchemaStringForClass(type).orElse(null);
         if (jsonSchema == null) {
             throw new IllegalArgumentException("No schema found for type: " + type);
@@ -107,47 +108,67 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
     }
 
     @NonNull
-    private JsonSchema jsonSchema(@NonNull Map<String, Object> jsonSchema) {
+    private Schema jsonSchema(@NonNull Map<String, Object> jsonSchema) {
         try {
-            String jsonSchemaString = jsonMapper.writeValueAsString(jsonSchema);
-            return jsonSchema(jsonSchemaString);
+            return jsonSchema(jsonMapper.writeValueAsString(jsonSchema));
         } catch (IOException e) {
-            throw new IllegalArgumentException("could not serialize JSON Schema from: " + jsonSchema);
+            throw new IllegalArgumentException("could not serialize JSON Schema from: " + jsonSchema, e);
         }
     }
 
     @NonNull
-    private JsonSchema jsonSchema(@NonNull String jsonSchema) {
-        JsonSchemaFactory jsonSchemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012, builder -> {
-            builder.schemaLoaders(b -> b.add(new ResourceSchemaLoader()));
-        });
-        return jsonSchemaFactory.getSchema(jsonSchema, schemaValidatorsConfig);
+    private Schema jsonSchema(@NonNull String jsonSchema) {
+        return schemaRegistry.getSchema(jsonSchema, InputFormat.JSON);
     }
 
-    private Set<? extends ValidationMessage> validate(JsonSchema schema, Object value) throws IOException {
+    private Set<? extends ValidationMessage> validate(Schema schema, Object value) throws IOException {
         String json = value instanceof String s ? s : jsonMapper.writeValueAsString(value);
         return validate(schema, json);
     }
 
-    private static Set<? extends ValidationMessage> validate(JsonSchema schema, String json) {
-        return schema.validate(json, InputFormat.JSON, CONTEXT_CUSTOMIZER)
-            .stream()
-            .map(ValidationMessageAdapter::new)
-            .collect(Collectors.toSet());
+    private static Set<? extends ValidationMessage> validate(Schema schema, String json) {
+        return adapt(schema.validate(json, InputFormat.JSON));
     }
 
-    private final class ResourceSchemaLoader implements SchemaLoader {
+    private static Set<ValidationMessage> adapt(List<Error> errors) {
+        Set<ValidationMessage> messages = new LinkedHashSet<>(errors.size());
+        for (Error error : errors) {
+            messages.add(new ValidationMessageAdapter(error));
+        }
+        return messages;
+    }
+
+    private static final class ClasspathSchemaResourceLoader implements com.networknt.schema.resource.ResourceLoader {
+        private final JsonSchemaConfiguration jsonSchemaConfiguration;
+        private final String baseUri;
+        private final String fallbackClasspathFolder;
+        private final ResourceLoader resourceLoader;
+
+        private ClasspathSchemaResourceLoader(JsonSchemaConfiguration jsonSchemaConfiguration,
+                                             String baseUri,
+                                             String fallbackClasspathFolder,
+                                             ResourceLoader resourceLoader) {
+            this.jsonSchemaConfiguration = jsonSchemaConfiguration;
+            this.baseUri = baseUri;
+            this.fallbackClasspathFolder = fallbackClasspathFolder;
+            this.resourceLoader = resourceLoader;
+        }
+
         @Override
-        public InputStreamSource getSchema(AbsoluteIri absoluteIri) {
+        public InputStreamSource getResource(AbsoluteIri absoluteIri) {
             String path = URI.create(absoluteIri.toString()).toString();
-            if (path.startsWith(config.baseUri())) {
-                path = path.substring(config.baseUri().length());
+            if (baseUri != null && !baseUri.isEmpty() && path.startsWith(baseUri)) {
+                path = path.substring(baseUri.length());
             }
             String classpathFolder = JsonSchemaResourceUtils.generatedSchemasFolder(jsonSchemaConfiguration);
-            String filePath = JsonSchemaResourceUtils.resolvePathWithinFolder(classpathFolder, path, absoluteIri.toString(), config.classpathFolder());
+            String filePath = JsonSchemaResourceUtils.resolvePathWithinFolder(
+                classpathFolder,
+                path,
+                absoluteIri.toString(),
+                fallbackClasspathFolder
+            );
             return () -> resourceLoader.getResourceAsStream(JsonSchemaResourceUtils.CLASSPATH_PREFIX + filePath)
                 .orElseThrow(() -> new IllegalArgumentException("No schema found for uri: " + absoluteIri + " at path: " + filePath));
         }
     }
-
 }
