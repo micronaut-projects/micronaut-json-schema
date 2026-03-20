@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.env.Environment;
+import io.micronaut.context.exceptions.ConfigurationException;
 import io.micronaut.core.io.Readable;
 import io.micronaut.core.naming.conventions.StringConvention;
 import io.micronaut.core.type.Argument;
@@ -342,7 +343,15 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             if (!environment.containsProperties(prefix)) {
                 return;
             }
-            Map<String, Object> flat = environment.getProperties(prefix, StringConvention.HYPHENATED);
+            Map<String, Object> flat;
+            try {
+                flat = environment.getProperties(prefix, StringConvention.HYPHENATED);
+            } catch (ConfigurationException e) {
+                errors.add(ConfigurationError.builder(prefix, e.getMessage())
+                    .type(ConfigurationError.Type.WARNING)
+                    .build());
+                return;
+            }
             Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
             ConfigurationSchemaProperty root = ConfigurationSchemaPropertyAdapter.fromRoot(schema);
 
@@ -385,7 +394,15 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
 
             for (String entry : entries) {
                 String entryPrefix = prefix + "." + entry;
-                Map<String, Object> flat = environment.getProperties(entryPrefix, StringConvention.HYPHENATED);
+                Map<String, Object> flat;
+                try {
+                    flat = environment.getProperties(entryPrefix, StringConvention.HYPHENATED);
+                } catch (ConfigurationException e) {
+                    errors.add(ConfigurationError.builder(entryPrefix, e.getMessage())
+                        .type(ConfigurationError.Type.WARNING)
+                        .build());
+                    continue;
+                }
                 Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
                 Map<String, Object> effectiveInstance = removeOverlappingEachPropertySchemaKeys(instance, entrySchema, overlappingEachPropertySchemaKeys);
 
