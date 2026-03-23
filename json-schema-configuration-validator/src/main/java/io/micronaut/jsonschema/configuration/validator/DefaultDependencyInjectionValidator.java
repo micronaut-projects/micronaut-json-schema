@@ -276,10 +276,10 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         return new DependencyInjectionError(
             beanTypeName,
             beanTypeName,
-            "Dependency injection bean-definition reference loading failed for [" + beanTypeName + "]: " + formatDiscoveryFailureMessage(e),
+            "Dependency injection bean-definition reference loading failed for [" + beanTypeName + "]: " + formatReferenceLoadFailureMessage(e),
             null,
             null,
-            discoveryFailurePath(e),
+            referenceLoadFailurePath(beanTypeName, e),
             null,
             null
         );
@@ -1145,9 +1145,38 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         return message.toString();
     }
 
+    private static String formatReferenceLoadFailureMessage(Throwable throwable) {
+        StringBuilder message = new StringBuilder();
+        message.append(throwable.getClass().getSimpleName()).append(": ").append(sanitizeMessage(throwable));
+
+        List<String> causeChain = new ArrayList<>(4);
+        Throwable current = throwable.getCause();
+        int depth = 0;
+        while (current != null && depth++ < 5) {
+            causeChain.add(current.getClass().getName() + ": " + sanitizeMessage(current));
+            current = current.getCause() == current ? null : current.getCause();
+        }
+        if (!causeChain.isEmpty()) {
+            message.append(". Cause chain: ").append(String.join(" -> ", causeChain));
+        }
+
+        Optional<String> conditionClass = triggeringConditionClass(throwable);
+        conditionClass.ifPresent(condition -> message.append(". Triggering condition: ").append(condition));
+        return message.toString();
+    }
+
     private static List<String> discoveryFailurePath(Throwable throwable) {
         List<String> path = new ArrayList<>(4);
         path.add(DISCOVERY_SENTINEL);
+        Optional<String> conditionClass = triggeringConditionClass(throwable);
+        conditionClass.ifPresent(path::add);
+        path.add("failed: " + sanitizeMessage(throwable));
+        return List.copyOf(path);
+    }
+
+    private static List<String> referenceLoadFailurePath(String beanTypeName, Throwable throwable) {
+        List<String> path = new ArrayList<>(4);
+        path.add(beanTypeName);
         Optional<String> conditionClass = triggeringConditionClass(throwable);
         conditionClass.ifPresent(path::add);
         path.add("failed: " + sanitizeMessage(throwable));

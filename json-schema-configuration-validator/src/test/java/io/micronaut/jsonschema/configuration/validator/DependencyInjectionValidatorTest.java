@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class DependencyInjectionValidatorTest {
 
@@ -173,10 +174,10 @@ class DependencyInjectionValidatorTest {
         assertTrue(error.message().contains("Cannot resolve beans until the context is running"), () -> "Unexpected error: " + error);
         assertTrue(error.failingPath().contains("<bean-definition-discovery>"), () -> "Unexpected error: " + error);
         assertTrue(error.failingPath().contains("com.example.runtime.CustomRuntimeCondition"), () -> "Unexpected error: " + error);
-        assertEquals(null, error.injectionPoint());
-        assertEquals(null, error.disabledReason());
-        assertEquals(null, error.snippet());
-        assertEquals(null, error.snippetLanguage());
+        assertNull(error.injectionPoint());
+        assertNull(error.disabledReason());
+        assertNull(error.snippet());
+        assertNull(error.snippetLanguage());
     }
 
     @Test
@@ -215,6 +216,9 @@ class DependencyInjectionValidatorTest {
         assertEquals("com.example.runtime.BrokenBeanDefinition", error.rootBean());
         assertEquals("com.example.runtime.BrokenBeanDefinition", error.bean());
         assertTrue(error.message().contains("bean-definition reference loading failed"), () -> "Unexpected error: " + error);
+        assertFalse(error.message().contains("bean-definition discovery failed before the context was running"), () -> "Unexpected error: " + error);
+        assertEquals("com.example.runtime.BrokenBeanDefinition", error.failingPath().getFirst());
+        assertFalse(error.failingPath().contains("<bean-definition-discovery>"), () -> "Unexpected error: " + error);
         assertTrue(error.failingPath().contains("failed: Reference load failed"), () -> "Unexpected error: " + error);
     }
 
