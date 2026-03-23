@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.env.Environment;
+import io.micronaut.context.exceptions.ConfigurationException;
 import io.micronaut.core.io.Readable;
 import io.micronaut.core.naming.conventions.StringConvention;
 import io.micronaut.core.type.Argument;
@@ -342,7 +343,19 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             if (!environment.containsProperties(prefix)) {
                 return;
             }
-            Map<String, Object> flat = environment.getProperties(prefix, StringConvention.HYPHENATED);
+            Map<String, Object> flat;
+            try {
+                flat = environment.getProperties(prefix, StringConvention.HYPHENATED);
+            } catch (ConfigurationException e) {
+                String message = e.getMessage();
+                if (message == null) {
+                    message = "Failed to read configuration properties for prefix '" + prefix + "': " + e.getClass().getName();
+                }
+                errors.add(ConfigurationError.builder(prefix, message)
+                    .type(ConfigurationError.Type.WARNING)
+                    .build());
+                return;
+            }
             Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
             ConfigurationSchemaProperty root = ConfigurationSchemaPropertyAdapter.fromRoot(schema);
 
@@ -385,7 +398,16 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
 
             for (String entry : entries) {
                 String entryPrefix = prefix + "." + entry;
-                Map<String, Object> flat = environment.getProperties(entryPrefix, StringConvention.HYPHENATED);
+                Map<String, Object> flat;
+                try {
+                    flat = environment.getProperties(entryPrefix, StringConvention.HYPHENATED);
+                } catch (ConfigurationException e) {
+                    String message = e.getMessage() != null
+                        ? e.getMessage()
+                        : "Configuration error while reading properties for prefix '" + entryPrefix + "'";
+                    errors.add(ctx.warning(entryPrefix, message));
+                    continue;
+                }
                 Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
                 Map<String, Object> effectiveInstance = removeOverlappingEachPropertySchemaKeys(instance, entrySchema, overlappingEachPropertySchemaKeys);
 

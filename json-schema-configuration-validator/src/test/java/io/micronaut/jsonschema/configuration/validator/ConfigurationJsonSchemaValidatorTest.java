@@ -124,6 +124,48 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
+    void unresolvedPlaceholderProducesWarningWithoutException() {
+        Environment environment = createEnvironment(Map.of(
+            "test.config.enabled", "${nonexistent.placeholder}",
+            "test.config.count", "1"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+        assertTrue(errors.stream().noneMatch(e -> e.type() == ConfigurationError.Type.ERROR),
+            () -> "Did not expect validation errors, got: " + errors);
+        assertTrue(errors.stream().anyMatch(e ->
+            e.type() == ConfigurationError.Type.WARNING
+                && e.property() != null
+                && e.property().startsWith("test.config")
+                && e.message().contains("Could not resolve placeholder")),
+            () -> "Expected unresolved placeholder warning for test.config, got: " + errors);
+    }
+
+    @Test
+    void unresolvedPlaceholderInEachPropertyProducesWarningWithoutException() {
+        Environment environment = createEnvironment(Map.of(
+            "test.executors.alpha.n-threads", "${nonexistent.threads}",
+            "test.executors.alpha.type", "FIXED"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+        assertTrue(errors.stream().noneMatch(e -> e.type() == ConfigurationError.Type.ERROR),
+            () -> "Did not expect validation errors, got: " + errors);
+        assertTrue(errors.stream().anyMatch(e ->
+            e.type() == ConfigurationError.Type.WARNING
+                && e.property() != null
+                && e.property().startsWith("test.executors.alpha")
+                && e.message().contains("Could not resolve placeholder")),
+            () -> "Expected unresolved placeholder warning for test.executors.alpha, got: " + errors);
+    }
+
+    @Test
     void validatesEachPropertySchemasViaPropertyEntries() {
         Environment environment = createEnvironment(Map.of(
             "test.executors.alpha.n-threads", "0",
