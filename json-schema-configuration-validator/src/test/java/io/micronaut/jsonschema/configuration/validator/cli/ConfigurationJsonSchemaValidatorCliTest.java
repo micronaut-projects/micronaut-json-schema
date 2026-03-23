@@ -51,6 +51,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
         System.clearProperty("micronaut.http.client.unknown");
         System.clearProperty("micronaut.environments");
         System.clearProperty("spec.name");
+        System.clearProperty("datasources.default.db-type");
     }
 
     @Test
@@ -110,6 +111,8 @@ class ConfigurationJsonSchemaValidatorCliTest {
         });
 
         assertFalse(options.deduceEnvironments());
+        assertTrue(options.suppressions().contains("datasources.*.db-type"));
+        assertTrue(options.suppressedInjectionErrors().contains("io.micronaut.security.oauth2.proxy.WellKnownProxyFilter*"));
     }
 
     @Test
@@ -157,7 +160,39 @@ class ConfigurationJsonSchemaValidatorCliTest {
             "--suppress-inject-errors", "org.example.Bar"
         });
 
-        assertEquals(List.of("com.example.Foo", "com.example.*", "org.example.Bar"), options.suppressedInjectionErrors());
+        assertTrue(options.suppressedInjectionErrors().contains("io.micronaut.security.oauth2.proxy.WellKnownProxyFilter*"));
+        assertTrue(options.suppressedInjectionErrors().contains("com.example.Foo"));
+        assertTrue(options.suppressedInjectionErrors().contains("com.example.*"));
+        assertTrue(options.suppressedInjectionErrors().contains("org.example.Bar"));
+    }
+
+    @Test
+    void datasourceDbTypeIsSuppressedByDefault() throws Exception {
+        System.setProperty("datasources.default.db-type", "postgres");
+
+        Path out = tempDir.resolve("out-datasource-db-type-default-suppress");
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--environments", "test",
+            "--out", out.toString(),
+            "--format", "json"
+        }, System.out, System.err);
+
+        assertEquals(0, exit);
+
+        String json = Files.readString(out.resolve("configuration-errors.json"), StandardCharsets.UTF_8);
+        Object decoded = JsonMapper.createDefault().readValue(json, Argument.of(Object.class));
+        assertNotNull(decoded);
+        assertInstanceOf(Map.class, decoded);
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> list = (List<Map<String, Object>>) ((Map<String, Object>) decoded).get("configurationErrors");
+        assertTrue(list.stream().anyMatch(m -> "datasources.default.db-type".equals(m.get("property"))),
+            () -> "Expected suppressed datasource db-type entry, got: " + list);
+        assertTrue(list.stream().anyMatch(m -> "datasources.default.db-type".equals(m.get("property")) && "WARNING".equals(m.get("type"))),
+            () -> "Expected datasource db-type to be downgraded to WARNING, got: " + list);
+        assertFalse(list.stream().anyMatch(m -> "datasources.default.db-type".equals(m.get("property")) && "ERROR".equals(m.get("type"))),
+            () -> "Expected datasource db-type not to remain ERROR, got: " + list);
     }
 
     @Test
@@ -741,14 +776,19 @@ class ConfigurationJsonSchemaValidatorCliTest {
         }, System.out, err);
 
         assertEquals(2, exit);
-        assertFalse(Files.exists(out.resolve("configuration-errors.json")));
-        assertFalse(Files.exists(out.resolve("configuration-errors.html")));
+        assertTrue(Files.exists(out.resolve("configuration-errors.json")));
+        assertTrue(Files.exists(out.resolve("configuration-errors.html")));
+
+        String json = Files.readString(out.resolve("configuration-errors.json"), StandardCharsets.UTF_8);
+        assertTrue(json.contains("Configuration loading failure"), () -> "Unexpected JSON diagnostic report:\n" + json);
+        assertTrue(json.contains("configurationErrors"), () -> "Unexpected JSON diagnostic report:\n" + json);
 
         String stderr = errCapture.toString(StandardCharsets.UTF_8);
         assertTrue(stderr.contains("Validation failed while loading configuration"), () -> "Unexpected stderr:\n" + stderr);
         assertTrue(stderr.toLowerCase().contains("application.yml"), () -> "Unexpected stderr:\n" + stderr);
         assertTrue(stderr.toLowerCase().contains("line"), () -> "Unexpected stderr:\n" + stderr);
         assertTrue(stderr.toLowerCase().contains("column"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.contains("report: file:"), () -> "Unexpected stderr:\n" + stderr);
     }
 
     @Test
