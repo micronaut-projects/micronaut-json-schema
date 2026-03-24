@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator;
 import io.micronaut.context.annotation.ConfigurationProperties;
 import org.jspecify.annotations.Nullable;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -51,9 +52,10 @@ public final class ConfigurationValidatorConfiguration {
     public static final boolean DEFAULT_CACHE = true;
     public static final boolean DEFAULT_FAIL_ON_NOT_PRESENT = true;
     public static final DependencyInjectionValidationStrategy DEFAULT_DI_VALIDATION_STRATEGY = DependencyInjectionValidationStrategy.REACHABLE;
+    public static final List<String> DEFAULT_SUPPRESSIONS = List.of("datasources.*.db-type");
     private boolean cache = DEFAULT_CACHE;
     private boolean failOnNotPresent = DEFAULT_FAIL_ON_NOT_PRESENT;
-    private List<String> suppressions = List.of();
+    private List<String> suppressions = DEFAULT_SUPPRESSIONS;
     private DependencyInjectionValidationStrategy dependencyInjectionValidationStrategy = DEFAULT_DI_VALIDATION_STRATEGY;
 
     /**
@@ -108,7 +110,13 @@ public final class ConfigurationValidatorConfiguration {
      * @param suppressions Patterns used to suppress validation errors
      */
     public void setSuppressions(@Nullable List<String> suppressions) {
-        this.suppressions = suppressions != null ? List.copyOf(suppressions) : List.of();
+        if (suppressions == null || suppressions.isEmpty()) {
+            this.suppressions = DEFAULT_SUPPRESSIONS;
+            return;
+        }
+        LinkedHashSet<String> merged = new LinkedHashSet<>(DEFAULT_SUPPRESSIONS);
+        merged.addAll(suppressions);
+        this.suppressions = List.copyOf(merged);
     }
 
     /**

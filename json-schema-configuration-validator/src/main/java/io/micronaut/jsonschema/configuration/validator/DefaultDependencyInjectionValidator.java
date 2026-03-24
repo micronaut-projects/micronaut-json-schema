@@ -43,6 +43,7 @@ import io.micronaut.core.type.Argument;
 import io.micronaut.core.type.TypeInformation;
 import io.micronaut.core.value.PropertyResolver;
 import io.micronaut.inject.BeanDefinition;
+import io.micronaut.inject.BeanDefinitionReference;
 import io.micronaut.inject.ConstructorInjectionPoint;
 import io.micronaut.inject.ExecutableMethod;
 import io.micronaut.inject.FieldInjectionPoint;
@@ -84,8 +85,28 @@ import java.util.stream.Stream;
  */
 @Singleton
 public final class DefaultDependencyInjectionValidator implements DependencyInjectionValidator {
+    private static final String DISCOVERY_SENTINEL = "<bean-definition-discovery>";
     private static final Logger LOG = LoggerFactory.getLogger(DefaultDependencyInjectionValidator.class);
     private static final String METHOD_INJECTION_POINT_PREFIX = "method ";
+    private static final List<String> DEFAULT_SUPPRESSED_CLASS_PATTERNS = List.of(
+        "io.micronaut.security.session.SessionLoginHandler*",
+        "io.micronaut.security.session.SessionLogoutHandler*",
+        "io.micronaut.security.oauth2.proxy.WellKnownProxySecurityRule*",
+        "io.micronaut.security.oauth2.proxy.WellKnownProxyFilter*",
+        "io.micronaut.security.oauth2.client.DefaultOauthClient*",
+        "io.micronaut.security.oauth2.client.OpenIdClientFactory*",
+        "io.micronaut.security.oauth2.client.clientcredentials.propagation.ClientCredentialsHeaderTokenPropagator*",
+        "io.micronaut.security.oauth2.client.clientcredentials.ClientCredentialsFactory*",
+        "io.micronaut.security.oauth2.endpoint.authorization.pkce.S256PkceGenerator*",
+        "io.micronaut.security.oauth2.endpoint.token.request.password.PasswordGrantFactory*",
+        "io.micronaut.security.token.jwt.signature.jwks.CacheableJwkSetFetcher*",
+        "io.micronaut.security.ldap.LdapAuthenticationProviderFactory*",
+        "io.micronaut.security.authentication.Authenticator*",
+        "io.micronaut.security.token.cookie.TokenCookieConfigurationProperties*",
+        "io.micronaut.security.token.cookie.TokenCookieClearerLogoutHandler*",
+        "io.micronaut.security.token.cookie.CookieTokenReader*",
+        "io.micronaut.security.token.cookie.RefreshTokenCookieConfigurationProperties*"
+    );
 
     private static final String STARTUP_EVENT = "io.micronaut.runtime.event.StartupEvent";
     private static final String SERVER_STARTUP_EVENT = "io.micronaut.runtime.server.event.ServerStartupEvent";
@@ -114,11 +135,15 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         @Nullable DependencyInjectionValidationStrategy validationStrategy
     ) {
         this.suppressedClassMatchers = ClassSuppressionMatcher.compileAll(
-            suppressedClassPatterns == null ? List.of() : suppressedClassPatterns
+            effectiveSuppressedClassPatterns(suppressedClassPatterns)
         );
         this.validationStrategy = validationStrategy != null
             ? validationStrategy
             : DependencyInjectionValidationStrategy.REACHABLE;
+    }
+
+    public static List<String> defaultSuppressedClassPatterns() {
+        return DEFAULT_SUPPRESSED_CLASS_PATTERNS;
     }
 
     /**
@@ -132,21 +157,132 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         Objects.requireNonNull(beanContext, "beanContext");
         ensureConfigured(beanContext);
 
-        Collection<BeanDefinition<Object>> definitions = beanContext.getAllBeanDefinitions();
+        BeanDiscoveryResult discoveryResult = discoverBeanDefinitions(beanContext);
+        Collection<BeanDefinition<Object>> definitions = discoveryResult.definitions();
+        Set<DependencyInjectionError> discoveryErrors = discoveryResult.discoveryErrors();
         if (definitions.isEmpty()) {
-            return Set.of();
+            return discoveryErrors;
         }
 
-        Map<String, List<String>> disabledByBeanName = disabledReasonsByBeanName(beanContext.getDisabledBeans());
+        Map<String, List<String>> disabledByBeanName = disabledReasonsByBeanName(resolveDisabledBeans(beanContext));
         List<BeanDefinition<Object>> roots = validationRoots(definitions);
 
         Set<DependencyInjectionError> errors = new LinkedHashSet<>();
+        errors.addAll(discoveryErrors);
         Set<String> dedupe = new LinkedHashSet<>();
-        TraversalState traversalState = new TraversalState(beanContext, disabledByBeanName, errors, dedupe);
+        TraversalState traversalState = new TraversalState(beanContext, definitions, disabledByBeanName, errors, dedupe);
         for (BeanDefinition<Object> root : roots) {
             traverse(traversalState, root, root, new LinkedHashSet<>(), new ArrayList<>());
         }
         return errors;
+    }
+
+    private BeanDiscoveryResult discoverBeanDefinitions(ConfigurableBeanContext beanContext) {
+        Collection<BeanDefinitionReference<Object>> references;
+        try {
+            references = beanContext.getBeanDefinitionReferences();
+        } catch (RuntimeException e) {
+            return beanDefinitionReferenceDiscoveryFailure(e);
+        }
+
+        return loadBeanDefinitions(beanContext, references);
+    }
+
+    private BeanDiscoveryResult beanDefinitionReferenceDiscoveryFailure(RuntimeException e) {
+        Optional<String> suppressedType = firstSuppressedTypeInThrowable(e);
+        if (suppressedType.isPresent()) {
+            LOG.debug("Suppressing metadata DI reference discovery failure for security type {}", suppressedType.get(), e);
+            return new BeanDiscoveryResult(List.of(), Set.of());
+        }
+        LOG.debug("Unable to resolve bean definition references for metadata DI validation; returning synthetic discovery failure", e);
+        return new BeanDiscoveryResult(List.of(), Set.of(beanDefinitionDiscoveryFailure(e)));
+    }
+
+    private BeanDiscoveryResult loadBeanDefinitions(
+        ConfigurableBeanContext beanContext,
+        Collection<BeanDefinitionReference<Object>> references
+    ) {
+        List<BeanDefinition<Object>> definitions = new ArrayList<>(references.size());
+        Set<DependencyInjectionError> discoveryErrors = new LinkedHashSet<>();
+        for (BeanDefinitionReference<Object> reference : references) {
+            ReferenceLoadResult result = loadBeanDefinitionReference(beanContext, reference);
+            result.definition().ifPresent(definitions::add);
+            result.discoveryError().ifPresent(discoveryErrors::add);
+        }
+        return new BeanDiscoveryResult(definitions, discoveryErrors);
+    }
+
+    private ReferenceLoadResult loadBeanDefinitionReference(
+        ConfigurableBeanContext beanContext,
+        BeanDefinitionReference<Object> reference
+    ) {
+        String referenceName = reference.getBeanDefinitionName();
+        try {
+            if (shouldLoadReference(beanContext, reference)) {
+                return new ReferenceLoadResult(Optional.ofNullable(reference.load(beanContext)), Optional.empty());
+            }
+            return ReferenceLoadResult.empty();
+        } catch (RuntimeException | LinkageError e) {
+            if (isSuppressedReferenceLoadFailure(referenceName, e)) {
+                LOG.debug("Suppressing metadata DI reference load failure for {}", referenceName, e);
+                return ReferenceLoadResult.empty();
+            }
+            LOG.debug("Unable to load bean definition reference {} during metadata DI validation", referenceName, e);
+            return new ReferenceLoadResult(Optional.empty(), Optional.of(beanDefinitionReferenceLoadFailure(referenceName, e)));
+        }
+    }
+
+    private boolean shouldLoadReference(
+        ConfigurableBeanContext beanContext,
+        BeanDefinitionReference<Object> reference
+    ) {
+        if (!reference.isPresent()) {
+            return false;
+        }
+        String beanTypeName = reference.getBeanType().getName();
+        if (matchesSuppressionPattern(beanTypeName)) {
+            return false;
+        }
+        return reference.isEnabled(beanContext);
+    }
+
+    private boolean isSuppressedReferenceLoadFailure(String referenceName, Throwable throwable) {
+        return firstSuppressedTypeInThrowable(throwable).isPresent() || matchesSuppressionPattern(referenceName);
+    }
+
+    private static Collection<DisabledBean<?>> resolveDisabledBeans(ConfigurableBeanContext beanContext) {
+        try {
+            return beanContext.getDisabledBeans();
+        } catch (RuntimeException e) {
+            LOG.debug("Unable to resolve disabled beans for metadata DI validation; continuing without disabled-bean diagnostics", e);
+            return List.of();
+        }
+    }
+
+    private static DependencyInjectionError beanDefinitionDiscoveryFailure(RuntimeException e) {
+        return new DependencyInjectionError(
+            DISCOVERY_SENTINEL,
+            DISCOVERY_SENTINEL,
+            formatDiscoveryFailureMessage(e),
+            null,
+            null,
+            discoveryFailurePath(e),
+            null,
+            null
+        );
+    }
+
+    private static DependencyInjectionError beanDefinitionReferenceLoadFailure(String beanTypeName, Throwable e) {
+        return new DependencyInjectionError(
+            beanTypeName,
+            beanTypeName,
+            "Dependency injection bean-definition reference loading failed for [" + beanTypeName + "]: " + formatReferenceLoadFailureMessage(e),
+            null,
+            null,
+            referenceLoadFailurePath(beanTypeName, e),
+            null,
+            null
+        );
     }
 
     private List<BeanDefinition<Object>> validationRoots(Collection<BeanDefinition<Object>> definitions) {
@@ -310,7 +446,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             return Optional.empty();
         }
         if (target.isEmpty()) {
-            String message = missingBeanMessage(state.beanContext(), argument, requirement, state.disabledByBeanName());
+            String message = missingBeanMessage(state.beanContext(), state.definitions(), argument, requirement, state.disabledByBeanName());
             addError(root, argument, requirement, message, path, state.errors(), state.dedupe(), state.disabledByBeanName());
             return Optional.empty();
         }
@@ -707,12 +843,13 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
 
     private static String missingBeanMessage(
         ConfigurableBeanContext beanContext,
+        Collection<BeanDefinition<Object>> definitions,
         Argument<?> argument,
         DependencyRequirement requirement,
         Map<String, List<String>> disabledByBeanName
     ) {
         String message = "No bean of type [" + argument.getType().getName() + "] exists for " + requirement.injectionPoint();
-        Optional<String> configurationKey = missingEachPropertyConfigurationKey(beanContext, argument);
+        Optional<String> configurationKey = missingEachPropertyConfigurationKey(definitions, argument);
         if (configurationKey.isPresent() && !containsProperty(beanContext, configurationKey.get())) {
             return message + ". Bean may be non-creatable because configuration property [" + configurationKey.get() + "] is missing";
         }
@@ -726,8 +863,10 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         return message;
     }
 
-    private static Optional<String> missingEachPropertyConfigurationKey(ConfigurableBeanContext beanContext, Argument<?> argument) {
-        Collection<BeanDefinition<Object>> definitions = beanContext.getAllBeanDefinitions();
+    private static Optional<String> missingEachPropertyConfigurationKey(
+        Collection<BeanDefinition<Object>> definitions,
+        Argument<?> argument
+    ) {
         if (definitions.isEmpty()) {
             return Optional.empty();
         }
@@ -967,10 +1106,111 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         return beanName;
     }
 
+    private static List<String> effectiveSuppressedClassPatterns(@Nullable List<String> suppressedClassPatterns) {
+        if (suppressedClassPatterns == null || suppressedClassPatterns.isEmpty()) {
+            return DEFAULT_SUPPRESSED_CLASS_PATTERNS;
+        }
+        LinkedHashSet<String> merged = new LinkedHashSet<>(DEFAULT_SUPPRESSED_CLASS_PATTERNS);
+        merged.addAll(suppressedClassPatterns);
+        return List.copyOf(merged);
+    }
+
     private static String formatDisabledCandidate(DisabledCandidate candidate) {
         List<String> reasons = candidate.reasons();
         String reason = reasons.isEmpty() ? "No disable reason available" : String.join("; ", reasons);
         return candidate.name() + " (" + reason + ")";
+    }
+
+    private static String formatDiscoveryFailureMessage(Throwable throwable) {
+        StringBuilder message = new StringBuilder(
+            "Dependency injection bean-definition discovery failed before the context was running. "
+        );
+        message.append("This usually indicates a runtime-only condition was evaluated during metadata validation, not necessarily an application misconfiguration. ");
+        message.append("Failure: ").append(sanitizeMessage(throwable));
+
+        List<String> causeChain = new ArrayList<>(4);
+        Throwable current = throwable.getCause();
+        int depth = 0;
+        while (current != null && depth++ < 5) {
+            causeChain.add(current.getClass().getName() + ": " + sanitizeMessage(current));
+            current = current.getCause() == current ? null : current.getCause();
+        }
+        if (!causeChain.isEmpty()) {
+            message.append(". Cause chain: ");
+            message.append(String.join(" -> ", causeChain));
+        }
+
+        Optional<String> conditionClass = triggeringConditionClass(throwable);
+        conditionClass.ifPresent(condition -> message.append(". Triggering condition: ").append(condition));
+        return message.toString();
+    }
+
+    private static String formatReferenceLoadFailureMessage(Throwable throwable) {
+        StringBuilder message = new StringBuilder();
+        message.append(throwable.getClass().getSimpleName()).append(": ").append(sanitizeMessage(throwable));
+
+        List<String> causeChain = new ArrayList<>(4);
+        Throwable current = throwable.getCause();
+        int depth = 0;
+        while (current != null && depth++ < 5) {
+            causeChain.add(current.getClass().getName() + ": " + sanitizeMessage(current));
+            current = current.getCause() == current ? null : current.getCause();
+        }
+        if (!causeChain.isEmpty()) {
+            message.append(". Cause chain: ").append(String.join(" -> ", causeChain));
+        }
+
+        Optional<String> conditionClass = triggeringConditionClass(throwable);
+        conditionClass.ifPresent(condition -> message.append(". Triggering condition: ").append(condition));
+        return message.toString();
+    }
+
+    private static List<String> discoveryFailurePath(Throwable throwable) {
+        List<String> path = new ArrayList<>(4);
+        path.add(DISCOVERY_SENTINEL);
+        Optional<String> conditionClass = triggeringConditionClass(throwable);
+        conditionClass.ifPresent(path::add);
+        path.add("failed: " + sanitizeMessage(throwable));
+        return List.copyOf(path);
+    }
+
+    private static List<String> referenceLoadFailurePath(String beanTypeName, Throwable throwable) {
+        List<String> path = new ArrayList<>(4);
+        path.add(beanTypeName);
+        Optional<String> conditionClass = triggeringConditionClass(throwable);
+        conditionClass.ifPresent(path::add);
+        path.add("failed: " + sanitizeMessage(throwable));
+        return List.copyOf(path);
+    }
+
+    private static Optional<String> triggeringConditionClass(Throwable throwable) {
+        Throwable current = throwable;
+        int depth = 0;
+        while (current != null && depth++ < 6) {
+            for (StackTraceElement element : current.getStackTrace()) {
+                String className = element.getClassName();
+                if (className.endsWith("Condition")) {
+                    return Optional.of(className);
+                }
+            }
+            current = current.getCause() == current ? null : current.getCause();
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> firstSuppressedTypeInThrowable(Throwable throwable) {
+        Throwable current = throwable;
+        int depth = 0;
+        while (current != null && depth++ < 6) {
+            for (StackTraceElement element : current.getStackTrace()) {
+                String className = element.getClassName();
+                if (matchesSuppressionPattern(className)) {
+                    return Optional.of(className);
+                }
+            }
+            current = current.getCause() == current ? null : current.getCause();
+        }
+        return Optional.empty();
     }
 
     private record DependencyRequirement(
@@ -989,10 +1229,26 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
 
     private record TraversalState(
         ConfigurableBeanContext beanContext,
+        Collection<BeanDefinition<Object>> definitions,
         Map<String, List<String>> disabledByBeanName,
         Set<DependencyInjectionError> errors,
         Set<String> dedupe
     ) {
+    }
+
+    private record BeanDiscoveryResult(
+        Collection<BeanDefinition<Object>> definitions,
+        Set<DependencyInjectionError> discoveryErrors
+    ) {
+    }
+
+    private record ReferenceLoadResult(
+        Optional<BeanDefinition<Object>> definition,
+        Optional<DependencyInjectionError> discoveryError
+    ) {
+        static ReferenceLoadResult empty() {
+            return new ReferenceLoadResult(Optional.empty(), Optional.empty());
+        }
     }
 
     private interface ClassSuppressionMatcher {

@@ -19,6 +19,8 @@ import io.micronaut.core.annotation.Internal;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationJsonSchemaValidator;
+import io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration;
+import io.micronaut.jsonschema.configuration.validator.DefaultDependencyInjectionValidator;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy;
 import io.micronaut.jsonschema.configuration.validator.report.HtmlConfigurationErrorReporter;
@@ -29,6 +31,8 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -113,8 +117,17 @@ public final class ConfigurationJsonSchemaValidatorCli {
         try {
             errors = facade.validate();
         } catch (Exception e) {
+            List<Path> configFiles = discoverApplicationConfigFilesOnClasspath(options.classpath());
+            reportFatalValidationFailure(
+                err,
+                options,
+                "Configuration loading failure",
+                "Validation failed while loading configuration:",
+                e,
+                configFiles
+            );
             err.println("Validation failed while loading configuration:");
-            printDiscoveredConfigFiles(err, options.classpath());
+            printConfigFiles(err, configFiles);
             printThrowable(err, e);
             return 2;
         }
@@ -129,8 +142,17 @@ public final class ConfigurationJsonSchemaValidatorCli {
                     options.dependencyInjectionValidationStrategy()
                 ).validate();
             } catch (Exception e) {
+                List<Path> configFiles = discoverApplicationConfigFilesOnClasspath(options.classpath());
+                reportFatalValidationFailure(
+                    err,
+                    options,
+                    "Dependency injection validation loading failure",
+                    "Dependency injection validation failed while loading configuration:",
+                    e,
+                    configFiles
+                );
                 err.println("Dependency injection validation failed while loading configuration:");
-                printDiscoveredConfigFiles(err, options.classpath());
+                printConfigFiles(err, configFiles);
                 printThrowable(err, e);
                 return 2;
             }
@@ -164,14 +186,43 @@ public final class ConfigurationJsonSchemaValidatorCli {
         }
     }
 
-    private static void printDiscoveredConfigFiles(PrintStream err, String classpath) {
-        List<Path> files = discoverApplicationConfigFilesOnClasspath(classpath);
+    private static void printConfigFiles(PrintStream err, List<Path> files) {
         if (files.isEmpty()) {
             return;
         }
         err.println("  Config files on classpath:");
         for (Path path : files) {
             err.println("    - " + path.toAbsolutePath());
+        }
+    }
+
+    private static void reportFatalValidationFailure(
+        PrintStream err,
+        Options options,
+        String property,
+        String headline,
+        Throwable throwable,
+        List<Path> configFiles
+    ) {
+        ConfigurationError fatalError = ConfigurationError.builder(property, headline + " " + throwableChain(throwable))
+            .originLocation(configFiles.isEmpty() ? null : configFiles.getFirst().toAbsolutePath().toString())
+            .rawValue(throwable.getClass().getName())
+            .snippet(throwableStackTrace(throwable))
+            .snippetLanguage("text")
+            .build();
+
+        Set<ConfigurationError> diagnosticErrors = Set.of(fatalError);
+        try {
+            ReportFiles reportFiles = writeReports(diagnosticErrors, Set.of(), options);
+            new SystemErrConfigurationErrorReporter(
+                err,
+                reportFiles.htmlReport(),
+                reportFiles.jsonReport(),
+                options.projectBaseDir(),
+                options.resourcesDirs()
+            ).report(diagnosticErrors, Set.of());
+        } catch (IOException ioException) {
+            err.println("Failed to write diagnostic report for validation failure: " + ioException.getMessage());
         }
     }
 
@@ -217,6 +268,28 @@ public final class ConfigurationJsonSchemaValidatorCli {
             root = root.getCause();
         }
         return root;
+    }
+
+    private static String throwableChain(Throwable throwable) {
+        List<String> chain = new ArrayList<>(4);
+        Throwable current = throwable;
+        while (current != null) {
+            chain.add(formatThrowable(current));
+            Throwable next = current.getCause();
+            if (next == current) {
+                break;
+            }
+            current = next;
+        }
+        return String.join(" -> ", chain);
+    }
+
+    private static String throwableStackTrace(Throwable throwable) {
+        StringWriter sw = new StringWriter(2048);
+        try (PrintWriter pw = new PrintWriter(sw)) {
+            throwable.printStackTrace(pw);
+        }
+        return sw.toString();
     }
 
     private static String formatThrowable(Throwable e) {
@@ -279,8 +352,8 @@ public final class ConfigurationJsonSchemaValidatorCli {
             boolean help = false;
             String classpath = null;
             List<String> environments = new ArrayList<>(1);
-            List<String> suppressions = new ArrayList<>(0);
-            List<String> suppressedInjectionErrors = new ArrayList<>(0);
+            List<String> suppressions = new ArrayList<>(ConfigurationValidatorConfiguration.DEFAULT_SUPPRESSIONS);
+            List<String> suppressedInjectionErrors = new ArrayList<>(DefaultDependencyInjectionValidator.defaultSuppressedClassPatterns());
             boolean failOnNotPresent = true;
             boolean deduceEnvironments = false;
             boolean validateDependencyInjection = false;

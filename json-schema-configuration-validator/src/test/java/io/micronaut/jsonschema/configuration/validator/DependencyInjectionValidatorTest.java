@@ -1,9 +1,11 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.ApplicationContext;
+import io.micronaut.context.ConfigurableBeanContext;
 import io.micronaut.context.ConfigurableApplicationContext;
 import io.micronaut.core.type.Argument;
 import io.micronaut.inject.BeanDefinition;
+import io.micronaut.inject.BeanDefinitionReference;
 import io.micronaut.inject.ConstructorInjectionPoint;
 import io.micronaut.inject.FieldInjectionPoint;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +24,8 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class DependencyInjectionValidatorTest {
 
@@ -120,6 +125,130 @@ class DependencyInjectionValidatorTest {
         Set<DependencyInjectionError> errors = validate("context", Map.of());
         assertFalse(errors.isEmpty());
         assertHasError(errors, "FixtureContextBean", "FixtureMissingDependency", "constructor FixtureContextBean(missingDependency)");
+    }
+
+    @Test
+    void validatorWorksWithConfiguredButNotRunningContext() {
+        Map<String, Object> properties = new LinkedHashMap<>();
+        properties.put("spec.name", "context");
+        properties.put("spec.di.validator.test", "true");
+        properties.put("micronaut.jsonschema.configuration.validator.endpoint.enabled", "false");
+        properties.put("endpoints.enabled", "false");
+
+        try (ConfigurableApplicationContext context = (ConfigurableApplicationContext) ApplicationContext.builder("di-validator-test")
+            .properties(properties)
+            .build()) {
+            context.getEnvironment().start();
+            context.configure();
+
+            Set<DependencyInjectionError> errors = assertDoesNotThrow(() -> validator.validate(context));
+            assertFalse(errors.isEmpty(), () -> "Expected metadata DI validation errors, got: " + errors);
+            assertTrue(errors.stream().anyMatch(e -> e.rootBean().contains("FixtureContextBean")),
+                () -> "Expected FixtureContextBean DI validation error, got: " + errors);
+        }
+    }
+
+    @Test
+    void discoveryFailureReturnsSyntheticError() {
+        IllegalStateException cause = new IllegalStateException("Cannot resolve beans until the context is running");
+        cause.setStackTrace(new StackTraceElement[] {
+            new StackTraceElement(
+                "com.example.runtime.CustomRuntimeCondition",
+                "matches",
+                "CustomRuntimeCondition.java",
+                37
+            )
+        });
+        ConfigurableBeanContext beanContext = beanContextProxy(new IllegalStateException("Dependency injection validation failed", cause));
+
+        Set<DependencyInjectionError> errors = assertDoesNotThrow(() -> validator.validate(beanContext));
+
+        assertEquals(1, errors.size(), () -> "Expected one synthetic discovery error, got: " + errors);
+        DependencyInjectionError error = errors.iterator().next();
+        assertEquals("<bean-definition-discovery>", error.rootBean());
+        assertEquals("<bean-definition-discovery>", error.bean());
+        assertTrue(error.message().contains("bean-definition discovery failed"), () -> "Unexpected error: " + error);
+        assertTrue(error.message().contains("runtime-only condition was evaluated during metadata validation"), () -> "Unexpected error: " + error);
+        assertTrue(error.message().contains("Cause chain:"), () -> "Unexpected error: " + error);
+        assertTrue(error.message().contains("Triggering condition: com.example.runtime.CustomRuntimeCondition"), () -> "Unexpected error: " + error);
+        assertTrue(error.message().contains("Cannot resolve beans until the context is running"), () -> "Unexpected error: " + error);
+        assertTrue(error.failingPath().contains("<bean-definition-discovery>"), () -> "Unexpected error: " + error);
+        assertTrue(error.failingPath().contains("com.example.runtime.CustomRuntimeCondition"), () -> "Unexpected error: " + error);
+        assertNull(error.injectionPoint());
+        assertNull(error.disabledReason());
+        assertNull(error.snippet());
+        assertNull(error.snippetLanguage());
+    }
+
+    @Test
+    void defaultSuppressionSkipsMicronautSecurityDeclaringTypeDiscoveryFailure() {
+        IllegalStateException cause = new IllegalStateException("Cannot resolve beans until the context is running");
+        cause.setStackTrace(new StackTraceElement[] {
+            new StackTraceElement(
+                "io.micronaut.security.oauth2.proxy.WellKnownProxyFilter",
+                "doFilter",
+                "WellKnownProxyFilter.java",
+                54
+            )
+        });
+        ConfigurableBeanContext beanContext = beanContextProxy(new IllegalStateException("Dependency injection validation failed", cause));
+
+        Set<DependencyInjectionError> errors = assertDoesNotThrow(() -> validator.validate(beanContext));
+        assertTrue(errors.isEmpty(), () -> "Expected Micronaut Security declaring type discovery failure to be suppressed by default, got: " + errors);
+    }
+
+    @Test
+    void nonSuppressedReferenceLoadFailureProducesSyntheticError() {
+        ConfigurableBeanContext beanContext = beanContextProxy(List.of(
+            beanDefinitionReferenceProxy(
+                "com.example.runtime.BrokenBeanDefinition",
+                Object.class,
+                true,
+                true,
+                new IllegalStateException("Reference load failed")
+            )
+        ));
+
+        Set<DependencyInjectionError> errors = assertDoesNotThrow(() -> validator.validate(beanContext));
+
+        assertEquals(1, errors.size(), () -> "Expected one synthetic reference load error, got: " + errors);
+        DependencyInjectionError error = errors.iterator().next();
+        assertEquals("com.example.runtime.BrokenBeanDefinition", error.rootBean());
+        assertEquals("com.example.runtime.BrokenBeanDefinition", error.bean());
+        assertTrue(error.message().contains("bean-definition reference loading failed"), () -> "Unexpected error: " + error);
+        assertFalse(error.message().contains("bean-definition discovery failed before the context was running"), () -> "Unexpected error: " + error);
+        assertEquals("com.example.runtime.BrokenBeanDefinition", error.failingPath().getFirst());
+        assertFalse(error.failingPath().contains("<bean-definition-discovery>"), () -> "Unexpected error: " + error);
+        assertTrue(error.failingPath().contains("failed: Reference load failed"), () -> "Unexpected error: " + error);
+    }
+
+    @Test
+    void suppressedReferenceLoadFailureDoesNotHideNeighborReferenceFailure() {
+        ConfigurableBeanContext beanContext = beanContextProxy(List.of(
+            beanDefinitionReferenceProxy(
+                "io.micronaut.security.oauth2.proxy.WellKnownProxyFilter",
+                Object.class,
+                true,
+                true,
+                new IllegalStateException("Security condition failed")
+            ),
+            beanDefinitionReferenceProxy(
+                "com.example.runtime.UnsuppressedBeanDefinition",
+                Object.class,
+                true,
+                true,
+                new IllegalStateException("Neighbor load failed")
+            )
+        ));
+
+        Set<DependencyInjectionError> errors = assertDoesNotThrow(() -> validator.validate(beanContext));
+
+        assertEquals(1, errors.size(), () -> "Expected only non-suppressed failure to remain, got: " + errors);
+        DependencyInjectionError error = errors.iterator().next();
+        assertEquals("com.example.runtime.UnsuppressedBeanDefinition", error.bean());
+        assertTrue(error.message().contains("Neighbor load failed"), () -> "Unexpected error: " + error);
+        assertFalse(errors.stream().anyMatch(e -> e.bean().contains("WellKnownProxyFilter")),
+            () -> "Expected suppressed Micronaut Security reference failure to be excluded, got: " + errors);
     }
 
     @Test
@@ -553,6 +682,58 @@ class DependencyInjectionValidatorTest {
         return (BeanDefinition<?>) Proxy.newProxyInstance(
             DependencyInjectionValidatorTest.class.getClassLoader(),
             new Class<?>[] {BeanDefinition.class},
+            handler
+        );
+    }
+
+    private static ConfigurableBeanContext beanContextProxy(RuntimeException discoveryFailure) {
+        InvocationHandler handler = (proxy, method, args) -> switch (method.getName()) {
+            case "configure" -> null;
+            case "getBeanDefinitionReferences" -> throw discoveryFailure;
+            case "getDisabledBeans" -> List.of();
+            default -> defaultValue(method.getReturnType());
+        };
+        return (ConfigurableBeanContext) Proxy.newProxyInstance(
+            DependencyInjectionValidatorTest.class.getClassLoader(),
+            new Class<?>[] {ConfigurableBeanContext.class},
+            handler
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ConfigurableBeanContext beanContextProxy(Collection<BeanDefinitionReference<Object>> references) {
+        InvocationHandler handler = (proxy, method, args) -> switch (method.getName()) {
+            case "configure" -> null;
+            case "getBeanDefinitionReferences" -> references;
+            case "getDisabledBeans" -> List.of();
+            default -> defaultValue(method.getReturnType());
+        };
+        return (ConfigurableBeanContext) Proxy.newProxyInstance(
+            DependencyInjectionValidatorTest.class.getClassLoader(),
+            new Class<?>[] {ConfigurableBeanContext.class},
+            handler
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static BeanDefinitionReference<Object> beanDefinitionReferenceProxy(
+        String beanDefinitionName,
+        Class<?> beanType,
+        boolean present,
+        boolean enabled,
+        RuntimeException loadFailure
+    ) {
+        InvocationHandler handler = (proxy, method, args) -> switch (method.getName()) {
+            case "getBeanDefinitionName" -> beanDefinitionName;
+            case "getBeanType" -> beanType;
+            case "isPresent" -> present;
+            case "isEnabled" -> enabled;
+            case "load" -> throw loadFailure;
+            default -> defaultValue(method.getReturnType());
+        };
+        return (BeanDefinitionReference<Object>) Proxy.newProxyInstance(
+            DependencyInjectionValidatorTest.class.getClassLoader(),
+            new Class<?>[] {BeanDefinitionReference.class},
             handler
         );
     }
