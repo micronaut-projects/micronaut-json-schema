@@ -52,7 +52,10 @@ public final class ConfigurationValidatorConfiguration {
     public static final boolean DEFAULT_CACHE = true;
     public static final boolean DEFAULT_FAIL_ON_NOT_PRESENT = true;
     public static final DependencyInjectionValidationStrategy DEFAULT_DI_VALIDATION_STRATEGY = DependencyInjectionValidationStrategy.REACHABLE;
-    public static final List<String> DEFAULT_SUPPRESSIONS = List.of("datasources.*.db-type");
+    public static final List<String> DEFAULT_SUPPRESSIONS = List.of(
+        "datasources.*.db-type",
+        "datasources.*.x-protocol-url"
+    );
     private boolean cache = DEFAULT_CACHE;
     private boolean failOnNotPresent = DEFAULT_FAIL_ON_NOT_PRESENT;
     private List<String> suppressions = DEFAULT_SUPPRESSIONS;

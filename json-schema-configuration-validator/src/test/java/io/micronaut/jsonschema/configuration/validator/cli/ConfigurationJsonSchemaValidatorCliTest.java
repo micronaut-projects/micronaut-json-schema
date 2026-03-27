@@ -52,6 +52,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
         System.clearProperty("micronaut.environments");
         System.clearProperty("spec.name");
         System.clearProperty("datasources.default.db-type");
+        System.clearProperty("datasources.default.x-protocol-url");
     }
 
     @Test
@@ -112,6 +113,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
 
         assertFalse(options.deduceEnvironments());
         assertTrue(options.suppressions().contains("datasources.*.db-type"));
+        assertTrue(options.suppressions().contains("datasources.*.x-protocol-url"));
         assertTrue(options.suppressedInjectionErrors().contains("io.micronaut.security.oauth2.proxy.WellKnownProxyFilter*"));
     }
 
@@ -167,8 +169,9 @@ class ConfigurationJsonSchemaValidatorCliTest {
     }
 
     @Test
-    void datasourceDbTypeIsSuppressedByDefault() throws Exception {
+    void datasourcePropertiesAreSuppressedByDefault() throws Exception {
         System.setProperty("datasources.default.db-type", "postgres");
+        System.setProperty("datasources.default.x-protocol-url", "${auto.test.resources.datasources.default.x-protocol-url}");
 
         Path out = tempDir.resolve("out-datasource-db-type-default-suppress");
         int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
@@ -193,6 +196,13 @@ class ConfigurationJsonSchemaValidatorCliTest {
             () -> "Expected datasource db-type to be downgraded to WARNING, got: " + list);
         assertFalse(list.stream().anyMatch(m -> "datasources.default.db-type".equals(m.get("property")) && "ERROR".equals(m.get("type"))),
             () -> "Expected datasource db-type not to remain ERROR, got: " + list);
+
+        assertTrue(list.stream().anyMatch(m -> "datasources.default.x-protocol-url".equals(m.get("property"))),
+            () -> "Expected suppressed datasource x-protocol-url entry, got: " + list);
+        assertTrue(list.stream().anyMatch(m -> "datasources.default.x-protocol-url".equals(m.get("property")) && "WARNING".equals(m.get("type"))),
+            () -> "Expected datasource x-protocol-url to be downgraded to WARNING, got: " + list);
+        assertFalse(list.stream().anyMatch(m -> "datasources.default.x-protocol-url".equals(m.get("property")) && "ERROR".equals(m.get("type"))),
+            () -> "Expected datasource x-protocol-url not to remain ERROR, got: " + list);
     }
 
     @Test

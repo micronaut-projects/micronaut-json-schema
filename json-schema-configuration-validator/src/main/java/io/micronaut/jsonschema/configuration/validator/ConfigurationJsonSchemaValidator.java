@@ -50,7 +50,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
 
     private final AtomicReference<JsonMapper> jsonMapper = new AtomicReference<>();
     private boolean failOnNotPresent = true;
-    private final AtomicReference<List<String>> suppressionPatterns = new AtomicReference<>(List.of());
+    private final AtomicReference<List<String>> suppressionPatterns = new AtomicReference<>(ConfigurationValidatorConfiguration.DEFAULT_SUPPRESSIONS);
 
     /**
      * @return Whether to fail when configuration contains keys not present in schema.
@@ -89,7 +89,11 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
      * @param suppressionPatterns The suppression patterns
      */
     public void setSuppressionPatterns(@Nullable List<String> suppressionPatterns) {
-        this.suppressionPatterns.set(suppressionPatterns != null ? List.copyOf(suppressionPatterns) : List.of());
+        LinkedHashSet<String> merged = new LinkedHashSet<>(ConfigurationValidatorConfiguration.DEFAULT_SUPPRESSIONS);
+        if (suppressionPatterns != null) {
+            merged.addAll(suppressionPatterns);
+        }
+        this.suppressionPatterns.set(List.copyOf(merged));
     }
 
     /**

@@ -49,6 +49,23 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
+    void validatorIncludesDefaultSuppressionsByDefaultAndWhenCustomizing() {
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+
+        assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
+        assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
+
+        validator.setSuppressionPatterns(List.of("micronaut.http.*"));
+        assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
+        assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.http.*"));
+
+        validator.setSuppressionPatterns(List.of());
+        assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
+        assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
+    }
+
+    @Test
     void doesNotReportMissingRequiredForPropertiesWithSchemaDefault() {
         Environment environment = createEnvironment(Map.of(
             "test.bindable.enabled", StringUtils.TRUE
