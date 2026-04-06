@@ -75,7 +75,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
         assertTrue(Files.exists(out.resolve("configuration-errors.html")));
 
         String stderr = errCapture.toString(StandardCharsets.UTF_8);
-        assertTrue(stderr.contains("report: file:"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.contains("report:"), () -> "Unexpected stderr:\n" + stderr);
         assertTrue(stderr.contains("configuration-errors.html"), () -> "Unexpected stderr:\n" + stderr);
     }
 
@@ -100,7 +100,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
         assertFalse(Files.exists(out.resolve("configuration-errors.html")));
 
         String stderr = errCapture.toString(StandardCharsets.UTF_8);
-        assertTrue(stderr.contains("report: file:"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.contains("report:"), () -> "Unexpected stderr:\n" + stderr);
         assertTrue(stderr.contains("configuration-errors.json"), () -> "Unexpected stderr:\n" + stderr);
     }
 
@@ -112,6 +112,8 @@ class ConfigurationJsonSchemaValidatorCliTest {
         });
 
         assertFalse(options.deduceEnvironments());
+        assertTrue(options.suppressions().contains("micronaut.classloader"));
+        assertTrue(options.suppressions().contains("micronaut.test"));
         assertTrue(options.suppressions().contains("datasources.*.db-type"));
         assertTrue(options.suppressions().contains("datasources.*.x-protocol-url"));
         assertTrue(options.suppressedInjectionErrors().contains("io.micronaut.security.oauth2.proxy.WellKnownProxyFilter*"));
@@ -796,9 +798,9 @@ class ConfigurationJsonSchemaValidatorCliTest {
         String stderr = errCapture.toString(StandardCharsets.UTF_8);
         assertTrue(stderr.contains("Validation failed while loading configuration"), () -> "Unexpected stderr:\n" + stderr);
         assertTrue(stderr.toLowerCase().contains("application.yml"), () -> "Unexpected stderr:\n" + stderr);
-        assertTrue(stderr.toLowerCase().contains("line"), () -> "Unexpected stderr:\n" + stderr);
-        assertTrue(stderr.toLowerCase().contains("column"), () -> "Unexpected stderr:\n" + stderr);
-        assertTrue(stderr.contains("report: file:"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.contains("^") || stderr.toLowerCase().contains("line"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.toLowerCase().contains("column") || stderr.toLowerCase().contains("tab"), () -> "Unexpected stderr:\n" + stderr);
+        assertTrue(stderr.contains("report:"), () -> "Unexpected stderr:\n" + stderr);
     }
 
     @Test

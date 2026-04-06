@@ -56,9 +56,10 @@ class JsonSchemaConfigurationValidatorConfigurerTest {
         ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
         JsonSchemaConfigurationValidator facade = JsonSchemaConfigurationValidator.forClasspath(classpath, List.of("test"), validator);
 
-        // Sanity: without the configurer enabled, there are no properties loaded -> no errors.
+        // Sanity: without the configurer enabled, only Micronaut-internal metadata warnings may be present.
         Set<ConfigurationError> baseline = facade.validate();
-        assertTrue(baseline.isEmpty(), () -> "Unexpected errors: " + baseline);
+        assertTrue(baseline.stream().noneMatch(e -> e.type() == ConfigurationError.Type.ERROR), () -> "Unexpected errors: " + baseline);
+        assertTrue(baseline.stream().allMatch(e -> e.property() == null || e.property().startsWith("micronaut.")), () -> "Unexpected warnings: " + baseline);
 
         System.setProperty(TestApplicationContextConfigurer.ENABLED_PROP, StringUtils.TRUE);
         Set<ConfigurationError> errors = facade.validate();

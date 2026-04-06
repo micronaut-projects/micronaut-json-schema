@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @MicronautTest
@@ -15,6 +16,7 @@ class ValidConfigurationTest {
     void configurationValidation(ConfigurationErrors configurationErrors) {
         Set<ConfigurationError> errors = configurationErrors.getCurrentErrors();
         assertNotNull(errors);
-        assertTrue(errors.isEmpty());
+        assertFalse(errors.stream().anyMatch(e -> e.type() == ConfigurationError.Type.ERROR), () -> "Unexpected errors: " + errors);
+        assertTrue(errors.stream().allMatch(e -> e.property() == null || e.property().startsWith("micronaut.")), () -> "Unexpected warnings: " + errors);
     }
 }

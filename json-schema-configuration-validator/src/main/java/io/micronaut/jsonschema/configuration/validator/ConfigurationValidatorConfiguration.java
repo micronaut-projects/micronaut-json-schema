@@ -53,6 +53,8 @@ public final class ConfigurationValidatorConfiguration {
     public static final boolean DEFAULT_FAIL_ON_NOT_PRESENT = true;
     public static final DependencyInjectionValidationStrategy DEFAULT_DI_VALIDATION_STRATEGY = DependencyInjectionValidationStrategy.REACHABLE;
     public static final List<String> DEFAULT_SUPPRESSIONS = List.of(
+        "micronaut.classloader",
+        "micronaut.test",
         "datasources.*.db-type",
         "datasources.*.x-protocol-url"
     );
