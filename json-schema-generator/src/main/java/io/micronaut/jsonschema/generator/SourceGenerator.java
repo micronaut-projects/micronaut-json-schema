@@ -24,7 +24,6 @@ import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy;
 import io.micronaut.jsonschema.model.Schema;
-import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import io.micronaut.sourcegen.generator.SourceGenerators;
 import io.micronaut.sourcegen.model.*;
 
@@ -59,7 +58,6 @@ import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
  */
 @Internal
 public final class SourceGenerator {
-    private static final int EMBEDDED_SCHEMA_CHUNK_SIZE = 30_000;
 
     private static String inputFileName = null;
     private static VisitorContext.Language language;
@@ -281,10 +279,10 @@ public final class SourceGenerator {
             String builderClassName = packageName + "." + simpleName;
             try (FileWriter writer = new FileWriter(outputFile)) {
                 ObjectDef objectDef = switch (type) {
-                    case ENUM -> buildEnum(jsonSchema, builderClassName, true);
-                    case CLASS -> buildClass(jsonSchema, builderClassName, true);
-                    case INTERFACE -> buildInterface(jsonSchema, builderClassName, true);
-                    case RECORD -> buildRecord(jsonSchema, builderClassName, true);
+                    case ENUM -> buildEnum(jsonSchema, builderClassName);
+                    case CLASS -> buildClass(jsonSchema, builderClassName);
+                    case INTERFACE -> buildInterface(jsonSchema, builderClassName);
+                    case RECORD -> buildRecord(jsonSchema, builderClassName);
                     default -> throw new IllegalStateException("Unexpected enum type: " + type);
                 };
                 sourceGenerator.write(objectDef, writer);
@@ -304,11 +302,10 @@ public final class SourceGenerator {
         }
     }
 
-    public EnumDef buildEnum(Schema jsonSchema, String builderClassName, boolean topLevel) {
+    public EnumDef buildEnum(Schema jsonSchema, String builderClassName) {
         EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
-        addEmbeddedSchemaAnnotation(jsonSchema, enumBuilder, builderClassName, topLevel);
         boolean isComplexEnum = false;
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
         LinkedHashMap<String, Object> enumValues = new LinkedHashMap<>();
@@ -380,21 +377,19 @@ public final class SourceGenerator {
         return enumBuilder.build();
     }
 
-    private RecordDef buildRecord(Schema jsonSchema, String builderClassName, boolean topLevel) {
+    private RecordDef buildRecord(Schema jsonSchema, String builderClassName) {
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
-        addEmbeddedSchemaAnnotation(jsonSchema, objectBuilder, builderClassName, topLevel);
 
         addFields(jsonSchema, objectBuilder);
         return objectBuilder.build();
     }
 
-    private ClassDef buildClass(Schema jsonSchema, String builderClassName, boolean topLevel) {
+    private ClassDef buildClass(Schema jsonSchema, String builderClassName) {
         ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
-        addEmbeddedSchemaAnnotation(jsonSchema, objectBuilder, builderClassName, topLevel);
 
         if (context.hasDefinition(inputFileName + "/superClass")) {
             var superClass = context.getDefinitionType(inputFileName + "/superClass");
@@ -425,11 +420,10 @@ public final class SourceGenerator {
         return objectBuilder.build();
     }
 
-    private InterfaceDef buildInterface(Schema jsonSchema, String builderClassName, boolean topLevel) {
+    private InterfaceDef buildInterface(Schema jsonSchema, String builderClassName) {
         InterfaceDef.InterfaceDefBuilder objectBuilder = InterfaceDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
-        addEmbeddedSchemaAnnotation(jsonSchema, objectBuilder, builderClassName, topLevel);
         if (jsonSchema.hasDiscriminator()) {
             // top level interface
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
@@ -608,7 +602,7 @@ public final class SourceGenerator {
     }
 
     private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
-        EnumDef enumDef = buildEnum(schema, capitalize(propertyName), false);
+        EnumDef enumDef = buildEnum(schema, capitalize(propertyName));
         objectBuilder.addInnerType(enumDef);
         return enumDef.asTypeDef();
     }
@@ -633,36 +627,12 @@ public final class SourceGenerator {
         // inner type
         ObjectDef builder;
         if (shouldBeAClass(schema)) {
-            builder = buildClass(schema, capitalize(propertyName), false);
+            builder = buildClass(schema, capitalize(propertyName));
         } else {
-            builder = buildRecord(schema, capitalize(propertyName), false);
+            builder = buildRecord(schema, capitalize(propertyName));
         }
         objectBuilder.addInnerType(builder);
         return ClassTypeDef.of(builder.getName());
-    }
-
-    private void addEmbeddedSchemaAnnotation(Schema jsonSchema, ObjectDefBuilder builder, String builderClassName, boolean topLevel) {
-        if (!topLevel) {
-            return;
-        }
-        try {
-            String serializedSchema = JsonSchemaMapperFactory.createMapper().writeValueAsString(jsonSchema);
-            builder.addAnnotation(AnnotationsAggregator.getJsonSchemaAnn(splitEmbeddedSchema(serializedSchema)));
-        } catch (RuntimeException e) {
-            throw new IllegalStateException("Unable to serialize schema for generated type " + builderClassName, e);
-        }
-    }
-
-    private List<String> splitEmbeddedSchema(String serializedSchema) {
-        if (serializedSchema.isEmpty()) {
-            return List.of();
-        }
-        List<String> chunks = new ArrayList<>();
-        for (int start = 0; start < serializedSchema.length(); start += EMBEDDED_SCHEMA_CHUNK_SIZE) {
-            int end = Math.min(serializedSchema.length(), start + EMBEDDED_SCHEMA_CHUNK_SIZE);
-            chunks.add(serializedSchema.substring(start, end));
-        }
-        return chunks;
     }
 
     private boolean shouldBeAClass(Schema schema) {

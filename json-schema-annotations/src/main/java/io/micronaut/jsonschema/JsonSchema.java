@@ -57,13 +57,4 @@ public @interface JsonSchema {
      */
     String uri() default "";
 
-    /**
-     * Embedded JSON schema content split into chunks.
-     * This is primarily used for generated classes when no separate classpath
-     * schema resource is available at runtime.
-     *
-     * @return The embedded JSON schema chunks
-     */
-    String[] embedded() default {};
-
 }

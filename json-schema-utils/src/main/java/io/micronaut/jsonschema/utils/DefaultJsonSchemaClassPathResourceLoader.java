@@ -47,7 +47,6 @@ import static io.micronaut.jsonschema.utils.JsonSchemaResourceUtils.CLASSPATH_PR
 class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathResourceLoader {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultJsonSchemaClassPathResourceLoader.class);
     private static final String SUFFIX = ".schema.json";
-    private static final String MEMBER_EMBEDDED = "embedded";
     private static final String MEMBER_URI = "uri";
     private static final String META_INF = "META-INF";
     private static final String SLASH = "/";
@@ -61,13 +60,21 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
     }
 
     public <T> Optional<String> jsonSchemaStringForClass(@NonNull Class<T> type) {
-        String path = jsonSchemaPath(type);
+
+        Optional<String> pathOptional = jsonSchemaPath(type);
+        if (pathOptional.isEmpty()) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("No schema path found for type: {}", type);
+            }
+            return Optional.empty();
+        }
+        String path = pathOptional.get();
         Optional<InputStream> resourceAsStream = resourceLoader.getResourceAsStream(path);
         if (resourceAsStream.isEmpty()) {
             if (LOG.isTraceEnabled()) {
                 LOG.trace("No schema found for type: {} at path: {}", type, path);
             }
-            return embeddedJsonSchema(type);
+            return Optional.empty();
         }
         try (InputStream inputStream = resourceAsStream.get()) {
             return Optional.of(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
@@ -75,7 +82,7 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
             if (LOG.isErrorEnabled()) {
                 LOG.error("Error loading schema", e);
             }
-            return embeddedJsonSchema(type);
+            return Optional.empty();
         }
     }
 
@@ -102,11 +109,11 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
         return null;
     }
 
-    private <T> String jsonSchemaPath(@NonNull Class<T> type) {
+    private <T> Optional<String> jsonSchemaPath(@NonNull Class<T> type) {
         String className = NameUtils.hyphenate(type.getSimpleName());
         try {
             BeanIntrospection<T> introspection = BeanIntrospection.getIntrospection(type);
-            AnnotationValue<JsonSchema> jsonSchemaAnnotationValue = introspection.getAnnotation(JsonSchema.class);
+            AnnotationValue<JsonSchema> jsonSchemaAnnotationValue = introspection.getAnnotation(io.micronaut.jsonschema.JsonSchema.class);
             if (jsonSchemaAnnotationValue == null) {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("JsonSchema annotation not found for type: {}, falling back to conventional schema path", type);
@@ -121,27 +128,6 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
             LOG.debug("Introspection exception for class {}.}", type, e);
         }
         String name = className + SUFFIX;
-        return CLASSPATH_PREFIX + String.join(SLASH, META_INF, jsonSchemaConfiguration.getOutputLocation(), name);
-    }
-
-    private <T> Optional<String> embeddedJsonSchema(@NonNull Class<T> type) {
-        try {
-            BeanIntrospection<T> introspection = BeanIntrospection.getIntrospection(type);
-            AnnotationValue<JsonSchema> jsonSchemaAnnotationValue = introspection.getAnnotation(JsonSchema.class);
-            if (jsonSchemaAnnotationValue != null) {
-                String[] embedded = jsonSchemaAnnotationValue.stringValues(MEMBER_EMBEDDED);
-                if (embedded.length > 0) {
-                    return Optional.of(String.join("", embedded));
-                }
-            }
-        } catch (IntrospectionException e) {
-            LOG.debug("Introspection exception for class {} while reading embedded schema.", type, e);
-        }
-
-        JsonSchema jsonSchema = type.getAnnotation(JsonSchema.class);
-        if (jsonSchema != null && jsonSchema.embedded().length > 0) {
-            return Optional.of(String.join("", jsonSchema.embedded()));
-        }
-        return Optional.empty();
+        return Optional.of(CLASSPATH_PREFIX + String.join(SLASH, META_INF, jsonSchemaConfiguration.getOutputLocation(), name));
     }
 }

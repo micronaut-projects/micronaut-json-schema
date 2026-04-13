@@ -41,7 +41,6 @@ import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName
 @Internal
 public class AnnotationsAggregator {
     public static final String SERDEABLE_ANN = "io.micronaut.serde.annotation.Serdeable";
-    private static final String JSON_SCHEMA_ANN = "io.micronaut.jsonschema.JsonSchema";
     private static final String JACKSON_VALIDATION_PREFIX = "com.fasterxml.jackson.annotation.";
     public static final String JSON_ANY_GETTER_ANN = JACKSON_VALIDATION_PREFIX + "JsonAnyGetter";
     public static final String JSON_ANY_SETTER_ANN = JACKSON_VALIDATION_PREFIX + "JsonAnySetter";
@@ -78,14 +77,6 @@ public class AnnotationsAggregator {
         return AnnotationDef.builder(ClassTypeDef.of(JSON_PROPERTY_ANN))
             .addMember("value", propertyName)
             .build();
-    }
-
-    public static AnnotationDef getJsonSchemaAnn(List<String> embeddedSchemaChunks) {
-        AnnotationDef.AnnotationDefBuilder builder = AnnotationDef.builder(ClassTypeDef.of(JSON_SCHEMA_ANN));
-        if (!embeddedSchemaChunks.isEmpty()) {
-            builder.addMember("embedded", embeddedSchemaChunks);
-        }
-        return builder.build();
     }
 
     public static AnnotationDef getJsonSubTypesAnn(Map<String, String> mapping, GeneratorContext context) {
