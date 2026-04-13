@@ -116,13 +116,13 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
             AnnotationValue<JsonSchema> jsonSchemaAnnotationValue = introspection.getAnnotation(io.micronaut.jsonschema.JsonSchema.class);
             if (jsonSchemaAnnotationValue == null) {
                 if (LOG.isTraceEnabled()) {
-                    LOG.trace("JsonSchema annotation not found for type: {}", type);
+                    LOG.trace("JsonSchema annotation not found for type: {}, falling back to conventional schema path", type);
                 }
-                return Optional.empty();
-            }
-            Optional<String> uriOptional = jsonSchemaAnnotationValue.stringValue(MEMBER_URI);
-            if (uriOptional.isPresent()) {
-                className = uriOptional.get().replace(SLASH, "");
+            } else {
+                Optional<String> uriOptional = jsonSchemaAnnotationValue.stringValue(MEMBER_URI);
+                if (uriOptional.isPresent()) {
+                    className = uriOptional.get().replace(SLASH, "");
+                }
             }
         } catch (IntrospectionException e) {
             LOG.debug("Introspection exception for class {}.}", type, e);

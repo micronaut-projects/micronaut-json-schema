@@ -15,6 +15,7 @@ class JsonSchemaClassPathResourceLoaderTest {
     @Test
     void itIsPossibleToGetTheJsonSchema(JsonSchemaClassPathResourceLoader resourceLoader) {
         assertTrue(resourceLoader.jsonSchemaStringForClass(Product.class).isPresent());
+        assertTrue(resourceLoader.jsonSchemaStringForClass(GeneratedProduct.class).isPresent());
         assertFalse(resourceLoader.jsonSchemaStringForClass(Test.class).isPresent());
     }
 
