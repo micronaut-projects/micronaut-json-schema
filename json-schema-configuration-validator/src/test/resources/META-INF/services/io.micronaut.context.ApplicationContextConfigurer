@@ -1,1 +1,2 @@
 io.micronaut.jsonschema.configuration.validator.TestApplicationContextConfigurer
+io.micronaut.jsonschema.configuration.validator.TestDependencyInjectionApplicationContextConfigurer
