@@ -221,7 +221,8 @@ implements <a href="ConfigurationValidator.html" title="interface in io.micronau
 <h3>getSuppressionPatterns</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">getSuppressionPatterns</span>()</div>
-<div class="block">Patterns used to suppress validation errors. Matching errors are downgraded to warnings.</div>
+<div class="block">Patterns used to suppress validation errors. User-provided matches are downgraded to warnings;
+built-in suppressions are silently ignored.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>The suppression patterns</dd>
@@ -234,7 +235,8 @@ implements <a href="ConfigurationValidator.html" title="interface in io.micronau
 <h3>setSuppressionPatterns</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setSuppressionPatterns</span><wbr><span class="parameters">(@Nullable <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;suppressionPatterns)</span></div>
-<div class="block">Set patterns used to suppress validation errors. Matching errors are downgraded to warnings.
+<div class="block">Set patterns used to suppress validation errors. User-provided matches are downgraded to
+warnings; built-in suppressions are silently ignored.
 Patterns may include <code>*</code> wildcards (for example <code>micronaut.http.*</code>).</div>
 <dl class="notes">
 <dt>Parameters:</dt>
