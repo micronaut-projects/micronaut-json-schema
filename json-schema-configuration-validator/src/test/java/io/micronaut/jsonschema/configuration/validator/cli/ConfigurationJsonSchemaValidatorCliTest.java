@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator.cli;
 import io.micronaut.core.util.StringUtils;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.core.type.Argument;
+import io.micronaut.jsonschema.configuration.validator.TestDependencyInjectionApplicationContextConfigurer;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionValidationStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,8 @@ class ConfigurationJsonSchemaValidatorCliTest {
         System.clearProperty("spec.name");
         System.clearProperty("datasources.default.db-type");
         System.clearProperty("datasources.default.x-protocol-url");
+        System.clearProperty(TestDependencyInjectionApplicationContextConfigurer.ENABLED_PROP);
+        TestDependencyInjectionApplicationContextConfigurer.INVOKED.set(false);
     }
 
     @Test
@@ -271,6 +274,37 @@ class ConfigurationJsonSchemaValidatorCliTest {
             return value.contains("io.micronaut.context.env.Environment")
                 || value.contains("io.micronaut.core.value.PropertyResolver");
         }), () -> "Implicit infrastructure beans should be excluded from DI errors, got: " + diErrors);
+    }
+
+    @Test
+    void dependencyInjectionValidationUsesApplicationContextConfigurersAndWritesReports() throws Exception {
+        System.setProperty(TestDependencyInjectionApplicationContextConfigurer.ENABLED_PROP, StringUtils.TRUE);
+
+        Path out = tempDir.resolve("out-di-configurer");
+        ByteArrayOutputStream errCapture = new ByteArrayOutputStream();
+
+        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+            "--classpath", System.getProperty("java.class.path"),
+            "--out", out.toString(),
+            "--validate-dependency-injection",
+            "--format", "json"
+        }, System.out, new PrintStream(errCapture, true, StandardCharsets.UTF_8));
+
+        assertEquals(1, exit);
+        assertTrue(TestDependencyInjectionApplicationContextConfigurer.INVOKED.get(), "Expected DI ApplicationContextConfigurer to be invoked");
+        assertTrue(Files.exists(out.resolve("configuration-errors.json")));
+
+        List<Map<String, Object>> diErrors = readDependencyInjectionErrors(out);
+        assertFalse(diErrors.isEmpty(), () -> "Expected DI errors after configurer activated the test environment, got: " + diErrors);
+        assertTrue(diErrors.stream().anyMatch(e -> String.valueOf(e.get("injectionPoint")).contains("FixtureContextBean")),
+            () -> "Expected FixtureContextBean DI error after configurer activation, got: " + diErrors);
+
+        String stderr = errCapture.toString(StandardCharsets.UTF_8);
+        assertTrue(stderr.contains("report:"), () -> "Expected report path in stderr, got:\n" + stderr);
+        assertFalse(stderr.contains("Dependency injection validation failed while loading configuration"),
+            () -> "Did not expect fatal DI loading failure, got:\n" + stderr);
+        assertFalse(stderr.contains("Cannot resolve beans until the context is running"),
+            () -> "Did not expect non-running context failure, got:\n" + stderr);
     }
 
     @Test
