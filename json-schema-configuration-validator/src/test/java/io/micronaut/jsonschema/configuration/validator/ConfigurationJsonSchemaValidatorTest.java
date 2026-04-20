@@ -54,15 +54,39 @@ class ConfigurationJsonSchemaValidatorTest {
 
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.home"));
 
         validator.setSuppressionPatterns(List.of("micronaut.http.*"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.home"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.http.*"));
 
         validator.setSuppressionPatterns(List.of());
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.home"));
+    }
+
+    @Test
+    void defaultSuppressionsAreIgnoredInsteadOfReportedAsWarnings() {
+        Environment environment = createEnvironment(Map.of(
+            "datasources.default.db-type", "postgres",
+            "datasources.default.x-protocol-url", "jdbc:mysql://localhost/test",
+            "micronaut.home", "/tmp/micronaut"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("datasources.default.db-type")),
+            () -> "Expected datasource db-type default suppression to be silent, got: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("datasources.default.x-protocol-url")),
+            () -> "Expected datasource x-protocol-url default suppression to be silent, got: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("micronaut.home")),
+            () -> "Expected micronaut.home default suppression to be silent, got: " + errors);
     }
 
     @Test

@@ -54,6 +54,7 @@ public final class ConfigurationValidatorConfiguration {
     public static final DependencyInjectionValidationStrategy DEFAULT_DI_VALIDATION_STRATEGY = DependencyInjectionValidationStrategy.REACHABLE;
     public static final List<String> DEFAULT_SUPPRESSIONS = List.of(
         "micronaut.classloader",
+        "micronaut.home",
         "micronaut.test",
         "datasources.*.db-type",
         "datasources.*.x-protocol-url"
@@ -103,7 +104,8 @@ public final class ConfigurationValidatorConfiguration {
     /**
      * Patterns used to suppress validation errors.
      * <p>
-     * Matching errors are downgraded to warnings.
+     * Matching errors are downgraded to warnings, except for built-in suppressions which are
+     * silently ignored.
      *
      * @return Patterns used to suppress validation errors
      */
