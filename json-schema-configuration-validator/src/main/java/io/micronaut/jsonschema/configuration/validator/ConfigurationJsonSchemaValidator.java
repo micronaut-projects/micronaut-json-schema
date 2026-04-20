@@ -45,12 +45,15 @@ import java.util.regex.Pattern;
  */
 public final class ConfigurationJsonSchemaValidator implements ConfigurationValidator {
     private static final Argument<ConfigurationSchema> CONFIGURATION_SCHEMA_ARGUMENT = Argument.of(ConfigurationSchema.class);
+    private static final List<SuppressionMatcher> DEFAULT_SUPPRESSION_MATCHERS =
+        SuppressionMatcher.compileAll(ConfigurationValidatorConfiguration.DEFAULT_SUPPRESSIONS);
 
     private final SchemaValidationEngine engine = new SchemaValidationEngine();
 
     private final AtomicReference<JsonMapper> jsonMapper = new AtomicReference<>();
     private boolean failOnNotPresent = true;
     private final AtomicReference<List<String>> suppressionPatterns = new AtomicReference<>(ConfigurationValidatorConfiguration.DEFAULT_SUPPRESSIONS);
+    private final AtomicReference<List<String>> customSuppressionPatterns = new AtomicReference<>(List.of());
 
     /**
      * @return Whether to fail when configuration contains keys not present in schema.
@@ -74,7 +77,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
     }
 
     /**
-     * Patterns used to suppress validation errors. Matching errors are downgraded to warnings.
+     * Patterns used to suppress validation errors. User-provided matches are downgraded to warnings;
+     * built-in suppressions are silently ignored.
      *
      * @return The suppression patterns
      */
@@ -83,17 +87,26 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
     }
 
     /**
-     * Set patterns used to suppress validation errors. Matching errors are downgraded to warnings.
+     * Set patterns used to suppress validation errors. User-provided matches are downgraded to
+     * warnings; built-in suppressions are silently ignored.
      * Patterns may include {@code *} wildcards (for example {@code micronaut.http.*}).
      *
      * @param suppressionPatterns The suppression patterns
      */
     public void setSuppressionPatterns(@Nullable List<String> suppressionPatterns) {
         LinkedHashSet<String> merged = new LinkedHashSet<>(ConfigurationValidatorConfiguration.DEFAULT_SUPPRESSIONS);
+        LinkedHashSet<String> custom = new LinkedHashSet<>();
         if (suppressionPatterns != null) {
-            merged.addAll(suppressionPatterns);
+            for (String suppressionPattern : suppressionPatterns) {
+                if (ConfigurationValidatorConfiguration.DEFAULT_SUPPRESSIONS.contains(suppressionPattern)) {
+                    continue;
+                }
+                merged.add(suppressionPattern);
+                custom.add(suppressionPattern);
+            }
         }
         this.suppressionPatterns.set(List.copyOf(merged));
+        this.customSuppressionPatterns.set(List.copyOf(custom));
     }
 
     /**
@@ -171,23 +184,29 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
     }
 
     private Set<ConfigurationError> applySuppressions(Set<ConfigurationError> errors) {
-        List<String> patterns = suppressionPatterns.get();
-        if (patterns.isEmpty() || errors.isEmpty()) {
+        if (errors.isEmpty()) {
             return errors;
         }
 
-        List<SuppressionMatcher> matchers = SuppressionMatcher.compileAll(patterns);
-        if (matchers.isEmpty()) {
+        List<SuppressionMatcher> customMatchers = SuppressionMatcher.compileAll(customSuppressionPatterns.get());
+        if (DEFAULT_SUPPRESSION_MATCHERS.isEmpty() && customMatchers.isEmpty()) {
             return errors;
         }
 
         Set<ConfigurationError> result = new LinkedHashSet<>(errors.size());
         for (ConfigurationError error : errors) {
-            if (error.type() == ConfigurationError.Type.ERROR && matchesAny(matchers, error.property())) {
-                result.add(error.withType(ConfigurationError.Type.WARNING));
-            } else {
+            if (error.type() != ConfigurationError.Type.ERROR) {
                 result.add(error);
+                continue;
             }
+            if (matchesAny(DEFAULT_SUPPRESSION_MATCHERS, error.property())) {
+                continue;
+            }
+            if (matchesAny(customMatchers, error.property())) {
+                result.add(error.withType(ConfigurationError.Type.WARNING));
+                continue;
+            }
+            result.add(error);
         }
         return result;
     }

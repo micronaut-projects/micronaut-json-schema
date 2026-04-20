@@ -116,6 +116,7 @@ class ConfigurationJsonSchemaValidatorCliTest {
 
         assertFalse(options.deduceEnvironments());
         assertTrue(options.suppressions().contains("micronaut.classloader"));
+        assertTrue(options.suppressions().contains("micronaut.home"));
         assertTrue(options.suppressions().contains("micronaut.test"));
         assertTrue(options.suppressions().contains("datasources.*.db-type"));
         assertTrue(options.suppressions().contains("datasources.*.x-protocol-url"));
@@ -177,37 +178,37 @@ class ConfigurationJsonSchemaValidatorCliTest {
     void datasourcePropertiesAreSuppressedByDefault() throws Exception {
         System.setProperty("datasources.default.db-type", "postgres");
         System.setProperty("datasources.default.x-protocol-url", "${auto.test.resources.datasources.default.x-protocol-url}");
+        System.setProperty("micronaut.home", "/tmp/micronaut-home");
 
         Path out = tempDir.resolve("out-datasource-db-type-default-suppress");
-        int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
-            "--classpath", System.getProperty("java.class.path"),
-            "--environments", "test",
-            "--out", out.toString(),
-            "--format", "json"
-        }, System.out, System.err);
+        try {
+            int exit = ConfigurationJsonSchemaValidatorCli.run(new String[] {
+                "--classpath", System.getProperty("java.class.path"),
+                "--environments", "test",
+                "--out", out.toString(),
+                "--format", "json"
+            }, System.out, System.err);
 
-        assertEquals(0, exit);
+            assertEquals(0, exit);
 
-        String json = Files.readString(out.resolve("configuration-errors.json"), StandardCharsets.UTF_8);
-        Object decoded = JsonMapper.createDefault().readValue(json, Argument.of(Object.class));
-        assertNotNull(decoded);
-        assertInstanceOf(Map.class, decoded);
+            String json = Files.readString(out.resolve("configuration-errors.json"), StandardCharsets.UTF_8);
+            Object decoded = JsonMapper.createDefault().readValue(json, Argument.of(Object.class));
+            assertNotNull(decoded);
+            assertInstanceOf(Map.class, decoded);
 
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> list = (List<Map<String, Object>>) ((Map<String, Object>) decoded).get("configurationErrors");
-        assertTrue(list.stream().anyMatch(m -> "datasources.default.db-type".equals(m.get("property"))),
-            () -> "Expected suppressed datasource db-type entry, got: " + list);
-        assertTrue(list.stream().anyMatch(m -> "datasources.default.db-type".equals(m.get("property")) && "WARNING".equals(m.get("type"))),
-            () -> "Expected datasource db-type to be downgraded to WARNING, got: " + list);
-        assertFalse(list.stream().anyMatch(m -> "datasources.default.db-type".equals(m.get("property")) && "ERROR".equals(m.get("type"))),
-            () -> "Expected datasource db-type not to remain ERROR, got: " + list);
-
-        assertTrue(list.stream().anyMatch(m -> "datasources.default.x-protocol-url".equals(m.get("property"))),
-            () -> "Expected suppressed datasource x-protocol-url entry, got: " + list);
-        assertTrue(list.stream().anyMatch(m -> "datasources.default.x-protocol-url".equals(m.get("property")) && "WARNING".equals(m.get("type"))),
-            () -> "Expected datasource x-protocol-url to be downgraded to WARNING, got: " + list);
-        assertFalse(list.stream().anyMatch(m -> "datasources.default.x-protocol-url".equals(m.get("property")) && "ERROR".equals(m.get("type"))),
-            () -> "Expected datasource x-protocol-url not to remain ERROR, got: " + list);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> list = (List<Map<String, Object>>) ((Map<String, Object>) decoded).getOrDefault("configurationErrors", List.of());
+            assertFalse(list.stream().anyMatch(m -> "datasources.default.db-type".equals(m.get("property"))),
+                () -> "Expected datasource db-type default suppression to be silent, got: " + list);
+            assertFalse(list.stream().anyMatch(m -> "datasources.default.x-protocol-url".equals(m.get("property"))),
+                () -> "Expected datasource x-protocol-url default suppression to be silent, got: " + list);
+            assertFalse(list.stream().anyMatch(m -> "micronaut.home".equals(m.get("property"))),
+                () -> "Expected micronaut.home default suppression to be silent, got: " + list);
+        } finally {
+            System.clearProperty("datasources.default.db-type");
+            System.clearProperty("datasources.default.x-protocol-url");
+            System.clearProperty("micronaut.home");
+        }
     }
 
     @Test
