@@ -25,5 +25,7 @@ generator:
   usage: Run-time Generation Configuration
   support: Supported JSON Schema Keywords and Limitations
   example: Example Output of Generation
+registry:
+  title: JSON Schema Registry
 repository: Repository
 releaseHistory: Release History

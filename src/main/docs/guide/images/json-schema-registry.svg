@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="760" height="280" viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Micronaut JSON Schema Registry overview</title>
+  <desc id="desc">High-level diagram showing generation from @JsonSchema types to Confluent Schema Registry and Oracle 23ai JSON Domains</desc>
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Left code box -->
+  <rect x="20" y="30" rx="8" ry="8" width="260" height="220" fill="#0b1220" stroke="#1f2a44" stroke-width="2"/>
+  <text x="40" y="60" font-family="monospace" font-size="14" fill="#cbd5e1">@JsonSchema</text>
+  <text x="40" y="80" font-family="monospace" font-size="14" fill="#e2e8f0">public record MoonPhase(</text>
+  <text x="60" y="100" font-family="monospace" font-size="14" fill="#94a3b8">String phase,</text>
+  <text x="60" y="120" font-family="monospace" font-size="14" fill="#94a3b8">String emoji</text>
+  <text x="40" y="140" font-family="monospace" font-size="14" fill="#e2e8f0">) { }</text>
+  <rect x="40" y="170" rx="4" ry="4" width="220" height="28" fill="url(#g1)"/>
+  <text x="60" y="189" font-family="sans-serif" font-size="13" fill="#fff">Generates JSON Schema</text>
+
+  <!-- Middle schema card -->
+  <rect x="300" y="50" rx="6" ry="6" width="190" height="160" fill="#0b1220" stroke="#1f2a44" stroke-width="2"/>
+  <text x="315" y="75" font-family="sans-serif" font-size="13" fill="#f8fafc">moonPhase.schema.json</text>
+  <text x="315" y="95" font-family="monospace" font-size="12" fill="#cbd5e1">{</text>
+  <text x="325" y="112" font-family="monospace" font-size="12" fill="#cbd5e1">"type": "object",</text>
+  <text x="325" y="129" font-family="monospace" font-size="12" fill="#cbd5e1">"properties": { ... }</text>
+  <text x="315" y="146" font-family="monospace" font-size="12" fill="#cbd5e1">}</text>
+
+  <!-- Arrows -->
+  <polygon points="280,110 300,110 300,116 280,116" fill="#38bdf8"/>
+  <polygon points="490,110 520,110 520,116 490,116" fill="#f59e0b"/>
+
+  <!-- Right targets -->
+  <rect x="530" y="40" rx="10" ry="10" width="210" height="90" fill="url(#g1)"/>
+  <text x="545" y="76" font-family="sans-serif" font-size="16" fill="#ffffff">Schema Registry</text>
+  <text x="545" y="98" font-family="sans-serif" font-size="12" fill="#e5e7eb">Register subject/version</text>
+
+  <rect x="530" y="150" rx="10" ry="10" width="210" height="90" fill="url(#g2)"/>
+  <text x="545" y="186" font-family="sans-serif" font-size="16" fill="#ffffff">Oracle 23ai</text>
+  <text x="545" y="206" font-family="sans-serif" font-size="12" fill="#fef3c7">CREATE DOMAIN AS JSON</text>
+
+  <!-- Legend -->
+  <text x="20" y="20" font-family="sans-serif" font-size="12" fill="#94a3b8">
+    Startup: discover @JsonSchema types → generate JSON Schema → register to configured targets
+  </text>
+</svg>
