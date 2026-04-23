@@ -47,6 +47,7 @@ public final class GeneratorContext {
     private final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private final HashMap<String, LinkedList<String>> TEMP_DEFINITIONS = new HashMap<>();
     private final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
+    private final List<Warning> warnings = new LinkedList<>();
     private SourceGeneratorConfig configuration;
 
     public boolean isDefinitionClass(String key) {
@@ -181,6 +182,7 @@ public final class GeneratorContext {
         DEFINITIONS.clear();
         ONE_OF_SET.clear();
         TEMP_DEFINITIONS.clear();
+        warnings.clear();
     }
 
     private String unifyKey(String key) {
@@ -204,5 +206,30 @@ public final class GeneratorContext {
      */
     public SourceGeneratorConfig getConfiguration() {
         return configuration;
+    }
+
+    /**
+     * Record a non-fatal generation warning.
+     * @param code The machine-readable warning code
+     * @param message The warning message
+     */
+    public void warn(String code, String message) {
+        warnings.add(new Warning(code, message));
+    }
+
+    /**
+     * Get recorded warnings.
+     * @return The warnings
+     */
+    public List<Warning> getWarnings() {
+        return List.copyOf(warnings);
+    }
+
+    /**
+     * A recorded generation warning.
+     * @param code The machine-readable warning code
+     * @param message The warning message
+     */
+    public record Warning(String code, String message) {
     }
 }

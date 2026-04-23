@@ -72,7 +72,7 @@ public class DocumentationInfoAggregator implements SchemaInfoAggregator {
         if (javadocString == null) {
             return;
         }
-        Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocString);
+        Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocString, false);
         if (schema.getDescription() == null && !javadoc.getDescription().isEmpty()) {
             schema.setDescription(javadoc.getDescription().toText());
         }

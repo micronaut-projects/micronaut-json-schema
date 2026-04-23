@@ -6,7 +6,7 @@ pluginManagement {
 }
 
 plugins {
-    id 'io.micronaut.build.shared.settings' version '8.0.0-M17'
+    id 'io.micronaut.build.shared.settings' version '8.0.0-M18'
 }
 
 dependencyResolutionManagement {
@@ -26,6 +26,8 @@ include 'json-schema-annotations'
 include 'json-schema-common'
 include 'json-schema-processor'
 include 'json-schema-generator'
+include 'json-schema-gradle-plugin'
+include 'json-schema-maven-plugin'
 include 'json-schema-utils'
 include 'json-schema-configuration-validator'
 include 'test-suite'
@@ -41,4 +43,6 @@ micronautBuild {
     importMicronautCatalog('micronaut-validation')
     importMicronautCatalog('micronaut-serde')
     importMicronautCatalog('micronaut-sourcegen')
+    importMicronautCatalog('micronaut-sql')
+    importMicronautCatalog('micronaut-testresources')
 }

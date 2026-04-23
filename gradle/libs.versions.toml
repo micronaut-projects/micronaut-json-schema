@@ -16,20 +16,27 @@
 # a managed version (a version which alias starts with "managed-"
 
 [versions]
-micronaut = "5.0.0-M20"
-micronaut-serde = "3.0.0-M5"
+micronaut = "5.0.0-M24"
+micronaut-platform = "5.0.0-M2"
+micronaut-serde = "3.0.0-M6"
 micronaut-sourcegen = "2.0.0-M2"
-micronaut-validation = "5.0.0-M1"
+micronaut-validation = "5.0.0-M2"
+micronaut-testresources = "4.0.0-M1"
 managed-json-schema-validator = "3.0.2"
 java-parser = "3.28.0"
 micronaut-toml = "2.8.0"
-micronaut-sql = "7.0.1-M1"
+micronaut-sql = "7.0.1-M2"
+maven = "3.9.9"
+maven-plugin-tools = "3.15.1"
+maven-plugin-testing-harness = "3.5.0"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
 micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.ref = "micronaut-serde" }
 micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-bom", version.ref = "micronaut-validation" }
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
+micronaut-testresources = { module = "io.micronaut.testresources:micronaut-test-resources-bom", version.ref = "micronaut-testresources" }
+micronaut-sql = { module = "io.micronaut.sql:micronaut-sql-bom", version.ref = "micronaut-sql" }
 
 managed-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "managed-json-schema-validator" }
 
@@ -37,6 +44,10 @@ java-parser = { module = "com.github.javaparser:javaparser-core", version.ref = 
 
 micronaut-toml = { module = "io.micronaut.toml:micronaut-toml", version.ref = "micronaut-toml" }
 micronaut-sql-jdbc-hikari = { module = "io.micronaut.sql:micronaut-jdbc-hikari", version.ref = "micronaut-sql" }
+maven-plugin-api = { module = "org.apache.maven:maven-plugin-api", version.ref = "maven" }
+maven-core = { module = "org.apache.maven:maven-core", version.ref = "maven" }
+maven-plugin-annotations = { module = "org.apache.maven.plugin-tools:maven-plugin-annotations", version.ref = "maven-plugin-tools" }
+maven-plugin-testing-harness = { module = "org.apache.maven.plugin-testing:maven-plugin-testing-harness", version.ref = "maven-plugin-testing-harness" }
 
 [bundles]
 

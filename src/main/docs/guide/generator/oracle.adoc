@@ -1,0 +1,150 @@
+Micronaut JSON Schema can also discover JSON Schema definitions directly from Oracle metadata and generate Java records from the discovered schemas.
+
+The current Oracle discovery pipeline supports:
+
+* Oracle SQL domains that declare JSON validation rules
+* Oracle JSON Relational Duality Views
+
+This flow is available through the dedicated Gradle and Maven plugins included in this project.
+
+== Gradle
+
+Apply the plugin and configure the target package plus the Oracle objects you want to discover:
+
+[source,groovy]
+----
+plugins {
+    id "io.micronaut.jsonschema.oracle"
+}
+
+oracleJsonSchema {
+    targetPackage = "example.oracle.generated"
+    includeDomains = ["APP_JSON"]
+    includeViews = ["APP_VIEW"]
+    sources = ["OracleDomain", "OracleJsonView"]
+}
+----
+
+If the Oracle JDBC driver is not already visible to the task, provide it through `jdbcClasspath`.
+
+[source,groovy]
+----
+configurations {
+    oracleJsonSchemaJdbc
+}
+
+dependencies {
+    oracleJsonSchemaJdbc "com.oracle.database.jdbc:ojdbc11:<version>"
+}
+
+oracleJsonSchema {
+    jdbcClasspath.from(configurations.oracleJsonSchemaJdbc)
+}
+----
+
+=== Gradle credentials
+
+The Gradle plugin can resolve connection settings from explicit extension values, Gradle properties, or environment variables.
+
+[cols="2,2", options="header"]
+|===
+| Value | Supported names
+| JDBC URL
+| `oracleJsonSchema.jdbcUrl`, `ORACLE_JSON_SCHEMA_JDBC_URL`
+| Username
+| `oracleJsonSchema.username`, `ORACLE_JSON_SCHEMA_USERNAME`
+| Password
+| `oracleJsonSchema.password`, `ORACLE_JSON_SCHEMA_PASSWORD`
+| Owner
+| `oracleJsonSchema.owner`, `ORACLE_JSON_SCHEMA_OWNER`
+|===
+
+This lets projects keep secrets outside `build.gradle`, for example in `~/.gradle/gradle.properties`:
+
+[source,properties]
+----
+oracleJsonSchema.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1
+oracleJsonSchema.username=app
+oracleJsonSchema.password=secret
+oracleJsonSchema.owner=APP
+----
+
+== Maven
+
+The Maven plugin can be configured in the build like any other mojo:
+
+[source,xml]
+----
+<plugin>
+  <groupId>io.micronaut.jsonschema</groupId>
+  <artifactId>micronaut-json-schema-maven-plugin</artifactId>
+  <executions>
+    <execution>
+      <goals>
+        <goal>generate-from-oracle-json-schema</goal>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <skip>false</skip>
+    <jdbcUrl>${oracleJsonSchema.jdbcUrl}</jdbcUrl>
+    <targetPackage>example.oracle.generated</targetPackage>
+    <includeDomains>
+      <includeDomain>APP_JSON</includeDomain>
+    </includeDomains>
+    <includeViews>
+      <includeView>APP_VIEW</includeView>
+    </includeViews>
+    <sources>
+      <source>OracleDomain</source>
+      <source>OracleJsonView</source>
+    </sources>
+  </configuration>
+</plugin>
+----
+
+=== Maven credentials
+
+The Maven plugin supports both direct properties and Maven `settings.xml` server lookup.
+
+You can pass connection settings directly on the command line:
+
+[source,bash]
+----
+mvn generate-sources \
+  -DoracleJsonSchema.skip=false \
+  -DoracleJsonSchema.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -DoracleJsonSchema.username=app \
+  -DoracleJsonSchema.password=secret \
+  -DoracleJsonSchema.targetPackage=example.oracle.generated
+----
+
+For better secret handling, configure a Maven server and pass only `serverId`:
+
+[source,xml]
+----
+<settings>
+  <servers>
+    <server>
+      <id>oracle-jsonschema</id>
+      <username>app</username>
+      <password>secret</password>
+    </server>
+  </servers>
+</settings>
+----
+
+[source,bash]
+----
+mvn generate-sources \
+  -DoracleJsonSchema.skip=false \
+  -DoracleJsonSchema.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -DoracleJsonSchema.serverId=oracle-jsonschema \
+  -DoracleJsonSchema.targetPackage=example.oracle.generated
+----
+
+Credential resolution order is:
+
+* Explicit plugin configuration or `-DoracleJsonSchema.username` / `-DoracleJsonSchema.password`
+* `serverId` lookup from Maven `settings.xml`
+* Fail the build if credentials are still missing

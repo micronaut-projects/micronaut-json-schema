@@ -1,0 +1,27 @@
+plugins {
+    id("java-gradle-plugin")
+    id("io.micronaut.build.internal.json-schema-module")
+}
+
+dependencies {
+    implementation(projects.micronautJsonSchemaGenerator)
+    testImplementation(gradleTestKit())
+    testImplementation(mnTest.junit.jupiter.api)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+}
+
+gradlePlugin {
+    plugins {
+        oracleJsonSchema {
+            id = "io.micronaut.jsonschema.oracle"
+            implementationClass = "io.micronaut.jsonschema.gradle.OracleJsonSchemaGradlePlugin"
+        }
+    }
+}
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-gradle-plugin"
+    }
+}

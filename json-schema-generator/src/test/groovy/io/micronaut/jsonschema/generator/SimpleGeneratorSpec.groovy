@@ -3,6 +3,7 @@ package io.micronaut.jsonschema.generator
 
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 class SimpleGeneratorSpec extends AbstractGeneratorSpec {
@@ -11,7 +12,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         when:
         SourceGenerator generator = new SourceGenerator("java")
 
-        Path outputPath = new File("output").toPath() // Define the base output path
+        Path outputPath = Files.createTempDirectory("json-schema-generator-output")
         String packageName = "com.example.project"; // Example package name
         String fileName = "ArrayObject";
         var jsonSchema = '''

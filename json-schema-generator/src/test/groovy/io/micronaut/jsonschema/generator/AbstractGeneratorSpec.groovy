@@ -11,6 +11,7 @@ import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder
 import spock.lang.Specification
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.function.Consumer
 
@@ -19,7 +20,7 @@ class AbstractGeneratorSpec extends Specification {
     TypeDeclaration generateType(String className, String jsonSchema, Consumer<SourceGeneratorConfigBuilder> consumer) {
         SourceGenerator generator = new SourceGenerator("java")
 
-        Path outputPath = new File("output").toPath() // Define the base output path
+        Path outputPath = Files.createTempDirectory("json-schema-generator-output")
         String packageName = "com.example.project"; // Example package name
 
         var builder = new SourceGeneratorConfigBuilder()

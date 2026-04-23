@@ -35,6 +35,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -160,11 +161,11 @@ public final class SourceGenerator {
      * @param config     The SourceGeneratorConfig
      */
     private void generateFolder(SourceGeneratorConfig config) throws IOException {
-        HashMap<Schema, String> schemas = new HashMap<>();
+        LinkedHashMap<Schema, String> schemas = new LinkedHashMap<>();
         Path jsonFolder =  config.inputFolder();
         // Walk through the directory to find all json files
         try (Stream<Path> paths = Files.walk(jsonFolder).filter(file -> file.toString().endsWith(".schema.json"))) {
-            paths.forEach(path -> {
+            paths.sorted(Comparator.naturalOrder()).forEach(path -> {
                 // Read content of each JSON file
                 var jsonSchema = new FileLoader(path.toFile()).load();
                 assert jsonSchema != null;
@@ -381,6 +382,7 @@ public final class SourceGenerator {
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addJsonSchemaAnnotation(objectBuilder);
 
         addFields(jsonSchema, objectBuilder);
         return objectBuilder.build();
@@ -390,6 +392,7 @@ public final class SourceGenerator {
         ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addJsonSchemaAnnotation(objectBuilder);
 
         if (context.hasDefinition(inputFileName + "/superClass")) {
             var superClass = context.getDefinitionType(inputFileName + "/superClass");
@@ -424,6 +427,7 @@ public final class SourceGenerator {
         InterfaceDef.InterfaceDefBuilder objectBuilder = InterfaceDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addJsonSchemaAnnotation(objectBuilder);
         if (jsonSchema.hasDiscriminator()) {
             // top level interface
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
@@ -441,20 +445,35 @@ public final class SourceGenerator {
 
         if (jsonSchema.hasProperties()) {
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();
-            jsonSchema.getProperties().forEach((key, value) -> addField(
-                builder,
-                key,
-                value,
-                requiredProperties.contains(key)
-            ));
+            Stream<Map.Entry<String, Schema>> propertyStream = jsonSchema.getProperties().entrySet().stream();
+            if (shouldSortPropertiesByName()) {
+                propertyStream = propertyStream.sorted(Map.Entry.comparingByKey());
+            }
+            propertyStream.forEach(entry -> addField(
+                    builder,
+                    entry.getKey(),
+                    entry.getValue(),
+                    requiredProperties.contains(entry.getKey())
+                ));
 
-            if (jsonSchema.hasAdditionalProperties() && !jsonSchema.getAdditionalProperties().equals(Schema.FALSE)) {
+            if (shouldGenerateAdditionalProperties(jsonSchema)) {
                 addAdditionalField(jsonSchema, builder);
             }
+        } else if (shouldGenerateAdditionalProperties(jsonSchema)) {
+            addAdditionalField(jsonSchema, builder);
         }
     }
 
     private void addAdditionalField(Schema jsonSchema, ObjectDefBuilder builder) {
+        if (supportsAdditionalPropertiesAsField()) {
+            if (jsonSchema.hasProperties()) {
+                context.warn("OPEN_OBJECT_GENERATED", "Generated additionalProperties map for " + inputFileName);
+            }
+            builder.addProperty(PropertyDef.builder("additionalProperties")
+                .ofType(TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, getOracleAdditionalPropertyType(jsonSchema)))
+                .build());
+            return;
+        }
         TypeDef mapType;
         if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
             mapType = TypeDef.OBJECT;
@@ -510,6 +529,9 @@ public final class SourceGenerator {
         }
 
         TypeDef propertyType = getPropertyType(objectBuilder, schema, name);
+        if (shouldBoxOptionalBooleans() && !isRequired && propertyType.equals(TypeDef.Primitive.BOOLEAN)) {
+            propertyType = TypeDef.Primitive.BOOLEAN_WRAPPER;
+        }
         // add annotations
         var annotations = AnnotationsAggregator.getAnnotations(schema, propertyType, isRequired);
         if (!annotations.isEmpty()) {
@@ -564,6 +586,8 @@ public final class SourceGenerator {
             propertyType = getListTypeDef(objectBuilder, name, schema);
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
+        } else if (supportsAdditionalPropertiesAsField() && propertyType.equals(TypeDef.OBJECT) && shouldGenerateAdditionalProperties(schema)) {
+            return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, getOracleAdditionalPropertyType(schema));
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties()) {
             if (schema.getAdditionalProperties().equals(Schema.TRUE)) {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
@@ -602,7 +626,7 @@ public final class SourceGenerator {
     }
 
     private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
-        EnumDef enumDef = buildEnum(schema, capitalize(propertyName));
+        EnumDef enumDef = buildEnum(schema, getClassName(propertyName));
         objectBuilder.addInnerType(enumDef);
         return enumDef.asTypeDef();
     }
@@ -627,9 +651,9 @@ public final class SourceGenerator {
         // inner type
         ObjectDef builder;
         if (shouldBeAClass(schema)) {
-            builder = buildClass(schema, capitalize(propertyName));
+            builder = buildClass(schema, getClassName(propertyName));
         } else {
-            builder = buildRecord(schema, capitalize(propertyName));
+            builder = buildRecord(schema, getClassName(propertyName));
         }
         objectBuilder.addInnerType(builder);
         return ClassTypeDef.of(builder.getName());
@@ -640,6 +664,9 @@ public final class SourceGenerator {
             return true;
         }
         boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
+        if (supportsAdditionalPropertiesAsField()) {
+            return hasOverLimitParameters || schema.hasConstValue();
+        }
         return hasOverLimitParameters || schema.hasAdditionalProperties() || schema.hasConstValue();
     }
 
@@ -661,5 +688,48 @@ public final class SourceGenerator {
 
     public static VisitorContext.Language getLanguage() {
         return language;
+    }
+
+    /**
+     * Get recorded warnings for the latest generation run.
+     * @return The warnings
+     */
+    public List<GeneratorContext.Warning> getWarnings() {
+        return context.getWarnings();
+    }
+
+    private boolean shouldAddGeneratedJsonSchemaAnnotation() {
+        return context.getConfiguration().addGeneratedJsonSchemaAnnotation();
+    }
+
+    private void addJsonSchemaAnnotation(ObjectDefBuilder builder) {
+        if (shouldAddGeneratedJsonSchemaAnnotation()) {
+            builder.addAnnotation(ClassTypeDef.of(io.micronaut.jsonschema.JsonSchema.class));
+        }
+    }
+
+    private boolean shouldGenerateAdditionalProperties(Schema schema) {
+        return supportsAdditionalPropertiesAsField()
+            ? !Schema.FALSE.equals(schema.getAdditionalProperties())
+            : schema.hasAdditionalProperties() && !Schema.FALSE.equals(schema.getAdditionalProperties());
+    }
+
+    private boolean supportsAdditionalPropertiesAsField() {
+        return context.getConfiguration().treatAdditionalPropertiesAsField();
+    }
+
+    private boolean shouldBoxOptionalBooleans() {
+        return context.getConfiguration().boxOptionalBooleans();
+    }
+
+    private boolean shouldSortPropertiesByName() {
+        return context.getConfiguration().sortPropertiesByName();
+    }
+
+    private TypeDef getOracleAdditionalPropertyType(Schema schema) {
+        if (!schema.hasAdditionalProperties() || Schema.TRUE.equals(schema.getAdditionalProperties())) {
+            return TypeDef.OBJECT;
+        }
+        return getTypeDefFromJson(schema.getAdditionalProperties(), context);
     }
 }

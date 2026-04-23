@@ -1,0 +1,11 @@
+<component-set>
+  <components>
+    <component>
+      <role>org.apache.maven.plugin.Mojo</role>
+      <role-hint>io.micronaut.jsonschema:micronaut-json-schema-maven-plugin:${project.version}:generate-from-oracle-json-schema</role-hint>
+      <implementation>io.micronaut.jsonschema.maven.GenerateFromOracleJsonSchemaMojo</implementation>
+      <instantiation-strategy>per-lookup</instantiation-strategy>
+      <description>Test component descriptor for the Oracle JSON Schema mojo.</description>
+    </component>
+  </components>
+</component-set>
