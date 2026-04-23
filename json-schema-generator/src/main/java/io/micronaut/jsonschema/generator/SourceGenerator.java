@@ -206,18 +206,18 @@ public final class SourceGenerator {
             });
         }
         if (jsonSchema.has$defs()) {
-            jsonSchema.get$defs().forEach((key, value) -> {
-                if (key.equals("//")) {
+            jsonSchema.get$defs().forEach((s, schema) -> {
+                if (s.equals("//")) {
                     if (!jsonSchema.hasDescription()) {
-                        jsonSchema.setDescription(String.valueOf(value));
+                        jsonSchema.setDescription(String.valueOf(schema));
                     } else {
-                        jsonSchema.setDescription(jsonSchema.getDescription() + "<br>" + value);
+                        jsonSchema.setDescription(jsonSchema.getDescription() + "<br>" + schema);
                     }
-                } else if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
+                } else if (schema.hasOneOf() && jsonSchema.hasDiscriminator()) {
                     // WARNING: assumes the same interface as top level schema
-                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, TypeDef.THIS, true);
+                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + s, TypeDef.THIS, true);
                 } else {
-                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, value);
+                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + s, schema);
                 }
             });
         }
