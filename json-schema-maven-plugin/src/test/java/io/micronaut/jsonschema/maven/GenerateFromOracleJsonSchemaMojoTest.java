@@ -70,7 +70,7 @@ class GenerateFromOracleJsonSchemaMojoTest {
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
         mojo.sources = List.of(
             source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "APP", Map.of("include", "APP_JSON")),
-            source("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", "APP", Map.of("include", "APP_VIEW"))
+            source("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider", "APP", Map.of("include", "APP_VIEW"))
         );
         mojo.skipOnError = true;
         mojo.failOnMissingDb = false;
@@ -88,7 +88,7 @@ class GenerateFromOracleJsonSchemaMojoTest {
         assertEquals(tempDir.resolve("generated-sources"), config.outputDir());
         assertEquals(List.of(
             new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "APP", Map.of("include", "APP_JSON")),
-            new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", "APP", Map.of("include", "APP_VIEW"))
+            new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider", "APP", Map.of("include", "APP_VIEW"))
         ), config.sources());
         assertTrue(config.skipOnError());
         assertFalse(config.failOnMissingDb());

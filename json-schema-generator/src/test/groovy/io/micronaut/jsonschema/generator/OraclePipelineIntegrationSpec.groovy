@@ -97,7 +97,7 @@ class OraclePipelineIntegrationSpec extends Specification {
                 outputDir,
                 [
                     new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, [include: domainName]),
-                    new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", null, [include: viewName])
+                    new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider", null, [include: viewName])
                 ],
                 false,
                 true

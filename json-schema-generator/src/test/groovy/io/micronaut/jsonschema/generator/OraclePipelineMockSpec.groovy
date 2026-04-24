@@ -113,7 +113,7 @@ class OraclePipelineMockSpec extends Specification {
                     "io.micronaut.jsonschema.oracle.generated",
                     schemaCacheDir,
                     outputDir,
-                    [new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", null, [include: "APARTMENT_VIEW"])],
+                    [new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider", null, [include: "APARTMENT_VIEW"])],
                     true,
                     true
                 )

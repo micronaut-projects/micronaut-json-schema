@@ -28,7 +28,7 @@
             </source>
             <source>
               <name>views</name>
-              <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider</providerClassName>
+              <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider</providerClassName>
               <owner>APP</owner>
               <options>
                 <include>APP_VIEW</include>

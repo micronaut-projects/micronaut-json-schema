@@ -44,7 +44,7 @@ class GenerateFromOracleJsonSchemaMojoHarnessTest {
         assertEquals("APP", mojo.getSources().get(0).getOwner());
         assertEquals("APP_JSON", mojo.getSources().get(0).getOptions().get("include"));
         assertEquals("views", mojo.getSources().get(1).getName());
-        assertEquals("io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", mojo.getSources().get(1).getProviderClassName());
+        assertEquals("io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider", mojo.getSources().get(1).getProviderClassName());
         assertEquals("APP_VIEW", mojo.getSources().get(1).getOptions().get("include"));
         assertTrue(mojo.isSkipOnError());
         assertFalse(mojo.isFailOnMissingDb());

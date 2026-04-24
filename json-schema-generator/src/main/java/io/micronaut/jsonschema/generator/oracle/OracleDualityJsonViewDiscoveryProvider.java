@@ -29,7 +29,7 @@ import java.util.Set;
  *
  * @since 2.0.0
  */
-public final class OracleJsonViewDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+public final class OracleDualityJsonViewDiscoveryProvider implements OracleSchemaDiscoveryProvider {
 
     @Override
     public OracleDiscoveryResult discover(Connection connection,

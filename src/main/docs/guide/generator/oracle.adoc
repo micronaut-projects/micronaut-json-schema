@@ -10,7 +10,7 @@ This flow is available through the dedicated Gradle and Maven plugins included i
 Built-in Oracle discovery providers are configured by class name:
 
 * `io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider`
-* `io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider`
+* `io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider`
 
 Each configured source declares:
 
@@ -42,7 +42,7 @@ oracleJsonSchema {
         ],
         [
             name: "views",
-            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider",
+            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider",
             owner: "APP",
             options: [
                 include: "APP_VIEW"
@@ -116,7 +116,7 @@ The built-in providers currently support these source options:
 | `io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider`
 | `include`, `exclude`
 
-| `io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider`
+| `io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider`
 | `include`, `exclude`
 |===
 
@@ -177,7 +177,7 @@ The Maven plugin can be configured in the build like any other mojo:
       </source>
       <source>
         <name>views</name>
-        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider</providerClassName>
+        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider</providerClassName>
         <owner>APP</owner>
         <options>
           <include>APP_VIEW</include>

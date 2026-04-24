@@ -76,7 +76,7 @@ oracleJsonSchema {
     targetPackage = 'io.micronaut.jsonschema.oracle.generated'
     sources = [
         [name: 'domains', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider', owner: 'APP', options: [include: 'APP_JSON']],
-        [name: 'views', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider', owner: 'APP', options: [include: 'APP_VIEW']]
+        [name: 'views', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider', owner: 'APP', options: [include: 'APP_VIEW']]
     ]
     skipOnError = true
     failOnMissingDb = false
@@ -91,7 +91,7 @@ tasks.register('assertOracleExtensionMapping') {
         assert generateTask.targetPackage.get() == 'io.micronaut.jsonschema.oracle.generated'
         assert generateTask.sources.get() == [
             [name: 'domains', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider', owner: 'APP', options: [include: 'APP_JSON']],
-            [name: 'views', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider', owner: 'APP', options: [include: 'APP_VIEW']]
+            [name: 'views', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider', owner: 'APP', options: [include: 'APP_VIEW']]
         ]
         assert generateTask.skipOnError.get()
         assert !generateTask.failOnMissingDb.get()

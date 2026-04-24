@@ -76,7 +76,7 @@ class OracleJsonSchemaGradlePluginTest {
         task.getOutputDir().set(tempDir.resolve("generated-sources").toFile());
         task.getSources().set(List.of(
             Map.of("name", "domains", "providerClassName", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "owner", "APP", "options", Map.of("include", "APP_JSON")),
-            Map.of("name", "views", "providerClassName", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", "owner", "APP", "options", Map.of("include", "APP_VIEW"))
+            Map.of("name", "views", "providerClassName", "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider", "owner", "APP", "options", Map.of("include", "APP_VIEW"))
         ));
         task.getSkipOnError().set(true);
         task.getFailOnMissingDb().set(false);
@@ -93,7 +93,7 @@ class OracleJsonSchemaGradlePluginTest {
         assertEquals(tempDir.resolve("generated-sources"), config.outputDir());
         assertEquals(List.of(
             new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "APP", Map.of("include", "APP_JSON")),
-            new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", "APP", Map.of("include", "APP_VIEW"))
+            new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider", "APP", Map.of("include", "APP_VIEW"))
         ), config.sources());
         assertTrue(config.skipOnError());
         assertFalse(config.failOnMissingDb());
