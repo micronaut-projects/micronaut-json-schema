@@ -19,7 +19,7 @@
 micronaut = "5.0.0-M24"
 micronaut-serde = "3.0.0-M7"
 micronaut-sourcegen = "2.0.0-M2"
-micronaut-validation = "5.0.0-M1"
+micronaut-validation = "5.0.0-M2"
 managed-json-schema-validator = "3.0.2"
 java-parser = "3.28.0"
 micronaut-toml = "2.8.0"
