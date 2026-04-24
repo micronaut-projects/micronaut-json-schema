@@ -4,8 +4,8 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.json.JsonMapper
 import io.micronaut.json.tree.JsonNode
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig.DiscoverySource
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaPipeline
+import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
 import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Specification
@@ -92,13 +92,13 @@ class OraclePipelineIntegrationSpec extends Specification {
                 jdbcUrl,
                 username,
                 password,
-                null,
                 "io.micronaut.jsonschema.oracle.generated",
                 schemaCacheDir,
                 outputDir,
-                [domainName],
-                [viewName],
-                [DiscoverySource.ORACLE_DOMAIN, DiscoverySource.ORACLE_JSON_VIEW],
+                [
+                    new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, [include: domainName]),
+                    new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", null, [include: viewName])
+                ],
                 false,
                 true
             )
@@ -111,10 +111,10 @@ class OraclePipelineIntegrationSpec extends Specification {
 
         and:
         def manifest = readJson(result.manifestPath())
-        jsonAt(manifest, "discovery", "domains", 0, "name").getStringValue() == domainName
-        jsonAt(manifest, "discovery", "domains", 0, "source").getStringValue() == "DOMAIN_DDL"
-        jsonAt(manifest, "discovery", "dualityViews", 0, "name").getStringValue() == viewName
-        jsonAt(manifest, "discovery", "dualityViews", 0, "source").getStringValue() == "DUALITY_DB_PROVIDED"
+        jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == domainName
+        jsonAt(manifest, "discovery", "schemas", 0, "source").getStringValue() == "DOMAIN_DDL"
+        jsonAt(manifest, "discovery", "schemas", 1, "name").getStringValue() == viewName
+        jsonAt(manifest, "discovery", "schemas", 1, "source").getStringValue() == "DUALITY_DB_PROVIDED"
         jsonAt(manifest, "emittedSchemaFiles").size() == 2
 
         and:

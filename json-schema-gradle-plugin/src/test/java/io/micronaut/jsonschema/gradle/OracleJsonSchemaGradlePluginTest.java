@@ -16,8 +16,8 @@
 package io.micronaut.jsonschema.gradle;
 
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig;
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig.DiscoverySource;
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger;
+import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -27,6 +27,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,8 +56,6 @@ class OracleJsonSchemaGradlePluginTest {
         assertEquals(projectDir.resolve("build/generated/sources/oracle-jsonschema"), task.getOutputDir().get().getAsFile().toPath());
         assertFalse(task.getSkipOnError().get());
         assertTrue(task.getFailOnMissingDb().get());
-        assertTrue(task.getIncludeDomains().get().isEmpty());
-        assertTrue(task.getIncludeViews().get().isEmpty());
         assertTrue(task.getSources().get().isEmpty());
         assertTrue(sourceSets.getByName("main").getJava().getSrcDirs().contains(task.getGeneratedSourcesDirectory().toFile()));
     }
@@ -72,13 +71,13 @@ class OracleJsonSchemaGradlePluginTest {
         task.getJdbcUrl().set("jdbc:oracle:thin:@localhost:1521/FREEPDB1");
         task.getUsername().set("app");
         task.getPassword().set("secret");
-        task.getOwner().set("APP");
         task.getTargetPackage().set("io.micronaut.jsonschema.oracle.generated");
         task.getSchemaCacheDir().set(tempDir.resolve("schema-cache").toFile());
         task.getOutputDir().set(tempDir.resolve("generated-sources").toFile());
-        task.getIncludeDomains().set(List.of("APP_JSON"));
-        task.getIncludeViews().set(List.of("APP_VIEW"));
-        task.getSources().set(List.of("OracleDomain", "OracleJsonView"));
+        task.getSources().set(List.of(
+            Map.of("name", "domains", "providerClassName", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "owner", "APP", "options", Map.of("include", "APP_JSON")),
+            Map.of("name", "views", "providerClassName", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", "owner", "APP", "options", Map.of("include", "APP_VIEW"))
+        ));
         task.getSkipOnError().set(true);
         task.getFailOnMissingDb().set(false);
 
@@ -89,13 +88,13 @@ class OracleJsonSchemaGradlePluginTest {
         assertEquals("jdbc:oracle:thin:@localhost:1521/FREEPDB1", config.jdbcUrl());
         assertEquals("app", config.username());
         assertEquals("secret", config.password());
-        assertEquals("APP", config.owner());
         assertEquals("io.micronaut.jsonschema.oracle.generated", config.targetPackage());
         assertEquals(tempDir.resolve("schema-cache"), config.schemaCacheDir());
         assertEquals(tempDir.resolve("generated-sources"), config.outputDir());
-        assertEquals(List.of("APP_JSON"), config.includeDomains());
-        assertEquals(List.of("APP_VIEW"), config.includeViews());
-        assertEquals(List.of(DiscoverySource.ORACLE_DOMAIN, DiscoverySource.ORACLE_JSON_VIEW), config.sources());
+        assertEquals(List.of(
+            new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "APP", Map.of("include", "APP_JSON")),
+            new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", "APP", Map.of("include", "APP_VIEW"))
+        ), config.sources());
         assertTrue(config.skipOnError());
         assertFalse(config.failOnMissingDb());
     }
@@ -107,7 +106,7 @@ class OracleJsonSchemaGradlePluginTest {
         private OracleJsonSchemaGeneratorConfig capturedConfig;
 
         @Override
-        void executePipeline(OracleJsonSchemaLogger logger, OracleJsonSchemaGeneratorConfig config) {
+        void executePipeline(OracleJsonSchemaLogger logger, OracleJsonSchemaGeneratorConfig config, ClassLoader providerClassLoader) {
             this.capturedConfig = config;
         }
 

@@ -16,8 +16,8 @@
 package io.micronaut.jsonschema.maven;
 
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig;
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig.DiscoverySource;
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger;
+import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.settings.Server;
@@ -28,7 +28,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,13 +65,13 @@ class GenerateFromOracleJsonSchemaMojoTest {
         mojo.jdbcUrl = "jdbc:oracle:thin:@localhost:1521/FREEPDB1";
         mojo.username = "app";
         mojo.password = "secret";
-        mojo.owner = "APP";
         mojo.targetPackage = "io.micronaut.jsonschema.oracle.generated";
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
-        mojo.includeDomains = List.of("APP_JSON");
-        mojo.includeViews = List.of("APP_VIEW");
-        mojo.sources = List.of("OracleDomain", "OracleJsonView");
+        mojo.sources = List.of(
+            source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "APP", Map.of("include", "APP_JSON")),
+            source("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", "APP", Map.of("include", "APP_VIEW"))
+        );
         mojo.skipOnError = true;
         mojo.failOnMissingDb = false;
         mojo.project = new MavenProject();
@@ -81,13 +83,13 @@ class GenerateFromOracleJsonSchemaMojoTest {
         assertEquals("jdbc:oracle:thin:@localhost:1521/FREEPDB1", config.jdbcUrl());
         assertEquals("app", config.username());
         assertEquals("secret", config.password());
-        assertEquals("APP", config.owner());
         assertEquals("io.micronaut.jsonschema.oracle.generated", config.targetPackage());
         assertEquals(tempDir.resolve("schema-cache"), config.schemaCacheDir());
         assertEquals(tempDir.resolve("generated-sources"), config.outputDir());
-        assertEquals(List.of("APP_JSON"), config.includeDomains());
-        assertEquals(List.of("APP_VIEW"), config.includeViews());
-        assertEquals(List.of(DiscoverySource.ORACLE_DOMAIN, DiscoverySource.ORACLE_JSON_VIEW), config.sources());
+        assertEquals(List.of(
+            new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "APP", Map.of("include", "APP_JSON")),
+            new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", "APP", Map.of("include", "APP_VIEW"))
+        ), config.sources());
         assertTrue(config.skipOnError());
         assertFalse(config.failOnMissingDb());
         assertEquals(List.of(tempDir.resolve("generated-sources").toFile().getAbsolutePath()), mojo.project.getCompileSourceRoots());
@@ -104,6 +106,7 @@ class GenerateFromOracleJsonSchemaMojoTest {
         mojo.targetPackage = "io.micronaut.jsonschema.oracle.generated";
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
+        mojo.sources = List.of(source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, Map.of("include", "APP_JSON")));
         mojo.project = new MavenProject();
         mojo.failure = failure;
 
@@ -129,6 +132,7 @@ class GenerateFromOracleJsonSchemaMojoTest {
         mojo.targetPackage = "io.micronaut.jsonschema.oracle.generated";
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
+        mojo.sources = List.of(source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "APP", Map.of("include", "APP_JSON")));
         mojo.project = new MavenProject();
 
         mojo.execute();
@@ -147,11 +151,34 @@ class GenerateFromOracleJsonSchemaMojoTest {
         mojo.targetPackage = "io.micronaut.jsonschema.oracle.generated";
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
+        mojo.sources = List.of(source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", "APP", Map.of("include", "APP_JSON")));
         mojo.project = new MavenProject();
 
         MojoExecutionException exception = assertThrows(MojoExecutionException.class, mojo::execute);
 
         assertEquals("Missing required Oracle JSON Schema parameter: username", exception.getMessage());
+    }
+
+    private static GenerateFromOracleJsonSchemaMojo.SourceConfiguration source(String name,
+                                                                               String providerClassName,
+                                                                               String owner,
+                                                                               Map<String, String> options) {
+        GenerateFromOracleJsonSchemaMojo.SourceConfiguration source = new GenerateFromOracleJsonSchemaMojo.SourceConfiguration();
+        setField(source, "name", name);
+        setField(source, "providerClassName", providerClassName);
+        setField(source, "owner", owner);
+        setField(source, "options", new LinkedHashMap<>(options));
+        return source;
+    }
+
+    private static void setField(Object target, String name, Object value) {
+        try {
+            java.lang.reflect.Field field = target.getClass().getDeclaredField(name);
+            field.setAccessible(true);
+            field.set(target, value);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**
@@ -161,13 +188,10 @@ class GenerateFromOracleJsonSchemaMojoTest {
         private String jdbcUrl;
         private String username;
         private String password;
-        private String owner;
         private String targetPackage;
         private File schemaCacheDir;
         private File outputDir;
-        private List<String> includeDomains = List.of();
-        private List<String> includeViews = List.of();
-        private List<String> sources = List.of();
+        private List<SourceConfiguration> sources = List.of();
         private boolean skipOnError;
         private boolean failOnMissingDb = true;
         private boolean skip = true;
@@ -191,11 +215,6 @@ class GenerateFromOracleJsonSchemaMojoTest {
         }
 
         @Override
-        protected String getOwner() {
-            return owner;
-        }
-
-        @Override
         protected String getTargetPackage() {
             return targetPackage;
         }
@@ -211,17 +230,7 @@ class GenerateFromOracleJsonSchemaMojoTest {
         }
 
         @Override
-        protected List<String> getIncludeDomains() {
-            return includeDomains;
-        }
-
-        @Override
-        protected List<String> getIncludeViews() {
-            return includeViews;
-        }
-
-        @Override
-        protected List<String> getSources() {
+        protected List<SourceConfiguration> getSources() {
             return sources;
         }
 
@@ -259,13 +268,10 @@ class GenerateFromOracleJsonSchemaMojoTest {
      */
     static final class SettingsBackedGenerateFromOracleJsonSchemaMojo extends GenerateFromOracleJsonSchemaMojo {
         private String jdbcUrl;
-        private String owner;
         private String targetPackage;
         private File schemaCacheDir;
         private File outputDir;
-        private List<String> includeDomains = List.of();
-        private List<String> includeViews = List.of();
-        private List<String> sources = List.of();
+        private List<SourceConfiguration> sources = List.of();
         private boolean skipOnError;
         private boolean failOnMissingDb = true;
         private boolean skip = true;
@@ -277,11 +283,6 @@ class GenerateFromOracleJsonSchemaMojoTest {
         @Override
         protected String getJdbcUrl() {
             return jdbcUrl;
-        }
-
-        @Override
-        protected String getOwner() {
-            return owner;
         }
 
         @Override
@@ -300,17 +301,7 @@ class GenerateFromOracleJsonSchemaMojoTest {
         }
 
         @Override
-        protected List<String> getIncludeDomains() {
-            return includeDomains;
-        }
-
-        @Override
-        protected List<String> getIncludeViews() {
-            return includeViews;
-        }
-
-        @Override
-        protected List<String> getSources() {
+        protected List<SourceConfiguration> getSources() {
             return sources;
         }
 

@@ -16,9 +16,9 @@
 package io.micronaut.jsonschema.gradle;
 
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig;
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig.DiscoverySource;
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger;
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaPipeline;
+import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
@@ -27,7 +27,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
-import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
@@ -39,7 +38,9 @@ import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Enumeration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -68,13 +69,6 @@ public abstract class OracleJsonSchemaGenerateTask extends DefaultTask {
     public abstract Property<String> getPassword();
 
     /**
-     * @return The optional owner.
-     */
-    @Input
-    @Optional
-    public abstract Property<String> getOwner();
-
-    /**
      * @return The target package.
      */
     @Input
@@ -93,28 +87,23 @@ public abstract class OracleJsonSchemaGenerateTask extends DefaultTask {
     public abstract DirectoryProperty getOutputDir();
 
     /**
-     * @return The included domains.
+     * @return The configured discovery sources. Each map supports the keys
+     * {@code name}, {@code providerClassName}, {@code owner}, and {@code options}.
      */
     @Input
-    public abstract ListProperty<String> getIncludeDomains();
-
-    /**
-     * @return The included duality views.
-     */
-    @Input
-    public abstract ListProperty<String> getIncludeViews();
-
-    /**
-     * @return The explicitly enabled sources.
-     */
-    @Input
-    public abstract ListProperty<String> getSources();
+    public abstract ListProperty<Map<String, Object>> getSources();
 
     /**
      * @return The optional JDBC driver classpath.
      */
     @Classpath
     public abstract ConfigurableFileCollection getJdbcClasspath();
+
+    /**
+     * @return The optional provider classpath.
+     */
+    @Classpath
+    public abstract ConfigurableFileCollection getProviderClasspath();
 
     /**
      * @return Whether to skip individual failures.
@@ -130,11 +119,13 @@ public abstract class OracleJsonSchemaGenerateTask extends DefaultTask {
 
     /**
      * Execute the pipeline.
+     *
      * @throws Exception If execution fails
      */
     @TaskAction
     public void generate() throws Exception {
         registerJdbcDrivers();
+        ClassLoader providerClassLoader = createClassLoader(getProviderClasspath(), getClass().getClassLoader());
         OracleJsonSchemaLogger logger = new OracleJsonSchemaLogger() {
             @Override
             public void info(String message) {
@@ -150,16 +141,13 @@ public abstract class OracleJsonSchemaGenerateTask extends DefaultTask {
             getJdbcUrl().get(),
             getUsername().get(),
             getPassword().get(),
-            getOwner().getOrNull(),
             getTargetPackage().get(),
             getSchemaCacheDir().get().getAsFile().toPath(),
             getOutputDir().get().getAsFile().toPath(),
-            getIncludeDomains().getOrElse(List.of()),
-            getIncludeViews().getOrElse(List.of()),
-            getSources().getOrElse(List.of()).stream().map(DiscoverySource::fromExternalName).toList(),
+            toSourceSpecs(getSources().getOrElse(List.of())),
             getSkipOnError().getOrElse(false),
             getFailOnMissingDb().getOrElse(true)
-        ));
+        ), providerClassLoader);
     }
 
     /**
@@ -172,33 +160,66 @@ public abstract class OracleJsonSchemaGenerateTask extends DefaultTask {
 
     /**
      * Execute the resolved Oracle pipeline configuration.
-     * <p>
-     * This method exists so tests can replace the live pipeline invocation. Production subclasses
-     * should preserve the contract of executing the supplied config exactly once.
      *
      * @param logger The logger to use for pipeline diagnostics
      * @param config The resolved generator configuration
+     * @param providerClassLoader The classloader used to resolve discovery providers
      * @throws Exception If execution fails
      */
-    void executePipeline(OracleJsonSchemaLogger logger, OracleJsonSchemaGeneratorConfig config) throws Exception {
-        new OracleJsonSchemaPipeline(logger).execute(config);
+    void executePipeline(OracleJsonSchemaLogger logger,
+                         OracleJsonSchemaGeneratorConfig config,
+                         ClassLoader providerClassLoader) throws Exception {
+        new OracleJsonSchemaPipeline(logger, providerClassLoader).execute(config);
+    }
+
+    private List<OracleSourceSpec> toSourceSpecs(List<Map<String, Object>> configuredSources) {
+        return configuredSources.stream()
+            .map(this::toSourceSpec)
+            .toList();
+    }
+
+    private OracleSourceSpec toSourceSpec(Map<String, Object> sourceMap) {
+        Map<String, Object> safeMap = sourceMap == null ? Map.of() : sourceMap;
+        return new OracleSourceSpec(
+            toStringValue(safeMap.get("name")),
+            requiredStringValue("providerClassName", safeMap.get("providerClassName")),
+            toStringValue(safeMap.get("owner")),
+            toStringMap(safeMap.get("options"))
+        );
+    }
+
+    private Map<String, String> toStringMap(Object value) {
+        if (value == null) {
+            return Map.of();
+        }
+        if (!(value instanceof Map<?, ?> options)) {
+            throw new IllegalArgumentException("Oracle source options must be configured as a map.");
+        }
+        Map<String, String> result = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : options.entrySet()) {
+            result.put(String.valueOf(entry.getKey()), entry.getValue() == null ? null : String.valueOf(entry.getValue()));
+        }
+        return result;
+    }
+
+    private String requiredStringValue(String name, Object value) {
+        String stringValue = toStringValue(value);
+        if (stringValue == null || stringValue.isBlank()) {
+            throw new IllegalArgumentException("Missing required Oracle source field: " + name);
+        }
+        return stringValue;
+    }
+
+    private String toStringValue(Object value) {
+        return value == null ? null : String.valueOf(value);
     }
 
     private void registerJdbcDrivers() throws SQLException {
         if (getJdbcClasspath().isEmpty()) {
             return;
         }
-        URL[] urls = getJdbcClasspath().getFiles().stream()
-            .map(file -> {
-                try {
-                    return file.toURI().toURL();
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
-            })
-            .toArray(URL[]::new);
-        URLClassLoader classLoader = new URLClassLoader(urls, getClass().getClassLoader());
         try {
+            ClassLoader classLoader = createClassLoader(getJdbcClasspath(), getClass().getClassLoader());
             Enumeration<URL> resources = classLoader.getResources("META-INF/services/java.sql.Driver");
             while (resources.hasMoreElements()) {
                 resources.nextElement();
@@ -209,6 +230,22 @@ public abstract class OracleJsonSchemaGenerateTask extends DefaultTask {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load JDBC drivers from jdbcClasspath", e);
         }
+    }
+
+    private ClassLoader createClassLoader(ConfigurableFileCollection files, ClassLoader parent) {
+        if (files.isEmpty()) {
+            return parent;
+        }
+        URL[] urls = files.getFiles().stream()
+            .map(file -> {
+                try {
+                    return file.toURI().toURL();
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            })
+            .toArray(URL[]::new);
+        return new URLClassLoader(urls, parent);
     }
 
     private record DriverShim(Driver delegate) implements Driver {

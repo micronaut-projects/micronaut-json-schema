@@ -73,11 +73,11 @@ oracleJsonSchema {
     jdbcUrl = 'jdbc:oracle:thin:@localhost:1521/FREEPDB1'
     username = 'app'
     password = 'secret'
-    owner = 'APP'
     targetPackage = 'io.micronaut.jsonschema.oracle.generated'
-    includeDomains = ['APP_JSON']
-    includeViews = ['APP_VIEW']
-    sources = ['OracleDomain', 'OracleJsonView']
+    sources = [
+        [name: 'domains', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider', owner: 'APP', options: [include: 'APP_JSON']],
+        [name: 'views', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider', owner: 'APP', options: [include: 'APP_VIEW']]
+    ]
     skipOnError = true
     failOnMissingDb = false
 }
@@ -88,11 +88,11 @@ tasks.register('assertOracleExtensionMapping') {
         assert generateTask.jdbcUrl.get() == 'jdbc:oracle:thin:@localhost:1521/FREEPDB1'
         assert generateTask.username.get() == 'app'
         assert generateTask.password.get() == 'secret'
-        assert generateTask.owner.get() == 'APP'
         assert generateTask.targetPackage.get() == 'io.micronaut.jsonschema.oracle.generated'
-        assert generateTask.includeDomains.get() == ['APP_JSON']
-        assert generateTask.includeViews.get() == ['APP_VIEW']
-        assert generateTask.sources.get() == ['OracleDomain', 'OracleJsonView']
+        assert generateTask.sources.get() == [
+            [name: 'domains', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider', owner: 'APP', options: [include: 'APP_JSON']],
+            [name: 'views', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider', owner: 'APP', options: [include: 'APP_VIEW']]
+        ]
         assert generateTask.skipOnError.get()
         assert !generateTask.failOnMissingDb.get()
         println('oracle-extension-mapping-ok')
@@ -116,7 +116,6 @@ tasks.register('assertOracleExtensionMapping') {
 oracleJsonSchema.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1
 oracleJsonSchema.username=app
 oracleJsonSchema.password=secret
-oracleJsonSchema.owner=APP
 """);
         Files.writeString(projectDir.resolve("build.gradle"), """
 plugins {
@@ -134,7 +133,6 @@ tasks.register('assertOraclePropertyDefaults') {
         assert generateTask.jdbcUrl.get() == 'jdbc:oracle:thin:@localhost:1521/FREEPDB1'
         assert generateTask.username.get() == 'app'
         assert generateTask.password.get() == 'secret'
-        assert generateTask.owner.get() == 'APP'
         println('oracle-property-defaults-ok')
     }
 }

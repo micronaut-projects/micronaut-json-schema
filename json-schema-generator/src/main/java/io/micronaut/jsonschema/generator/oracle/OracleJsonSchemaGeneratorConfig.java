@@ -18,10 +18,11 @@ package io.micronaut.jsonschema.generator.oracle;
 import io.micronaut.core.annotation.Internal;
 
 import java.nio.file.Path;
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * Configuration for Oracle schema discovery and Java record generation.
@@ -29,13 +30,10 @@ import java.util.Set;
  * @param jdbcUrl The JDBC URL
  * @param username The database username
  * @param password The database password
- * @param owner Optional owner for cross-schema discovery
  * @param targetPackage Target Java package
  * @param schemaCacheDir Discovery output directory
  * @param outputDir Generated source directory
- * @param includeDomains Included domain names, or {@code *}
- * @param includeViews Included duality view names, or {@code *}
- * @param sources Enabled discovery sources
+ * @param sources Configured discovery sources
  * @param skipOnError Whether to skip individual failures
  * @param failOnMissingDb Whether connection failure should fail the build
  * @since 2.0.0
@@ -45,116 +43,84 @@ public record OracleJsonSchemaGeneratorConfig(
     String jdbcUrl,
     String username,
     String password,
-    String owner,
     String targetPackage,
     Path schemaCacheDir,
     Path outputDir,
-    List<String> includeDomains,
-    List<String> includeViews,
-    List<DiscoverySource> sources,
+    List<OracleSourceSpec> sources,
     boolean skipOnError,
     boolean failOnMissingDb
 ) {
 
     /**
-     * Discovery sources supported by the Oracle pipeline.
+     * Create a normalized generator configuration.
+     *
+     * @param jdbcUrl The JDBC URL
+     * @param username The database username
+     * @param password The database password
+     * @param targetPackage Target Java package
+     * @param schemaCacheDir Discovery output directory
+     * @param outputDir Generated source directory
+     * @param sources Configured discovery sources
+     * @param skipOnError Whether to skip individual failures
+     * @param failOnMissingDb Whether connection failure should fail the build
      */
-    public enum DiscoverySource {
-        ORACLE_DOMAIN("OracleDomain"),
-        ORACLE_JSON_VIEW("OracleJsonView");
-
-        private final String externalName;
-
-        DiscoverySource(String externalName) {
-            this.externalName = externalName;
-        }
-
-        public String externalName() {
-            return externalName;
-        }
-
-        /**
-         * Resolve the enum from the external configuration name.
-         * @param value The configured source name
-         * @return The enum value
-         */
-        public static DiscoverySource fromExternalName(String value) {
-            return switch (value) {
-                case "OracleDomain" -> ORACLE_DOMAIN;
-                case "OracleJsonView" -> ORACLE_JSON_VIEW;
-                default -> throw new IllegalArgumentException("Unsupported source: " + value);
-            };
-        }
-    }
-
-    /**
-     * Discovery object scope used in diagnostics.
-     */
-    public enum Scope {
-        DOMAIN,
-        DUALITY_VIEW
-    }
-
-    /**
-     * Pipeline step used in diagnostics.
-     */
-    public enum Step {
-        DISCOVERY,
-        SCHEMA_RETRIEVAL,
-        GENERATION
-    }
-
     public OracleJsonSchemaGeneratorConfig {
-        includeDomains = includeDomains == null ? List.of() : List.copyOf(includeDomains);
-        includeViews = includeViews == null ? List.of() : List.copyOf(includeViews);
-        sources = sources == null ? List.of() : List.copyOf(sources);
+        sources = normalizeSources(sources);
     }
 
     /**
-     * Resolve the effective discovery sources.
-     * @return The enabled sources
+     * Resolve the configured sources.
+     *
+     * @return The normalized configured sources
      */
-    public Set<DiscoverySource> resolveSources() {
-        if (!sources.isEmpty()) {
-            return new LinkedHashSet<>(sources);
+    public List<OracleSourceSpec> resolveSources() {
+        if (sources.isEmpty()) {
+            throw new IllegalStateException("At least one Oracle JSON Schema source must be configured.");
         }
-        Set<DiscoverySource> resolved = new LinkedHashSet<>();
-        if (!includeDomains.isEmpty()) {
-            resolved.add(DiscoverySource.ORACLE_DOMAIN);
-        }
-        if (!includeViews.isEmpty()) {
-            resolved.add(DiscoverySource.ORACLE_JSON_VIEW);
-        }
-        if (resolved.isEmpty()) {
-            throw new IllegalStateException("At least one source or include list must be configured.");
-        }
-        return resolved;
+        return sources;
     }
 
-    /**
-     * Whether all visible objects should be discovered for the given source.
-     * @param source The source
-     * @return True if discover-all should be used
-     */
-    public boolean discoverAll(DiscoverySource source) {
-        List<String> includes = source == DiscoverySource.ORACLE_DOMAIN ? includeDomains : includeViews;
-        return includes.isEmpty() || includes.contains("*");
+    private static List<OracleSourceSpec> normalizeSources(List<OracleSourceSpec> configuredSources) {
+        if (configuredSources == null || configuredSources.isEmpty()) {
+            return List.of();
+        }
+        Map<String, Integer> occurrences = new LinkedHashMap<>();
+        List<OracleSourceSpec> normalized = new ArrayList<>(configuredSources.size());
+        for (OracleSourceSpec source : configuredSources) {
+            if (source == null) {
+                continue;
+            }
+            String providerClassName = requireValue("providerClassName", source.providerClassName());
+            String normalizedName = normalizeName(source.name(), providerClassName, occurrences);
+            normalized.add(new OracleSourceSpec(
+                normalizedName,
+                providerClassName,
+                blankToNull(source.owner()),
+                source.options()
+            ));
+        }
+        return List.copyOf(normalized);
     }
 
-    /**
-     * Resolve the uppercase include filter for the given source.
-     * @param source The source
-     * @return The filter set
-     */
-    public Set<String> includeFilter(DiscoverySource source) {
-        List<String> includes = source == DiscoverySource.ORACLE_DOMAIN ? includeDomains : includeViews;
-        if (discoverAll(source)) {
-            return Set.of();
+    private static String normalizeName(String name, String providerClassName, Map<String, Integer> occurrences) {
+        String baseName = blankToNull(name);
+        if (baseName == null) {
+            baseName = providerClassName.substring(providerClassName.lastIndexOf('.') + 1);
         }
-        Set<String> values = new LinkedHashSet<>();
-        for (String include : includes) {
-            values.add(include.toUpperCase(Locale.ENGLISH));
+        String normalizedBase = baseName.trim();
+        int count = occurrences.merge(normalizedBase.toLowerCase(Locale.ENGLISH), 1, Integer::sum);
+        return count == 1 ? normalizedBase : normalizedBase + "-" + count;
+    }
+
+    private static String requireValue(String name, String value) {
+        String normalized = blankToNull(value);
+        if (normalized == null) {
+            throw new IllegalArgumentException("Missing Oracle JSON Schema source " + name + ".");
         }
-        return values;
+        return normalized;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 }

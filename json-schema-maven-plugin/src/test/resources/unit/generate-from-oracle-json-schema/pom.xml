@@ -14,19 +14,26 @@
           <jdbcUrl>jdbc:oracle:thin:@localhost:1521/FREEPDB1</jdbcUrl>
           <username>app</username>
           <password>secret</password>
-          <owner>APP</owner>
           <targetPackage>io.micronaut.jsonschema.oracle.generated</targetPackage>
           <schemaCacheDir>target/oracle-jsonschema-cache</schemaCacheDir>
           <outputDir>target/generated-sources/oracle-jsonschema</outputDir>
-          <includeDomains>
-            <includeDomain>APP_JSON</includeDomain>
-          </includeDomains>
-          <includeViews>
-            <includeView>APP_VIEW</includeView>
-          </includeViews>
           <sources>
-            <source>OracleDomain</source>
-            <source>OracleJsonView</source>
+            <source>
+              <name>domains</name>
+              <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider</providerClassName>
+              <owner>APP</owner>
+              <options>
+                <include>APP_JSON</include>
+              </options>
+            </source>
+            <source>
+              <name>views</name>
+              <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider</providerClassName>
+              <owner>APP</owner>
+              <options>
+                <include>APP_VIEW</include>
+              </options>
+            </source>
           </sources>
           <skipOnError>true</skipOnError>
           <failOnMissingDb>false</failOnMissingDb>

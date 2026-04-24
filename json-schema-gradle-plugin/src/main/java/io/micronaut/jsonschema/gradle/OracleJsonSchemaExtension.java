@@ -20,6 +20,8 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
+import java.util.Map;
+
 /**
  * Gradle extension backing Oracle JSON Schema discovery and record generation.
  *
@@ -43,11 +45,6 @@ public abstract class OracleJsonSchemaExtension {
     public abstract Property<String> getPassword();
 
     /**
-     * @return The optional owner to discover from.
-     */
-    public abstract Property<String> getOwner();
-
-    /**
      * @return The target package for generated Java sources.
      */
     public abstract Property<String> getTargetPackage();
@@ -63,24 +60,20 @@ public abstract class OracleJsonSchemaExtension {
     public abstract DirectoryProperty getOutputDir();
 
     /**
-     * @return The included Oracle domain names.
+     * @return The configured discovery sources. Each map supports the keys
+     * {@code name}, {@code providerClassName}, {@code owner}, and {@code options}.
      */
-    public abstract ListProperty<String> getIncludeDomains();
-
-    /**
-     * @return The included Oracle duality view names.
-     */
-    public abstract ListProperty<String> getIncludeViews();
-
-    /**
-     * @return The enabled discovery sources.
-     */
-    public abstract ListProperty<String> getSources();
+    public abstract ListProperty<Map<String, Object>> getSources();
 
     /**
      * @return The optional JDBC driver classpath.
      */
     public abstract ConfigurableFileCollection getJdbcClasspath();
+
+    /**
+     * @return The optional discovery provider classpath.
+     */
+    public abstract ConfigurableFileCollection getProviderClasspath();
 
     /**
      * @return Whether per-object failures should be skipped.

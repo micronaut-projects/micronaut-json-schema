@@ -16,10 +16,9 @@
 package io.micronaut.jsonschema.generator.oracle;
 
 import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig.Scope;
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig.Step;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Manifest written by the Oracle discovery pipeline.
@@ -47,6 +46,7 @@ public record OracleJsonSchemaManifest(
 ) {
     /**
      * Generator metadata.
+     *
      * @param name Generator name
      * @param version Generator version
      */
@@ -55,20 +55,19 @@ public record OracleJsonSchemaManifest(
 
     /**
      * Connection metadata with sanitized values only.
+     *
      * @param jdbcUrlSanitized Sanitized JDBC URL
-     * @param owner Optional owner
      */
-    public record Connection(String jdbcUrlSanitized, String owner) {
+    public record Connection(String jdbcUrlSanitized) {
     }
 
     /**
      * Effective pipeline parameters.
+     *
      * @param targetPackage Target package
      * @param schemaCacheDir Schema cache directory
      * @param outputDir Output directory
-     * @param includeDomains Domain filter
-     * @param includeViews View filter
-     * @param sources Enabled sources
+     * @param sources Configured sources
      * @param skipOnError Skip toggle
      * @param failOnMissingDb Missing DB toggle
      */
@@ -76,32 +75,50 @@ public record OracleJsonSchemaManifest(
         String targetPackage,
         String schemaCacheDir,
         String outputDir,
-        List<String> includeDomains,
-        List<String> includeViews,
-        List<String> sources,
+        List<ConfiguredSource> sources,
         boolean skipOnError,
         boolean failOnMissingDb
     ) {
     }
 
     /**
-     * Discovery section of the manifest.
-     * @param domains Discovered domains
-     * @param dualityViews Discovered duality views
+     * A configured source entry.
+     *
+     * @param name Stable source name
+     * @param providerClassName Discovery provider class name
+     * @param owner Optional source owner
+     * @param options Provider-specific options
      */
-    public record Discovery(
-        List<SchemaFile> domains,
-        List<SchemaFile> dualityViews
+    public record ConfiguredSource(
+        String name,
+        String providerClassName,
+        String owner,
+        Map<String, String> options
     ) {
     }
 
     /**
+     * Discovery section of the manifest.
+     *
+     * @param schemas Discovered schema entries
+     */
+    public record Discovery(List<SchemaFile> schemas) {
+    }
+
+    /**
      * A discovered schema file entry.
+     *
+     * @param sourceName Configured source name
+     * @param providerClassName Discovery provider class name
+     * @param scope Discovery scope
      * @param name Input name
      * @param schemaFile Relative schema file path
      * @param source Retrieval source
      */
     public record SchemaFile(
+        String sourceName,
+        String providerClassName,
+        OracleDiscoveryScope scope,
         String name,
         String schemaFile,
         String source
@@ -110,6 +127,8 @@ public record OracleJsonSchemaManifest(
 
     /**
      * A non-fatal warning entry.
+     *
+     * @param sourceName Configured source name
      * @param scope Warning scope
      * @param name Input name
      * @param step Pipeline step
@@ -117,9 +136,10 @@ public record OracleJsonSchemaManifest(
      * @param message Warning message
      */
     public record Warning(
-        Scope scope,
+        String sourceName,
+        OracleDiscoveryScope scope,
         String name,
-        Step step,
+        OracleDiscoveryStep step,
         String code,
         String message
     ) {
@@ -127,6 +147,8 @@ public record OracleJsonSchemaManifest(
 
     /**
      * A skipped input entry.
+     *
+     * @param sourceName Configured source name
      * @param scope Skip scope
      * @param name Input name
      * @param step Pipeline step
@@ -135,9 +157,10 @@ public record OracleJsonSchemaManifest(
      * @param source Retrieval source
      */
     public record Skipped(
-        Scope scope,
+        String sourceName,
+        OracleDiscoveryScope scope,
         String name,
-        Step step,
+        OracleDiscoveryStep step,
         String code,
         String reason,
         String source

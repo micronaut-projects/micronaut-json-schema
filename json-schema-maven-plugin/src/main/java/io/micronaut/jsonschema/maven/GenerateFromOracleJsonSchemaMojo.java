@@ -16,9 +16,9 @@
 package io.micronaut.jsonschema.maven;
 
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig;
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig.DiscoverySource;
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger;
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaPipeline;
+import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -30,7 +30,9 @@ import org.apache.maven.settings.Server;
 import org.apache.maven.settings.Settings;
 
 import java.io.File;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Maven goal that discovers Oracle-backed JSON Schemas and generates Java records.
@@ -65,12 +67,6 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
     private String serverId;
 
     /**
-     * Optional owner for cross-schema discovery.
-     */
-    @Parameter(property = "oracleJsonSchema.owner")
-    private String owner;
-
-    /**
      * Target package for generated types.
      */
     @Parameter(property = "oracleJsonSchema.targetPackage")
@@ -89,22 +85,10 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
     private File outputDir;
 
     /**
-     * Included domain names.
+     * Configured discovery sources.
      */
     @Parameter
-    private List<String> includeDomains = List.of();
-
-    /**
-     * Included duality view names.
-     */
-    @Parameter
-    private List<String> includeViews = List.of();
-
-    /**
-     * Explicitly enabled discovery sources.
-     */
-    @Parameter
-    private List<String> sources = List.of();
+    private List<SourceConfiguration> sources = List.of();
 
     /**
      * Skip individual failures.
@@ -138,6 +122,7 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
 
     /**
      * Execute the goal.
+     *
      * @throws MojoExecutionException If execution fails
      * @throws MojoFailureException If generation should fail the build
      */
@@ -167,13 +152,10 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
                 resolvedJdbcUrl,
                 resolvedUsername,
                 resolvedPassword,
-                getOwner(),
                 resolvedTargetPackage,
                 getSchemaCacheDir().toPath(),
                 getOutputDir().toPath(),
-                getIncludeDomains(),
-                getIncludeViews(),
-                getSources().stream().map(DiscoverySource::fromExternalName).toList(),
+                getSources().stream().map(SourceConfiguration::toSourceSpec).toList(),
                 isSkipOnError(),
                 isFailOnMissingDb()
             ));
@@ -224,13 +206,6 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
     }
 
     /**
-     * @return The optional owner.
-     */
-    protected String getOwner() {
-        return owner;
-    }
-
-    /**
      * @return The target package.
      */
     protected String getTargetPackage() {
@@ -252,23 +227,9 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
     }
 
     /**
-     * @return Included domain names.
+     * @return Configured source definitions.
      */
-    protected List<String> getIncludeDomains() {
-        return includeDomains;
-    }
-
-    /**
-     * @return Included duality view names.
-     */
-    protected List<String> getIncludeViews() {
-        return includeViews;
-    }
-
-    /**
-     * @return Enabled source names.
-     */
-    protected List<String> getSources() {
+    protected List<SourceConfiguration> getSources() {
         return sources;
     }
 
@@ -288,9 +249,6 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
 
     /**
      * Whether the goal should skip execution.
-     * <p>
-     * This hook exists for tests and specialized subclasses that need to override the opt-in
-     * behavior without mutating the bound Maven parameter directly.
      *
      * @return True if execution should be skipped
      */
@@ -300,16 +258,13 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
 
     /**
      * Execute the resolved Oracle pipeline configuration.
-     * <p>
-     * This method exists so tests can replace the live pipeline invocation. Production subclasses
-     * should preserve the contract of executing the supplied config exactly once.
      *
      * @param logger The logger to use for pipeline diagnostics
      * @param config The resolved generator configuration
      * @throws Exception If execution fails
      */
     void executePipeline(OracleJsonSchemaLogger logger, OracleJsonSchemaGeneratorConfig config) throws Exception {
-        new OracleJsonSchemaPipeline(logger).execute(config);
+        new OracleJsonSchemaPipeline(logger, getClass().getClassLoader()).execute(config);
     }
 
     /**
@@ -320,7 +275,7 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
     }
 
     /**
-     * @return The Maven settings instance.
+     * @return Maven settings for credential lookup.
      */
     protected Settings getSettings() {
         return settings;
@@ -336,16 +291,75 @@ public class GenerateFromOracleJsonSchemaMojo extends AbstractMojo {
     }
 
     private String requireValue(String name, String value) throws MojoExecutionException {
-        if (blankToNull(value) == null) {
+        String resolved = blankToNull(value);
+        if (resolved == null) {
             throw new MojoExecutionException("Missing required Oracle JSON Schema parameter: " + name);
         }
-        return value;
+        return resolved;
     }
 
     private String blankToNull(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
+        return value == null || value.isBlank() ? null : value;
+    }
+
+    /**
+     * Maven-bound source configuration.
+     */
+    public static final class SourceConfiguration {
+        /**
+         * Stable source name.
+         */
+        @Parameter
+        private String name;
+
+        /**
+         * Discovery provider class name.
+         */
+        @Parameter(required = true)
+        private String providerClassName;
+
+        /**
+         * Optional owner.
+         */
+        @Parameter
+        private String owner;
+
+        /**
+         * Provider-specific options.
+         */
+        @Parameter
+        private Map<String, String> options = Map.of();
+
+        /**
+         * @return The configured source name.
+         */
+        public String getName() {
+            return name;
         }
-        return value;
+
+        /**
+         * @return The discovery provider class name.
+         */
+        public String getProviderClassName() {
+            return providerClassName;
+        }
+
+        /**
+         * @return The optional owner.
+         */
+        public String getOwner() {
+            return owner;
+        }
+
+        /**
+         * @return Provider-specific options.
+         */
+        public Map<String, String> getOptions() {
+            return options;
+        }
+
+        OracleSourceSpec toSourceSpec() {
+            return new OracleSourceSpec(name, providerClassName, owner, options == null ? Map.of() : new LinkedHashMap<>(options));
+        }
     }
 }

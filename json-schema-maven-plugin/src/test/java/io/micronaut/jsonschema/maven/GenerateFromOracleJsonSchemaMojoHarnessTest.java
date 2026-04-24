@@ -19,8 +19,6 @@ import org.apache.maven.api.plugin.testing.InjectMojo;
 import org.apache.maven.api.plugin.testing.MojoTest;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,11 +37,15 @@ class GenerateFromOracleJsonSchemaMojoHarnessTest {
         assertEquals("jdbc:oracle:thin:@localhost:1521/FREEPDB1", mojo.getJdbcUrl());
         assertEquals("app", mojo.getUsername());
         assertEquals("secret", mojo.getPassword());
-        assertEquals("APP", mojo.getOwner());
         assertEquals("io.micronaut.jsonschema.oracle.generated", mojo.getTargetPackage());
-        assertEquals(List.of("APP_JSON"), mojo.getIncludeDomains());
-        assertEquals(List.of("APP_VIEW"), mojo.getIncludeViews());
-        assertEquals(List.of("OracleDomain", "OracleJsonView"), mojo.getSources());
+        assertEquals(2, mojo.getSources().size());
+        assertEquals("domains", mojo.getSources().get(0).getName());
+        assertEquals("io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", mojo.getSources().get(0).getProviderClassName());
+        assertEquals("APP", mojo.getSources().get(0).getOwner());
+        assertEquals("APP_JSON", mojo.getSources().get(0).getOptions().get("include"));
+        assertEquals("views", mojo.getSources().get(1).getName());
+        assertEquals("io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", mojo.getSources().get(1).getProviderClassName());
+        assertEquals("APP_VIEW", mojo.getSources().get(1).getOptions().get("include"));
         assertTrue(mojo.isSkipOnError());
         assertFalse(mojo.isFailOnMissingDb());
         assertTrue(mojo.isSkipped());

@@ -1,0 +1,2 @@
+io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider
+io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider

@@ -3,8 +3,8 @@ package io.micronaut.jsonschema.generator
 import io.micronaut.json.JsonMapper
 import io.micronaut.json.tree.JsonNode
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig.DiscoverySource
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaPipeline
+import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
 import spock.lang.Specification
 
 import java.nio.file.Files
@@ -58,13 +58,10 @@ class OraclePipelineMockSpec extends Specification {
                     "jdbc:mockoracle:test",
                     "test",
                     "test",
-                    null,
                     "io.micronaut.jsonschema.oracle.generated",
                     schemaCacheDir,
                     outputDir,
-                    ["MOONPHASE"],
-                    [],
-                    [DiscoverySource.ORACLE_DOMAIN],
+                    [new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, [include: "MOONPHASE"])],
                     false,
                     true
                 )
@@ -77,8 +74,10 @@ class OraclePipelineMockSpec extends Specification {
 
         and:
         def manifest = readJson(result.manifestPath())
-        jsonAt(manifest, "discovery", "domains", 0, "name").getStringValue() == "MOONPHASE"
-        jsonAt(manifest, "discovery", "domains", 0, "source").getStringValue() == "DOMAIN_CONSTRAINTS"
+        jsonAt(manifest, "discovery", "schemas", 0, "sourceName").getStringValue() == "domains"
+        jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "MOONPHASE"
+        jsonAt(manifest, "discovery", "schemas", 0, "source").getStringValue() == "DOMAIN_CONSTRAINTS"
+        jsonAt(manifest, "warnings", 0, "sourceName").getStringValue() == "domains"
         jsonAt(manifest, "warnings", 0, "code").getStringValue() == "GET_DDL_FAILED"
 
         and:
@@ -111,13 +110,10 @@ class OraclePipelineMockSpec extends Specification {
                     "jdbc:mockoracle:test",
                     "test",
                     "test",
-                    null,
                     "io.micronaut.jsonschema.oracle.generated",
                     schemaCacheDir,
                     outputDir,
-                    [],
-                    ["APARTMENT_VIEW"],
-                    [DiscoverySource.ORACLE_JSON_VIEW],
+                    [new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider", null, [include: "APARTMENT_VIEW"])],
                     true,
                     true
                 )
@@ -130,11 +126,57 @@ class OraclePipelineMockSpec extends Specification {
 
         and:
         def manifest = readJson(result.manifestPath())
-        jsonAt(manifest, "discovery", "dualityViews").isArray()
-        jsonAt(manifest, "discovery", "dualityViews").size() == 0
+        jsonAt(manifest, "discovery", "schemas").isArray()
+        jsonAt(manifest, "discovery", "schemas").size() == 0
+        jsonAt(manifest, "skipped", 0, "sourceName").getStringValue() == "views"
         jsonAt(manifest, "skipped", 0, "name").getStringValue() == "APARTMENT_VIEW"
         jsonAt(manifest, "skipped", 0, "code").getStringValue() == "MISSING_JSON_SCHEMA"
         jsonAt(manifest, "emittedSchemaFiles").size() == 0
+    }
+
+    void "pipeline include filters support exact quoted style names"() {
+        given:
+        Connection connection = Mock()
+        PreparedStatement domainListStatement = Mock()
+        PreparedStatement ddlStatement = Mock()
+        ResultSet domainListResult = Mock()
+        ResultSet ddlResult = Mock()
+        Path schemaCacheDir = Files.createTempDirectory("oracle-mock-schema-cache")
+        Path outputDir = Files.createTempDirectory("oracle-mock-output")
+        Driver driver = driverReturning(connection)
+
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * domainListStatement.executeQuery() >> domainListResult
+        2 * domainListResult.next() >>> [true, false]
+        1 * domainListResult.getString(1) >> "MoonPhase"
+
+        1 * connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual") >> ddlStatement
+        1 * ddlStatement.setString(1, "MoonPhase")
+        1 * ddlStatement.executeQuery() >> ddlResult
+        1 * ddlResult.next() >> true
+        1 * ddlResult.getString(1) >> """CREATE DOMAIN "MoonPhase" AS JSON CHECK (VALUE IS JSON VALIDATE USING '{"type":"object","properties":{"phase":{"type":"string"}},"required":["phase"]}')"""
+
+        when:
+        def result = withRegisteredDriver(driver) {
+            new OracleJsonSchemaPipeline({ }).execute(
+                new OracleJsonSchemaGeneratorConfig(
+                    "jdbc:mockoracle:test",
+                    "test",
+                    "test",
+                    "io.micronaut.jsonschema.oracle.generated",
+                    schemaCacheDir,
+                    outputDir,
+                    [new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, [include: "MoonPhase"])],
+                    false,
+                    true
+                )
+            )
+        }
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "MoonPhase"
     }
 
     void "pipeline returns empty result when database is unavailable and fail on missing db is disabled"() {
@@ -149,13 +191,10 @@ class OraclePipelineMockSpec extends Specification {
                     "jdbc:mockoracle:test",
                     "test",
                     "test",
-                    null,
                     "io.micronaut.jsonschema.oracle.generated",
                     Files.createTempDirectory("oracle-mock-schema-cache"),
                     Files.createTempDirectory("oracle-mock-output"),
-                    ["*"],
-                    [],
-                    [DiscoverySource.ORACLE_DOMAIN],
+                    [new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, [include: "*"])],
                     false,
                     false
                 )

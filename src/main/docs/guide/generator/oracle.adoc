@@ -7,9 +7,21 @@ The current Oracle discovery pipeline supports:
 
 This flow is available through the dedicated Gradle and Maven plugins included in this project.
 
+Built-in Oracle discovery providers are configured by class name:
+
+* `io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider`
+* `io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider`
+
+Each configured source declares:
+
+* `name`
+* `providerClassName`
+* optional `owner`
+* provider-specific `options`
+
 == Gradle
 
-Apply the plugin and configure the target package plus the Oracle objects you want to discover:
+Apply the plugin and configure the target package plus one or more discovery sources:
 
 [source,groovy]
 ----
@@ -19,9 +31,24 @@ plugins {
 
 oracleJsonSchema {
     targetPackage = "example.oracle.generated"
-    includeDomains = ["APP_JSON"]
-    includeViews = ["APP_VIEW"]
-    sources = ["OracleDomain", "OracleJsonView"]
+    sources = [
+        [
+            name: "domains",
+            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider",
+            owner: "APP",
+            options: [
+                include: "APP_JSON"
+            ]
+        ],
+        [
+            name: "views",
+            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider",
+            owner: "APP",
+            options: [
+                include: "APP_VIEW"
+            ]
+        ]
+    ]
 }
 ----
 
@@ -42,6 +69,59 @@ oracleJsonSchema {
 }
 ----
 
+Custom discovery providers can be added through the dedicated `oracleJsonSchemaProviders` configuration:
+
+[source,groovy]
+----
+dependencies {
+    oracleJsonSchemaProviders project(":oracle-schema-providers")
+}
+
+oracleJsonSchema {
+    sources = [
+        [
+            name: "legacy",
+            providerClassName: "example.oracle.LegacySchemaDiscoveryProvider",
+            options: [
+                tablePattern: "LEGACY_%"
+            ]
+        ]
+    ]
+}
+----
+
+Custom providers are selected by `providerClassName`, but they must also be registered through Java `ServiceLoader`:
+
+[source]
+----
+META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
+----
+
+For example:
+
+[source]
+----
+example.oracle.LegacySchemaDiscoveryProvider
+----
+
+`providerClassName` must exactly match the implementation class name listed in that service file. The provider jar must be present on `oracleJsonSchemaProviders`, and the implementation must expose a public no-argument constructor. This keeps custom providers compatible with GraalVM native image builds without requiring reflective construction.
+
+The built-in providers currently support these source options:
+
+[cols="2,3", options="header"]
+|===
+| Provider class
+| Supported options
+
+| `io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider`
+| `include`, `exclude`
+
+| `io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider`
+| `include`, `exclude`
+|===
+
+For the built-in providers, `include` and `exclude` match discovered Oracle object names by exact name first and also by Oracle-style uppercase normalization. This keeps normal unquoted identifiers working as expected while still allowing exact matching for quoted mixed-case names.
+
 === Gradle credentials
 
 The Gradle plugin can resolve connection settings from explicit extension values, Gradle properties, or environment variables.
@@ -55,8 +135,6 @@ The Gradle plugin can resolve connection settings from explicit extension values
 | `oracleJsonSchema.username`, `ORACLE_JSON_SCHEMA_USERNAME`
 | Password
 | `oracleJsonSchema.password`, `ORACLE_JSON_SCHEMA_PASSWORD`
-| Owner
-| `oracleJsonSchema.owner`, `ORACLE_JSON_SCHEMA_OWNER`
 |===
 
 This lets projects keep secrets outside `build.gradle`, for example in `~/.gradle/gradle.properties`:
@@ -66,7 +144,6 @@ This lets projects keep secrets outside `build.gradle`, for example in `~/.gradl
 oracleJsonSchema.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1
 oracleJsonSchema.username=app
 oracleJsonSchema.password=secret
-oracleJsonSchema.owner=APP
 ----
 
 == Maven
@@ -89,19 +166,85 @@ The Maven plugin can be configured in the build like any other mojo:
     <skip>false</skip>
     <jdbcUrl>${oracleJsonSchema.jdbcUrl}</jdbcUrl>
     <targetPackage>example.oracle.generated</targetPackage>
-    <includeDomains>
-      <includeDomain>APP_JSON</includeDomain>
-    </includeDomains>
-    <includeViews>
-      <includeView>APP_VIEW</includeView>
-    </includeViews>
     <sources>
-      <source>OracleDomain</source>
-      <source>OracleJsonView</source>
+      <source>
+        <name>domains</name>
+        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider</providerClassName>
+        <owner>APP</owner>
+        <options>
+          <include>APP_JSON</include>
+        </options>
+      </source>
+      <source>
+        <name>views</name>
+        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleJsonViewDiscoveryProvider</providerClassName>
+        <owner>APP</owner>
+        <options>
+          <include>APP_VIEW</include>
+        </options>
+      </source>
     </sources>
   </configuration>
 </plugin>
 ----
+
+Custom discovery providers are loaded from the Maven plugin classpath, so add them as plugin dependencies:
+
+[source,xml]
+----
+<plugin>
+  <groupId>io.micronaut.jsonschema</groupId>
+  <artifactId>micronaut-json-schema-maven-plugin</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>example.oracle</groupId>
+      <artifactId>oracle-schema-providers</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+  <configuration>
+    <sources>
+      <source>
+        <name>legacy</name>
+        <providerClassName>example.oracle.LegacySchemaDiscoveryProvider</providerClassName>
+        <options>
+          <tablePattern>LEGACY_%</tablePattern>
+        </options>
+      </source>
+    </sources>
+  </configuration>
+</plugin>
+----
+
+As with Gradle, each custom provider must also be registered in:
+
+[source]
+----
+META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
+----
+
+For example:
+
+[source]
+----
+example.oracle.LegacySchemaDiscoveryProvider
+----
+
+The configured `providerClassName` must exactly match the implementation class name listed in that file.
+
+=== Troubleshooting Custom Providers
+
+If a custom provider is not resolved at runtime, check these points first:
+
+* The provider jar is on the plugin classpath.
+* Gradle uses `oracleJsonSchemaProviders`.
+* Maven uses plugin `<dependencies>`, not regular project dependencies.
+* The jar contains `META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider`.
+* The service file lists the exact implementation class name configured through `providerClassName`.
+* The provider implementation has a public no-argument constructor.
+* If the provider jar is shaded or repackaged, `META-INF/services` entries are merged instead of overwritten.
+* The provider and plugin use compatible `micronaut-json-schema` versions.
+* Any transitive libraries required by the provider are also visible on the same plugin classpath.
 
 === Maven credentials
 

@@ -17,6 +17,7 @@ package io.micronaut.jsonschema.gradle;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -36,31 +37,31 @@ public final class OracleJsonSchemaGradlePlugin implements Plugin<Project> {
      */
     @Override
     public void apply(Project project) {
+        Configuration providerConfiguration = project.getConfigurations().maybeCreate("oracleJsonSchemaProviders");
+        providerConfiguration.setCanBeConsumed(false);
+        providerConfiguration.setCanBeResolved(true);
+
         OracleJsonSchemaExtension extension = project.getExtensions().create("oracleJsonSchema", OracleJsonSchemaExtension.class);
         extension.getJdbcUrl().convention(gradlePropertyOrEnv(project, "oracleJsonSchema.jdbcUrl", "ORACLE_JSON_SCHEMA_JDBC_URL"));
         extension.getUsername().convention(gradlePropertyOrEnv(project, "oracleJsonSchema.username", "ORACLE_JSON_SCHEMA_USERNAME"));
         extension.getPassword().convention(gradlePropertyOrEnv(project, "oracleJsonSchema.password", "ORACLE_JSON_SCHEMA_PASSWORD"));
-        extension.getOwner().convention(gradlePropertyOrEnv(project, "oracleJsonSchema.owner", "ORACLE_JSON_SCHEMA_OWNER"));
         extension.getSchemaCacheDir().convention(project.getLayout().getBuildDirectory().dir("oracle-jsonschema-cache"));
         extension.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("generated/sources/oracle-jsonschema"));
         extension.getSkipOnError().convention(false);
         extension.getFailOnMissingDb().convention(true);
-        extension.getIncludeDomains().convention(List.of());
-        extension.getIncludeViews().convention(List.of());
         extension.getSources().convention(List.of());
+        extension.getProviderClasspath().from(providerConfiguration);
 
         var taskProvider = project.getTasks().register("generateFromOracleJsonSchema", OracleJsonSchemaGenerateTask.class, task -> {
             task.getJdbcUrl().convention(extension.getJdbcUrl());
             task.getUsername().convention(extension.getUsername());
             task.getPassword().convention(extension.getPassword());
-            task.getOwner().convention(extension.getOwner());
             task.getTargetPackage().convention(extension.getTargetPackage());
             task.getSchemaCacheDir().convention(extension.getSchemaCacheDir());
             task.getOutputDir().convention(extension.getOutputDir());
-            task.getIncludeDomains().convention(extension.getIncludeDomains());
-            task.getIncludeViews().convention(extension.getIncludeViews());
             task.getSources().convention(extension.getSources());
             task.getJdbcClasspath().from(extension.getJdbcClasspath());
+            task.getProviderClasspath().from(extension.getProviderClasspath());
             task.getSkipOnError().convention(extension.getSkipOnError());
             task.getFailOnMissingDb().convention(extension.getFailOnMissingDb());
         });
