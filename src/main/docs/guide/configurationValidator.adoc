@@ -35,7 +35,7 @@ If a schema property is marked as deprecated (`"deprecated": true`), the validat
 
 By default unknown properties are treated as errors (and some schemas also enforce this via `additionalProperties: false`).
 
-Built-in suppression patterns silence known framework-managed properties such as `micronaut.home`.
+Built-in suppression patterns silence known framework-managed properties such as `micronaut.home` and `micronaut.test-resources*`.
 
 You can downgrade matching errors to warnings by configuring your own suppression patterns (for example `micronaut.http.*`).
 
