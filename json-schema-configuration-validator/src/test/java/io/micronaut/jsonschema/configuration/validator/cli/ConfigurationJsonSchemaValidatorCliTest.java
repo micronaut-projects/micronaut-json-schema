@@ -179,6 +179,8 @@ class ConfigurationJsonSchemaValidatorCliTest {
         System.setProperty("datasources.default.db-type", "postgres");
         System.setProperty("datasources.default.x-protocol-url", "${auto.test.resources.datasources.default.x-protocol-url}");
         System.setProperty("micronaut.home", "/tmp/micronaut-home");
+        System.setProperty("micronaut.test-resources", "enabled");
+        System.setProperty("micronaut.test-resources-server-uri", "http://localhost:8080");
 
         Path out = tempDir.resolve("out-datasource-db-type-default-suppress");
         try {
@@ -204,10 +206,16 @@ class ConfigurationJsonSchemaValidatorCliTest {
                 () -> "Expected datasource x-protocol-url default suppression to be silent, got: " + list);
             assertFalse(list.stream().anyMatch(m -> "micronaut.home".equals(m.get("property"))),
                 () -> "Expected micronaut.home default suppression to be silent, got: " + list);
+            assertFalse(list.stream().anyMatch(m -> "micronaut.test-resources".equals(m.get("property"))),
+                () -> "Expected micronaut.test-resources default suppression to be silent, got: " + list);
+            assertFalse(list.stream().anyMatch(m -> "micronaut.test-resources-server-uri".equals(m.get("property"))),
+                () -> "Expected micronaut.test-resources-server-uri default suppression to be silent, got: " + list);
         } finally {
             System.clearProperty("datasources.default.db-type");
             System.clearProperty("datasources.default.x-protocol-url");
             System.clearProperty("micronaut.home");
+            System.clearProperty("micronaut.test-resources");
+            System.clearProperty("micronaut.test-resources-server-uri");
         }
     }
 

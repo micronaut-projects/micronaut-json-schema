@@ -56,6 +56,7 @@ public final class ConfigurationValidatorConfiguration {
         "micronaut.classloader",
         "micronaut.home",
         "micronaut.test",
+        "micronaut.test-resources*",
         "datasources.*.db-type",
         "datasources.*.x-protocol-url"
     );
