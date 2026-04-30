@@ -1968,7 +1968,7 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 <p>By default unknown properties are treated as errors (and some schemas also enforce this via <code>additionalProperties: false</code>).</p>
 </div>
 <div class="paragraph">
-<p>Built-in suppression patterns silence known framework-managed properties such as <code>micronaut.home</code> and <code>micronaut.test-resources*</code>.</p>
+<p>Built-in suppression patterns silence known framework-managed properties such as <code>micronaut.home</code>, <code>micronaut.processing</code>, and <code>micronaut.test-resources*</code>.</p>
 </div>
 <div class="paragraph">
 <p>You can downgrade matching errors to warnings by configuring your own suppression patterns (for example <code>micronaut.http.*</code>).</p>
