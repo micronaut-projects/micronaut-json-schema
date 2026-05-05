@@ -22,7 +22,7 @@ micronaut-sourcegen = "2.0.0-M3"
 micronaut-validation = "5.0.0-M2"
 managed-json-schema-validator = "3.0.2"
 java-parser = "3.28.0"
-micronaut-toml = "2.8.0"
+micronaut-toml = "3.0.0-M2"
 micronaut-sql = "7.0.1-M2"
 
 [libraries]
