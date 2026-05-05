@@ -16,7 +16,7 @@ dependencies {
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testImplementation(mn.micronaut.inject)
-    testImplementation(libs.java.parser)
+    testImplementation(mn.java.parser.core)
     testImplementation(mnValidation.micronaut.validation)
 }
 

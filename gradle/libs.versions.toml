@@ -21,7 +21,6 @@ micronaut-serde = "3.0.0-RC1"
 micronaut-sourcegen = "2.0.0-M3"
 micronaut-validation = "5.0.0-M2"
 managed-json-schema-validator = "3.0.2"
-java-parser = "3.28.0"
 micronaut-toml = "3.0.0-M2"
 micronaut-sql = "7.0.1-M2"
 
@@ -32,8 +31,6 @@ micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
 
 managed-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "managed-json-schema-validator" }
-
-java-parser = { module = "com.github.javaparser:javaparser-core", version.ref = "java-parser" }
 
 micronaut-toml = { module = "io.micronaut.toml:micronaut-toml", version.ref = "micronaut-toml" }
 micronaut-sql-jdbc-hikari = { module = "io.micronaut.sql:micronaut-jdbc-hikari", version.ref = "micronaut-sql" }
