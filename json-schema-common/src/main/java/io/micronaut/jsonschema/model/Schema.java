@@ -528,51 +528,62 @@ public final class Schema {
         return anyOf != null;
     }
 
+    @SuppressWarnings("MethodName")
     public String get$schema() {
         return $schema;
     }
 
+    @SuppressWarnings({"MethodName", "ParameterName"})
     public Schema set$schema(String $schema) {
         this.$schema = $schema;
         return this;
     }
 
+    @SuppressWarnings("MethodName")
     public String get$id() {
         return $id;
     }
 
+    @SuppressWarnings({"MethodName", "ParameterName"})
     public Schema set$id(String $id) {
         this.$id = $id;
         return this;
     }
 
+    @SuppressWarnings("MethodName")
     public String get$ref() {
         return $ref;
     }
 
+    @SuppressWarnings({"MethodName", "ParameterName"})
     public Schema set$ref(String $ref) {
         this.$ref = $ref;
         return this;
     }
 
+    @SuppressWarnings("MethodName")
     public boolean has$ref() {
         return $ref != null;
     }
 
+    @SuppressWarnings("MethodName")
     public Map<String, Schema> get$defs() {
         return $defs;
     }
 
+    @SuppressWarnings({"MethodName", "ParameterName"})
     public Schema set$defs(Map<String, Schema> $defs) {
         this.$defs = $defs;
         return this;
     }
 
+    @SuppressWarnings({"MethodName", "ParameterName"})
     public Schema put$def(String key, Schema $def) {
         $defs.put(key, $def);
         return this;
     }
 
+    @SuppressWarnings("MethodName")
     public boolean has$defs() {
         return $defs != null;
     }
