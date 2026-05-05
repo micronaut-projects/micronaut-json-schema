@@ -7,7 +7,6 @@ io.micronaut.jsonschema.generator
 io.micronaut.jsonschema.generator.aggregator
 io.micronaut.jsonschema.generator.loaders
 io.micronaut.jsonschema.generator.utils
-io.micronaut.jsonschema.info
 io.micronaut.jsonschema.model
 io.micronaut.jsonschema.serialization
 io.micronaut.jsonschema.utils
