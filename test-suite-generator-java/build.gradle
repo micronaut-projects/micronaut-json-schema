@@ -1,8 +1,20 @@
 import io.micronaut.build.internal.generator.BeanGeneratorTask
+import io.micronaut.build.internal.generator.MockSchemaServerService
 
 plugins {
     id("java-library")
     id("io.micronaut.build.internal.test-suite-generator-java")
+}
+
+// Serves test-only JSON fixtures over HTTP so generator tasks can resolve `$ref`
+// URLs without depending on remote services (see #191). Port is fixed so the
+// fixture files can hardcode `http://localhost:38080/...` as their reference URL.
+def mockSchemaServer = gradle.sharedServices.registerIfAbsent("mockSchemaServer", MockSchemaServerService) {
+    parameters {
+        fixturesDir = layout.projectDirectory.dir("src/test/resources/_fixtures")
+        port = 38080
+    }
+    maxParallelUsages = 1
 }
 
 dependencies {
@@ -69,6 +81,9 @@ def refGenerator = tasks.register("generateRef", BeanGeneratorTask) {
     inputDirectory.convention(layout.projectDirectory.dir("src/test/resources/ref"))
     outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
     packageName.convention("io.micronaut.jsonschema.generator.ref")
+    acceptedUrlPatterns.convention(["^http://localhost:.*"])
+    usesService(mockSchemaServer)
+    doFirst { mockSchemaServer.get() } // force eager start before the subprocess runs
 }
 
 
