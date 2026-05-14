@@ -17,9 +17,9 @@
 
 [versions]
 micronaut = "5.0.0"
-micronaut-serde = "3.0.0-RC1"
-micronaut-sourcegen = "2.0.0-M3"
-micronaut-validation = "5.0.0-M2"
+micronaut-serde = "3.0.0"
+micronaut-sourcegen = "2.0.0-RC4"
+micronaut-validation = "5.0.0"
 managed-json-schema-validator = "3.0.2"
 micronaut-toml = "3.0.0-M2"
 micronaut-sql = "7.0.1-M2"
