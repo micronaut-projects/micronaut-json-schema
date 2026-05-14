@@ -1,0 +1,54 @@
+import io.micronaut.testresources.buildtools.KnownModules
+
+plugins {
+    id("io.micronaut.build.internal.json-schema-module")
+    id("io.micronaut.test-resources")
+}
+
+dependencies {
+    api(projects.micronautJsonSchemaCommon)
+    api(projects.micronautJsonSchemaGenerator)
+    api(mn.micronaut.context)
+    api(mn.micronaut.inject)
+    api(mn.micronaut.runtime)
+
+    annotationProcessor(mn.micronaut.inject.java)
+
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testImplementation(mn.micronaut.inject.java.test)
+    testImplementation(mnTestResources.testcontainers.oracle.free)
+    testImplementation(mnTest.junit.jupiter.api)
+    testImplementation(mnTest.junit.jupiter.params)
+    testRuntimeOnly(mnSql.ojdbc11)
+    testRuntimeOnly(mnLogging.logback.classic)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+    testResourcesService(mnSql.ojdbc11)
+}
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-registry"
+    }
+}
+
+micronaut {
+    version libs.versions.micronaut.platform.get()
+    testResources {
+        enabled = true
+        inferClasspath = false
+        additionalModules.add(KnownModules.JDBC_ORACLE_FREE)
+        clientTimeout = 300
+        version = libs.versions.micronaut.testresources.get()
+    }
+}
+
+tasks.matching { it.name == "internalStartTestResourcesService" }.configureEach {
+    if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25)) {
+        setProperty("useClassDataSharing", false)
+    }
+}
+
+tasks.withType(Test).configureEach {
+    systemProperty "oracle.jdbc.timezoneAsRegion", "false"
+}
