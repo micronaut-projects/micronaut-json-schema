@@ -198,14 +198,14 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
                 @JsonCreator
                 public static Run.Shell statusOf(String value) {
                   return switch (value) {
-                        case "bash" -> BASH;
-                        case "pwsh" -> PWSH;
-                        case "python" -> PYTHON;
-                        case "sh" -> SH;
-                        case "cmd" -> CMD;
-                        case "powershell" -> POWERSHELL;
-                        default -> null;
-                      };
+                    case "bash" -> BASH;
+                    case "pwsh" -> PWSH;
+                    case "python" -> PYTHON;
+                    case "sh" -> SH;
+                    case "cmd" -> CMD;
+                    case "powershell" -> POWERSHELL;
+                    default -> null;
+                  };
                 }
               }
             }
