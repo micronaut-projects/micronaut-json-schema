@@ -22,7 +22,7 @@ dependencies {
     testImplementation(mn.micronaut.context)
     testImplementation(mnTestResources.testcontainers.oracle.free)
     testImplementation(mnTestResources.micronaut.test.resources.extensions.junit.platform)
-    testImplementation(libs.java.parser)
+    testImplementation(mn.java.parser.core)
     testImplementation(mnValidation.micronaut.validation)
     testRuntimeOnly(mnSql.ojdbc11)
     testResourcesService(mnSql.ojdbc11)

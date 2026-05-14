@@ -41,7 +41,11 @@ import java.io.Writer;
 import java.net.URI;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static io.micronaut.jsonschema.visitor.context.JsonSchemaContext.JSON_SCHEMA_CONTEXT_PROPERTY;
 

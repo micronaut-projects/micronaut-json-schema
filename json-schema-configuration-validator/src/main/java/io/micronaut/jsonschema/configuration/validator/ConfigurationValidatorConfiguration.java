@@ -55,7 +55,9 @@ public final class ConfigurationValidatorConfiguration {
     public static final List<String> DEFAULT_SUPPRESSIONS = List.of(
         "micronaut.classloader",
         "micronaut.home",
+        "micronaut.processing",
         "micronaut.test",
+        "micronaut.test-resources*",
         "datasources.*.db-type",
         "datasources.*.x-protocol-url"
     );
