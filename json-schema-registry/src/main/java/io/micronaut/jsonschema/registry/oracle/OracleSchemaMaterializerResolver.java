@@ -16,7 +16,6 @@
 package io.micronaut.jsonschema.registry.oracle;
 
 import io.micronaut.context.BeanContext;
-import io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider;
 import jakarta.inject.Singleton;
 
 import java.util.List;
@@ -25,54 +24,55 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
 /**
- * Resolves Oracle authority discovery providers from Micronaut beans or {@link ServiceLoader}.
+ * Resolves Oracle materializers from Micronaut beans or {@link ServiceLoader}.
  *
  * @since 2.0.0
  */
 @Singleton
-public final class OracleSchemaDiscoveryProviderResolver {
+public final class OracleSchemaMaterializerResolver {
     private final BeanContext beanContext;
 
     /**
      * @param beanContext Bean context
      */
-    public OracleSchemaDiscoveryProviderResolver(BeanContext beanContext) {
+    public OracleSchemaMaterializerResolver(BeanContext beanContext) {
         this.beanContext = beanContext;
     }
 
     /**
-     * Resolve a provider class name.
+     * Resolve a materializer class name.
      *
-     * @param providerClassName Provider class name
+     * @param providerClassName Materializer class name
      * @param classLoader ClassLoader
-     * @return The provider instance
+     * @return The materializer instance
      */
-    public OracleSchemaDiscoveryProvider resolve(String providerClassName, ClassLoader classLoader) {
-        Optional<OracleSchemaDiscoveryProvider> beanProvider = beanContext.getBeansOfType(OracleSchemaDiscoveryProvider.class)
+    public OracleSchemaMaterializer resolve(String providerClassName, ClassLoader classLoader) {
+        Optional<OracleSchemaMaterializer> beanMaterializer = beanContext.getBeansOfType(OracleSchemaMaterializer.class)
             .stream()
-            .filter(provider -> provider.getClass().getName().equals(providerClassName))
+            .filter(materializer -> materializer.providerClassName().equals(providerClassName)
+                || materializer.getClass().getName().equals(providerClassName))
             .findFirst();
-        if (beanProvider.isPresent()) {
-            return beanProvider.get();
+        if (beanMaterializer.isPresent()) {
+            return beanMaterializer.get();
         }
         try {
-            ServiceLoader<OracleSchemaDiscoveryProvider> loader = ServiceLoader.load(OracleSchemaDiscoveryProvider.class, classLoader);
+            ServiceLoader<OracleSchemaMaterializer> loader = ServiceLoader.load(OracleSchemaMaterializer.class, classLoader);
             return loader.stream()
-                .filter(provider -> provider.type().getName().equals(providerClassName))
+                .filter(materializer -> materializer.type().getName().equals(providerClassName))
                 .findFirst()
                 .map(ServiceLoader.Provider::get)
                 .orElseThrow(() -> new IllegalArgumentException(
-                    "Unable to locate Oracle discovery provider: " + providerClassName
-                        + ". Available providers: " + availableProviders(loader)
+                    "Unable to locate Oracle materializer: " + providerClassName
+                        + ". Available materializers: " + availableMaterializers(loader)
                 ));
         } catch (ServiceConfigurationError e) {
-            throw new IllegalArgumentException("Unable to load Oracle discovery provider: " + providerClassName, e);
+            throw new IllegalArgumentException("Unable to load Oracle materializer: " + providerClassName, e);
         }
     }
 
-    private static List<String> availableProviders(ServiceLoader<OracleSchemaDiscoveryProvider> loader) {
+    private static List<String> availableMaterializers(ServiceLoader<OracleSchemaMaterializer> loader) {
         return loader.stream()
-            .map(provider -> provider.type().getName())
+            .map(materializer -> materializer.type().getName())
             .sorted()
             .toList();
     }
