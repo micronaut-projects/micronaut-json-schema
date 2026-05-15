@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.registry.oracle;
 
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.jsonschema.registry.JsonSchemaCandidate;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryDriftMode;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryPolicyMode;
@@ -25,7 +26,7 @@ import java.util.Map;
  * Request passed to an Oracle materializer.
  *
  * @param candidate Candidate schema
- * @param artifactName Resolved Oracle artifact name
+ * @param artifactName Resolved Oracle artifact name, or null when the materializer resolves it from options
  * @param owner Optional Oracle owner/schema
  * @param options Materializer options
  * @param policyMode Oracle policy mode
@@ -35,8 +36,8 @@ import java.util.Map;
  */
 public record OracleMaterializationRequest(
     JsonSchemaCandidate candidate,
-    String artifactName,
-    String owner,
+    @Nullable String artifactName,
+    @Nullable String owner,
     Map<String, String> options,
     JsonSchemaRegistryPolicyMode policyMode,
     JsonSchemaRegistryDriftMode driftMode,
@@ -47,7 +48,7 @@ public record OracleMaterializationRequest(
      * Create an immutable materialization request.
      *
      * @param candidate Candidate schema
-     * @param artifactName Resolved Oracle artifact name
+     * @param artifactName Resolved Oracle artifact name, or null when the materializer resolves it from options
      * @param owner Optional Oracle owner/schema
      * @param options Materializer options
      * @param policyMode Oracle policy mode

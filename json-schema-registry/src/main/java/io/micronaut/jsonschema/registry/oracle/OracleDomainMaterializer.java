@@ -30,6 +30,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -55,7 +56,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
 
     @Override
     public JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) throws Exception {
-        String domainName = normalizeIdentifier(request.artifactName());
+        String domainName = normalizeIdentifier(Objects.requireNonNull(request.artifactName(), "Oracle domain materializer requires an artifact name"));
         if (!domainExists(connection, domainName, request.owner())) {
             if (request.policyMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
                 return JsonSchemaRegistryOutcome.ok(
