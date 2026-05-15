@@ -13,13 +13,18 @@ dependencies {
     api(mn.micronaut.inject)
     api(mn.micronaut.runtime)
 
+    compileOnly(mn.micronaut.management)
+    compileOnly(mnMicrometer.micronaut.micrometer.core)
+
     annotationProcessor(mn.micronaut.inject.java)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
     testImplementation(mn.micronaut.inject.java.test)
+    testImplementation(mn.micronaut.management)
     testImplementation(mnTestResources.testcontainers.oracle.free)
     testImplementation(mnSql.ojdbc11)
+    testImplementation(mnMicrometer.micronaut.micrometer.core)
     testImplementation(mnTest.junit.jupiter.api)
     testImplementation(mnTest.junit.jupiter.params)
     testRuntimeOnly(mnLogging.logback.classic)

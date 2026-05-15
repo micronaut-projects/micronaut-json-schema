@@ -46,4 +46,5 @@ micronautBuild {
     importMicronautCatalog('micronaut-sourcegen')
     importMicronautCatalog('micronaut-sql')
     importMicronautCatalog('micronaut-testresources')
+    importMicronautCatalog("micronaut-micrometer")
 }

@@ -38,9 +38,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.io.InputStream;
-import java.sql.Connection;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -55,6 +58,8 @@ import java.util.Optional;
 public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegistryReconciler {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultJsonSchemaRegistryReconciler.class);
     private static final String GENERATOR_DOMAIN_PROVIDER = "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider";
+    private static final int MAX_ORACLE_IDENTIFIER_BYTES = 128;
+    private static final int DOMAIN_HASH_HEX_LENGTH = 8;
 
     private final JsonSchemaRegistryConfiguration configuration;
     private final BeanContext beanContext;
@@ -563,7 +568,35 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
     }
 
     private String domainNameFromLogicalName(String logicalName) {
-        return configuration.getNaming().getDomainPrefix() + logicalName.replace('.', '_').toUpperCase(Locale.ENGLISH);
+        return domainNameFromLogicalName(configuration.getNaming().getDomainPrefix(), logicalName);
+    }
+
+    static String domainNameFromLogicalName(String domainPrefix, String logicalName) {
+        String computed = (domainPrefix + logicalName.replace('.', '_')).toUpperCase(Locale.ENGLISH);
+        if (computed.getBytes(StandardCharsets.UTF_8).length <= MAX_ORACLE_IDENTIFIER_BYTES) {
+            return computed;
+        }
+        String suffix = "_" + HexFormat.of().formatHex(sha256(computed))
+            .substring(0, DOMAIN_HASH_HEX_LENGTH)
+            .toUpperCase(Locale.ENGLISH);
+        int prefixByteLimit = MAX_ORACLE_IDENTIFIER_BYTES - suffix.getBytes(StandardCharsets.UTF_8).length;
+        return utf8Prefix(computed, prefixByteLimit) + suffix;
+    }
+
+    private static byte[] sha256(String value) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm is not available", e);
+        }
+    }
+
+    private static String utf8Prefix(String value, int maxBytes) {
+        int end = value.length();
+        while (end > 0 && value.substring(0, end).getBytes(StandardCharsets.UTF_8).length > maxBytes) {
+            end -= Character.charCount(value.codePointBefore(end));
+        }
+        return value.substring(0, end);
     }
 
     private ClassLoader resolveClassLoader() {

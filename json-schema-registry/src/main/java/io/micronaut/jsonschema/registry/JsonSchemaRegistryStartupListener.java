@@ -19,10 +19,6 @@ import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.server.event.ServerStartupEvent;
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Runs registry reconciliation on application startup.
@@ -32,33 +28,17 @@ import java.util.List;
 @Singleton
 @Requires(property = JsonSchemaRegistryConfiguration.PREFIX + ".enabled", value = "true")
 public final class JsonSchemaRegistryStartupListener implements ApplicationEventListener<ServerStartupEvent> {
-    private static final Logger LOG = LoggerFactory.getLogger(JsonSchemaRegistryStartupListener.class);
-
-    private final JsonSchemaRegistryConfiguration configuration;
-    private final JsonSchemaRegistryReconciler reconciler;
+    private final JsonSchemaRegistryService service;
 
     /**
-     * @param configuration Registry configuration
-     * @param reconciler Registry reconciler
+     * @param service Registry service
      */
-    public JsonSchemaRegistryStartupListener(JsonSchemaRegistryConfiguration configuration,
-                                             JsonSchemaRegistryReconciler reconciler) {
-        this.configuration = configuration;
-        this.reconciler = reconciler;
+    public JsonSchemaRegistryStartupListener(JsonSchemaRegistryService service) {
+        this.service = service;
     }
 
     @Override
     public void onApplicationEvent(ServerStartupEvent event) {
-        List<JsonSchemaRegistryOutcome> outcomes = reconciler.reconcile();
-        for (JsonSchemaRegistryOutcome outcome : outcomes) {
-            if (outcome.failure()) {
-                LOG.warn("JSON Schema Registry reconciliation outcome: {}", outcome);
-            } else {
-                LOG.info("JSON Schema Registry reconciliation outcome: {}", outcome);
-            }
-        }
-        if (configuration.isFailFast() && outcomes.stream().anyMatch(JsonSchemaRegistryOutcome::failure)) {
-            throw new JsonSchemaRegistryException("JSON Schema Registry reconciliation failed");
-        }
+        service.resync();
     }
 }

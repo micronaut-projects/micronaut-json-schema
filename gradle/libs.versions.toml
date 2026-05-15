@@ -23,6 +23,7 @@ micronaut-serde = "3.0.0"
 micronaut-sourcegen = "2.0.0-RC4"
 micronaut-validation = "5.0.0"
 micronaut-testresources = "4.0.0-RC1"
+micronaut-micrometer = "6.0.1-M1"
 managed-json-schema-validator = "3.0.2"
 micronaut-toml = "3.0.0-M2"
 micronaut-sql = "7.0.0-RC1"
@@ -38,6 +39,7 @@ micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
 micronaut-testresources = { module = "io.micronaut.testresources:micronaut-test-resources-bom", version.ref = "micronaut-testresources" }
 micronaut-sql = { module = "io.micronaut.sql:micronaut-sql-bom", version.ref = "micronaut-sql" }
+micronaut-micrometer = { module = "io.micronaut.micrometer:micronaut-micrometer-bom", version.ref = "micronaut-micrometer" }
 
 managed-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "managed-json-schema-validator" }
 
