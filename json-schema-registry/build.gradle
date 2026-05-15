@@ -23,6 +23,7 @@ dependencies {
     testImplementation(mn.micronaut.inject.java.test)
     testImplementation(mn.micronaut.management)
     testImplementation(mnTestResources.testcontainers.oracle.free)
+    testImplementation(mnTestResources.testcontainers.kafka)
     testImplementation(mnSql.ojdbc11)
     testImplementation(mnMicrometer.micronaut.micrometer.core)
     testImplementation(mnTest.junit.jupiter.api)
