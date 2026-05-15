@@ -57,6 +57,7 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -188,6 +189,26 @@ final class JsonSchemaRegistryConfigurationTest {
 
             assertEquals(1, outcomes.size());
             assertEquals("ORDER_DV", outcomes.get(0).message());
+        }
+    }
+
+    @Test
+    void customOracleMaterializerCanResolveArtifactNameFromOptions() {
+        try (ApplicationContext context = ApplicationContext.run(Map.ofEntries(
+            Map.entry("spec.name", "bean-materializer"),
+            Map.entry("json-schema.registry.oracle.enabled", "true"),
+            Map.entry("json-schema.registry.oracle.materializers[0].name", "duality-views"),
+            Map.entry("json-schema.registry.oracle.materializers[0].providerClassName", BeanMaterializer.class.getName())
+        ))) {
+            context.registerSingleton(DataSource.class, new NullDataSource(), Qualifiers.byName("default"), false);
+            DefaultJsonSchemaRegistryReconciler reconciler = context.getBean(DefaultJsonSchemaRegistryReconciler.class);
+
+            List<JsonSchemaRegistryOutcome> outcomes = reconciler.reconcileOracleTarget(List.of(
+                new JsonSchemaCandidate(new LogicalSchema("com.acme.Order", "com.acme.Order", null), "{\"type\":\"object\"}", "test")
+            ));
+
+            assertEquals(1, outcomes.size());
+            assertNull(outcomes.get(0).message());
         }
     }
 

@@ -20,13 +20,13 @@ import io.micronaut.core.annotation.Nullable;
 /**
  * Cross-target identity for a JSON Schema reconciliation unit.
  *
- * @param name Stable logical name
+ * @param logicalFqcn Stable logical fully qualified schema name
  * @param subject Schema Registry subject name
  * @param oracleArtifactName Oracle artifact name when an Oracle authority provider or materializer participates
  * @since 2.0.0
  */
 public record LogicalSchema(
-    String name,
+    String logicalFqcn,
     @Nullable String subject,
     @Nullable String oracleArtifactName
 ) {

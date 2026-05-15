@@ -83,7 +83,7 @@ class DefaultJsonSchemaRegistryReconcilerSrTest {
             List<JsonSchemaRegistryOutcome> outcomes = context.getBean(JsonSchemaRegistryReconciler.class).reconcile();
 
             assertEquals(1, outcomes.size());
-            assertEquals("Order", outcomes.get(0).logicalSchema().name());
+            assertEquals("Order", outcomes.get(0).logicalSchema().logicalFqcn());
             assertEquals("com.acme.Order", outcomes.get(0).logicalSchema().subject());
             assertEquals(JsonSchemaRegistryOutcomeStatus.EQUIVALENT, outcomes.get(0).status());
         }

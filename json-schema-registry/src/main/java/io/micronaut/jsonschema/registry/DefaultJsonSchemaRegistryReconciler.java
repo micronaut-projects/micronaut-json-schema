@@ -528,7 +528,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             if (candidateArtifact != null && !candidateArtifact.isBlank()) {
                 return candidateArtifact;
             }
-            return candidate.logicalSchema().name();
+            return null;
         }
         JsonSchemaRegistryConfiguration.Mapping mapping = configuration.mappingsBySubject().get(candidate.logicalSchema().subject());
         if (mapping != null && mapping.getDomain() != null) {
@@ -541,7 +541,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         if (candidateArtifact != null && !candidateArtifact.isBlank()) {
             return candidateArtifact;
         }
-        return domainNameFromLogicalName(candidate.logicalSchema().name());
+        return domainNameFromLogicalName(candidate.logicalSchema().logicalFqcn());
     }
 
     private DataSource resolveDataSource() {

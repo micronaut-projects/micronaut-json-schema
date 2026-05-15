@@ -85,7 +85,7 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
                 mode(configuration, outcome.target()),
                 tagValue(outcome.status()),
                 outcome.failure(),
-                outcome.logicalSchema().name(),
+                outcome.logicalSchema().logicalFqcn(),
                 outcome.message());
         } else {
             LOG.info("JSON Schema Registry reconciliation outcome: authority={} target={} mode={} result={} failure={} logicalSchema={} message={}",
@@ -94,7 +94,7 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
                 mode(configuration, outcome.target()),
                 tagValue(outcome.status()),
                 outcome.failure(),
-                outcome.logicalSchema().name(),
+                outcome.logicalSchema().logicalFqcn(),
                 outcome.message());
         }
     }

@@ -112,7 +112,7 @@ final class OracleDualityViewAuthorityIntegrationTest {
         JsonSchemaRegistryOutcome outcome = outcomes.get(0);
         assertEquals(JsonSchemaRegistryOutcomeStatus.EQUIVALENT, outcome.status());
         assertFalse(outcome.failure());
-        assertEquals(viewName, outcome.logicalSchema().name());
+        assertEquals(viewName, outcome.logicalSchema().logicalFqcn());
         assertEquals(viewName, outcome.logicalSchema().oracleArtifactName());
         assertTrue(outcome.message().contains("DUALITY_VIEW:" + viewName));
     }
