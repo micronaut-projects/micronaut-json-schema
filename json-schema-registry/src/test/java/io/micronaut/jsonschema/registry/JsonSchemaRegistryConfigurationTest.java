@@ -20,6 +20,7 @@ import io.micronaut.jsonschema.registry.oracle.OracleDomainDiscoveryProvider;
 import io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,15 +30,21 @@ final class JsonSchemaRegistryConfigurationTest {
 
     @Test
     void bindsRegistryConfiguration() {
-        try (ApplicationContext context = ApplicationContext.run(Map.of(
-            "json-schema.registry.enabled", "false",
-            "json-schema.registry.authority", "oracle",
-            "json-schema.registry.oracle.policy.mode", "observe_only",
-            "json-schema.registry.oracle.drift.mode", "fail",
-            "json-schema.registry.oracle.datasource", "orders",
-            "json-schema.registry.oracle.domains[0]", "APP_COM_ACME_ORDER",
-            "json-schema.registry.mappings[0].subject", "com.acme.Order",
-            "json-schema.registry.mappings[0].domain", "APP_COM_ACME_ORDER"
+        try (ApplicationContext context = ApplicationContext.run(Map.ofEntries(
+            Map.entry("json-schema.registry.enabled", "false"),
+            Map.entry("json-schema.registry.authority", "oracle"),
+            Map.entry("json-schema.registry.oracle.policy.mode", "observe_only"),
+            Map.entry("json-schema.registry.oracle.drift.mode", "fail"),
+            Map.entry("json-schema.registry.oracle.datasource", "orders"),
+            Map.entry("json-schema.registry.oracle.domains[0]", "APP_COM_ACME_ORDER"),
+            Map.entry("json-schema.registry.oracle.authority.providers[0].name", "duality-views"),
+            Map.entry("json-schema.registry.oracle.authority.providers[0].providerClassName", "example.DualityProvider"),
+            Map.entry("json-schema.registry.oracle.authority.providers[0].options.include", "ORDER_DV"),
+            Map.entry("json-schema.registry.oracle.materializers[0].name", "duality-materializer"),
+            Map.entry("json-schema.registry.oracle.materializers[0].providerClassName", "example.DualityMaterializer"),
+            Map.entry("json-schema.registry.oracle.materializers[0].options.viewName", "ORDER_DV"),
+            Map.entry("json-schema.registry.mappings[0].subject", "com.acme.Order"),
+            Map.entry("json-schema.registry.mappings[0].domain", "APP_COM_ACME_ORDER")
         ))) {
             JsonSchemaRegistryConfiguration configuration = context.getBean(JsonSchemaRegistryConfiguration.class);
 
@@ -47,6 +54,14 @@ final class JsonSchemaRegistryConfigurationTest {
             assertEquals(JsonSchemaRegistryDriftMode.FAIL, configuration.getOracle().getDrift().getMode());
             assertEquals("orders", configuration.getOracle().getDatasource());
             assertEquals("APP_COM_ACME_ORDER", configuration.getOracle().getDomains().get(0));
+            assertEquals("example.DualityProvider",
+                configuration.getOracle().getAuthority().getProviders().get(0).getProviderClassName());
+            assertEquals("ORDER_DV",
+                configuration.getOracle().getAuthority().getProviders().get(0).getOptions().get("include"));
+            assertEquals("example.DualityMaterializer",
+                configuration.getOracle().getMaterializers().get(0).getProviderClassName());
+            assertEquals("ORDER_DV",
+                configuration.getOracle().getMaterializers().get(0).getOptions().get("viewName"));
             assertEquals("com.acme.Order", configuration.getMappings().get(0).getSubject());
         }
     }
@@ -59,5 +74,37 @@ final class JsonSchemaRegistryConfigurationTest {
             configuration.resolveOracleAuthorityProviders().get(0).getProviderClassName());
         assertEquals(OracleDomainMaterializer.class.getName(),
             configuration.resolveOracleMaterializers().get(0).getProviderClassName());
+    }
+
+    @Test
+    void configuredOracleDomainsBecomeBuiltInProviderSelectedSet() {
+        JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration();
+        configuration.getOracle().setDomains(List.of("APP_COM_ACME_ORDER", "APP_COM_ACME_INVOICE"));
+
+        JsonSchemaRegistryConfiguration.ProviderConfiguration provider =
+            configuration.resolveOracleAuthorityProviders().get(0);
+
+        assertEquals(OracleDomainDiscoveryProvider.class.getName(), provider.getProviderClassName());
+        assertEquals("APP_COM_ACME_ORDER,APP_COM_ACME_INVOICE", provider.getOptions().get("include"));
+    }
+
+    @Test
+    void configuredOracleExtensionPointsReplaceBuiltInDefaults() {
+        JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration();
+        JsonSchemaRegistryConfiguration.ProviderConfiguration authorityProvider =
+            new JsonSchemaRegistryConfiguration.ProviderConfiguration();
+        authorityProvider.setName("duality-views");
+        authorityProvider.setProviderClassName("example.oracle.OrderDualityViewDiscoveryProvider");
+        authorityProvider.setOptions(Map.of("viewName", "ORDER_DV"));
+        configuration.getOracle().getAuthority().setProviders(List.of(authorityProvider));
+        JsonSchemaRegistryConfiguration.ProviderConfiguration materializer =
+            new JsonSchemaRegistryConfiguration.ProviderConfiguration();
+        materializer.setName("duality-views");
+        materializer.setProviderClassName("example.oracle.OrderDualityViewMaterializer");
+        materializer.setOptions(Map.of("viewName", "ORDER_DV"));
+        configuration.getOracle().setMaterializers(List.of(materializer));
+
+        assertEquals(List.of(authorityProvider), configuration.resolveOracleAuthorityProviders());
+        assertEquals(List.of(materializer), configuration.resolveOracleMaterializers());
     }
 }

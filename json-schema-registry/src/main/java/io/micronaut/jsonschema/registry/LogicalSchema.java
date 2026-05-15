@@ -22,7 +22,7 @@ import io.micronaut.core.annotation.Nullable;
  *
  * @param name Stable logical name
  * @param subject Schema Registry subject name
- * @param oracleArtifactName Oracle artifact name for the built-in domain path
+ * @param oracleArtifactName Oracle artifact name when an Oracle authority provider or materializer participates
  * @since 2.0.0
  */
 public record LogicalSchema(

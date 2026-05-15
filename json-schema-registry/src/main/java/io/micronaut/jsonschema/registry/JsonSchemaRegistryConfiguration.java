@@ -106,14 +106,14 @@ public final class JsonSchemaRegistryConfiguration {
     }
 
     /**
-     * @return Explicit subject/domain mappings
+     * @return Built-in domain pairing overrides
      */
     public List<Mapping> getMappings() {
         return mappings;
     }
 
     /**
-     * @param mappings Explicit subject/domain mappings
+     * @param mappings Built-in domain pairing overrides
      */
     public void setMappings(@Nullable List<Mapping> mappings) {
         this.mappings = mappings == null ? List.of() : List.copyOf(mappings);
@@ -139,6 +139,10 @@ public final class JsonSchemaRegistryConfiguration {
         environment.getProperty(PREFIX + ".oracle.domains", Argument.listOf(String.class)).ifPresent(oracle::setDomains);
         environment.getProperty(PREFIX + ".oracle.policy.mode", JsonSchemaRegistryPolicyMode.class).ifPresent(oracle.getPolicy()::setMode);
         environment.getProperty(PREFIX + ".oracle.drift.mode", JsonSchemaRegistryDriftMode.class).ifPresent(oracle.getDrift()::setMode);
+        environment.getProperty(PREFIX + ".oracle.authority.providers", Argument.listOf(ProviderConfiguration.class))
+            .ifPresent(oracle.getAuthority()::setProviders);
+        environment.getProperty(PREFIX + ".oracle.materializers", Argument.listOf(ProviderConfiguration.class))
+            .ifPresent(oracle::setMaterializers);
     }
 
     /**
@@ -372,7 +376,7 @@ public final class JsonSchemaRegistryConfiguration {
     }
 
     /**
-     * Oracle target and authority configuration.
+     * Oracle authority and non-authoritative target configuration.
      */
     @Introspected
     public static final class OracleConfiguration {
@@ -413,14 +417,14 @@ public final class JsonSchemaRegistryConfiguration {
         }
 
         /**
-         * @return Oracle domains used to narrow built-in domain discovery
+         * @return Explicit selected domain set for built-in domain authority discovery
          */
         public List<String> getDomains() {
             return domains;
         }
 
         /**
-         * @param domains Oracle domains used to narrow built-in domain discovery
+         * @param domains Explicit selected domain set for built-in domain authority discovery
          */
         public void setDomains(@Nullable List<String> domains) {
             this.domains = domains == null ? List.of() : List.copyOf(domains);

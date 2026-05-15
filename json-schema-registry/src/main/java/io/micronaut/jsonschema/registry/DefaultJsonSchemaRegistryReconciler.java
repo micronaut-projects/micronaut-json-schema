@@ -186,7 +186,11 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                     continue;
                 }
                 for (JsonSchemaCandidate candidate : candidates) {
-                    String artifactName = resolveOracleArtifactName(candidate, materializerConfiguration);
+                    String artifactName = resolveOracleArtifactName(
+                        candidate,
+                        materializerConfiguration,
+                        providerClassName
+                    );
                     OracleMaterializationRequest request = new OracleMaterializationRequest(
                         candidate,
                         artifactName,
@@ -229,19 +233,31 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         return new LogicalSchema(logicalName, configuration.getNaming().getSubjectPrefix() + logicalName, schema.name());
     }
 
-    private String resolveOracleArtifactName(JsonSchemaCandidate candidate,
-                                             JsonSchemaRegistryConfiguration.ProviderConfiguration materializerConfiguration) {
-        String configured = materializerConfiguration.getOptions().get("domain");
-        if (configured != null && !configured.isBlank()) {
-            return configured;
-        }
+    private String resolveOracleArtifactName(
+        JsonSchemaCandidate candidate,
+        JsonSchemaRegistryConfiguration.ProviderConfiguration materializerConfiguration,
+        String providerClassName) {
         String candidateArtifact = candidate.logicalSchema().oracleArtifactName();
-        if (candidateArtifact != null && !candidateArtifact.isBlank()) {
-            return candidateArtifact;
+        if (!isDomainMaterializer(providerClassName)) {
+            String artifactName = materializerConfiguration.getOptions().get("artifactName");
+            if (artifactName != null && !artifactName.isBlank()) {
+                return artifactName;
+            }
+            if (candidateArtifact != null && !candidateArtifact.isBlank()) {
+                return candidateArtifact;
+            }
+            return candidate.logicalSchema().name();
         }
         JsonSchemaRegistryConfiguration.Mapping mapping = configuration.mappingsBySubject().get(candidate.logicalSchema().subject());
         if (mapping != null && mapping.getDomain() != null) {
             return mapping.getDomain();
+        }
+        String configured = materializerConfiguration.getOptions().get("domain");
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+        if (candidateArtifact != null && !candidateArtifact.isBlank()) {
+            return candidateArtifact;
         }
         return domainNameFromLogicalName(candidate.logicalSchema().name());
     }
@@ -278,6 +294,10 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         return schema.scope() == OracleDiscoveryScope.DOMAIN
             || OracleDomainDiscoveryProvider.class.getName().equals(providerClassName)
             || GENERATOR_DOMAIN_PROVIDER.equals(providerClassName);
+    }
+
+    private boolean isDomainMaterializer(String providerClassName) {
+        return OracleDomainMaterializer.class.getName().equals(providerClassName);
     }
 
     private String logicalNameFromDomain(String domainName) {
