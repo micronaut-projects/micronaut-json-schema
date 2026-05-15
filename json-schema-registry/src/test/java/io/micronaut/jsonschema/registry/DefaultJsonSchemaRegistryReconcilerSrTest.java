@@ -66,6 +66,30 @@ class DefaultJsonSchemaRegistryReconcilerSrTest {
     }
 
     @Test
+    void srAuthorityDiscoversSubjectsByPrefix() throws Exception {
+        startServer(Map.of(
+            "/subjects", response(200, "[\"com.acme.Order\",\"other.Ignore\"]"),
+            "/subjects/com.acme.Order/versions/latest", response(200, "{\"schema\":\"{\\\"type\\\":\\\"object\\\"}\"}")
+        ));
+
+        try (ApplicationContext context = ApplicationContext.run(Map.of(
+            "json-schema.registry.enabled", "true",
+            "json-schema.registry.authority", "sr",
+            "json-schema.registry.sr.enabled", "true",
+            "json-schema.registry.sr.url", serverUrl(),
+            "json-schema.registry.naming.subject.prefix", "com.acme.",
+            "json-schema.registry.oracle.enabled", "false"
+        ))) {
+            List<JsonSchemaRegistryOutcome> outcomes = context.getBean(JsonSchemaRegistryReconciler.class).reconcile();
+
+            assertEquals(1, outcomes.size());
+            assertEquals("Order", outcomes.get(0).logicalSchema().name());
+            assertEquals("com.acme.Order", outcomes.get(0).logicalSchema().subject());
+            assertEquals(JsonSchemaRegistryOutcomeStatus.EQUIVALENT, outcomes.get(0).status());
+        }
+    }
+
+    @Test
     void applicationAuthorityRegistersMissingSrSubject() throws Exception {
         startServer(Map.of(
             "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest", response(404, "{}")
@@ -85,6 +109,74 @@ class DefaultJsonSchemaRegistryReconcilerSrTest {
             assertTrue(outcomes.stream().anyMatch(outcome -> outcome.status() == JsonSchemaRegistryOutcomeStatus.CREATED));
             assertFalse(registrations.isEmpty());
             assertTrue(registrations.get(0).contains("\"schemaType\":\"JSON\""));
+        }
+    }
+
+    @Test
+    void applicationAuthorityReportsMissingSrSubjectInObserveOnly() throws Exception {
+        startServer(Map.of(
+            "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest", response(404, "{}")
+        ));
+
+        try (ApplicationContext context = ApplicationContext.run(Map.of(
+            "json-schema.registry.enabled", "true",
+            "json-schema.registry.authority", "application",
+            "json-schema.registry.sr.enabled", "true",
+            "json-schema.registry.sr.url", serverUrl(),
+            "json-schema.registry.sr.policy.mode", "observe_only",
+            "json-schema.registry.oracle.enabled", "false"
+        ))) {
+            List<JsonSchemaRegistryOutcome> outcomes = context.getBean(JsonSchemaRegistryReconciler.class).reconcile();
+
+            assertTrue(outcomes.stream().anyMatch(outcome -> outcome.target().equals("sr")
+                && outcome.status() == JsonSchemaRegistryOutcomeStatus.MISSING_TARGET));
+            assertTrue(registrations.isEmpty());
+        }
+    }
+
+    @Test
+    void applicationAuthorityRegistersNewSrVersionWhenSubjectDrifts() throws Exception {
+        startServer(Map.of(
+            "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest",
+            response(200, "{\"schema\":\"{\\\"type\\\":\\\"string\\\"}\"}")
+        ));
+
+        try (ApplicationContext context = ApplicationContext.run(Map.of(
+            "json-schema.registry.enabled", "true",
+            "json-schema.registry.authority", "application",
+            "json-schema.registry.sr.enabled", "true",
+            "json-schema.registry.sr.url", serverUrl(),
+            "json-schema.registry.oracle.enabled", "false"
+        ))) {
+            List<JsonSchemaRegistryOutcome> outcomes = context.getBean(JsonSchemaRegistryReconciler.class).reconcile();
+
+            assertTrue(outcomes.stream().anyMatch(outcome -> outcome.target().equals("sr")
+                && outcome.status() == JsonSchemaRegistryOutcomeStatus.CREATED));
+            assertEquals(1, registrations.size());
+            assertTrue(registrations.get(0).contains("\"schemaType\":\"JSON\""));
+        }
+    }
+
+    @Test
+    void applicationAuthorityReportsSrDriftInObserveOnly() throws Exception {
+        startServer(Map.of(
+            "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest",
+            response(200, "{\"schema\":\"{\\\"type\\\":\\\"string\\\"}\"}")
+        ));
+
+        try (ApplicationContext context = ApplicationContext.run(Map.of(
+            "json-schema.registry.enabled", "true",
+            "json-schema.registry.authority", "application",
+            "json-schema.registry.sr.enabled", "true",
+            "json-schema.registry.sr.url", serverUrl(),
+            "json-schema.registry.sr.policy.mode", "observe_only",
+            "json-schema.registry.oracle.enabled", "false"
+        ))) {
+            List<JsonSchemaRegistryOutcome> outcomes = context.getBean(JsonSchemaRegistryReconciler.class).reconcile();
+
+            assertTrue(outcomes.stream().anyMatch(outcome -> outcome.target().equals("sr")
+                && outcome.status() == JsonSchemaRegistryOutcomeStatus.DRIFT));
+            assertTrue(registrations.isEmpty());
         }
     }
 
