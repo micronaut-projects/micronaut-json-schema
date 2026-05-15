@@ -67,6 +67,7 @@ final class JsonSchemaRegistryConfigurationTest {
         try (ApplicationContext context = ApplicationContext.run(Map.ofEntries(
             Map.entry("json-schema.registry.enabled", "false"),
             Map.entry("json-schema.registry.authority", "oracle"),
+            Map.entry("json-schema.registry.fail-fast-strategy", "startup_abort"),
             Map.entry("json-schema.registry.oracle.policy.mode", "observe_only"),
             Map.entry("json-schema.registry.oracle.drift.mode", "fail"),
             Map.entry("json-schema.registry.oracle.datasource", "orders"),
@@ -86,6 +87,7 @@ final class JsonSchemaRegistryConfigurationTest {
 
             assertFalse(configuration.isEnabled());
             assertEquals(JsonSchemaRegistryAuthority.ORACLE, configuration.getAuthority());
+            assertEquals(JsonSchemaRegistryFailFastStrategy.STARTUP_ABORT, configuration.getFailFastStrategy());
             assertEquals(JsonSchemaRegistryPolicyMode.OBSERVE_ONLY, configuration.getOracle().getPolicy().getMode());
             assertEquals(JsonSchemaRegistryDriftMode.FAIL, configuration.getOracle().getDrift().getMode());
             assertEquals("orders", configuration.getOracle().getDatasource());
@@ -268,16 +270,16 @@ final class JsonSchemaRegistryConfigurationTest {
                 "ok"
             )));
 
-            assertTrue(configuration.isFailFast());
+            assertEquals(JsonSchemaRegistryFailFastStrategy.READINESS_GATE, configuration.getFailFastStrategy());
             assertEquals(HealthStatus.UP, healthResult(indicator).getStatus());
         }
     }
 
     @Test
-    void readinessIndicatorStaysUpForBestEffortFailures() throws Exception {
+    void readinessIndicatorStaysUpWhenFailureStrategyIsNone() throws Exception {
         try (ApplicationContext context = ApplicationContext.run(Map.ofEntries(
             Map.entry("json-schema.registry.enabled", "true"),
-            Map.entry("json-schema.registry.fail-fast", "false")
+            Map.entry("json-schema.registry.fail-fast-strategy", "none")
         ))) {
             JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState.class);
             JsonSchemaRegistryReadinessIndicator indicator = context.getBean(JsonSchemaRegistryReadinessIndicator.class);
@@ -291,6 +293,46 @@ final class JsonSchemaRegistryConfigurationTest {
 
             assertEquals(HealthStatus.UP, healthResult(indicator).getStatus());
         }
+    }
+
+    @Test
+    void readinessIndicatorStaysUpWhenFailureStrategyIsStartupAbortAfterStartup() throws Exception {
+        try (ApplicationContext context = ApplicationContext.run(Map.ofEntries(
+            Map.entry("json-schema.registry.enabled", "true"),
+            Map.entry("json-schema.registry.fail-fast-strategy", "startup_abort")
+        ))) {
+            JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState.class);
+            JsonSchemaRegistryReadinessIndicator indicator = context.getBean(JsonSchemaRegistryReadinessIndicator.class);
+
+            state.completed(Duration.ofMillis(10), List.of(JsonSchemaRegistryOutcome.failure(
+                new LogicalSchema("com.acme.Order", "com.acme.Order", null),
+                "sr",
+                JsonSchemaRegistryOutcomeStatus.FAILED,
+                "failure"
+            )));
+
+            assertEquals(HealthStatus.UP, healthResult(indicator).getStatus());
+        }
+    }
+
+    @Test
+    void startupAbortStrategyThrowsFromStartupListenerWhenStartupReconciliationFails() {
+        JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration();
+        configuration.setFailFastStrategy(JsonSchemaRegistryFailFastStrategy.STARTUP_ABORT);
+        JsonSchemaRegistryStartupListener listener = new JsonSchemaRegistryStartupListener(
+            configuration,
+            () -> List.of(JsonSchemaRegistryOutcome.failure(
+                new LogicalSchema("com.acme.Order", "com.acme.Order", null),
+                "sr",
+                JsonSchemaRegistryOutcomeStatus.FAILED,
+                "failure"
+            ))
+        );
+
+        JsonSchemaRegistryException exception = assertThrows(JsonSchemaRegistryException.class,
+            () -> listener.onApplicationEvent(null));
+
+        assertEquals("JSON Schema Registry startup reconciliation failed", exception.getMessage());
     }
 
     @Test

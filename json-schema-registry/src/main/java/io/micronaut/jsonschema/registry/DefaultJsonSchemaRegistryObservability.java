@@ -59,10 +59,10 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
             logOutcome(configuration, outcome);
             meterRegistry.ifPresent(meterRegistry -> recordOutcome(meterRegistry, configuration, outcome));
         }
-        LOG.info("JSON Schema Registry reconciliation summary: authority={} dryRun={} failFast={} outcomes={} failures={} durationMs={} results={}",
+        LOG.info("JSON Schema Registry reconciliation summary: authority={} dryRun={} failFastStrategy={} outcomes={} failures={} durationMs={} results={}",
             tagValue(configuration.getAuthority()),
             configuration.isDryRun(),
-            configuration.isFailFast(),
+            tagValue(configuration.getFailFastStrategy()),
             outcomes.size(),
             outcomes.stream().filter(JsonSchemaRegistryOutcome::failure).count(),
             duration.toMillis(),

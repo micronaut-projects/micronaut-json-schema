@@ -20,6 +20,8 @@ import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.server.event.ServerStartupEvent;
 import jakarta.inject.Singleton;
 
+import java.util.List;
+
 /**
  * Runs registry reconciliation on application startup.
  *
@@ -28,17 +30,25 @@ import jakarta.inject.Singleton;
 @Singleton
 @Requires(property = JsonSchemaRegistryConfiguration.PREFIX + ".enabled", value = "true")
 public final class JsonSchemaRegistryStartupListener implements ApplicationEventListener<ServerStartupEvent> {
+    private final JsonSchemaRegistryConfiguration configuration;
     private final JsonSchemaRegistryService service;
 
     /**
+     * @param configuration Registry configuration
      * @param service Registry service
      */
-    public JsonSchemaRegistryStartupListener(JsonSchemaRegistryService service) {
+    public JsonSchemaRegistryStartupListener(JsonSchemaRegistryConfiguration configuration,
+                                             JsonSchemaRegistryService service) {
+        this.configuration = configuration;
         this.service = service;
     }
 
     @Override
     public void onApplicationEvent(ServerStartupEvent event) {
-        service.resync();
+        List<JsonSchemaRegistryOutcome> outcomes = service.resync();
+        if (configuration.getFailFastStrategy() == JsonSchemaRegistryFailFastStrategy.STARTUP_ABORT
+            && outcomes.stream().anyMatch(JsonSchemaRegistryOutcome::failure)) {
+            throw new JsonSchemaRegistryException("JSON Schema Registry startup reconciliation failed");
+        }
     }
 }
