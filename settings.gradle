@@ -42,4 +42,7 @@ micronautBuild {
     importMicronautCatalog('micronaut-validation')
     importMicronautCatalog('micronaut-serde')
     importMicronautCatalog('micronaut-sourcegen')
+    importMicronautCatalog('micronaut-sql')
+    importMicronautCatalog('micronaut-testresources')
+    importMicronautCatalog("micronaut-micrometer")
 }

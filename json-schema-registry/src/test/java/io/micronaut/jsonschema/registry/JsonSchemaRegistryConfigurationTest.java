@@ -16,8 +16,12 @@
 package io.micronaut.jsonschema.registry;
 
 import io.micronaut.context.ApplicationContext;
+import io.micronaut.context.annotation.Primary;
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.health.HealthStatus;
 import io.micronaut.inject.qualifiers.Qualifiers;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult;
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger;
 import io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider;
@@ -28,20 +32,33 @@ import io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer;
 import io.micronaut.jsonschema.registry.oracle.OracleSchemaDiscoveryProviderResolver;
 import io.micronaut.jsonschema.registry.oracle.OracleSchemaMaterializer;
 import io.micronaut.jsonschema.registry.oracle.OracleSchemaMaterializerResolver;
+import io.micronaut.management.health.indicator.HealthResult;
 import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class JsonSchemaRegistryConfigurationTest {
 
@@ -169,6 +186,253 @@ final class JsonSchemaRegistryConfigurationTest {
 
             assertEquals(1, outcomes.size());
             assertEquals("ORDER_DV", outcomes.get(0).message());
+        }
+    }
+
+    @Test
+    void builtInDomainNamingAppliesOracleIdentifierTruncation() throws Exception {
+        String logicalName = "com.acme." + "OrderCreated".repeat(20);
+        String computed = ("APP_" + logicalName.replace('.', '_')).toUpperCase();
+        String hash = HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(computed.getBytes(StandardCharsets.UTF_8)))
+            .substring(0, 8)
+            .toUpperCase();
+
+        String domainName = DefaultJsonSchemaRegistryReconciler.domainNameFromLogicalName("APP_", logicalName);
+
+        assertEquals(128, domainName.getBytes(StandardCharsets.UTF_8).length);
+        assertEquals(computed.substring(0, 119) + "_" + hash, domainName);
+        assertTrue(domainName.endsWith("_" + hash));
+    }
+
+    @Test
+    void observabilityRecordsMetricsWhenMeterRegistryIsAvailable() {
+        try (ApplicationContext context = ApplicationContext.run()) {
+            SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+            context.registerSingleton(MeterRegistry.class, meterRegistry);
+            JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration();
+            configuration.setAuthority(JsonSchemaRegistryAuthority.SR);
+            configuration.getSr().getPolicy().setMode(JsonSchemaRegistryPolicyMode.OBSERVE_ONLY);
+            DefaultJsonSchemaRegistryObservability observability = new DefaultJsonSchemaRegistryObservability(context);
+
+            observability.record(
+                configuration,
+                Duration.ofMillis(25),
+                List.of(JsonSchemaRegistryOutcome.ok(
+                    new LogicalSchema("com.acme.Order", "com.acme.Order", null),
+                    "sr",
+                    JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                    "ok"
+                ))
+            );
+
+            assertEquals(1.0, meterRegistry.get("json.schema.registry.outcomes")
+                .tag("target", "sr")
+                .tag("authority", "sr")
+                .tag("mode", "observe_only")
+                .tag("result", "equivalent")
+                .tag("failure", "false")
+                .counter()
+                .count());
+            assertEquals(1, meterRegistry.get("json.schema.registry.reconcile.duration")
+                .tag("authority", "sr")
+                .tag("dry_run", "false")
+                .tag("failure", "false")
+                .timer()
+                .count());
+        }
+    }
+
+    @Test
+    void readinessIndicatorReadsLastReconciliationState() throws Exception {
+        try (ApplicationContext context = ApplicationContext.run(Map.of("json-schema.registry.enabled", "true"))) {
+            JsonSchemaRegistryConfiguration configuration = context.getBean(JsonSchemaRegistryConfiguration.class);
+            JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState.class);
+            JsonSchemaRegistryReadinessIndicator indicator = context.getBean(JsonSchemaRegistryReadinessIndicator.class);
+
+            assertEquals(HealthStatus.DOWN, healthResult(indicator).getStatus());
+
+            state.completed(Duration.ofMillis(10), List.of(JsonSchemaRegistryOutcome.failure(
+                new LogicalSchema("com.acme.Order", "com.acme.Order", null),
+                "sr",
+                JsonSchemaRegistryOutcomeStatus.FAILED,
+                "failure"
+            )));
+
+            assertEquals(HealthStatus.DOWN, healthResult(indicator).getStatus());
+
+            state.completed(Duration.ofMillis(10), List.of(JsonSchemaRegistryOutcome.ok(
+                new LogicalSchema("com.acme.Order", "com.acme.Order", null),
+                "sr",
+                JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                "ok"
+            )));
+
+            assertTrue(configuration.isFailFast());
+            assertEquals(HealthStatus.UP, healthResult(indicator).getStatus());
+        }
+    }
+
+    @Test
+    void readinessIndicatorStaysUpForBestEffortFailures() throws Exception {
+        try (ApplicationContext context = ApplicationContext.run(Map.ofEntries(
+            Map.entry("json-schema.registry.enabled", "true"),
+            Map.entry("json-schema.registry.fail-fast", "false")
+        ))) {
+            JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState.class);
+            JsonSchemaRegistryReadinessIndicator indicator = context.getBean(JsonSchemaRegistryReadinessIndicator.class);
+
+            state.completed(Duration.ofMillis(10), List.of(JsonSchemaRegistryOutcome.failure(
+                new LogicalSchema("com.acme.Order", "com.acme.Order", null),
+                "sr",
+                JsonSchemaRegistryOutcomeStatus.FAILED,
+                "failure"
+            )));
+
+            assertEquals(HealthStatus.UP, healthResult(indicator).getStatus());
+        }
+    }
+
+    @Test
+    void resyncServiceUpdatesStateAndObservability() {
+        try (ApplicationContext context = ApplicationContext.run(Map.of("spec.name", "service-reconciler"))) {
+            JsonSchemaRegistryService service = context.getBean(JsonSchemaRegistryService.class);
+            JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState.class);
+            CountingObservability observability = context.getBean(CountingObservability.class);
+
+            List<JsonSchemaRegistryOutcome> outcomes = service.resync();
+
+            assertEquals(1, outcomes.size());
+            assertEquals(JsonSchemaRegistryOutcomeStatus.EQUIVALENT, outcomes.get(0).status());
+            assertEquals(JsonSchemaRegistryState.RunStatus.SUCCESS, state.snapshot().status());
+            assertEquals(1, observability.records.get());
+        }
+    }
+
+    @Test
+    void resyncServiceRecordsExceptionAsFailedOutcome() {
+        try (ApplicationContext context = ApplicationContext.run(Map.of("spec.name", "throwing-reconciler"))) {
+            JsonSchemaRegistryService service = context.getBean(JsonSchemaRegistryService.class);
+            JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState.class);
+            CountingObservability observability = context.getBean(CountingObservability.class);
+
+            List<JsonSchemaRegistryOutcome> outcomes = service.resync();
+
+            assertEquals(1, outcomes.size());
+            assertTrue(outcomes.get(0).failure());
+            assertEquals(JsonSchemaRegistryOutcomeStatus.FAILED, outcomes.get(0).status());
+            assertEquals(JsonSchemaRegistryState.RunStatus.FAILED, state.snapshot().status());
+            assertEquals(1, observability.records.get());
+        }
+    }
+
+    @Test
+    void resyncServiceRejectsConcurrentRuns() throws Exception {
+        SlowReconciler.entered = new CountDownLatch(1);
+        SlowReconciler.release = new CountDownLatch(1);
+        try (ApplicationContext context = ApplicationContext.run(Map.of("spec.name", "slow-reconciler"))) {
+            JsonSchemaRegistryService service = context.getBean(JsonSchemaRegistryService.class);
+
+            CompletableFuture<List<JsonSchemaRegistryOutcome>> first = CompletableFuture.supplyAsync(service::resync);
+            assertTrue(SlowReconciler.entered.await(5, TimeUnit.SECONDS));
+
+            JsonSchemaRegistryException exception = assertThrows(JsonSchemaRegistryException.class, service::resync);
+            assertEquals("JSON Schema Registry reconciliation is already running", exception.getMessage());
+
+            SlowReconciler.release.countDown();
+            assertEquals(JsonSchemaRegistryOutcomeStatus.EQUIVALENT, first.get(5, TimeUnit.SECONDS).get(0).status());
+        } finally {
+            SlowReconciler.release.countDown();
+        }
+    }
+
+    private static HealthResult healthResult(JsonSchemaRegistryReadinessIndicator indicator) throws Exception {
+        CompletableFuture<HealthResult> result = new CompletableFuture<>();
+        indicator.getResult().subscribe(new Subscriber<>() {
+            @Override
+            public void onSubscribe(Subscription subscription) {
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(HealthResult healthResult) {
+                result.complete(healthResult);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                result.completeExceptionally(throwable);
+            }
+
+            @Override
+            public void onComplete() {
+                // No-op.
+            }
+        });
+        return result.get(5, TimeUnit.SECONDS);
+    }
+
+    @Singleton
+    @Primary
+    @Requires(property = "spec.name", pattern = "service-reconciler|throwing-reconciler|slow-reconciler")
+    static final class CountingObservability implements JsonSchemaRegistryObservability {
+        final AtomicInteger records = new AtomicInteger();
+
+        @Override
+        public void record(JsonSchemaRegistryConfiguration configuration,
+                           Duration duration,
+                           List<JsonSchemaRegistryOutcome> outcomes) {
+            records.incrementAndGet();
+        }
+    }
+
+    @Singleton
+    @Primary
+    @Requires(property = "spec.name", value = "service-reconciler")
+    static final class ServiceReconciler implements JsonSchemaRegistryReconciler {
+        @Override
+        public List<JsonSchemaRegistryOutcome> reconcile() {
+            return List.of(JsonSchemaRegistryOutcome.ok(
+                new LogicalSchema("com.acme.Order", "com.acme.Order", null),
+                "sr",
+                JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                "ok"
+            ));
+        }
+    }
+
+    @Singleton
+    @Primary
+    @Requires(property = "spec.name", value = "throwing-reconciler")
+    static final class ThrowingReconciler implements JsonSchemaRegistryReconciler {
+        @Override
+        public List<JsonSchemaRegistryOutcome> reconcile() {
+            throw new JsonSchemaRegistryException("boom");
+        }
+    }
+
+    @Singleton
+    @Primary
+    @Requires(property = "spec.name", value = "slow-reconciler")
+    static final class SlowReconciler implements JsonSchemaRegistryReconciler {
+        static CountDownLatch entered = new CountDownLatch(1);
+        static CountDownLatch release = new CountDownLatch(1);
+
+        @Override
+        public List<JsonSchemaRegistryOutcome> reconcile() {
+            entered.countDown();
+            try {
+                release.await(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new JsonSchemaRegistryException("Interrupted while waiting", e);
+            }
+            return List.of(JsonSchemaRegistryOutcome.ok(
+                new LogicalSchema("com.acme.Order", "com.acme.Order", null),
+                "sr",
+                JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                "ok"
+            ));
         }
     }
 

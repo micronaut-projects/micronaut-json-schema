@@ -92,14 +92,14 @@ public final class JsonSchemaRegistryConfiguration {
     }
 
     /**
-     * @return Whether the application should fail startup when reconciliation fails
+     * @return Whether reconciliation failures should apply fail-fast behavior
      */
     public boolean isFailFast() {
         return failFast;
     }
 
     /**
-     * @param failFast Whether the application should fail startup when reconciliation fails
+     * @param failFast Whether reconciliation failures should apply fail-fast behavior
      */
     public void setFailFast(boolean failFast) {
         this.failFast = failFast;
