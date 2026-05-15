@@ -23,7 +23,7 @@ import io.micronaut.core.annotation.Nullable;
  * @param logicalSchema Logical schema identity
  * @param target Target name
  * @param status Outcome status
- * @param failure Whether this outcome should fail startup in fail-fast mode
+ * @param failure Whether this outcome represents a reconciliation failure
  * @param message Optional diagnostic message
  * @since 2.0.0
  */

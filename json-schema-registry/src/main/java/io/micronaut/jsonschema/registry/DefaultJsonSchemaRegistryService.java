@@ -66,8 +66,8 @@ public final class DefaultJsonSchemaRegistryService implements JsonSchemaRegistr
             Duration duration = Duration.ofNanos(System.nanoTime() - started);
             state.completed(duration, outcomes);
             observability.record(configuration, duration, outcomes);
-            if (configuration.isFailFast() && outcomes.stream().anyMatch(JsonSchemaRegistryOutcome::failure)) {
-                LOG.error("JSON Schema Registry reconciliation failed; readiness will remain DOWN");
+            if (outcomes.stream().anyMatch(JsonSchemaRegistryOutcome::failure)) {
+                logFailure();
             }
             return outcomes;
         } catch (RuntimeException e) {
@@ -80,14 +80,28 @@ public final class DefaultJsonSchemaRegistryService implements JsonSchemaRegistr
             ));
             state.completed(duration, outcomes);
             observability.record(configuration, duration, outcomes);
-            if (configuration.isFailFast()) {
-                LOG.error("JSON Schema Registry reconciliation failed; readiness will remain DOWN", e);
-            } else {
-                LOG.warn("JSON Schema Registry reconciliation failed; continuing because fail-fast is disabled", e);
-            }
+            logFailure(e);
             return outcomes;
         } finally {
             running.set(false);
+        }
+    }
+
+    private void logFailure() {
+        switch (configuration.getFailFastStrategy()) {
+            case NONE -> LOG.warn("JSON Schema Registry reconciliation failed; continuing because fail-fast-strategy=none");
+            case READINESS_GATE -> LOG.error("JSON Schema Registry reconciliation failed; readiness will remain DOWN");
+            case STARTUP_ABORT -> LOG.error("JSON Schema Registry reconciliation failed; startup listener will abort startup if this is a startup run");
+            default -> throw new IllegalStateException("Unknown fail-fast strategy: " + configuration.getFailFastStrategy());
+        }
+    }
+
+    private void logFailure(RuntimeException e) {
+        switch (configuration.getFailFastStrategy()) {
+            case NONE -> LOG.warn("JSON Schema Registry reconciliation failed; continuing because fail-fast-strategy=none", e);
+            case READINESS_GATE -> LOG.error("JSON Schema Registry reconciliation failed; readiness will remain DOWN", e);
+            case STARTUP_ABORT -> LOG.error("JSON Schema Registry reconciliation failed; startup listener will abort startup if this is a startup run", e);
+            default -> throw new IllegalStateException("Unknown fail-fast strategy: " + configuration.getFailFastStrategy(), e);
         }
     }
 }

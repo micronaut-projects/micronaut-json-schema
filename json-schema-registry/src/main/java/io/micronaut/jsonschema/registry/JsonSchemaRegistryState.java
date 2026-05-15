@@ -68,7 +68,8 @@ public final class JsonSchemaRegistryState {
      * @return Whether readiness should report UP
      */
     public boolean ready(JsonSchemaRegistryConfiguration configuration) {
-        if (!configuration.isEnabled() || !configuration.isFailFast()) {
+        if (!configuration.isEnabled()
+            || configuration.getFailFastStrategy() != JsonSchemaRegistryFailFastStrategy.READINESS_GATE) {
             return true;
         }
         return snapshot.get().status() == RunStatus.SUCCESS;

@@ -43,7 +43,7 @@ public final class JsonSchemaRegistryConfiguration {
     private boolean enabled;
     private JsonSchemaRegistryAuthority authority = JsonSchemaRegistryAuthority.APPLICATION;
     private boolean dryRun;
-    private boolean failFast = true;
+    private JsonSchemaRegistryFailFastStrategy failFastStrategy = JsonSchemaRegistryFailFastStrategy.READINESS_GATE;
     private List<Mapping> mappings = List.of();
     private NamingConfiguration naming = new NamingConfiguration();
     private SrConfiguration sr = new SrConfiguration();
@@ -92,17 +92,19 @@ public final class JsonSchemaRegistryConfiguration {
     }
 
     /**
-     * @return Whether reconciliation failures should apply fail-fast behavior
+     * @return Reconciliation failure handling strategy
      */
-    public boolean isFailFast() {
-        return failFast;
+    public JsonSchemaRegistryFailFastStrategy getFailFastStrategy() {
+        return failFastStrategy;
     }
 
     /**
-     * @param failFast Whether reconciliation failures should apply fail-fast behavior
+     * @param failFastStrategy Reconciliation failure handling strategy
      */
-    public void setFailFast(boolean failFast) {
-        this.failFast = failFast;
+    public void setFailFastStrategy(@Nullable JsonSchemaRegistryFailFastStrategy failFastStrategy) {
+        this.failFastStrategy = failFastStrategy == null
+            ? JsonSchemaRegistryFailFastStrategy.READINESS_GATE
+            : failFastStrategy;
     }
 
     /**
