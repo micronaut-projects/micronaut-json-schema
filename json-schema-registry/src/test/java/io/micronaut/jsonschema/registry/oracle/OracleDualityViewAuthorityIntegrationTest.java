@@ -120,6 +120,7 @@ final class OracleDualityViewAuthorityIntegrationTest {
     private static void createDualityView() throws Exception {
         withConnection(connection -> {
             try (Statement statement = connection.createStatement()) {
+                // Test fixture setup only. Registry materializers do not infer or create supporting tables.
                 statement.execute("""
                     CREATE TABLE %s (
                         BUILDING_ID NUMBER(19) NOT NULL,
@@ -132,7 +133,7 @@ final class OracleDualityViewAuthorityIntegrationTest {
                     )
                     """.formatted(tableName, tableName));
                 statement.execute("""
-                    CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW %s AS
+                    CREATE JSON RELATIONAL DUALITY VIEW %s AS
                     SELECT JSON {
                         '_id': {'buildingId': ap.building_id, 'flatId': ap.flat_id},
                         'unitName': ap.unit_name,

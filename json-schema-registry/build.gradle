@@ -8,6 +8,7 @@ plugins {
 dependencies {
     api(projects.micronautJsonSchemaCommon)
     api(projects.micronautJsonSchemaGenerator)
+    api(projects.micronautJsonSchemaUtils)
     api(mn.micronaut.context)
     api(mn.micronaut.inject)
     api(mn.micronaut.runtime)
@@ -15,6 +16,7 @@ dependencies {
     annotationProcessor(mn.micronaut.inject.java)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
+    testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
     testImplementation(mn.micronaut.inject.java.test)
     testImplementation(mnTestResources.testcontainers.oracle.free)
     testImplementation(mnSql.ojdbc11)

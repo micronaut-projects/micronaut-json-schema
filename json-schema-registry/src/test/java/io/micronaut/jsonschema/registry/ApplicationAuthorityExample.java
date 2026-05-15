@@ -15,18 +15,10 @@
  */
 package io.micronaut.jsonschema.registry;
 
-/**
- * Registry reconciliation outcome.
- *
- * @since 2.0.0
- */
-public enum JsonSchemaRegistryOutcomeStatus {
-    CREATED,
-    MISSING_TARGET,
-    EQUIVALENT,
-    DRIFT,
-    MISSING_AUTHORITY,
-    UNREADABLE_AUTHORITY,
-    PROJECTION_INCOMPATIBILITY,
-    FAILED
+import io.micronaut.core.annotation.Introspected;
+import io.micronaut.jsonschema.JsonSchema;
+
+@JsonSchema
+@Introspected
+record ApplicationAuthorityExample(String name) {
 }
