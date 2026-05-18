@@ -3,6 +3,7 @@ import io.micronaut.testresources.buildtools.KnownModules
 plugins {
     id("io.micronaut.build.internal.json-schema-module")
     id("io.micronaut.test-resources")
+    id("groovy")
 }
 
 dependencies {
@@ -20,12 +21,15 @@ dependencies {
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
+    testAnnotationProcessor(mn.micronaut.inject.groovy)
+    testImplementation(mn.micronaut.inject.groovy.test)
     testImplementation(mn.micronaut.inject.java.test)
     testImplementation(mn.micronaut.management)
     testImplementation(mnTestResources.testcontainers.oracle.free)
     testImplementation(mnTestResources.testcontainers.kafka)
     testImplementation(mnSql.ojdbc11)
     testImplementation(mnMicrometer.micronaut.micrometer.core)
+    testImplementation(mnTest.micronaut.test.spock)
     testImplementation(mnTest.junit.jupiter.api)
     testImplementation(mnTest.junit.jupiter.params)
     testRuntimeOnly(mnLogging.logback.classic)
