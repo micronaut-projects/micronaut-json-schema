@@ -65,6 +65,20 @@ class GeneratedConfigurationSchemasTest {
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.validation.extra") && e.message().contains("not present")));
     }
 
+    @Test
+    void validatesEnumConfigurationCaseInsensitively() {
+        Environment env = createEnvironment(Map.of(
+            "test.validation.mode", "a"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), env);
+
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.validation.mode")), () -> "Unexpected enum errors: " + errors);
+    }
+
     private static Environment createEnvironment(Map<String, Object> properties) {
         ClassLoader classLoader = GeneratedConfigurationSchemasTest.class.getClassLoader();
         ApplicationContextConfiguration configuration = new ApplicationContextConfiguration() {
