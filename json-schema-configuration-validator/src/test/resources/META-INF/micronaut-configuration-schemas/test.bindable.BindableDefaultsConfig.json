@@ -33,6 +33,18 @@
       "x-micronaut-javaType": "java.lang.String",
       "x-micronaut-path": "test.bindable.documented-mode"
     },
+    "documented-host": {
+      "type": "string",
+      "description": "Default: 127.0.0.1",
+      "x-micronaut-javaType": "java.lang.String",
+      "x-micronaut-path": "test.bindable.documented-host"
+    },
+    "documented-ratio": {
+      "type": "number",
+      "description": "Default value 1.0",
+      "x-micronaut-javaType": "java.math.BigDecimal",
+      "x-micronaut-path": "test.bindable.documented-ratio"
+    },
     "invalid-documented-mode": {
       "type": "string",
       "enum": ["RS256"],
@@ -45,6 +57,8 @@
     "initial-pool-size",
     "max-pool-size",
     "documented-mode",
+    "documented-host",
+    "documented-ratio",
     "invalid-documented-mode"
   ]
 }

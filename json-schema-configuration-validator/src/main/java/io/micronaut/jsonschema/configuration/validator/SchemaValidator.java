@@ -39,10 +39,16 @@ import java.util.regex.Pattern;
 
 @Internal
 final class SchemaValidator {
-    private static final Pattern DEFAULTS_TO_PATTERN = Pattern.compile("\\bDefaults? to\\s+[`'\"]?([^`'\".,;)\\s]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DEFAULTS_TO_PATTERN = Pattern.compile("\\bDefaults? to\\s+[`'\"]?([^\\s]+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern DEFAULT_VALUE_PAREN_PATTERN = Pattern.compile("\\bDefault value\\s*\\((?!\\s*\\{@value)([^)]+)\\)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern DEFAULT_VALUE_PATTERN = Pattern.compile("\\bDefault value\\s+[`'\"]?([^`'\".,;)\\s]+)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern DEFAULT_COLON_PATTERN = Pattern.compile("\\bDefault:\\s*[`'\"]?([^`'\".,;)\\s]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DEFAULT_VALUE_PATTERN = Pattern.compile("\\bDefault value\\s+[`'\"]?([^\\s]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DEFAULT_COLON_PATTERN = Pattern.compile("\\bDefault:\\s*[`'\"]?([^\\s]+)", Pattern.CASE_INSENSITIVE);
+    private static final List<Pattern> DOCUMENTED_DEFAULT_PATTERNS = List.of(
+        DEFAULTS_TO_PATTERN,
+        DEFAULT_VALUE_PAREN_PATTERN,
+        DEFAULT_VALUE_PATTERN,
+        DEFAULT_COLON_PATTERN
+    );
 
     private SchemaValidator() {
     }
@@ -518,7 +524,10 @@ final class SchemaValidator {
         return switch (type) {
             case STRING -> true;
             case BOOLEAN -> "true".equalsIgnoreCase(documentedDefault) || "false".equalsIgnoreCase(documentedDefault);
-            case INTEGER -> toBigDecimal(documentedDefault) != null && toBigDecimal(documentedDefault).stripTrailingZeros().scale() <= 0;
+            case INTEGER -> {
+                BigDecimal value = toBigDecimal(documentedDefault);
+                yield value != null && value.stripTrailingZeros().scale() <= 0;
+            }
             case NUMBER -> toBigDecimal(documentedDefault) != null;
             default -> false;
         };
@@ -529,7 +538,7 @@ final class SchemaValidator {
         if (description == null) {
             return null;
         }
-        for (Pattern pattern : List.of(DEFAULTS_TO_PATTERN, DEFAULT_VALUE_PAREN_PATTERN, DEFAULT_VALUE_PATTERN, DEFAULT_COLON_PATTERN)) {
+        for (Pattern pattern : DOCUMENTED_DEFAULT_PATTERNS) {
             java.util.regex.Matcher matcher = pattern.matcher(description);
             if (matcher.find()) {
                 String candidate = cleanDocumentedDefault(matcher.group(1));

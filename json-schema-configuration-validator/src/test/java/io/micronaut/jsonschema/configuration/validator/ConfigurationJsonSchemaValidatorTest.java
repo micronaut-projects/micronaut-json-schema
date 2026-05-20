@@ -121,6 +121,10 @@ class ConfigurationJsonSchemaValidatorTest {
             && e.message().contains("Missing required")), () -> "Unexpected missing required error for max-pool-size: " + errors);
         assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.bindable.documented-mode")
             && e.message().contains("Missing required")), () -> "Unexpected missing required error for valid documented default: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.bindable.documented-host")
+            && e.message().contains("Missing required")), () -> "Unexpected missing required error for dotted documented default: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.bindable.documented-ratio")
+            && e.message().contains("Missing required")), () -> "Unexpected missing required error for decimal documented default: " + errors);
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.bindable.invalid-documented-mode")
             && e.message().contains("Missing required")), () -> "Expected missing required error for invalid documented default: " + errors);
     }

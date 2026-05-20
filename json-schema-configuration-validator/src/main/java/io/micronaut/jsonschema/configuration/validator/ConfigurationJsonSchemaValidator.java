@@ -37,7 +37,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
@@ -250,13 +252,13 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             return Map.of();
         }
         Map<String, Set<List<String>>> pathsByPrefix = new LinkedHashMap<>(schemaPrefixes.size());
-        Set<String> prefixes = new LinkedHashSet<>(schemaPrefixes);
+        NavigableSet<String> prefixes = new TreeSet<>(schemaPrefixes);
 
         for (String prefix : prefixes) {
             String prefixWithDot = prefix + ".";
-            for (String fullPrefix : prefixes) {
-                if (fullPrefix.equals(prefix) || !fullPrefix.startsWith(prefixWithDot)) {
-                    continue;
+            for (String fullPrefix : prefixes.tailSet(prefixWithDot, true)) {
+                if (!fullPrefix.startsWith(prefixWithDot)) {
+                    break;
                 }
                 String nestedPath = fullPrefix.substring(prefixWithDot.length());
                 if (StringUtils.isEmpty(nestedPath)) {
