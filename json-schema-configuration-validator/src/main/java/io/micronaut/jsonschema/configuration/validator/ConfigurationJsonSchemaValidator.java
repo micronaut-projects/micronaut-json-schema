@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -151,7 +152,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             }
         }
 
-        Map<String, Set<String>> nestedSchemaKeysByPrefix = nestedSchemaKeysByPrefix(schemasByPrefix.keySet());
+        Map<String, Set<List<String>>> nestedSchemaPathsByPrefix = nestedSchemaPathsByPrefix(schemasByPrefix.keySet());
 
         for (Map.Entry<String, List<ConfigurationSchema>> entry : schemasByPrefix.entrySet()) {
             String prefix = entry.getKey();
@@ -173,7 +174,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     failOnNotPresent,
                     rules,
                     errors,
-                    nestedSchemaKeysByPrefix,
+                    nestedSchemaPathsByPrefix,
                     overlappingPrefixKeys,
                     overlappingEachPropertySchemaKeys
                 );
@@ -244,42 +245,29 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
         }
     }
 
-    private static Map<String, Set<String>> nestedSchemaKeysByPrefix(Set<String> schemaPrefixes) {
+    private static Map<String, Set<List<String>>> nestedSchemaPathsByPrefix(Set<String> schemaPrefixes) {
         if (schemaPrefixes.isEmpty()) {
             return Map.of();
         }
-        Map<String, Set<String>> keysByPrefix = new LinkedHashMap<>(schemaPrefixes.size());
+        Map<String, Set<List<String>>> pathsByPrefix = new LinkedHashMap<>(schemaPrefixes.size());
         Set<String> prefixes = new LinkedHashSet<>(schemaPrefixes);
 
-        for (String fullPrefix : prefixes) {
-            addNestedSchemaKeys(prefixes, keysByPrefix, fullPrefix);
-        }
-
-        return keysByPrefix;
-    }
-
-    private static void addNestedSchemaKeys(Set<String> prefixes, Map<String, Set<String>> keysByPrefix, String fullPrefix) {
-        int dot = fullPrefix.indexOf('.');
-        if (dot == -1) {
-            return;
-        }
-        String parentPrefix = fullPrefix.substring(0, dot);
-        int start = dot + 1;
-
-        while (start < fullPrefix.length()) {
-            int nextDot = fullPrefix.indexOf('.', start);
-            String segment = nextDot == -1 ? fullPrefix.substring(start) : fullPrefix.substring(start, nextDot);
-
-            if (prefixes.contains(parentPrefix) && !StringUtils.isEmpty(segment)) {
-                keysByPrefix.computeIfAbsent(parentPrefix, p -> new LinkedHashSet<>()).add(segment);
+        for (String prefix : prefixes) {
+            String prefixWithDot = prefix + ".";
+            for (String fullPrefix : prefixes) {
+                if (fullPrefix.equals(prefix) || !fullPrefix.startsWith(prefixWithDot)) {
+                    continue;
+                }
+                String nestedPath = fullPrefix.substring(prefixWithDot.length());
+                if (StringUtils.isEmpty(nestedPath)) {
+                    continue;
+                }
+                pathsByPrefix.computeIfAbsent(prefix, p -> new LinkedHashSet<>())
+                    .add(Arrays.asList(nestedPath.split("\\.")));
             }
-
-            if (nextDot == -1) {
-                break;
-            }
-            parentPrefix = parentPrefix + "." + segment;
-            start = nextDot + 1;
         }
+
+        return pathsByPrefix;
     }
 
     private static Set<String> overlappingPrefixKeys(List<ConfigurationSchema> schemas) {
@@ -337,7 +325,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             boolean failOnNotPresent,
             List<ConfigurationRule> rules,
             Set<ConfigurationError> errors,
-            Map<String, Set<String>> nestedSchemaKeysByPrefix,
+            Map<String, Set<List<String>>> nestedSchemaPathsByPrefix,
             Set<String> overlappingPrefixKeys,
             Set<String> overlappingEachPropertySchemaKeys
         ) {
@@ -345,9 +333,9 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             String container = schema.micronaut() != null ? schema.micronaut().container() : null;
 
             if ("each-property".equals(kind) && "map".equals(container)) {
-                validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaKeysByPrefix, overlappingEachPropertySchemaKeys);
+                validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaPathsByPrefix, overlappingEachPropertySchemaKeys);
             } else {
-                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaKeysByPrefix, overlappingPrefixKeys);
+                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaPathsByPrefix, overlappingPrefixKeys);
             }
         }
 
@@ -360,7 +348,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             boolean failOnNotPresent,
             List<ConfigurationRule> rules,
             Set<ConfigurationError> errors,
-            Map<String, Set<String>> nestedSchemaKeysByPrefix,
+            Map<String, Set<List<String>>> nestedSchemaPathsByPrefix,
             Set<String> overlappingPrefixKeys
         ) {
             if (!environment.containsProperties(prefix)) {
@@ -381,10 +369,10 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             }
             Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
             ConfigurationSchemaProperty root = ConfigurationSchemaPropertyAdapter.fromRoot(schema);
-
-            Map<String, Object> effectiveInstance = removeNestedSchemaKeys(prefix, instance, root, nestedSchemaKeysByPrefix);
-            effectiveInstance = removeOverlappingSchemaKeys(effectiveInstance, root, overlappingPrefixKeys);
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
+
+            Map<String, Object> effectiveInstance = removeNestedSchemaKeys(prefix, instance, root, nestedSchemaPathsByPrefix, ctx);
+            effectiveInstance = removeOverlappingSchemaKeys(effectiveInstance, root, overlappingPrefixKeys);
             SchemaValidator.validateObject(ctx, root, effectiveInstance, prefix, null, errors);
 
             applyRules(rules, new ConfigurationValidationContext(environment, prefix, schema, root, instance), errors);
@@ -400,7 +388,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             boolean failOnNotPresent,
             List<ConfigurationRule> rules,
             Set<ConfigurationError> errors,
-            Map<String, Set<String>> nestedSchemaKeysByPrefix,
+            Map<String, Set<List<String>>> nestedSchemaPathsByPrefix,
             Set<String> overlappingEachPropertySchemaKeys
         ) {
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
@@ -432,6 +420,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     continue;
                 }
                 Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
+                instance = unwrapRepeatedEachPropertyEntry(instance, entry, entrySchema);
                 Map<String, Object> effectiveInstance = removeOverlappingEachPropertySchemaKeys(instance, entrySchema, overlappingEachPropertySchemaKeys);
 
                 SchemaValidator.validateObject(ctx, entrySchema, effectiveInstance, entryPrefix, entry, errors);
@@ -439,6 +428,25 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                 applyRules(rules, new ConfigurationValidationContext(environment, entryPrefix, schema, entrySchema, instance), errors);
                 applyRulesForNestedObjects(rules, environment, entryPrefix, schema, entrySchema, instance, errors);
             }
+        }
+
+        @SuppressWarnings("unchecked")
+        private static Map<String, Object> unwrapRepeatedEachPropertyEntry(
+            Map<String, Object> instance,
+            String entry,
+            ConfigurationSchemaProperty entrySchema
+        ) {
+            if (instance.size() != 1 || !instance.containsKey(entry)) {
+                return instance;
+            }
+            if (!(instance.get(entry) instanceof Map<?, ?> nested)) {
+                return instance;
+            }
+            Map<String, ConfigurationSchemaProperty> properties = entrySchema.properties();
+            if (properties != null && properties.containsKey(entry)) {
+                return instance;
+            }
+            return (Map<String, Object>) nested;
         }
 
         private static Map<String, Object> removeOverlappingEachPropertySchemaKeys(
@@ -524,31 +532,59 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             String prefix,
             Map<String, Object> instance,
             ConfigurationSchemaProperty root,
-            Map<String, Set<String>> nestedSchemaKeysByPrefix
+            Map<String, Set<List<String>>> nestedSchemaPathsByPrefix,
+            SchemaContext ctx
         ) {
-            if (instance.isEmpty() || nestedSchemaKeysByPrefix.isEmpty()) {
+            if (instance.isEmpty() || nestedSchemaPathsByPrefix.isEmpty()) {
                 return instance;
             }
-            Set<String> nestedKeys = nestedSchemaKeysByPrefix.get(prefix);
-            if (nestedKeys == null || nestedKeys.isEmpty()) {
+            Set<List<String>> nestedPaths = nestedSchemaPathsByPrefix.get(prefix);
+            if (nestedPaths == null || nestedPaths.isEmpty()) {
                 return instance;
             }
 
-            Map<String, ConfigurationSchemaProperty> properties = root.properties();
             Map<String, Object> filtered = null;
-            for (String key : nestedKeys) {
-                if (!instance.containsKey(key)) {
-                    continue;
-                }
-                if (properties != null && properties.containsKey(key)) {
+            for (List<String> nestedPath : nestedPaths) {
+                if (nestedPath.isEmpty()) {
                     continue;
                 }
                 if (filtered == null) {
                     filtered = new LinkedHashMap<>(instance);
                 }
-                filtered.remove(key);
+                removeNestedSchemaPath(filtered, root, nestedPath, 0, ctx);
             }
             return filtered != null ? filtered : instance;
+        }
+
+        @SuppressWarnings("unchecked")
+        private static void removeNestedSchemaPath(
+            Map<String, Object> instance,
+            ConfigurationSchemaProperty schema,
+            List<String> path,
+            int index,
+            SchemaContext ctx
+        ) {
+            String segment = path.get(index);
+            if (!instance.containsKey(segment)) {
+                return;
+            }
+
+            ConfigurationSchemaProperty resolvedSchema = ctx.refResolver().resolveRef(schema);
+            Map<String, ConfigurationSchemaProperty> properties = resolvedSchema != null ? resolvedSchema.properties() : null;
+            ConfigurationSchemaProperty childSchema = properties != null ? properties.get(segment) : null;
+            if (childSchema == null) {
+                instance.remove(segment);
+                return;
+            }
+
+            if (index == path.size() - 1) {
+                return;
+            }
+
+            Object childValue = instance.get(segment);
+            if (childValue instanceof Map<?, ?> childMap) {
+                removeNestedSchemaPath((Map<String, Object>) childMap, childSchema, path, index + 1, ctx);
+            }
         }
 
         private static Map<String, Object> removeOverlappingSchemaKeys(
