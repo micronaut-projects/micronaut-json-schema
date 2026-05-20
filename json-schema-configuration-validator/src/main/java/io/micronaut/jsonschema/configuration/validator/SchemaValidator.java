@@ -418,7 +418,7 @@ final class SchemaValidator {
                 return true;
             }
             if (enumValue != null && value != null) {
-                if (enumValue.toString().equals(value.toString())) {
+                if (enumValue.toString().equalsIgnoreCase(value.toString())) {
                     return true;
                 }
             }
