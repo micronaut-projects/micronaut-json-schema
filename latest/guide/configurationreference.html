@@ -12,7 +12,7 @@
     <script src="../js/guide.js"></script>
     <script>hljs.initHighlightingOnLoad();</script>
     <script src="../js/docs.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.13/clipboard.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
 </head>
 <body class="body">
     <div id="main">
@@ -46,24 +46,101 @@
         <div class="docs-content">
             <div class="project">
                 <h1>Configuration Reference</h1>
-                <p><strong>Version:</strong>1.7.2</p>
+                <p><strong>Version:</strong>2.0.1</p>
                 <p></p>
             </div>
 <div class="sect2">
-<h3 id="_micronaut_json_schema_utils_config_properties">Micronaut Json Schema Utils Config Properties</h3>
-<a id="io.micronaut.jsonschema.utils.JsonSchemaConfigurationProperties" href="#io.micronaut.jsonschema.utils.JsonSchemaConfigurationProperties">&#128279;</a>
+<h3 id="_micronaut_json_schema_configuration_validator_config_properties">Micronaut Json Schema Configuration Validator Config Properties</h3>
+<a id="io.micronaut.jsonschema.configuration.validator.HealthConfiguration" href="#io.micronaut.jsonschema.configuration.validator.HealthConfiguration">&#128279;</a>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 1. Configuration Properties for <a href="../api/io/micronaut/jsonschema/utils/JsonSchemaConfigurationProperties.html">JsonSchemaConfigurationProperties</a></caption>
+<caption class="title">Table 1. Configuration Properties for <a href="../api/io/micronaut/jsonschema/configuration/validator/HealthConfiguration.html">HealthConfiguration</a></caption>
 <colgroup>
-<col style="width: 33.3333%;">
-<col style="width: 33.3333%;">
-<col style="width: 33.3334%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Property</th>
 <th class="tableblock halign-left valign-top">Type</th>
 <th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>endpoints.health.configurationerrors.enabled</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the configuration validation health indicator is enabled. Default value true</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+<a id="io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration" href="#io.micronaut.jsonschema.configuration.validator.ConfigurationValidatorConfiguration">&#128279;</a>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Configuration Properties for <a href="../api/io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html">ConfigurationValidatorConfiguration</a></caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.cache</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the validation result should be cached. Default value true</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.fail-on-not-present</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether to fail when configuration contains keys not present in schema. Default value true</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.suppressions</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.util.List</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Patterns used to suppress validation errors</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.configuration.validator.dependency-injection-validation-strategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="../api/io/micronaut/jsonschema/configuration/validator/DependencyInjectionValidationStrategy.html">DependencyInjectionValidationStrategy</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The DI validation strategy. Default value {@code REACHABLE}</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+</div>
+<div class="sect2">
+<h3 id="_micronaut_json_schema_utils_config_properties">Micronaut Json Schema Utils Config Properties</h3>
+<a id="io.micronaut.jsonschema.utils.JsonSchemaConfigurationProperties" href="#io.micronaut.jsonschema.utils.JsonSchemaConfigurationProperties">&#128279;</a>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. Configuration Properties for <a href="../api/io/micronaut/jsonschema/utils/JsonSchemaConfigurationProperties.html">JsonSchemaConfigurationProperties</a></caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default value</th>
 </tr>
 </thead>
 <tbody>
@@ -71,6 +148,7 @@
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.output-location</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The location where JSON schemas will be generated inside the build META-INF/ directory. It defaults to {@value DEFAULT_OUTPUT_LOCATION}.</p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 </tbody>
 </table>
@@ -80,17 +158,19 @@
 <h3 id="_micronaut_json_schema_validation_config_properties">Micronaut Json Schema Validation Config Properties</h3>
 <a id="io.micronaut.jsonschema.validation.JsonSchemaValidatorConfiguration" href="#io.micronaut.jsonschema.validation.JsonSchemaValidatorConfiguration">&#128279;</a>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 2. Configuration Properties for <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html">JsonSchemaValidatorConfiguration</a></caption>
+<caption class="title">Table 4. Configuration Properties for <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html">JsonSchemaValidatorConfiguration</a></caption>
 <colgroup>
-<col style="width: 33.3333%;">
-<col style="width: 33.3333%;">
-<col style="width: 33.3334%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Property</th>
 <th class="tableblock halign-left valign-top">Type</th>
 <th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default value</th>
 </tr>
 </thead>
 <tbody>
@@ -98,11 +178,13 @@
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.validation.base-uri</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The base URI for JSON schemas to be validated</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="http://localhost:8080/schemas/" class="bare">http://localhost:8080/schemas/</a></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.validation.classpath-folder</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">THe folder where the JSON schemas are located, on the classpath. Deprecated. Not used. Use {@link JsonSchemaConfiguration#getOutputLocation()} instead.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">META-INF/schemas/</p></td>
 </tr>
 </tbody>
 </table>
