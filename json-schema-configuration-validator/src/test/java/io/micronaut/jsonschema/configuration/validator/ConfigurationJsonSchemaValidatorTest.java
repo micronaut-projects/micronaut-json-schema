@@ -55,6 +55,7 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.home"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.log.level.*"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.processing"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.test-resources*"));
 
@@ -62,6 +63,7 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.home"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.log.level.*"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.processing"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.test-resources*"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.http.*"));
@@ -70,6 +72,7 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.home"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.log.level.*"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.processing"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.test-resources*"));
     }
@@ -80,6 +83,7 @@ class ConfigurationJsonSchemaValidatorTest {
             "datasources.default.db-type", "postgres",
             "datasources.default.x-protocol-url", "jdbc:mysql://localhost/test",
             "micronaut.home", "/tmp/micronaut",
+            "micronaut.log.level.io.micronaut.context.env", "TRACE",
             "micronaut.processing.group", "com.example",
             "micronaut.test-resources", "enabled",
             "micronaut.test-resources-server-uri", "http://localhost:8080"
@@ -96,6 +100,8 @@ class ConfigurationJsonSchemaValidatorTest {
             () -> "Expected datasource x-protocol-url default suppression to be silent, got: " + errors);
         assertFalse(errors.stream().anyMatch(e -> e.property().equals("micronaut.home")),
             () -> "Expected micronaut.home default suppression to be silent, got: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("micronaut.log.level.io.micronaut.context.env")),
+            () -> "Expected micronaut.log.level.* default suppression to be silent, got: " + errors);
         assertFalse(errors.stream().anyMatch(e -> e.property().equals("micronaut.processing")),
             () -> "Expected micronaut.processing default suppression to be silent, got: " + errors);
         assertFalse(errors.stream().anyMatch(e -> e.property().equals("micronaut.test-resources")),
