@@ -39,6 +39,17 @@ import java.util.regex.Pattern;
 
 @Internal
 final class SchemaValidator {
+    private static final Pattern DEFAULTS_TO_PATTERN = Pattern.compile("\\bDefaults? to\\s+[`'\"]?([^\\s]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DEFAULT_VALUE_PAREN_PATTERN = Pattern.compile("\\bDefault value\\s*\\((?!\\s*\\{@value)([^)]+)\\)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DEFAULT_VALUE_PATTERN = Pattern.compile("\\bDefault value\\s+[`'\"]?([^\\s]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DEFAULT_COLON_PATTERN = Pattern.compile("\\bDefault:\\s*[`'\"]?([^\\s]+)", Pattern.CASE_INSENSITIVE);
+    private static final List<Pattern> DOCUMENTED_DEFAULT_PATTERNS = List.of(
+        DEFAULTS_TO_PATTERN,
+        DEFAULT_VALUE_PAREN_PATTERN,
+        DEFAULT_VALUE_PATTERN,
+        DEFAULT_COLON_PATTERN
+    );
+
     private SchemaValidator() {
     }
 
@@ -100,6 +111,9 @@ final class SchemaValidator {
                     if ((resolvedRequiredProperty != null && resolvedRequiredProperty.defaultValue() != null) || requiredProperty.defaultValue() != null) {
                         continue;
                     }
+                    if (hasValidDocumentedDefault(requiredProperty) || hasValidDocumentedDefault(resolvedRequiredProperty)) {
+                        continue;
+                    }
                 }
                 if (!instance.containsKey(req)) {
                     String missingComputed = computedPropertyName + "." + req;
@@ -129,7 +143,8 @@ final class SchemaValidator {
         boolean additionalPropertiesTrue = additionalProperties instanceof Boolean b && b;
         boolean additionalPropertiesFalse = additionalProperties instanceof Boolean b && !b;
         ConfigurationSchemaProperty additionalSchema = ctx.refResolver().resolveAdditionalPropertiesSchema(schema);
-        if (ctx.failOnNotPresent() || additionalPropertiesFalse || additionalSchema != null) {
+        ConfigurationSchemaProperty wildcardSchema = properties.get("*");
+        if (ctx.failOnNotPresent() || additionalPropertiesFalse || additionalSchema != null || wildcardSchema != null) {
             for (Map.Entry<String, Object> entry : instance.entrySet()) {
                 String key = entry.getKey();
                 if (properties.containsKey(key)) {
@@ -138,6 +153,14 @@ final class SchemaValidator {
 
                 String unknownComputed = computedPropertyName + "." + key;
                 String unknownResolved = ctx.resolvedPropertyName(unknownComputed, null, wildcardReplacement);
+
+                if (wildcardSchema != null) {
+                    String wildcardComputed = computedPropertyName + ".*";
+                    String wildcardResolved = ctx.resolvedPropertyName(wildcardComputed, wildcardSchema.micronautPath(), key);
+                    Object coerced = ValueCoercer.coerce(ctx, wildcardSchema, wildcardResolved, key, entry.getValue(), errors);
+                    validateNode(ctx, wildcardSchema, coerced, wildcardComputed, wildcardResolved, key, errors);
+                    continue;
+                }
 
                 if (additionalSchema != null) {
                     Object coerced = ValueCoercer.coerce(ctx, additionalSchema, unknownResolved, wildcardReplacement, entry.getValue(), errors);
@@ -473,6 +496,74 @@ final class SchemaValidator {
             }
         }
         return null;
+    }
+
+    private static boolean hasValidDocumentedDefault(@Nullable ConfigurationSchemaProperty property) {
+        if (property == null) {
+            return false;
+        }
+        String documentedDefault = documentedDefault(property.description());
+        if (documentedDefault == null) {
+            return false;
+        }
+
+        Object constValue = property.constValue();
+        if (constValue != null && !Objects.equals(constValue.toString(), documentedDefault)) {
+            return false;
+        }
+
+        Collection<Object> enumValues = property.enumValues();
+        if (enumValues != null && !enumContains(enumValues, documentedDefault)) {
+            return false;
+        }
+
+        ConfigurationSchemaType type = SchemaTypes.toType(property.type());
+        if (type == null) {
+            return true;
+        }
+        return switch (type) {
+            case STRING -> true;
+            case BOOLEAN -> "true".equalsIgnoreCase(documentedDefault) || "false".equalsIgnoreCase(documentedDefault);
+            case INTEGER -> {
+                BigDecimal value = toBigDecimal(documentedDefault);
+                yield value != null && value.stripTrailingZeros().scale() <= 0;
+            }
+            case NUMBER -> toBigDecimal(documentedDefault) != null;
+            default -> false;
+        };
+    }
+
+    @Nullable
+    private static String documentedDefault(@Nullable String description) {
+        if (description == null) {
+            return null;
+        }
+        for (Pattern pattern : DOCUMENTED_DEFAULT_PATTERNS) {
+            java.util.regex.Matcher matcher = pattern.matcher(description);
+            if (matcher.find()) {
+                String candidate = cleanDocumentedDefault(matcher.group(1));
+                if (candidate != null) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String cleanDocumentedDefault(String candidate) {
+        String value = candidate.strip();
+        while (!value.isEmpty() && "`'\".,;)".indexOf(value.charAt(value.length() - 1)) >= 0) {
+            value = value.substring(0, value.length() - 1).strip();
+        }
+        if (value.isEmpty() || value.indexOf('{') >= 0 || value.indexOf('#') >= 0) {
+            return null;
+        }
+        String lower = value.toLowerCase(Locale.ROOT);
+        if ("null".equals(lower) || "none".equals(lower) || "n/a".equals(lower)) {
+            return null;
+        }
+        return value;
     }
 
     private static final class PropertySuggester {

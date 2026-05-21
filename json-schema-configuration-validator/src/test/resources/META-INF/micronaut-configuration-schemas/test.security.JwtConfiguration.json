@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.security.JwtConfiguration",
+  "title": "test.security.JwtConfiguration",
+  "x-micronaut": {
+    "prefix": "test.security.token.jwt",
+    "type": "test.security.JwtConfiguration",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "generator": {
+      "type": "object",
+      "properties": {
+        "refresh-token": {
+          "type": "object",
+          "properties": {
+            "secret": {
+              "type": "string",
+              "x-micronaut-path": "test.security.token.jwt.generator.refresh-token.secret"
+            }
+          },
+          "required": ["secret"]
+        }
+      }
+    },
+    "signatures": {
+      "type": "object",
+      "properties": {
+        "secret": {
+          "type": "object",
+          "properties": {
+            "*": {
+              "type": "object",
+              "properties": {
+                "secret": {
+                  "type": "string",
+                  "x-micronaut-path": "test.security.token.jwt.signatures.secret.*.secret"
+                }
+              },
+              "required": ["secret"]
+            }
+          }
+        },
+        "enabled": {
+          "type": "boolean",
+          "x-micronaut-path": "test.security.token.jwt.signatures.enabled"
+        }
+      }
+    }
+  }
+}
