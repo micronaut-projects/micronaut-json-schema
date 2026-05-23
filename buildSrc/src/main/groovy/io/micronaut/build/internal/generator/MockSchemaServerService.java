@@ -21,7 +21,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.services.BuildService;
 import org.gradle.api.services.BuildServiceParameters;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -34,10 +33,17 @@ import java.nio.file.Path;
  * resolve {@code $ref} URLs that would otherwise depend on remote services
  * (e.g. {@code schemastore.org}), keeping builds reproducible and offline-safe.
  *
- * <p>The server binds to an ephemeral port and serves every file under
+ * <p>The server binds to the loopback address {@code 127.0.0.1} on the
+ * configured {@link Params#getPort() port}, defaulting to an ephemeral port
+ * when unset, and serves every file under
  * {@link Params#getFixturesDir() fixturesDir} as {@code application/json}.
  * Tasks consuming this service can read {@link #getBaseUrl()} to construct
- * full URLs (e.g. {@code http://localhost:<port>/base.json}).
+ * full URLs (e.g. {@code http://127.0.0.1:<port>/base.json}); when a fixed
+ * port is configured, fixtures can hardcode the same URL.
+ *
+ * <p>{@code 127.0.0.1} is used instead of {@code localhost} to avoid
+ * dual-stack resolution surprises on hosts where {@code localhost} resolves
+ * to {@code ::1} before {@code 127.0.0.1}.
  */
 public abstract class MockSchemaServerService
     implements BuildService<MockSchemaServerService.Params>, AutoCloseable {
