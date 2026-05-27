@@ -92,6 +92,10 @@ class OraclePipelineMockSpec extends Specification {
             .filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".java") }
             .findFirst()
             .present
+        logs.any { it.contains("languageLevel=21") && it.contains("schemaCacheDir=") && it.contains("outputDir=") }
+        logs.any { it.contains("dictionaryView=USER_DOMAINS") }
+        logs.any { it.contains("name=MOONPHASE") && it.contains("retrievalMode=DOMAIN_CONSTRAINTS") }
+        logs.any { it.contains("discoveredSchemas=1") }
         logs.any { it.contains("generatedTypes=1") }
     }
 
@@ -507,7 +511,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     schemaCacheDir,
                     outputDir,
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [owner: "HR", include: "MOONPHASE"])],
+                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [owner: " hr ", include: "MOONPHASE"])],
                     false,
                     true
                 )
@@ -795,7 +799,10 @@ class OraclePipelineMockSpec extends Specification {
         and:
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "sourceMetadata", 0, "sourceName").getStringValue() == "custom"
-        jsonAt(manifest, "sourceMetadata", 0, "metadata").size() == 0
+        jsonAt(manifest, "sourceMetadata", 0, "metadata", "provider").getStringValue() == "test"
+        jsonAt(manifest, "sourceMetadata", 0, "metadata", "schemaCacheDir").getStringValue() == schemaCacheDir.toString()
+        jsonAt(manifest, "sourceMetadata", 0, "metadata", "outputDir").getStringValue() == outputDir.toString()
+        jsonAt(manifest, "sourceMetadata", 0, "metadata", "apiToken").getStringValue() == "<redacted>"
         jsonAt(manifest, "parameters", "sources", 0, "options", "apiToken").getStringValue() == "<redacted>"
         jsonAt(manifest, "parameters", "sources", 0, "options", "include").getStringValue() == "SAFE"
         jsonAt(manifest, "discovery", "schemas").size() == 0

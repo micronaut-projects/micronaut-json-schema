@@ -93,15 +93,28 @@ public final class JsonSchemaRecordsPipeline {
         List<JsonSchemaRecordsManifest.Warning> warnings = new ArrayList<>();
         List<JsonSchemaRecordsManifest.Skipped> skipped = new ArrayList<>();
         List<DiscoveredSchemaEntry> discoveredSchemas = new ArrayList<>();
+        Map<String, Map<String, String>> sourceMetadata = new LinkedHashMap<>();
 
         try (LazyJdbcConnectionProvider jdbcConnectionProvider = new LazyJdbcConnectionProvider(config)) {
             logger.info("[jsonschema-records] INFO sources=" + configuredSources.size());
-            SchemaDiscoveryContext context = new SchemaDiscoveryContext(config.skipOnError(), config.failOnMissingSource(), logger, Map.of(JdbcConnectionProvider.class, jdbcConnectionProvider));
+            logEffectiveParameters(config);
             for (SourceSpec source : configuredSources) {
+                Map<String, String> contextSourceMetadata = sourceMetadata(source, config);
+                sourceMetadata.put(source.name(), contextSourceMetadata);
+                SchemaDiscoveryContext context = new SchemaDiscoveryContext(
+                    config.skipOnError(),
+                    config.failOnMissingSource(),
+                    config.schemaCacheDir(),
+                    config.outputDir(),
+                    contextSourceMetadata,
+                    logger,
+                    Map.of(JdbcConnectionProvider.class, jdbcConnectionProvider)
+                );
                 SchemaDiscoveryProvider provider = SchemaDiscoveryProviders.resolve(source.providerClassName(), providerClassLoader);
                 DiscoveryResult result;
                 try {
                     result = provider.discover(context, source);
+                    sourceMetadata.put(source.name(), result.sourceMetadata());
                 } catch (SourceUnavailableException e) {
                     if (config.failOnMissingSource()) {
                         throw new IOException(e.getMessage(), e);
@@ -173,6 +186,7 @@ public final class JsonSchemaRecordsPipeline {
         } catch (Exception e) {
             throw new IOException("jsonSchemaRecords discovery failed", e);
         }
+        logger.info("[jsonschema-records] INFO discoveredSchemas=" + discoveredSchemas.size());
 
         List<JsonSchemaRecordsManifest.SchemaFile> schemaEntries = new ArrayList<>();
         List<String> emittedFiles = new ArrayList<>();
@@ -205,7 +219,7 @@ public final class JsonSchemaRecordsPipeline {
 
         List<String> generatedJavaFiles = new ArrayList<>();
         int generatedTypes = generateSources(config, byRelativeFile, warnings, skipped, generatedJavaFiles);
-        Path manifestPath = writeManifest(config, warnings, skipped, schemaEntries, emittedFiles, generatedJavaFiles);
+        Path manifestPath = writeManifest(config, sourceMetadata, warnings, skipped, schemaEntries, emittedFiles, generatedJavaFiles);
         logger.info("[jsonschema-records] INFO generatedTypes=" + generatedTypes + " outputDir=" + config.outputDir());
         return new Result(manifestPath, generatedTypes);
     }
@@ -466,6 +480,7 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private Path writeManifest(JsonSchemaRecordsGeneratorConfig config,
+                               Map<String, Map<String, String>> sourceMetadata,
                                List<JsonSchemaRecordsManifest.Warning> warnings,
                                List<JsonSchemaRecordsManifest.Skipped> skipped,
                                List<JsonSchemaRecordsManifest.SchemaFile> schemaEntries,
@@ -478,7 +493,7 @@ public final class JsonSchemaRecordsPipeline {
                 .map(source -> new JsonSchemaRecordsManifest.SourceMetadata(
                     source.name(),
                     source.providerClassName(),
-                    sourceMetadata(source, config)
+                    sanitizeOptions(sourceMetadata.getOrDefault(source.name(), Map.of()))
                 ))
                 .toList(),
             new JsonSchemaRecordsManifest.Parameters(
@@ -513,6 +528,19 @@ public final class JsonSchemaRecordsPipeline {
             return Map.of("jdbcUrlSanitized", sanitizeJdbcUrl(config.jdbcUrl()));
         }
         return Map.of();
+    }
+
+    private void logEffectiveParameters(JsonSchemaRecordsGeneratorConfig config) {
+        logger.info("[jsonschema-records] INFO languageLevel=" + config.languageLevel()
+            + " schemaCacheDir=" + config.schemaCacheDir()
+            + " outputDir=" + config.outputDir()
+            + " skipOnError=" + config.skipOnError()
+            + " failOnMissingSource=" + config.failOnMissingSource()
+            + " sources=" + config.sources().stream().map(this::describeSource).toList());
+    }
+
+    private String describeSource(SourceSpec source) {
+        return source.name() + "(" + source.providerClassName() + ", options=" + sanitizeOptions(source.options()) + ")";
     }
 
     private Map<String, String> sanitizeOptions(Map<String, String> options) {
@@ -559,7 +587,8 @@ public final class JsonSchemaRecordsPipeline {
     private String sanitizeFileName(String name, String owner) {
         String sanitized = name.toUpperCase(Locale.ENGLISH).replaceAll("[^A-Z0-9_]", "_");
         if (owner != null && !owner.isBlank()) {
-            return owner.toUpperCase(Locale.ENGLISH) + "_" + sanitized + ".schema.json";
+            String ownerPrefix = owner.trim().toUpperCase(Locale.ENGLISH).replaceAll("[^A-Z0-9_]", "_");
+            return ownerPrefix + "_" + sanitized + ".schema.json";
         }
         return sanitized + ".schema.json";
     }

@@ -164,19 +164,19 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         @Serdeable
         public record Default(
             @Min(0) Integer age,
-            Defaults defaults
+            Default_Defaults defaults
         ) {
           @Serdeable
-          public record Defaults(
-              Run run
+          public record Default_Defaults(
+              Default_Defaults_Run run
           ) {
             @Serdeable
-            public record Run(
-                Shell shell,
+            public record Default_Defaults_Run(
+                Default_Defaults_Run_Shell shell,
                 @JsonProperty("working-directory") @Pattern(regexp = "^[a-zA-Z]*") String workingDirectory
             ) {
               @Serdeable
-              public enum Shell {
+              public enum Default_Defaults_Run_Shell {
 
                 BASH("bash"),
                 PWSH("pwsh"),
@@ -187,7 +187,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
                 public String value;
 
-                private Shell(String value) {
+                private Default_Defaults_Run_Shell(String value) {
                   this.value = value;
                 }
 
@@ -197,7 +197,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
                 }
 
                 @JsonCreator
-                public static Run.Shell statusOf(String value) {
+                public static Default_Defaults_Run.Default_Defaults_Run_Shell statusOf(String value) {
                   return switch (value) {
                     case "bash" -> BASH;
                     case "pwsh" -> PWSH;
@@ -329,6 +329,12 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
                 "type": "string"
               }
             },
+            "counts":{
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer"
+              }
+            },
             "properties": {
               "type": "object",
               "additionalProperties": true
@@ -353,9 +359,26 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         public record Hedgehog(
             Map<String, Spike> spikes,
             Map<String, String> aliases,
+            Map<String, Integer> counts,
             Map<String, Object> properties
         ) {
         }""".stripIndent().trim()
+    }
+
+    void "oracle profile boxes primitive additionalProperties map value types"() {
+        when:
+        var content = generateTypeAndGetContent("OpenCounts", '''
+        {
+          "title":"OpenCounts",
+          "type":"object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+        ''', b -> b.withTreatAdditionalPropertiesAsField(true))
+
+        then:
+        content.contains("Map<String, Integer> additionalProperties")
     }
 
     void "oracle profile maps additionalProperties schema object to typed nested value"() {
@@ -379,8 +402,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             .withSortPropertiesByName(true))
 
         then:
-        content.contains("Map<String, AdditionalProperties> additionalProperties")
-        content.contains("public record AdditionalProperties(")
+        content.contains("Map<String, OpenValues_AdditionalProperties> additionalProperties")
+        content.contains("public record OpenValues_AdditionalProperties(")
         content.contains("@NotNull String label")
     }
 
@@ -516,6 +539,42 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         content.contains("public record Alias")
         content.contains("@NotNull int id")
+    }
+
+    void "property definitions ref resolves to generated definition type"() {
+        given:
+        SourceGenerator generator = new SourceGenerator("java")
+        Path outputPath = Files.createTempDirectory("json-schema-generator-output")
+
+        when:
+        File generated = generator.generate(new SourceGeneratorConfigBuilder()
+            .withInputStream(new ByteArrayInputStream('''
+        {
+          "title":"DefinitionReference",
+          "type":"object",
+          "properties": {
+            "base": { "$ref": "#/definitions/Base" }
+          },
+          "definitions": {
+            "Base": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+        '''.bytes))
+            .withOutputFolder(outputPath)
+            .withOutputPackageName("com.example.project")
+            .withOutputFileName("DefinitionReference")
+            .build())
+
+        then:
+        generated.text.contains("Base base")
+        Files.exists(outputPath.resolve("com/example/project/Base.java"))
     }
 
     void "referenced definition allOf local ref branch flattens before definition generation"() {
@@ -685,7 +744,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         // booleans
         'predicate'           | '{"type": "boolean"}'                                                 | 'Boolean predicate'
         // enums
-        'status'              | '{"type": "string", "enum": ["SINGLE", "TAKEN"]}'                     | 'Status status'
+        'status'              | '{"type": "string", "enum": ["SINGLE", "TAKEN"]}'                     | 'TestRecord_Status status'
         // support unusual names
         'isTrue'              | '{"type": "boolean"}'                                                 | 'Boolean isTrue'
         'short'               | '{"type": "number"}'                                                  | '@JsonProperty("short") Float short_'
@@ -706,8 +765,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         propertyName | propertySchema                                                    | expectedJava
         'test'       | '{"type": "number", "minimum": 10}'                               | "@DecimalMin(\"10\") Float test"
         'test'       | '{"type": "number", "maximum": 10}'                               | "@DecimalMax(\"10\") Float test"
-        'test'       | '{"type": "number", "exclusiveMaximum": 10.0}'                    | "@DecimalMax(\"9.999\") Float test"
-        'test'       | '{"type": "number", "exclusiveMinimum": 10.0}'                    | "@DecimalMin(\"10.001\") Float test"
+        'test'       | '{"type": "number", "exclusiveMaximum": 10.0}'                    | "@DecimalMax(value = \"10.0\", inclusive = false) Float test"
+        'test'       | '{"type": "number", "exclusiveMinimum": 10.0}'                    | "@DecimalMin(value = \"10.0\", inclusive = false) Float test"
         'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*$"}'                  | "@Min(1) Integer test"
         'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*.?[0-9]+$"}'          | "@DecimalMin(\"0.001\") Float test"
         'test'       | '{"type": "number", "pattern": "^[0]|([1-9][0-9]*)$"}'            | "@Min(0) Integer test"
@@ -717,10 +776,10 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'test'       | '{"type": "boolean", "const": true}'                              | "Boolean test"
         'test'       | '{"type": "boolean", "const": false}'                             | "Boolean test"
         // nullable
-        'test'       | '{"type": ["boolean", "null"]}'                                   | "Boolean test"
-        'test'       | '{"type": ["integer", "null"]}'                                   | "Integer test"
-        'test'       | '{"type": ["number", "null"]}'                                    | "Float test"
-        'test'       | '{"type": ["object", "null"]}'                                    | "Object test"
+        'test'       | '{"type": ["boolean", "null"]}'                                   | "@Nullable Boolean test"
+        'test'       | '{"type": ["integer", "null"]}'                                   | "@Nullable Integer test"
+        'test'       | '{"type": ["number", "null"]}'                                    | "@Nullable Float test"
+        'test'       | '{"type": ["object", "null"]}'                                    | "@Nullable Object test"
         // array annotations
         'array'      | '{"type": "array", "items": {"type": "number", "minimum": 10.0}}' | "List<@DecimalMin(\"10.0\") Float> array"
         'arrayMulti' | '{"type": "array", "items": {"type": "array", ' +
@@ -737,6 +796,25 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
     void "array without items maps to List of Object"() {
         expect:
         generatePropertyAndGetContent("array", '{"type": "array"}') == "List<Object> array"
+    }
+
+    void "required nullable property keeps nullable value semantics"() {
+        when:
+        var content = generateTypeAndGetContent("RequiredNullable", '''
+        {
+          "title": "RequiredNullable",
+          "type": "object",
+          "properties": {
+            "count": { "type": ["integer", "null"] }
+          },
+          "required": ["count"],
+          "additionalProperties": false
+        }
+        ''')
+
+        then:
+        content.contains("@Nullable Integer count")
+        !content.contains("@NotNull @Nullable Integer count")
     }
 
     void "unsupported property-level composition falls back to Object and records warnings"() {

@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.generator.oracle;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,6 +24,9 @@ import java.util.Optional;
  *
  * @param skipOnError Whether per-object failures should be skipped
  * @param failOnMissingSource Whether unavailable configured sources should fail the build
+ * @param schemaCacheDir Discovery schema cache directory
+ * @param outputDir Generated source output directory
+ * @param sourceMetadata Sanitized provider source metadata available to the provider
  * @param logger Logger for diagnostics
  * @param services Provider-specific execution services
  * @since 2.0.0
@@ -30,6 +34,9 @@ import java.util.Optional;
 public record SchemaDiscoveryContext(
     boolean skipOnError,
     boolean failOnMissingSource,
+    Path schemaCacheDir,
+    Path outputDir,
+    Map<String, String> sourceMetadata,
     JsonSchemaRecordsLogger logger,
     Map<Class<?>, Object> services
 ) {
@@ -39,10 +46,14 @@ public record SchemaDiscoveryContext(
      *
      * @param skipOnError Whether per-object failures should be skipped
      * @param failOnMissingSource Whether unavailable configured sources should fail the build
+     * @param schemaCacheDir Discovery schema cache directory
+     * @param outputDir Generated source output directory
+     * @param sourceMetadata Sanitized provider source metadata available to the provider
      * @param logger Logger for diagnostics
      * @param services Provider-specific execution services
      */
     public SchemaDiscoveryContext {
+        sourceMetadata = sourceMetadata == null ? Map.of() : Map.copyOf(sourceMetadata);
         services = services == null ? Map.of() : Map.copyOf(services);
     }
 

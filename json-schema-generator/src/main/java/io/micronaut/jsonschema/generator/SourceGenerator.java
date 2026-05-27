@@ -97,6 +97,7 @@ public final class SourceGenerator {
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
     private final io.micronaut.sourcegen.generator.SourceGenerator sourceGenerator;
     private final GeneratorContext context;
+    private final LinkedList<String> typeNameStack = new LinkedList<>();
     private String discriminatorProperty = "";
 
     /**
@@ -415,7 +416,12 @@ public final class SourceGenerator {
                         parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases, defaultValue).returning()
                     ));
         }
-        addFields(jsonSchema, enumBuilder);
+        pushTypeName(builderClassName);
+        try {
+            addFields(jsonSchema, enumBuilder);
+        } finally {
+            popTypeName();
+        }
         return enumBuilder.build();
     }
 
@@ -425,7 +431,12 @@ public final class SourceGenerator {
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
         addJsonSchemaAnnotation(objectBuilder);
 
-        addFields(jsonSchema, objectBuilder);
+        pushTypeName(builderClassName);
+        try {
+            addFields(jsonSchema, objectBuilder);
+        } finally {
+            popTypeName();
+        }
         return objectBuilder.build();
     }
 
@@ -446,7 +457,12 @@ public final class SourceGenerator {
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
         }
 
-        addFields(jsonSchema, objectBuilder);
+        pushTypeName(builderClassName);
+        try {
+            addFields(jsonSchema, objectBuilder);
+        } finally {
+            popTypeName();
+        }
 
         if (!discriminatorProperty.isBlank()) {
             objectBuilder.addAnnotation(getJsonTypeInfoAnn(discriminatorProperty));
@@ -520,7 +536,7 @@ public final class SourceGenerator {
         if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
             mapType = TypeDef.OBJECT;
         } else {
-            mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
+            mapType = boxPrimitive(getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context));
         }
         TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
         if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
@@ -639,7 +655,7 @@ public final class SourceGenerator {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
             } else {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING,
-                    getPropertyType(objectBuilder, schema.getAdditionalProperties(), name + "Item"));
+                    boxPrimitive(getPropertyType(objectBuilder, schema.getAdditionalProperties(), name + "Item")));
             }
         }
         return propertyType;
@@ -672,7 +688,7 @@ public final class SourceGenerator {
     }
 
     private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
-        EnumDef enumDef = buildEnum(schema, getClassName(propertyName));
+        EnumDef enumDef = buildEnum(schema, nestedTypeName(propertyName));
         objectBuilder.addInnerType(enumDef);
         return enumDef.asTypeDef();
     }
@@ -699,10 +715,11 @@ public final class SourceGenerator {
     private TypeDef buildInnerType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         // inner type
         ObjectDef builder;
+        String nestedTypeName = nestedTypeName(propertyName);
         if (shouldBeAClass(schema)) {
-            builder = buildClass(schema, getClassName(propertyName));
+            builder = buildClass(schema, nestedTypeName);
         } else {
-            builder = buildRecord(schema, getClassName(propertyName));
+            builder = buildRecord(schema, nestedTypeName);
         }
         objectBuilder.addInnerType(builder);
         return ClassTypeDef.of(builder.getName());
@@ -775,11 +792,54 @@ public final class SourceGenerator {
         return context.getConfiguration().sortPropertiesByName();
     }
 
+    private void pushTypeName(String builderClassName) {
+        typeNameStack.push(simpleTypeName(builderClassName));
+    }
+
+    private void popTypeName() {
+        typeNameStack.pop();
+    }
+
+    private String nestedTypeName(String propertyName) {
+        String propertyTypeName = getClassName(propertyName);
+        String parentTypeName = typeNameStack.peek();
+        String rawName = parentTypeName == null || parentTypeName.isBlank()
+            ? propertyTypeName
+            : parentTypeName + "_" + propertyTypeName;
+        return sanitizeNestedTypeName(rawName);
+    }
+
+    private String sanitizeNestedTypeName(String rawName) {
+        String sanitized = rawName.replaceAll("[^A-Za-z0-9]", "_").replaceAll("_+", "_");
+        if (sanitized.isBlank()) {
+            sanitized = "GeneratedNestedType";
+        }
+        if (!Character.isJavaIdentifierStart(sanitized.charAt(0))) {
+            sanitized = "_" + sanitized;
+        }
+        if (sanitized.length() > 128) {
+            sanitized = sanitized.substring(0, 128);
+        }
+        return sanitized;
+    }
+
+    private String simpleTypeName(String builderClassName) {
+        int packageSeparator = builderClassName.lastIndexOf('.');
+        return packageSeparator < 0 ? builderClassName : builderClassName.substring(packageSeparator + 1);
+    }
+
     private TypeDef getAdditionalPropertyValueType(Schema schema, ObjectDefBuilder objectBuilder) {
         if (!schema.hasAdditionalProperties() || Schema.TRUE.equals(schema.getAdditionalProperties())) {
             return TypeDef.OBJECT;
         }
-        return getPropertyType(objectBuilder, schema.getAdditionalProperties(), "additionalProperties");
+        return boxPrimitive(getPropertyType(objectBuilder, schema.getAdditionalProperties(), "additionalProperties"));
+    }
+
+    private TypeDef boxPrimitive(TypeDef type) {
+        if (type instanceof TypeDef.Primitive primitive) {
+            return primitive.wrapperType();
+        }
+        return type;
     }
 
     private void validateMemberNameCollisions(Schema schema) {

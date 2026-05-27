@@ -63,7 +63,6 @@ public class AnnotationsAggregator {
     private static final String DECIMAL_MAX_ANN = JAKARTA_VALIDATION_PREFIX + "DecimalMax";
     private static final String PATTERN_ANN = JAKARTA_VALIDATION_PREFIX + "Pattern";
     private static final String EMAIL_ANN = JAKARTA_VALIDATION_PREFIX + "Email";
-    private static final int EXCLUSIVE_DELTA_INT = 1;
     private static final double EXCLUSIVE_DELTA_DOUBLE = 0.001;
 
     public static AnnotationDef getJsonTypeInfoAnn(String propertyName) {
@@ -99,12 +98,11 @@ public class AnnotationsAggregator {
         var minAnn = isFloat ? DECIMAL_MIN_ANN : MIN_ANN;
         var maxAnn = isFloat ? DECIMAL_MAX_ANN : MAX_ANN;
 
-        if (required) {
-            annotations.add(AnnotationDef.builder(ClassTypeDef.of(NOT_NULL_ANN)).build());
-        }
         if (schema.isNullable() != null) {
             var nullableAnn = schema.isNullable() ? NULLABLE_ANN : NOT_NULL_ANN;
             annotations.add(AnnotationDef.builder(ClassTypeDef.of(nullableAnn)).build());
+        } else if (required) {
+            annotations.add(AnnotationDef.builder(ClassTypeDef.of(NOT_NULL_ANN)).build());
         }
         if (schema.getMinimum() != null) {
             var value = schema.getMinimum();
@@ -123,19 +121,17 @@ public class AnnotationsAggregator {
         if (schema.getExclusiveMinimum() != null) {
             var value = schema.getExclusiveMinimum();
             annotations.add(AnnotationDef
-                .builder(ClassTypeDef.of(minAnn))
-                .addMember("value", isFloat ?
-                    "" + (((double) value) + EXCLUSIVE_DELTA_DOUBLE) :
-                    ((int) value) + EXCLUSIVE_DELTA_INT)
+                .builder(ClassTypeDef.of(DECIMAL_MIN_ANN))
+                .addMember("value", String.valueOf(value))
+                .addMember("inclusive", false)
                 .build());
         }
         if (schema.getExclusiveMaximum() != null) {
             var value = schema.getExclusiveMaximum();
             annotations.add(AnnotationDef
-                .builder(ClassTypeDef.of(maxAnn))
-                .addMember("value", isFloat ?
-                    "" + (((double) value) - EXCLUSIVE_DELTA_DOUBLE) :
-                    ((int) value) - EXCLUSIVE_DELTA_INT)
+                .builder(ClassTypeDef.of(DECIMAL_MAX_ANN))
+                .addMember("value", String.valueOf(value))
+                .addMember("inclusive", false)
                 .build());
         }
         if (schema.getMaxLength() != null || schema.getMaxItems() != null || schema.getMaxContains() != null) {

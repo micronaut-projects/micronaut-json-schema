@@ -71,7 +71,7 @@ public final class GeneratorContext {
     }
 
     public boolean hasDefinition(String key) {
-        return DEFINITIONS.containsKey(key);
+        return DEFINITIONS.containsKey(unifyKey(key));
     }
 
     public boolean isInheriting(String className) {

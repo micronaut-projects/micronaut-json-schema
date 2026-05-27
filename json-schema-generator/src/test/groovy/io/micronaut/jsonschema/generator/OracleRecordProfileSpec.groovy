@@ -86,6 +86,6 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
         then:
         type.parameters*.nameAsString.containsAll(["id", "name"])
         type.parameters.find { it.nameAsString == "id" }.annotations*.nameAsString.contains("JsonProperty")
-        type.members.find { it instanceof RecordDeclaration && it.nameAsString == "Id" } != null
+        type.members.find { it instanceof RecordDeclaration && it.nameAsString == "ApartmentView_Id" } != null
     }
 }

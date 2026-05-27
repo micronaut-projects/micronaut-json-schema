@@ -114,7 +114,7 @@ The built-in providers currently support these source options:
 | `owner`, `include`, `exclude`
 |===
 
-For the built-in providers, `include` and `exclude` match discovered Oracle object names by exact name first and also by Oracle-style uppercase normalization. This keeps normal unquoted identifiers working as expected while still allowing exact matching for quoted mixed-case names.
+For the built-in providers, `owner`, `include`, and `exclude` are interpreted as unquoted Oracle identifiers and normalized to uppercase before dictionary filtering, session-user comparison, and discovery/cache file naming. Quoted or mixed-case Oracle identifiers are out of scope for the first version.
 
 When `owner` is configured, the built-in providers first try `ALL_` and `DBA_` dictionary views with an `OWNER` filter.
 If those cross-schema views are not queryable, the providers fall back to `USER_` dictionary views only when the configured `owner` matches the Oracle session user.

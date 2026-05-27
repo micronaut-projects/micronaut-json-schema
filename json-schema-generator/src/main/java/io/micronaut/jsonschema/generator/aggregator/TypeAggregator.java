@@ -112,7 +112,8 @@ public final class TypeAggregator {
         if (schema.hasType() && schema.getType().size() > 1) {
             if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
                 nullable = true;
-                var typeList = schema.getType();
+                schema.setNullable(true);
+                var typeList = new java.util.ArrayList<>(schema.getType());
                 typeList.remove(NULL);
                 schema.setType(typeList);
             } else {

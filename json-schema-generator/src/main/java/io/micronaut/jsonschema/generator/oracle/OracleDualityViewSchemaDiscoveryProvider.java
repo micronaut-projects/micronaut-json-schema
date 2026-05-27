@@ -40,6 +40,7 @@ public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDis
         List<DiscoverySkipped> skipped = OracleDiscoverySupport.skipped();
         String owner = OracleDiscoverySupport.owner(source);
         MetadataQueryScope scope = OracleDiscoverySupport.resolveScope(connection, owner, "JSON_DUALITY_VIEWS", OracleDiscoveryScope.DUALITY_VIEW, warnings);
+        context.logger().info("[jsonschema-records] INFO source=" + source.name() + " scope=" + OracleDiscoveryScope.DUALITY_VIEW.name() + " dictionaryView=" + scope.dictionaryViewName());
         Set<String> includes = OracleDiscoverySupport.includeFilter(source);
         Set<String> excludes = OracleDiscoverySupport.excludeFilter(source);
         List<DiscoveredSchema> schemas = new ArrayList<>();
@@ -69,6 +70,7 @@ public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDis
                     try {
                         OracleDiscoverySupport.ensureValidJson(jsonSchema);
                         schemas.add(new DiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW.name(), viewName, jsonSchema, "DUALITY_DB_PROVIDED"));
+                        context.logger().info("[jsonschema-records] INFO source=" + source.name() + " scope=" + OracleDiscoveryScope.DUALITY_VIEW.name() + " name=" + viewName + " retrievalMode=DUALITY_DB_PROVIDED");
                     } catch (Exception e) {
                         if (skipOnError) {
                             skipped.add(new DiscoverySkipped(OracleDiscoveryScope.DUALITY_VIEW.name(), viewName, DiscoveryStep.SCHEMA_RETRIEVAL, "MALFORMED_JSON", e.getMessage(), "DUALITY_DB_PROVIDED"));
@@ -86,6 +88,6 @@ public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDis
             }
             warnings.add(new DiscoveryWarning(OracleDiscoveryScope.DUALITY_VIEW.name(), null, DiscoveryStep.DISCOVERY, "NO_INPUTS_DISCOVERED", message));
         }
-        return new DiscoveryResult(schemas, warnings, skipped);
+        return new DiscoveryResult(schemas, warnings, skipped, context.sourceMetadata());
     }
 }

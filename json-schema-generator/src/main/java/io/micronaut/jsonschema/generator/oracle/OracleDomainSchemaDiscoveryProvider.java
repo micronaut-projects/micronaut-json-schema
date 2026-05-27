@@ -41,6 +41,7 @@ public final class OracleDomainSchemaDiscoveryProvider implements SchemaDiscover
         List<DiscoverySkipped> skipped = OracleDiscoverySupport.skipped();
         String owner = OracleDiscoverySupport.owner(source);
         MetadataQueryScope scope = OracleDiscoverySupport.resolveScope(connection, owner, "DOMAINS", OracleDiscoveryScope.DOMAIN, warnings);
+        context.logger().info("[jsonschema-records] INFO source=" + source.name() + " scope=" + OracleDiscoveryScope.DOMAIN.name() + " dictionaryView=" + scope.dictionaryViewName());
         Set<String> includes = OracleDiscoverySupport.includeFilter(source);
         Set<String> excludes = OracleDiscoverySupport.excludeFilter(source);
         List<DiscoveredSchema> schemas = new ArrayList<>();
@@ -62,6 +63,7 @@ public final class OracleDomainSchemaDiscoveryProvider implements SchemaDiscover
                     try {
                         DiscoveryPayload payload = OracleDiscoverySupport.readDomainPayload(connection, scope, domainName, owner, warnings);
                         schemas.add(new DiscoveredSchema(OracleDiscoveryScope.DOMAIN.name(), domainName, payload.jsonSchema(), payload.retrievalMode()));
+                        context.logger().info("[jsonschema-records] INFO source=" + source.name() + " scope=" + OracleDiscoveryScope.DOMAIN.name() + " name=" + domainName + " retrievalMode=" + payload.retrievalMode());
                     } catch (SchemaRetrievalException e) {
                         if (skipOnError) {
                             skipped.add(new DiscoverySkipped(OracleDiscoveryScope.DOMAIN.name(), domainName, DiscoveryStep.SCHEMA_RETRIEVAL, e.code(), e.getMessage(), e.retrievalMode()));
@@ -85,6 +87,6 @@ public final class OracleDomainSchemaDiscoveryProvider implements SchemaDiscover
             }
             warnings.add(new DiscoveryWarning(OracleDiscoveryScope.DOMAIN.name(), null, DiscoveryStep.DISCOVERY, "NO_INPUTS_DISCOVERED", message));
         }
-        return new DiscoveryResult(schemas, warnings, skipped);
+        return new DiscoveryResult(schemas, warnings, skipped, context.sourceMetadata());
     }
 }

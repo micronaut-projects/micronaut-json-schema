@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.oracle;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Result returned by a schema discovery provider.
@@ -23,13 +24,28 @@ import java.util.List;
  * @param schemas The discovered schemas
  * @param warnings Non-fatal warnings emitted by discovery
  * @param skipped Skipped inputs recorded when {@code skipOnError=true}
+ * @param sourceMetadata Sanitized source metadata returned by the provider
  * @since 2.0.0
  */
 public record DiscoveryResult(
     List<DiscoveredSchema> schemas,
     List<DiscoveryWarning> warnings,
-    List<DiscoverySkipped> skipped
+    List<DiscoverySkipped> skipped,
+    Map<String, String> sourceMetadata
 ) {
+
+    /**
+     * Create an immutable discovery result without source metadata.
+     *
+     * @param schemas The discovered schemas
+     * @param warnings Non-fatal warnings emitted by discovery
+     * @param skipped Skipped inputs recorded when {@code skipOnError=true}
+     */
+    public DiscoveryResult(List<DiscoveredSchema> schemas,
+                           List<DiscoveryWarning> warnings,
+                           List<DiscoverySkipped> skipped) {
+        this(schemas, warnings, skipped, Map.of());
+    }
 
     /**
      * Create an immutable discovery result.
@@ -37,10 +53,12 @@ public record DiscoveryResult(
      * @param schemas The discovered schemas
      * @param warnings Non-fatal warnings emitted by discovery
      * @param skipped Skipped inputs recorded when {@code skipOnError=true}
+     * @param sourceMetadata Sanitized source metadata returned by the provider
      */
     public DiscoveryResult {
         schemas = schemas == null ? List.of() : List.copyOf(schemas);
         warnings = warnings == null ? List.of() : List.copyOf(warnings);
         skipped = skipped == null ? List.of() : List.copyOf(skipped);
+        sourceMetadata = sourceMetadata == null ? Map.of() : Map.copyOf(sourceMetadata);
     }
 }
