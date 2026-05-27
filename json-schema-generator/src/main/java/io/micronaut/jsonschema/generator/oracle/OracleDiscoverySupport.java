@@ -49,7 +49,7 @@ final class OracleDiscoverySupport {
      * @param source The configured source
      * @return The normalized include filter entries
      */
-    static Set<String> includeFilter(OracleSourceSpec source) {
+    static Set<String> includeFilter(SourceSpec source) {
         return toFilter(parseListOption(source.option("include")));
     }
 
@@ -59,8 +59,19 @@ final class OracleDiscoverySupport {
      * @param source The configured source
      * @return The normalized exclude filter entries
      */
-    static Set<String> excludeFilter(OracleSourceSpec source) {
+    static Set<String> excludeFilter(SourceSpec source) {
         return toFilter(parseListOption(source.option("exclude")));
+    }
+
+    /**
+     * Resolve the Oracle owner option from a source specification.
+     *
+     * @param source The configured source
+     * @return The normalized owner, if configured
+     */
+    static String owner(SourceSpec source) {
+        String owner = source.option("owner");
+        return owner == null || owner.isBlank() ? null : normalizeIdentifier(owner);
     }
 
     /**
@@ -72,10 +83,21 @@ final class OracleDiscoverySupport {
      * @return {@code true} if the name should be included
      */
     static boolean matches(String name, Set<String> includes, Set<String> excludes) {
-        if (!matchesInclude(name, includes)) {
+        String normalizedName = normalizeIdentifier(name);
+        if (!matchesInclude(normalizedName, includes)) {
             return false;
         }
-        return !matchesExclude(name, excludes);
+        return !matchesExclude(normalizedName, excludes);
+    }
+
+    /**
+     * Normalize a built-in Oracle identifier option or discovered identifier.
+     *
+     * @param identifier The identifier
+     * @return The unquoted uppercase Oracle identifier form
+     */
+    static String normalizeIdentifier(String identifier) {
+        return identifier == null ? null : identifier.trim().toUpperCase(Locale.ENGLISH);
     }
 
     /**
@@ -93,7 +115,7 @@ final class OracleDiscoverySupport {
                                            String owner,
                                            String suffix,
                                            OracleDiscoveryScope scope,
-                                           List<OracleDiscoveryWarning> warnings) throws SQLException {
+                                           List<DiscoveryWarning> warnings) throws SQLException, SourceUnavailableException {
         if (owner == null || owner.isBlank()) {
             return new MetadataQueryScope("USER_" + suffix, true);
         }
@@ -103,8 +125,24 @@ final class OracleDiscoverySupport {
                 return new MetadataQueryScope(candidate, false);
             }
         }
-        warnings.add(new OracleDiscoveryWarning(scope, owner, OracleDiscoveryStep.DISCOVERY, "PRIVILEGE_DENIED", "Falling back to USER_ scope"));
-        return new MetadataQueryScope("USER_" + suffix, true);
+        String sessionUser = readSessionUser(connection);
+        if (matchesOwner(owner, sessionUser)) {
+            warnings.add(new DiscoveryWarning(
+                scope.name(),
+                null,
+                DiscoveryStep.DISCOVERY,
+                "OWNER_SCOPE_FALLBACK",
+                "Cross-schema dictionary views are not queryable; falling back to USER_" + suffix + " because owner matches session user " + sessionUser
+            ));
+            return new MetadataQueryScope("USER_" + suffix, true);
+        }
+        throw new SourceUnavailableException(
+            scope.name(),
+            null,
+            DiscoveryStep.DISCOVERY,
+            "PRIVILEGE_DENIED",
+            "Cross-schema discovery requested for owner " + owner + ", but neither ALL_" + suffix + " nor DBA_" + suffix + " is queryable"
+        );
     }
 
     /**
@@ -123,7 +161,7 @@ final class OracleDiscoverySupport {
                                               MetadataQueryScope scope,
                                               String domainName,
                                               String owner,
-                                              List<OracleDiscoveryWarning> warnings) throws SQLException, IOException {
+                                              List<DiscoveryWarning> warnings) throws SQLException, IOException {
         try {
             String ddl = readDomainDdl(connection, domainName, scope.currentUserScope() ? null : owner);
             if (ddl != null) {
@@ -131,15 +169,53 @@ final class OracleDiscoverySupport {
                 ensureValidJson(json);
                 return new DiscoveryPayload(json, "DOMAIN_DDL");
             }
+        } catch (SQLException | IOException e) {
+            warnings.add(new DiscoveryWarning(OracleDiscoveryScope.DOMAIN.name(), domainName, DiscoveryStep.SCHEMA_RETRIEVAL, "GET_DDL_FAILED", e.getMessage()));
+        }
+        String constraintView = scope.dictionaryViewName().replace("_DOMAINS", "_DOMAIN_CONSTRAINTS");
+        if (!isConstraintViewQueryable(connection, constraintView, scope.currentUserScope() ? null : owner)) {
+            throw new SchemaRetrievalException(
+                "DICTIONARY_VIEW_UNAVAILABLE",
+                constraintView + " is not queryable; unable to use DOMAIN_CONSTRAINTS fallback for domain " + domainName,
+                null
+            );
+        }
+        String searchCondition;
+        try {
+            searchCondition = readDomainConstraint(connection, constraintView, scope, domainName, owner);
         } catch (SQLException e) {
-            warnings.add(new OracleDiscoveryWarning(OracleDiscoveryScope.DOMAIN, domainName, OracleDiscoveryStep.SCHEMA_RETRIEVAL, "GET_DDL_FAILED", e.getMessage()));
+            throw new SchemaRetrievalException(
+                "DICTIONARY_VIEW_UNAVAILABLE",
+                constraintView + " is not queryable; unable to use DOMAIN_CONSTRAINTS fallback for domain " + domainName + ": " + e.getMessage(),
+                null
+            );
         }
-        String searchCondition = readDomainConstraint(connection, scope, domainName, owner);
         if (searchCondition == null || searchCondition.isBlank()) {
-            throw new IOException("Unable to obtain JSON schema for domain " + domainName);
+            throw new SchemaRetrievalException(
+                "DOMAIN_CONSTRAINTS_PARSE_FAILED",
+                "No JSON VALIDATE constraint found for domain " + domainName,
+                "DOMAIN_CONSTRAINTS"
+            );
         }
-        String json = extractJsonLiteral(searchCondition);
-        ensureValidJson(json);
+        String json;
+        try {
+            json = extractJsonLiteral(searchCondition);
+        } catch (IOException e) {
+            throw new SchemaRetrievalException(
+                "DOMAIN_CONSTRAINTS_PARSE_FAILED",
+                "Failed to extract JSON schema text from DOMAIN_CONSTRAINTS for domain " + domainName + ": " + e.getMessage(),
+                "DOMAIN_CONSTRAINTS"
+            );
+        }
+        try {
+            ensureValidJson(json);
+        } catch (IOException e) {
+            throw new SchemaRetrievalException(
+                "MALFORMED_JSON",
+                e.getMessage(),
+                "DOMAIN_CONSTRAINTS"
+            );
+        }
         return new DiscoveryPayload(json, "DOMAIN_CONSTRAINTS");
     }
 
@@ -158,7 +234,7 @@ final class OracleDiscoverySupport {
      *
      * @return A mutable warning list
      */
-    static List<OracleDiscoveryWarning> warnings() {
+    static List<DiscoveryWarning> warnings() {
         return new ArrayList<>();
     }
 
@@ -167,12 +243,16 @@ final class OracleDiscoverySupport {
      *
      * @return A mutable skipped-entry list
      */
-    static List<OracleDiscoverySkipped> skipped() {
+    static List<DiscoverySkipped> skipped() {
         return new ArrayList<>();
     }
 
     private static Set<String> toFilter(List<String> values) {
-        return new LinkedHashSet<>(values);
+        LinkedHashSet<String> filters = new LinkedHashSet<>();
+        for (String value : values) {
+            filters.add(normalizeIdentifier(value));
+        }
+        return filters;
     }
 
     private static List<String> parseListOption(String value) {
@@ -190,31 +270,55 @@ final class OracleDiscoverySupport {
         if (includes.isEmpty()) {
             return true;
         }
-        if (includes.contains("*")) {
-            return true;
-        }
-        return matchesConfiguredName(name, includes);
+        return includes.contains(name);
     }
 
     private static boolean matchesExclude(String name, Set<String> excludes) {
         if (excludes.isEmpty()) {
             return false;
         }
-        if (excludes.contains("*")) {
-            return true;
-        }
-        return matchesConfiguredName(name, excludes);
+        return excludes.contains(name);
     }
 
-    private static boolean matchesConfiguredName(String name, Set<String> filters) {
-        String uppercaseName = name.toUpperCase(Locale.ENGLISH);
-        return filters.stream().anyMatch(filter -> filter.equals(name) || filter.toUpperCase(Locale.ENGLISH).equals(uppercaseName));
+    private static boolean matchesOwner(String owner, String sessionUser) {
+        return sessionUser != null && owner.equals(normalizeIdentifier(sessionUser));
+    }
+
+    private static String readSessionUser(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("SELECT SYS_CONTEXT('USERENV', 'SESSION_USER') FROM dual");
+             ResultSet rs = statement.executeQuery()) {
+            if (rs.next()) {
+                String sessionUser = rs.getString(1);
+                if (sessionUser != null && !sessionUser.isBlank()) {
+                    return sessionUser.trim();
+                }
+            }
+        }
+        try (PreparedStatement statement = connection.prepareStatement("SELECT USER FROM dual");
+             ResultSet rs = statement.executeQuery()) {
+            return rs.next() ? rs.getString(1) : null;
+        }
     }
 
     private static boolean isQueryable(Connection connection, String viewName, String owner) {
         String sql = "SELECT 1 FROM " + viewName + " WHERE owner = ? FETCH FIRST 1 ROWS ONLY";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, owner.toUpperCase(Locale.ENGLISH));
+            statement.executeQuery();
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private static boolean isConstraintViewQueryable(Connection connection, String viewName, String owner) {
+        String sql = owner == null || owner.isBlank()
+            ? "SELECT 1 FROM " + viewName + " FETCH FIRST 1 ROWS ONLY"
+            : "SELECT 1 FROM " + viewName + " WHERE owner = ? FETCH FIRST 1 ROWS ONLY";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (owner != null && !owner.isBlank()) {
+                statement.setString(1, owner.toUpperCase(Locale.ENGLISH));
+            }
             statement.executeQuery();
             return true;
         } catch (SQLException e) {
@@ -237,8 +341,7 @@ final class OracleDiscoverySupport {
         }
     }
 
-    private static String readDomainConstraint(Connection connection, MetadataQueryScope scope, String domainName, String owner) throws SQLException {
-        String constraintView = scope.dictionaryViewName().replace("_DOMAINS", "_DOMAIN_CONSTRAINTS");
+    private static String readDomainConstraint(Connection connection, String constraintView, MetadataQueryScope scope, String domainName, String owner) throws SQLException {
         String sql = scope.currentUserScope()
             ? "SELECT search_condition FROM " + constraintView + " WHERE domain_name = ?"
             : "SELECT search_condition FROM " + constraintView + " WHERE owner = ? AND domain_name = ?";
@@ -277,9 +380,9 @@ final class OracleDiscoverySupport {
      * JSON Schema payload discovered from Oracle metadata.
      *
      * @param jsonSchema The JSON Schema document
-     * @param source The retrieval source identifier
+     * @param retrievalMode The retrieval mode identifier
      */
-    record DiscoveryPayload(String jsonSchema, String source) {
+    record DiscoveryPayload(String jsonSchema, String retrievalMode) {
     }
 
     private static final class JsonSchemaMapperFactoryHolder {

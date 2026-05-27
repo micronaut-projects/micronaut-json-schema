@@ -58,7 +58,7 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
         type.parameters.find { it.nameAsString == "name" }.annotations*.nameAsString.containsAll(["NotNull", "Size"])
     }
 
-    void "oracle profile preserves duality view _id property names"() {
+    void "oracle profile sanitizes duality view _id property names and preserves JSON binding"() {
         when:
         def type = (RecordDeclaration) generateType("ApartmentView", '''
         {
@@ -84,8 +84,8 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
             .withSortPropertiesByName(true))
 
         then:
-        type.parameters*.nameAsString.containsAll(["_id", "name"])
-        !type.parameters.find { it.nameAsString == "_id" }.annotations*.nameAsString.contains("JsonProperty")
+        type.parameters*.nameAsString.containsAll(["id", "name"])
+        type.parameters.find { it.nameAsString == "id" }.annotations*.nameAsString.contains("JsonProperty")
         type.members.find { it instanceof RecordDeclaration && it.nameAsString == "Id" } != null
     }
 }

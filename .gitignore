@@ -8,6 +8,7 @@ build/
 !build-logic/src/main/kotlin/io/micronaut/build
 classes/
 out/
+/json-schema-generator/output/
 *.db
 *.log
 *.iml
@@ -40,3 +41,4 @@ src/main/docs/resources/img/micronaut-logo-white.svg
 
 # OpenCode files
 .sisyphus/
+.oca/

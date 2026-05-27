@@ -740,7 +740,13 @@ public final class Schema {
 
         // Merge properties
         if (other.properties != null) {
-            other.properties.forEach(this::putProperty);
+            other.properties.forEach((name, property) -> {
+                if (this.properties != null && this.properties.containsKey(name)) {
+                    this.properties.get(name).merge(property);
+                } else {
+                    putProperty(name, property);
+                }
+            });
         }
 
         // Merge defaultValue

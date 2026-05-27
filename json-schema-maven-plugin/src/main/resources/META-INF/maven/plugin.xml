@@ -1,14 +1,14 @@
 <plugin>
-  <name>Micronaut JSON Schema Oracle Generator Maven Plugin</name>
-  <description>Generates Java records from Oracle-backed JSON Schemas.</description>
+  <name>Micronaut JSON Schema Records Maven Plugin</name>
+  <description>Generates Java records from JSON Schemas.</description>
   <groupId>io.micronaut.jsonschema</groupId>
   <artifactId>micronaut-json-schema-maven-plugin</artifactId>
   <version>${project.version}</version>
   <goalPrefix>micronaut-json-schema</goalPrefix>
   <mojos>
     <mojo>
-      <goal>generate-from-oracle-json-schema</goal>
-      <implementation>io.micronaut.jsonschema.maven.GenerateFromOracleJsonSchemaMojo</implementation>
+      <goal>generate-from-json-schema-sources</goal>
+      <implementation>io.micronaut.jsonschema.maven.GenerateFromJsonSchemaSourcesMojo</implementation>
       <language>java</language>
       <phase>generate-sources</phase>
       <threadSafe>true</threadSafe>
@@ -16,7 +16,7 @@
         <parameter>
           <name>jdbcUrl</name>
           <type>java.lang.String</type>
-          <required>true</required>
+          <required>false</required>
         </parameter>
         <parameter>
           <name>username</name>
@@ -34,9 +34,19 @@
           <required>false</required>
         </parameter>
         <parameter>
+          <name>providers</name>
+          <type>io.micronaut.jsonschema.maven.GenerateFromJsonSchemaSourcesMojo$ProvidersConfiguration</type>
+          <required>false</required>
+        </parameter>
+        <parameter>
           <name>targetPackage</name>
           <type>java.lang.String</type>
           <required>true</required>
+        </parameter>
+        <parameter>
+          <name>languageLevel</name>
+          <type>int</type>
+          <required>false</required>
         </parameter>
         <parameter>
           <name>schemaCacheDir</name>
@@ -59,7 +69,7 @@
           <required>false</required>
         </parameter>
         <parameter>
-          <name>failOnMissingDb</name>
+          <name>failOnMissingSource</name>
           <type>boolean</type>
           <required>false</required>
         </parameter>
@@ -75,16 +85,17 @@
         </parameter>
       </parameters>
       <configuration>
-        <jdbcUrl implementation="java.lang.String">${oracleJsonSchema.jdbcUrl}</jdbcUrl>
-        <username implementation="java.lang.String">${oracleJsonSchema.username}</username>
-        <password implementation="java.lang.String">${oracleJsonSchema.password}</password>
-        <serverId implementation="java.lang.String">${oracleJsonSchema.serverId}</serverId>
-        <targetPackage implementation="java.lang.String">${oracleJsonSchema.targetPackage}</targetPackage>
-        <schemaCacheDir implementation="java.io.File" default-value="${project.build.directory}/oracle-jsonschema-cache" />
-        <outputDir implementation="java.io.File" default-value="${project.build.directory}/generated/sources/oracle-jsonschema" />
-        <skipOnError implementation="boolean" default-value="false">${oracleJsonSchema.skipOnError}</skipOnError>
-        <failOnMissingDb implementation="boolean" default-value="true">${oracleJsonSchema.failOnMissingDb}</failOnMissingDb>
-        <skip implementation="boolean" default-value="true">${oracleJsonSchema.skip}</skip>
+        <jdbcUrl implementation="java.lang.String">${jsonSchemaRecords.jdbcUrl}</jdbcUrl>
+        <username implementation="java.lang.String">${jsonSchemaRecords.username}</username>
+        <password implementation="java.lang.String">${jsonSchemaRecords.password}</password>
+        <serverId implementation="java.lang.String">${jsonSchemaRecords.serverId}</serverId>
+        <targetPackage implementation="java.lang.String">${jsonSchemaRecords.targetPackage}</targetPackage>
+        <languageLevel implementation="int" default-value="21">${jsonSchemaRecords.languageLevel}</languageLevel>
+        <schemaCacheDir implementation="java.io.File" default-value="${project.build.directory}/jsonschema-cache" />
+        <outputDir implementation="java.io.File" default-value="${project.build.directory}/generated-sources/jsonschema" />
+        <skipOnError implementation="boolean" default-value="false">${jsonSchemaRecords.skipOnError}</skipOnError>
+        <failOnMissingSource implementation="boolean" default-value="true">${jsonSchemaRecords.failOnMissingSource}</failOnMissingSource>
+        <skip implementation="boolean" default-value="true">${jsonSchemaRecords.skip}</skip>
         <project implementation="org.apache.maven.project.MavenProject" default-value="${project}" />
         <settings implementation="org.apache.maven.settings.Settings" default-value="${settings}" />
       </configuration>

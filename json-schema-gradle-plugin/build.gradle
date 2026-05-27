@@ -13,9 +13,9 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        oracleJsonSchema {
-            id = "io.micronaut.jsonschema.oracle"
-            implementationClass = "io.micronaut.jsonschema.gradle.OracleJsonSchemaGradlePlugin"
+        jsonSchemaRecords {
+            id = "io.micronaut.jsonschema.records"
+            implementationClass = "io.micronaut.jsonschema.gradle.JsonSchemaRecordsGradlePlugin"
         }
     }
 }

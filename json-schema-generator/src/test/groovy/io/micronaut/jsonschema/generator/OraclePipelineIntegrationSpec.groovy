@@ -3,9 +3,9 @@ package io.micronaut.jsonschema.generator
 import io.micronaut.context.ApplicationContext
 import io.micronaut.json.JsonMapper
 import io.micronaut.json.tree.JsonNode
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaGeneratorConfig
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaPipeline
-import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
+import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneratorConfig
+import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsPipeline
+import io.micronaut.jsonschema.generator.oracle.SourceSpec
 import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Specification
@@ -82,22 +82,23 @@ class OraclePipelineIntegrationSpec extends Specification {
 
     void "oracle free test resources backs pipeline discovery for domains and duality views"() {
         given:
-        Path schemaCacheDir = Files.createTempDirectory("oracle-jsonschema-cache")
-        Path outputDir = Files.createTempDirectory("oracle-jsonschema-output")
+        Path schemaCacheDir = Files.createTempDirectory("jsonschema-cache")
+        Path outputDir = Files.createTempDirectory("jsonschema-output")
         List<String> logs = []
 
         when:
-        def result = new OracleJsonSchemaPipeline({ String message -> logs.add(message) }).execute(
-            new OracleJsonSchemaGeneratorConfig(
+        def result = new JsonSchemaRecordsPipeline({ String message -> logs.add(message) }).execute(
+            new JsonSchemaRecordsGeneratorConfig(
                 jdbcUrl,
                 username,
                 password,
                 "io.micronaut.jsonschema.oracle.generated",
+                21,
                 schemaCacheDir,
                 outputDir,
                 [
-                    new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, [include: domainName]),
-                    new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider", null, [include: viewName])
+                    new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [include: domainName]),
+                    new SourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider", [include: viewName])
                 ],
                 false,
                 true
@@ -112,10 +113,11 @@ class OraclePipelineIntegrationSpec extends Specification {
         and:
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == domainName
-        jsonAt(manifest, "discovery", "schemas", 0, "source").getStringValue() == "DOMAIN_DDL"
+        jsonAt(manifest, "discovery", "schemas", 0, "retrievalMode").getStringValue() == "DOMAIN_DDL"
         jsonAt(manifest, "discovery", "schemas", 1, "name").getStringValue() == viewName
-        jsonAt(manifest, "discovery", "schemas", 1, "source").getStringValue() == "DUALITY_DB_PROVIDED"
+        jsonAt(manifest, "discovery", "schemas", 1, "retrievalMode").getStringValue() == "DUALITY_DB_PROVIDED"
         jsonAt(manifest, "emittedSchemaFiles").size() == 2
+        jsonAt(manifest, "generatedJavaFiles").size() == 2
 
         and:
         def generatedFiles = Files.walk(outputDir)

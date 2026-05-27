@@ -119,7 +119,9 @@ public final class GeneratorContext {
         Schema items = definition.getItems() != null ? definition.getItems() : definition.getContains();
         TypeDef innerType;
         if (items == null) {
-            return TypeDef.OBJECT;
+            return TypeDef.parameterized(
+                (definition.isUniqueItems() != null && definition.isUniqueItems()) ? Set.class : List.class,
+                TypeDef.OBJECT);
         } else {
             innerType = getTypeDefFromJson(items, this);
             if (innerType instanceof TypeDef.Primitive primitive) {

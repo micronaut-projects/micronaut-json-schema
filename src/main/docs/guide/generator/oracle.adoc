@@ -5,18 +5,17 @@ The current Oracle discovery pipeline supports:
 * Oracle SQL domains that declare JSON validation rules
 * Oracle JSON Relational Duality Views
 
-This flow is available through the dedicated Gradle and Maven plugins included in this project.
+This Oracle flow is available through the generic `jsonSchemaRecords` Gradle and Maven plugin integration included in this project.
 
 Built-in Oracle discovery providers are configured by class name:
 
-* `io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider`
-* `io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider`
+* `io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider`
+* `io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider`
 
 Each configured source declares:
 
 * `name`
 * `providerClassName`
-* optional `owner`
 * provider-specific `options`
 
 == Gradle
@@ -26,25 +25,32 @@ Apply the plugin and configure the target package plus one or more discovery sou
 [source,groovy]
 ----
 plugins {
-    id "io.micronaut.jsonschema.oracle"
+    id "io.micronaut.jsonschema.records"
 }
 
-oracleJsonSchema {
+jsonSchemaRecords {
+    providers {
+        oracle {
+            jdbcUrl = project.providers.environmentVariable("DB_URL")
+            username = project.providers.environmentVariable("DB_USER")
+            password = project.providers.environmentVariable("DB_PASSWORD")
+        }
+    }
     targetPackage = "example.oracle.generated"
     sources = [
         [
             name: "domains",
-            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider",
-            owner: "APP",
+            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider",
             options: [
+                owner: "APP",
                 include: "APP_JSON"
             ]
         ],
         [
             name: "views",
-            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider",
-            owner: "APP",
+            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider",
             options: [
+                owner: "APP",
                 include: "APP_VIEW"
             ]
         ]
@@ -57,27 +63,27 @@ If the Oracle JDBC driver is not already visible to the task, provide it through
 [source,groovy]
 ----
 configurations {
-    oracleJsonSchemaJdbc
+    jsonSchemaRecordsJdbc
 }
 
 dependencies {
-    oracleJsonSchemaJdbc "com.oracle.database.jdbc:ojdbc11:<version>"
+    jsonSchemaRecordsJdbc "com.oracle.database.jdbc:ojdbc11:<version>"
 }
 
-oracleJsonSchema {
-    jdbcClasspath.from(configurations.oracleJsonSchemaJdbc)
+jsonSchemaRecords {
+    jdbcClasspath.from(configurations.jsonSchemaRecordsJdbc)
 }
 ----
 
-Custom discovery providers can be added through the dedicated `oracleJsonSchemaProviders` configuration:
+Custom discovery providers can be added through the dedicated `jsonSchemaRecordsProviders` configuration:
 
 [source,groovy]
 ----
 dependencies {
-    oracleJsonSchemaProviders project(":oracle-schema-providers")
+    jsonSchemaRecordsProviders project(":oracle-schema-providers")
 }
 
-oracleJsonSchema {
+jsonSchemaRecords {
     sources = [
         [
             name: "legacy",
@@ -90,21 +96,9 @@ oracleJsonSchema {
 }
 ----
 
-Custom providers are selected by `providerClassName`, but they must also be registered through Java `ServiceLoader`:
-
-[source]
-----
-META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
-----
-
-For example:
-
-[source]
-----
-example.oracle.LegacySchemaDiscoveryProvider
-----
-
-`providerClassName` must exactly match the implementation class name listed in that service file. The provider jar must be present on `oracleJsonSchemaProviders`, and the implementation must expose a public no-argument constructor. This keeps custom providers compatible with GraalVM native image builds without requiring reflective construction.
+Custom providers are selected by `providerClassName` and loaded directly from the plugin/provider classpath.
+The provider jar must be present on `jsonSchemaRecordsProviders`, the configured class must implement `SchemaDiscoveryProvider`, and the implementation must expose an accessible no-argument constructor.
+Java `ServiceLoader` registration is optional and may be used by providers for their own discovery/validation, but it is not required when `providerClassName` is configured.
 
 The built-in providers currently support these source options:
 
@@ -113,14 +107,18 @@ The built-in providers currently support these source options:
 | Provider class
 | Supported options
 
-| `io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider`
-| `include`, `exclude`
+| `io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider`
+| `owner`, `include`, `exclude`
 
-| `io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider`
-| `include`, `exclude`
+| `io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider`
+| `owner`, `include`, `exclude`
 |===
 
 For the built-in providers, `include` and `exclude` match discovered Oracle object names by exact name first and also by Oracle-style uppercase normalization. This keeps normal unquoted identifiers working as expected while still allowing exact matching for quoted mixed-case names.
+
+When `owner` is configured, the built-in providers first try `ALL_` and `DBA_` dictionary views with an `OWNER` filter.
+If those cross-schema views are not queryable, the providers fall back to `USER_` dictionary views only when the configured `owner` matches the Oracle session user.
+That fallback emits `OWNER_SCOPE_FALLBACK`; otherwise the source is unavailable with `PRIVILEGE_DENIED`.
 
 === Gradle credentials
 
@@ -130,20 +128,20 @@ The Gradle plugin can resolve connection settings from explicit extension values
 |===
 | Value | Supported names
 | JDBC URL
-| `oracleJsonSchema.jdbcUrl`, `ORACLE_JSON_SCHEMA_JDBC_URL`
+| `providers.oracle.jdbcUrl`, `jsonSchemaRecords.jdbcUrl`, `DB_URL`
 | Username
-| `oracleJsonSchema.username`, `ORACLE_JSON_SCHEMA_USERNAME`
+| `providers.oracle.username`, `jsonSchemaRecords.username`, `DB_USER`
 | Password
-| `oracleJsonSchema.password`, `ORACLE_JSON_SCHEMA_PASSWORD`
+| `providers.oracle.password`, `jsonSchemaRecords.password`, `DB_PASSWORD`
 |===
 
 This lets projects keep secrets outside `build.gradle`, for example in `~/.gradle/gradle.properties`:
 
 [source,properties]
 ----
-oracleJsonSchema.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1
-oracleJsonSchema.username=app
-oracleJsonSchema.password=secret
+jsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1
+jsonSchemaRecords.username=app
+jsonSchemaRecords.password=secret
 ----
 
 == Maven
@@ -158,28 +156,34 @@ The Maven plugin can be configured in the build like any other mojo:
   <executions>
     <execution>
       <goals>
-        <goal>generate-from-oracle-json-schema</goal>
+        <goal>generate-from-json-schema-sources</goal>
       </goals>
     </execution>
   </executions>
   <configuration>
     <skip>false</skip>
-    <jdbcUrl>${oracleJsonSchema.jdbcUrl}</jdbcUrl>
+    <providers>
+      <oracle>
+        <jdbcUrl>${env.DB_URL}</jdbcUrl>
+        <username>${env.DB_USER}</username>
+        <password>${env.DB_PASSWORD}</password>
+      </oracle>
+    </providers>
     <targetPackage>example.oracle.generated</targetPackage>
     <sources>
       <source>
         <name>domains</name>
-        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider</providerClassName>
-        <owner>APP</owner>
+        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider</providerClassName>
         <options>
+          <owner>APP</owner>
           <include>APP_JSON</include>
         </options>
       </source>
       <source>
         <name>views</name>
-        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider</providerClassName>
-        <owner>APP</owner>
+        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider</providerClassName>
         <options>
+          <owner>APP</owner>
           <include>APP_VIEW</include>
         </options>
       </source>
@@ -216,50 +220,34 @@ Custom discovery providers are loaded from the Maven plugin classpath, so add th
 </plugin>
 ----
 
-As with Gradle, each custom provider must also be registered in:
-
-[source]
-----
-META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
-----
-
-For example:
-
-[source]
-----
-example.oracle.LegacySchemaDiscoveryProvider
-----
-
-The configured `providerClassName` must exactly match the implementation class name listed in that file.
+As with Gradle, the configured `providerClassName` is loaded directly from the plugin/provider classpath and must expose an accessible no-argument constructor.
+Java `ServiceLoader` registration is optional, not required.
 
 === Troubleshooting Custom Providers
 
 If a custom provider is not resolved at runtime, check these points first:
 
 * The provider jar is on the plugin classpath.
-* Gradle uses `oracleJsonSchemaProviders`.
+* Gradle uses `jsonSchemaRecordsProviders`.
 * Maven uses plugin `<dependencies>`, not regular project dependencies.
-* The jar contains `META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider`.
-* The service file lists the exact implementation class name configured through `providerClassName`.
 * The provider implementation has a public no-argument constructor.
-* If the provider jar is shaded or repackaged, `META-INF/services` entries are merged instead of overwritten.
 * The provider and plugin use compatible `micronaut-json-schema` versions.
 * Any transitive libraries required by the provider are also visible on the same plugin classpath.
 
 === Maven credentials
 
-The Maven plugin supports both direct properties and Maven `settings.xml` server lookup.
+The Maven plugin supports provider-family configuration, direct properties, environment variables, and Maven `settings.xml` server lookup.
 
 You can pass connection settings directly on the command line:
 
 [source,bash]
 ----
 mvn generate-sources \
-  -DoracleJsonSchema.skip=false \
-  -DoracleJsonSchema.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
-  -DoracleJsonSchema.username=app \
-  -DoracleJsonSchema.password=secret \
-  -DoracleJsonSchema.targetPackage=example.oracle.generated
+  -DjsonSchemaRecords.skip=false \
+  -DjsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -DjsonSchemaRecords.username=app \
+  -DjsonSchemaRecords.password=secret \
+  -DjsonSchemaRecords.targetPackage=example.oracle.generated
 ----
 
 For better secret handling, configure a Maven server and pass only `serverId`:
@@ -269,7 +257,7 @@ For better secret handling, configure a Maven server and pass only `serverId`:
 <settings>
   <servers>
     <server>
-      <id>oracle-jsonschema</id>
+      <id>jsonschema</id>
       <username>app</username>
       <password>secret</password>
     </server>
@@ -280,14 +268,16 @@ For better secret handling, configure a Maven server and pass only `serverId`:
 [source,bash]
 ----
 mvn generate-sources \
-  -DoracleJsonSchema.skip=false \
-  -DoracleJsonSchema.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
-  -DoracleJsonSchema.serverId=oracle-jsonschema \
-  -DoracleJsonSchema.targetPackage=example.oracle.generated
+  -DjsonSchemaRecords.skip=false \
+  -DjsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -DjsonSchemaRecords.serverId=jsonschema \
+  -DjsonSchemaRecords.targetPackage=example.oracle.generated
 ----
 
 Credential resolution order is:
 
-* Explicit plugin configuration or `-DoracleJsonSchema.username` / `-DoracleJsonSchema.password`
+* Explicit plugin configuration or `-DjsonSchemaRecords.username` / `-DjsonSchemaRecords.password`
+* `providers.oracle`
 * `serverId` lookup from Maven `settings.xml`
-* Fail the build if credentials are still missing
+* `DB_URL`, `DB_USER`, `DB_PASSWORD`
+* JDBC-backed providers fail if required connection settings are still missing

@@ -26,7 +26,6 @@ import io.micronaut.sourcegen.model.TypeDef;
 import javax.lang.model.SourceVersion;
 import io.micronaut.jsonschema.model.Schema;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -36,9 +35,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
-import static io.micronaut.jsonschema.generator.loaders.UrlLoader.isValidUrl;
 import static io.micronaut.jsonschema.model.Schema.THIS_SCHEMA_REF;
 import static io.micronaut.jsonschema.model.Schema.Type.NULL;
 import static java.lang.String.join;
@@ -64,6 +64,7 @@ public final class TypeAggregator {
         "number", TypeDef.Primitive.FLOAT_WRAPPER,
         "null", TypeDef.OBJECT
     );
+    private static final Pattern ALPHANUMERIC_RUN = Pattern.compile("[A-Za-z0-9]+");
 
     static {
         TYPE_MAP = new HashMap<>();
@@ -97,10 +98,11 @@ public final class TypeAggregator {
     public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
         // check oneOf, anyOf (allOf is already merged into during mapping)
         if (schema.hasOneOf()) {
-            // inner oneOf's are treated as objects
+            context.warn("UNSUPPORTED_KEYWORD", "oneOf is not supported at property level; using java.lang.Object");
             return TypeDef.OBJECT;
         } else if (schema.hasAnyOf()) {
-            return chooseFromAnyOf(schema.getAnyOf(), context);
+            context.warn("UNSUPPORTED_KEYWORD", "anyOf is not supported at property level; using java.lang.Object");
+            return TypeDef.OBJECT;
         } else if (schema.isEnum()) {
             return TypeDef.OBJECT;
         }
@@ -114,8 +116,7 @@ public final class TypeAggregator {
                 typeList.remove(NULL);
                 schema.setType(typeList);
             } else {
-                System.err.println("Only one type is allowed per schema. " +
-                    "In case of multiple types, the variable is generated as a java.lang.Object.");
+                context.warn("UNSUPPORTED_KEYWORD", "Multiple non-null JSON Schema types are not supported at property level; using java.lang.Object");
                 return TypeDef.OBJECT;
             }
         }
@@ -147,20 +148,13 @@ public final class TypeAggregator {
                 return TypeDef.THIS;
             } else if (ref.indexOf("#") == 0) {
                 ref = SourceGenerator.getInputFileName() + ref;
-            }
-            var location = ref.substring(0, ref.indexOf("#"));
-            var originalFileName = SourceGenerator.getInputFileName();
-            if (!context.hasDefinition(ref) && isValidUrl(location) && !location.equals(originalFileName)) {
-                try {
-                    var generator = new SourceGenerator(SourceGenerator.getLanguage(), context);
-                    SourceGenerator.setInputFileName(location);
-                    generator.generate(
-                        context.getConfiguration().toBuilder().withInputStream(null)
-                            .withInputFolder(null).withJsonUrl(location).withJsonFile(null).build());
-                    SourceGenerator.setInputFileName(originalFileName);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                if (!context.hasDefinition(ref)) {
+                    context.warn("UNSUPPORTED_KEYWORD", "Local $ref is not resolved: " + schema.get$ref());
+                    return TypeDef.OBJECT;
                 }
+            } else {
+                context.warn("UNSUPPORTED_KEYWORD", "External $ref is not resolved: " + ref);
+                return TypeDef.OBJECT;
             }
             typeDef = context.getDefinitionType(ref);
         } else if (schema.hasConstValue()) {
@@ -191,47 +185,6 @@ public final class TypeAggregator {
             throw new IllegalArgumentException("Unsupported type: " + type);
         }
         return typeDef;
-    }
-
-    /**
-     * The strategy to choose from an anyOf keyword in Json Schema.
-     * Needs improvement.
-     * Current strategy:
-     *  if empty, return null,
-     *  if single schema, return that schema,
-     *  if 2 schema but one has type "NULL", return the non-null schema
-     *  if all schemas has the same type, merge all schemas and return
-     *  else return empty Object schema.
-     *
-     * @param schemas List of Schemas in the anyOf keyword
-     * @return chosen Schema
-     */
-    private static TypeDef chooseFromAnyOf(List<Schema> schemas, GeneratorContext context) {
-        if (schemas.isEmpty()) {
-            return null;
-        } else if (schemas.size() == 1) {
-            return getTypeDefFromJson(schemas.get(0), context);
-        } else if (schemas.size() == 2) {
-            var nullSchema = new Schema();
-            nullSchema.setType(List.of(Schema.Type.NULL));
-            if (schemas.contains(nullSchema)) {
-                schemas.remove(nullSchema);
-                return getTypeDefFromJson(schemas.get(0), context);
-            }
-        }
-        boolean sameType = true;
-        for (var i = 0; i < schemas.size() - 1; i++) {
-            if (schemas.get(i).hasType() && !schemas.get(i).getType().equals(schemas.get(i + 1).getType())) {
-                sameType = false;
-            } else if (!schemas.get(i).hasType() || !schemas.get(i + 1).hasType()) {
-                sameType = false;
-            }
-        }
-        if (sameType) {
-            var type = schemas.get(0).getType().get(0);
-            return TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
-        }
-        return TypeDef.OBJECT;
     }
 
     public static String getConstantName(String input) {
@@ -272,31 +225,24 @@ public final class TypeAggregator {
     }
 
     public static String getPropertyName(String input) {
-        if (SourceVersion.isName(input)) {
+        if (input == null || input.isBlank()) {
+            return "_";
+        }
+        boolean hasSeparator = !input.chars().allMatch(Character::isLetterOrDigit);
+        if (!hasSeparator && SourceVersion.isName(input) && !isReservedJavaLiteral(input)) {
             return input;
         }
-        if (SourceVersion.isKeyword(input)) {
-            return input + "_json";
+        Matcher matcher = ALPHANUMERIC_RUN.matcher(input);
+        List<String> words = new java.util.ArrayList<>();
+        while (matcher.find()) {
+            words.add(matcher.group());
         }
-        String cleanedInput = input.replaceAll("[-_]", " ")
-            .replaceAll("[^a-zA-Z0-9 ]", "")
-            .trim();
-
-        while (!Character.isJavaIdentifierStart(cleanedInput.charAt(0))) {
-            cleanedInput = cleanedInput.substring(1);
+        if (words.isEmpty()) {
+            return "_";
         }
-
-        // Split into words
-        String[] words = cleanedInput.split("\\s+");
         StringBuilder camelCaseString = new StringBuilder();
-
-        // Check if the input is acceptable
-        if (words.length == 0 || words[0].isEmpty()) {
-            throw new IllegalArgumentException("Property name is not an acceptable variable name");
-        }
-
-        for (int i = 0; i < words.length; i++) {
-            String word = words[i].trim();
+        for (int i = 0; i < words.size(); i++) {
+            String word = words.get(i).trim();
             if (!word.isEmpty()) {
                 if (i == 0) {
                     camelCaseString.append(word.toLowerCase());
@@ -306,7 +252,26 @@ public final class TypeAggregator {
                 }
             }
         }
-        return camelCaseString.toString();
+        if (camelCaseString.isEmpty()) {
+            return "_";
+        }
+        if (!Character.isJavaIdentifierStart(camelCaseString.charAt(0))) {
+            camelCaseString.insert(0, '_');
+        }
+        for (int i = 1; i < camelCaseString.length(); i++) {
+            if (!Character.isJavaIdentifierPart(camelCaseString.charAt(i))) {
+                camelCaseString.setCharAt(i, '_');
+            }
+        }
+        String name = camelCaseString.toString();
+        if (SourceVersion.isKeyword(name) || isReservedJavaLiteral(name)) {
+            return name + "_";
+        }
+        return name;
+    }
+
+    private static boolean isReservedJavaLiteral(String value) {
+        return "true".equals(value) || "false".equals(value) || "null".equals(value);
     }
 
     public static String unicodeToString(String input) {

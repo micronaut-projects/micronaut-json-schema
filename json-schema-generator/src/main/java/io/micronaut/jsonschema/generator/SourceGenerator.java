@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -167,6 +168,7 @@ public final class SourceGenerator {
             Schema jsonSchema = getJsonSchema(config);
             assert jsonSchema != null;
             inputFileName = getInputFileName() != null ? getInputFileName() : config.getInputName();
+            prepareSchema(jsonSchema);
             // single java object is generated
             if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
                 var outputFileName = config.outputFileName();
@@ -174,9 +176,10 @@ public final class SourceGenerator {
                 if (config.outputFileName().contains(".")) {
                     outputFileName = outputFileName.substring(0, outputFileName.indexOf('.'));
                 }
-                return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
+                File topLevelObject = generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
+                generateDefinitionTypes(jsonSchema, config.outputPath(), config.outputPackageName());
+                return topLevelObject;
             } else {
-                saveDefinitions(jsonSchema);
                 return generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
             }
         }
@@ -198,6 +201,7 @@ public final class SourceGenerator {
                 var jsonSchema = new FileLoader(path.toFile()).load();
                 assert jsonSchema != null;
                 inputFileName = path.toString().substring(jsonFolder.toString().length() + 1);
+                SchemaCompositionSupport.normalizeLocalReferences(jsonSchema);
                 schemas.put(jsonSchema, inputFileName);
                 saveDefinitions(jsonSchema);
             });
@@ -213,6 +217,11 @@ public final class SourceGenerator {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private void prepareSchema(Schema jsonSchema) {
+        SchemaCompositionSupport.normalizeLocalReferences(jsonSchema);
+        saveDefinitions(jsonSchema);
     }
 
     private void saveDefinitions(Schema jsonSchema) {
@@ -259,6 +268,11 @@ public final class SourceGenerator {
 
         File topLevelObject = generateFromSchema(jsonSchema, outputPath, packageName, schemaName);
 
+        generateDefinitionTypes(jsonSchema, outputPath, packageName);
+        return topLevelObject;
+    }
+
+    private void generateDefinitionTypes(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
         // generate classes in definitions and oneOfs
         if (jsonSchema.has$defs()) {
             jsonSchema.get$defs().entrySet()
@@ -277,7 +291,6 @@ public final class SourceGenerator {
             String className = oneOf.getKey().substring(oneOf.getKey().lastIndexOf('/') + 1);
             generateFromSchema(oneOf.getValue(), outputPath, packageName, className);
         }
-        return topLevelObject;
     }
 
     private File generateFromSchema(Schema jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
@@ -472,6 +485,7 @@ public final class SourceGenerator {
         }
 
         if (jsonSchema.hasProperties()) {
+            validateMemberNameCollisions(jsonSchema);
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();
             Stream<Map.Entry<String, Schema>> propertyStream = jsonSchema.getProperties().entrySet().stream();
             if (shouldSortPropertiesByName()) {
@@ -498,7 +512,7 @@ public final class SourceGenerator {
                 context.warn("OPEN_OBJECT_GENERATED", "Generated additionalProperties map for " + inputFileName);
             }
             builder.addProperty(PropertyDef.builder("additionalProperties")
-                .ofType(TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, getOracleAdditionalPropertyType(jsonSchema)))
+                .ofType(TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, getAdditionalPropertyValueType(jsonSchema, builder)))
                 .build());
             return;
         }
@@ -557,8 +571,8 @@ public final class SourceGenerator {
         }
 
         TypeDef propertyType = getPropertyType(objectBuilder, schema, name);
-        if (shouldBoxOptionalBooleans() && !isRequired && propertyType.equals(TypeDef.Primitive.BOOLEAN)) {
-            propertyType = TypeDef.Primitive.BOOLEAN_WRAPPER;
+        if (!isRequired && propertyType instanceof TypeDef.Primitive primitive) {
+            propertyType = primitive.wrapperType();
         }
         // add annotations
         var annotations = AnnotationsAggregator.getAnnotations(schema, propertyType, isRequired);
@@ -606,6 +620,10 @@ public final class SourceGenerator {
     }
 
     private TypeDef getPropertyType(ObjectDefBuilder objectBuilder, Schema schema, String name) {
+        if (SchemaCompositionSupport.hasUnsupportedAllOf(schema)) {
+            context.warn("UNSUPPORTED_KEYWORD", "allOf cannot be flattened deterministically at property level; using java.lang.Object");
+            return TypeDef.OBJECT;
+        }
         // add type info and type validation annotations
         TypeDef propertyType = getTypeDefFromJson(schema, context);
         if (schema.isEnum()) {
@@ -615,7 +633,7 @@ public final class SourceGenerator {
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
         } else if (supportsAdditionalPropertiesAsField() && propertyType.equals(TypeDef.OBJECT) && shouldGenerateAdditionalProperties(schema)) {
-            return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, getOracleAdditionalPropertyType(schema));
+            return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, getAdditionalPropertyValueType(schema, objectBuilder));
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties()) {
             if (schema.getAdditionalProperties().equals(Schema.TRUE)) {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
@@ -662,9 +680,12 @@ public final class SourceGenerator {
     private TypeDef getListTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         Schema items = schema.getItems() != null ? schema.getItems() : schema.getContains();
         if (items == null) {
-            return TypeDef.OBJECT;
+            return TypeDef.parameterized(ClassTypeDef.of(List.class), TypeDef.OBJECT);
         }
 
+        if (items.hasType() && items.getType().contains(io.micronaut.jsonschema.model.Schema.Type.NULL)) {
+            items.setNullable(true);
+        }
         TypeDef propertyType = getPropertyType(objectBuilder, items, propertyName);
         if (propertyType instanceof TypeDef.Primitive primitive) {
             propertyType = primitive.wrapperType();
@@ -754,10 +775,28 @@ public final class SourceGenerator {
         return context.getConfiguration().sortPropertiesByName();
     }
 
-    private TypeDef getOracleAdditionalPropertyType(Schema schema) {
+    private TypeDef getAdditionalPropertyValueType(Schema schema, ObjectDefBuilder objectBuilder) {
         if (!schema.hasAdditionalProperties() || Schema.TRUE.equals(schema.getAdditionalProperties())) {
             return TypeDef.OBJECT;
         }
-        return getTypeDefFromJson(schema.getAdditionalProperties(), context);
+        return getPropertyType(objectBuilder, schema.getAdditionalProperties(), "additionalProperties");
+    }
+
+    private void validateMemberNameCollisions(Schema schema) {
+        Map<String, List<String>> jsonNamesByJavaName = new LinkedHashMap<>();
+        if (schema.hasProperties()) {
+            schema.getProperties().keySet().forEach(jsonName ->
+                jsonNamesByJavaName.computeIfAbsent(getPropertyName(jsonName), ignored -> new LinkedList<>()).add(jsonName));
+        }
+        if (shouldGenerateAdditionalProperties(schema)) {
+            jsonNamesByJavaName.computeIfAbsent("additionalProperties", ignored -> new LinkedList<>()).add("<additionalProperties>");
+        }
+        jsonNamesByJavaName.entrySet().stream()
+            .filter(entry -> entry.getValue().size() > 1)
+            .findFirst()
+            .ifPresent(entry -> {
+                throw new IllegalArgumentException("NAME_COLLISION: JSON properties " + entry.getValue()
+                    + " resolve to Java member name '" + entry.getKey() + "'");
+            });
     }
 }

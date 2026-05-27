@@ -45,13 +45,13 @@ class EnumGeneratorSpec extends AbstractGeneratorSpec {
           @JsonCreator
           public static Status statusOf(String value) {
             return switch (value) {
-                  case "active" -> ACTIVE;
-                  case "in progress" -> IN_PROGRESS;
-                  case "deleted" -> DELETED;
-                  case "not_active" -> NOT_ACTIVE;
-                  case "non-valid" -> NON_VALID;
-                  default -> null;
-                };
+              case "active" -> ACTIVE;
+              case "in progress" -> IN_PROGRESS;
+              case "deleted" -> DELETED;
+              case "not_active" -> NOT_ACTIVE;
+              case "non-valid" -> NON_VALID;
+              default -> null;
+            };
           }
         }
         """.stripIndent().trim()
