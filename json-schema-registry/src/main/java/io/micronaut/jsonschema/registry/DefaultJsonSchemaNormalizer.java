@@ -15,11 +15,17 @@
  */
 package io.micronaut.jsonschema.registry;
 
-import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import jakarta.inject.Singleton;
+import tools.jackson.core.StreamWriteFeature;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Jackson-backed schema normalizer.
@@ -28,11 +34,46 @@ import java.io.IOException;
  */
 @Singleton
 public final class DefaultJsonSchemaNormalizer implements JsonSchemaNormalizer {
-    private final ObjectMapper objectMapper = JsonSchemaMapperFactory.createMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+        .enable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
+        .build();
 
     @Override
     public String normalize(String jsonSchema) throws IOException {
-        Object value = objectMapper.readValue(jsonSchema, Object.class);
+        Object value = normalizeValue(objectMapper.readValue(jsonSchema, Object.class));
         return objectMapper.writeValueAsString(value);
+    }
+
+    private static Object normalizeValue(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> sorted = new TreeMap<>(DefaultJsonSchemaNormalizer::compareCodePointOrder);
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                sorted.put((String) entry.getKey(), normalizeValue(entry.getValue()));
+            }
+            return new LinkedHashMap<>(sorted);
+        }
+        if (value instanceof List<?> list) {
+            List<Object> normalized = new ArrayList<>(list.size());
+            for (Object entry : list) {
+                normalized.add(normalizeValue(entry));
+            }
+            return normalized;
+        }
+        return value;
+    }
+
+    private static int compareCodePointOrder(String left, String right) {
+        int leftIndex = 0;
+        int rightIndex = 0;
+        while (leftIndex < left.length() && rightIndex < right.length()) {
+            int leftCodePoint = left.codePointAt(leftIndex);
+            int rightCodePoint = right.codePointAt(rightIndex);
+            if (leftCodePoint != rightCodePoint) {
+                return Integer.compare(leftCodePoint, rightCodePoint);
+            }
+            leftIndex += Character.charCount(leftCodePoint);
+            rightIndex += Character.charCount(rightCodePoint);
+        }
+        return Integer.compare(left.length(), right.length());
     }
 }

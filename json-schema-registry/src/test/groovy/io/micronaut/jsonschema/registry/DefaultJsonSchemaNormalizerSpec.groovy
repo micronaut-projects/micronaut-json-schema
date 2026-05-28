@@ -45,4 +45,22 @@ final class DefaultJsonSchemaNormalizerSpec extends Specification {
                 '{"properties":{"id":{"type":"integer"}},"type":"object"}'
         )
     }
+
+    void "preserves null values during normalization"() {
+        expect:
+        normalizer.normalize('{"type":"object","default":null,"properties":{"value":{"const":null}}}') ==
+                '{"default":null,"properties":{"value":{"const":null}},"type":"object"}'
+    }
+
+    void "sorts object keys by unicode code point order"() {
+        given:
+        String privateUseKey = "\uE000"
+        String supplementaryKey = new String(Character.toChars(0x10000))
+
+        when:
+        String normalized = normalizer.normalize("{\"${supplementaryKey}\":1,\"${privateUseKey}\":2}")
+
+        then:
+        normalized.indexOf("\"${privateUseKey}\"") < normalized.indexOf("\"${supplementaryKey}\"")
+    }
 }

@@ -88,6 +88,110 @@ class OraclePipelineMockSpec extends Specification {
         logs.any { it.contains("generatedTypes=1") }
     }
 
+    void "pipeline falls back to domain constraints when get ddl extraction fails"() {
+        given:
+        Connection connection = Mock()
+        PreparedStatement domainListStatement = Mock()
+        PreparedStatement ddlStatement = Mock()
+        PreparedStatement constraintStatement = Mock()
+        ResultSet domainListResult = Mock()
+        ResultSet ddlResult = Mock()
+        ResultSet constraintResult = Mock()
+        Path schemaCacheDir = Files.createTempDirectory("oracle-mock-schema-cache")
+        Path outputDir = Files.createTempDirectory("oracle-mock-output")
+        List<String> logs = []
+        Driver driver = driverReturning(connection)
+
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * domainListStatement.executeQuery() >> domainListResult
+        2 * domainListResult.next() >>> [true, false]
+        1 * domainListResult.getString(1) >> "MOONPHASE"
+
+        1 * connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual") >> ddlStatement
+        1 * ddlStatement.setString(1, "MOONPHASE")
+        1 * ddlStatement.executeQuery() >> ddlResult
+        1 * ddlResult.next() >> true
+        1 * ddlResult.getString(1) >> "CREATE DOMAIN MOONPHASE AS JSON VALIDATE USING invalid_expression"
+
+        1 * connection.prepareStatement("SELECT search_condition FROM USER_DOMAIN_CONSTRAINTS WHERE domain_name = ?") >> constraintStatement
+        1 * constraintStatement.setString(1, "MOONPHASE")
+        1 * constraintStatement.executeQuery() >> constraintResult
+        1 * constraintResult.next() >> true
+        1 * constraintResult.getString(1) >> """CHECK (VALUE IS JSON VALIDATE USING '{"type":"object","properties":{"phase":{"type":"string"}}}')"""
+
+        when:
+        def result = withRegisteredDriver(driver) {
+            new OracleJsonSchemaPipeline({ String message -> logs.add(message) }).execute(
+                new OracleJsonSchemaGeneratorConfig(
+                    "jdbc:mockoracle:test",
+                    "test",
+                    "test",
+                    "io.micronaut.jsonschema.oracle.generated",
+                    schemaCacheDir,
+                    outputDir,
+                    [new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, [include: "MOONPHASE"])],
+                    false,
+                    true
+                )
+            )
+        }
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "discovery", "schemas", 0, "source").getStringValue() == "DOMAIN_CONSTRAINTS"
+        jsonAt(manifest, "warnings", 0, "code").getStringValue() == "GET_DDL_EXTRACTION_FAILED"
+        logs.any { it.contains("get_ddl extraction failed") }
+        logs.any { it.contains("schema extracted via search_condition") }
+    }
+
+    void "pipeline extracts concatenated clob domain schema from get ddl"() {
+        given:
+        Connection connection = Mock()
+        PreparedStatement domainListStatement = Mock()
+        PreparedStatement ddlStatement = Mock()
+        ResultSet domainListResult = Mock()
+        ResultSet ddlResult = Mock()
+        Path schemaCacheDir = Files.createTempDirectory("oracle-mock-schema-cache")
+        Path outputDir = Files.createTempDirectory("oracle-mock-output")
+        List<String> logs = []
+        Driver driver = driverReturning(connection)
+
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * domainListStatement.executeQuery() >> domainListResult
+        2 * domainListResult.next() >>> [true, false]
+        1 * domainListResult.getString(1) >> "APP_ORDER"
+
+        1 * connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual") >> ddlStatement
+        1 * ddlStatement.setString(1, "APP_ORDER")
+        1 * ddlStatement.executeQuery() >> ddlResult
+        1 * ddlResult.next() >> true
+        1 * ddlResult.getString(1) >> """CREATE DOMAIN APP_ORDER AS JSON VALIDATE USING to_clob('{"type":"object",') || to_clob('"properties":{"name":{"const":"can''t"}}}')"""
+
+        when:
+        def result = withRegisteredDriver(driver) {
+            new OracleJsonSchemaPipeline({ String message -> logs.add(message) }).execute(
+                new OracleJsonSchemaGeneratorConfig(
+                    "jdbc:mockoracle:test",
+                    "test",
+                    "test",
+                    "io.micronaut.jsonschema.oracle.generated",
+                    schemaCacheDir,
+                    outputDir,
+                    [new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, [include: "APP_ORDER"])],
+                    false,
+                    true
+                )
+            )
+        }
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "discovery", "schemas", 0, "source").getStringValue() == "DOMAIN_DDL"
+        logs.any { it.contains("schema extracted via get_ddl") }
+    }
+
     void "pipeline skips unusable duality view schemas when skip on error is enabled"() {
         given:
         Connection connection = Mock()
@@ -134,6 +238,46 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "emittedSchemaFiles").size() == 0
     }
 
+    void "pipeline skips malformed duality view schemas when skip on error is enabled"() {
+        given:
+        Connection connection = Mock()
+        PreparedStatement dualityStatement = Mock()
+        ResultSet dualityResult = Mock()
+        Path schemaCacheDir = Files.createTempDirectory("oracle-mock-schema-cache")
+        Path outputDir = Files.createTempDirectory("oracle-mock-output")
+        Driver driver = driverReturning(connection)
+
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS") >> dualityStatement
+        1 * dualityStatement.executeQuery() >> dualityResult
+        2 * dualityResult.next() >>> [true, false]
+        1 * dualityResult.getString(1) >> "APARTMENT_VIEW"
+        1 * dualityResult.getString(2) >> '{"type":'
+
+        when:
+        def result = withRegisteredDriver(driver) {
+            new OracleJsonSchemaPipeline({ }).execute(
+                new OracleJsonSchemaGeneratorConfig(
+                    "jdbc:mockoracle:test",
+                    "test",
+                    "test",
+                    "io.micronaut.jsonschema.oracle.generated",
+                    schemaCacheDir,
+                    outputDir,
+                    [new OracleSourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider", null, [include: "APARTMENT_VIEW"])],
+                    true,
+                    true
+                )
+            )
+        }
+
+        then:
+        result.generatedTypes() == 0
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "skipped", 0, "sourceName").getStringValue() == "views"
+        jsonAt(manifest, "skipped", 0, "name").getStringValue() == "APARTMENT_VIEW"
+        jsonAt(manifest, "skipped", 0, "code").getStringValue() == "MALFORMED_JSON"
+    }
+
     void "pipeline include filters support exact quoted style names"() {
         given:
         Connection connection = Mock()
@@ -177,6 +321,51 @@ class OraclePipelineMockSpec extends Specification {
         result.generatedTypes() == 1
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "MoonPhase"
+    }
+
+    void "pipeline domain provider supports prefix filters"() {
+        given:
+        Connection connection = Mock()
+        PreparedStatement domainListStatement = Mock()
+        PreparedStatement ddlStatement = Mock()
+        ResultSet domainListResult = Mock()
+        ResultSet ddlResult = Mock()
+        Path schemaCacheDir = Files.createTempDirectory("oracle-mock-schema-cache")
+        Path outputDir = Files.createTempDirectory("oracle-mock-output")
+        Driver driver = driverReturning(connection)
+
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * domainListStatement.executeQuery() >> domainListResult
+        3 * domainListResult.next() >>> [true, true, false]
+        2 * domainListResult.getString(1) >>> ["APP_ORDER", "OTHER_ORDER"]
+
+        1 * connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual") >> ddlStatement
+        1 * ddlStatement.setString(1, "APP_ORDER")
+        1 * ddlStatement.executeQuery() >> ddlResult
+        1 * ddlResult.next() >> true
+        1 * ddlResult.getString(1) >> """CREATE DOMAIN APP_ORDER AS JSON VALIDATE USING '{"type":"object","properties":{"id":{"type":"integer"}}}'"""
+
+        when:
+        def result = withRegisteredDriver(driver) {
+            new OracleJsonSchemaPipeline({ }).execute(
+                new OracleJsonSchemaGeneratorConfig(
+                    "jdbc:mockoracle:test",
+                    "test",
+                    "test",
+                    "io.micronaut.jsonschema.oracle.generated",
+                    schemaCacheDir,
+                    outputDir,
+                    [new OracleSourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider", null, [prefix: "APP_"])],
+                    false,
+                    true
+                )
+            )
+        }
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "APP_ORDER"
     }
 
     void "pipeline returns empty result when database is unavailable and fail on missing db is disabled"() {

@@ -59,7 +59,8 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
             logOutcome(configuration, outcome);
             meterRegistry.ifPresent(meterRegistry -> recordOutcome(meterRegistry, configuration, outcome));
         }
-        LOG.info("JSON Schema Registry reconciliation summary: authority={} dryRun={} failFastStrategy={} outcomes={} failures={} durationMs={} results={}",
+        LOG.info("{}JSON Schema Registry reconciliation summary: authority={} dryRun={} failFastStrategy={} outcomes={} failures={} durationMs={} results={}",
+            dryRunPrefix(configuration),
             tagValue(configuration.getAuthority()),
             configuration.isDryRun(),
             tagValue(configuration.getFailFastStrategy()),
@@ -79,7 +80,8 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
     private static void logOutcome(JsonSchemaRegistryConfiguration configuration,
                                    JsonSchemaRegistryOutcome outcome) {
         if (outcome.failure()) {
-            LOG.warn("JSON Schema Registry reconciliation outcome: authority={} target={} mode={} result={} failure={} logicalSchema={} message={}",
+            LOG.warn("{}JSON Schema Registry reconciliation outcome: authority={} target={} mode={} result={} failure={} logicalSchema={} message={}",
+                dryRunPrefix(configuration),
                 tagValue(configuration.getAuthority()),
                 outcome.target(),
                 mode(configuration, outcome.target()),
@@ -88,7 +90,8 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
                 outcome.logicalSchema().logicalFqcn(),
                 outcome.message());
         } else {
-            LOG.info("JSON Schema Registry reconciliation outcome: authority={} target={} mode={} result={} failure={} logicalSchema={} message={}",
+            LOG.info("{}JSON Schema Registry reconciliation outcome: authority={} target={} mode={} result={} failure={} logicalSchema={} message={}",
+                dryRunPrefix(configuration),
                 tagValue(configuration.getAuthority()),
                 outcome.target(),
                 mode(configuration, outcome.target()),
@@ -111,6 +114,10 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
             .tag("failure", Boolean.toString(outcome.failure()))
             .register(meterRegistry)
             .increment();
+    }
+
+    private static String dryRunPrefix(JsonSchemaRegistryConfiguration configuration) {
+        return configuration.isDryRun() ? "[DRY-RUN] " : "";
     }
 
     private static Map<String, Long> summarize(List<JsonSchemaRegistryOutcome> outcomes) {

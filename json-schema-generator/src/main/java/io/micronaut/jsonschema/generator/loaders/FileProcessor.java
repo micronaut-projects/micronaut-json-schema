@@ -27,6 +27,9 @@ import java.util.Optional;
 
 import static io.micronaut.jsonschema.generator.aggregator.TypeAggregator.getClassName;
 
+/**
+ * Utility methods for loading schema input and creating generated source files.
+ */
 @Internal
 public class FileProcessor {
 
@@ -108,4 +111,3 @@ public class FileProcessor {
         return fileName;
     }
 }
-

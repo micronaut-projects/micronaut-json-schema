@@ -56,15 +56,20 @@ public final class OracleDualityJsonViewDiscoveryProvider implements OracleSchem
                         continue;
                     }
                     String jsonSchema = rs.getString(2);
-                    if (jsonSchema == null || jsonSchema.isBlank()) {
+                    try {
+                        if (jsonSchema == null || jsonSchema.isBlank()) {
+                            throw new java.io.IOException("JSON_SCHEMA is null or empty");
+                        }
+                        OracleDiscoverySupport.ensureValidJson(jsonSchema);
+                        schemas.add(new OracleDiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW, viewName, jsonSchema, "DUALITY_DB_PROVIDED"));
+                    } catch (Exception e) {
                         if (skipOnError) {
-                            skipped.add(new OracleDiscoverySkipped(OracleDiscoveryScope.DUALITY_VIEW, viewName, OracleDiscoveryStep.SCHEMA_RETRIEVAL, "MISSING_JSON_SCHEMA", "JSON_SCHEMA is null or empty", "DUALITY_DB_PROVIDED"));
+                            String code = jsonSchema == null || jsonSchema.isBlank() ? "MISSING_JSON_SCHEMA" : "MALFORMED_JSON";
+                            skipped.add(new OracleDiscoverySkipped(OracleDiscoveryScope.DUALITY_VIEW, viewName, OracleDiscoveryStep.SCHEMA_RETRIEVAL, code, e.getMessage(), "DUALITY_DB_PROVIDED"));
                             continue;
                         }
-                        throw new java.io.IOException("JSON_SCHEMA is null or empty");
+                        throw e;
                     }
-                    OracleDiscoverySupport.ensureValidJson(jsonSchema);
-                    schemas.add(new OracleDiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW, viewName, jsonSchema, "DUALITY_DB_PROVIDED"));
                 }
             }
         }

@@ -81,6 +81,80 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
     }
 
+    void "SR authority reports latest response without schema as unreadable authority"() {
+        given:
+        startServer([
+                "/subjects/com.acme.Order/versions/latest": response(200, '{"id":1}')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "sr",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.sr.subjects[0]" : "com.acme.Order",
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "sr.authority"
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.UNREADABLE_AUTHORITY
+        outcomes[0].message().contains("does not contain schema text")
+    }
+
+    void "SR authority reports malformed latest response as unreadable authority"() {
+        given:
+        startServer([
+                "/subjects/com.acme.Order/versions/latest": response(200, 'not-json')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "sr",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.sr.subjects[0]" : "com.acme.Order",
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "sr.authority"
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.UNREADABLE_AUTHORITY
+        outcomes[0].message().contains("not readable JSON")
+    }
+
+    void "SR authority reports invalid schema text as unreadable authority"() {
+        given:
+        startServer([
+                "/subjects/com.acme.Order/versions/latest": response(200, '{"schema":"not-json"}')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "sr",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.sr.subjects[0]" : "com.acme.Order",
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "sr.authority"
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.UNREADABLE_AUTHORITY
+    }
+
     void "application authority registers missing SR subject"() {
         given:
         startServer([

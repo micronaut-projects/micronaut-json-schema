@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.registry.oracle;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcome;
 
 import java.sql.Connection;
+import java.util.Optional;
 
 /**
  * Oracle materializer extension point.
@@ -31,6 +32,17 @@ public interface OracleSchemaMaterializer {
      */
     default String providerClassName() {
         return getClass().getName();
+    }
+
+    /**
+     * Verify whether this materializer can represent the candidate exactly before reconciliation.
+     * An empty result means the candidate is exactly representable and reconciliation should continue.
+     *
+     * @param request Materialization request
+     * @return Optional projection incompatibility or other terminal outcome
+     */
+    default Optional<JsonSchemaRegistryOutcome> projectionCompatibility(OracleMaterializationRequest request) {
+        return Optional.empty();
     }
 
     /**

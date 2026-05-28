@@ -114,13 +114,13 @@ The built-in providers currently support these source options:
 | Supported options
 
 | `io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider`
-| `include`, `exclude`
+| `include`, `exclude`, `prefix`
 
 | `io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider`
 | `include`, `exclude`
 |===
 
-For the built-in providers, `include` and `exclude` match discovered Oracle object names by exact name first and also by Oracle-style uppercase normalization. This keeps normal unquoted identifiers working as expected while still allowing exact matching for quoted mixed-case names.
+For the built-in providers, `include` and `exclude` match discovered Oracle object names by exact name first and also by Oracle-style uppercase normalization. The domain provider also supports `prefix` to constrain discovered domain names by prefix. This keeps normal unquoted identifiers working as expected while still allowing exact matching for quoted mixed-case names.
 
 === Gradle credentials
 

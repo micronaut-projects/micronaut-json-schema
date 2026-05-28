@@ -17,6 +17,7 @@ package io.micronaut.jsonschema.registry.oracle;
 
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema;
+import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger;
 import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
 import io.micronaut.jsonschema.registry.JsonSchemaNormalizer;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryDriftMode;
@@ -24,7 +25,10 @@ import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcome;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcomeStatus;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryPolicyMode;
 import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -40,8 +44,11 @@ import java.util.regex.Pattern;
  */
 @Singleton
 public final class OracleDomainMaterializer implements OracleSchemaMaterializer {
+    private static final Logger LOG = LoggerFactory.getLogger(OracleDomainMaterializer.class);
     private static final Pattern SIMPLE_IDENTIFIER = Pattern.compile("[A-Z][A-Z0-9_$#]{0,127}");
     private static final String TARGET = "oracle.domain";
+    private static final int SMALL_LITERAL_LIMIT = 3000;
+    private static final int CLOB_CHUNK_SIZE = 3000;
 
     private final JsonSchemaNormalizer normalizer;
     private final OracleDomainDiscoveryProvider discoveryProvider;
@@ -71,7 +78,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
                     request.candidate().logicalSchema(),
                     TARGET,
                     JsonSchemaRegistryOutcomeStatus.CREATED,
-                    "Dry run: would create Oracle domain " + domainName
+                    "[DRY-RUN] would create Oracle domain " + domainName
                 );
             }
             createDomain(connection, domainName, request.candidate().schemaJson());
@@ -83,17 +90,25 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
             );
         }
 
-        OracleDiscoveredSchema current = readDomain(connection, domainName, request.owner());
-        if (normalizer.equivalent(request.candidate().schemaJson(), current.schemaJson())) {
-            return JsonSchemaRegistryOutcome.ok(
-                request.candidate().logicalSchema(),
-                TARGET,
-                JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
-                "Oracle domain is equivalent: " + domainName
-            );
+        normalizer.normalize(request.candidate().schemaJson());
+        try {
+            OracleDiscoveredSchema current = readDomain(connection, domainName, request.owner());
+            if (normalizer.equivalent(request.candidate().schemaJson(), current.schemaJson())) {
+                return JsonSchemaRegistryOutcome.ok(
+                    request.candidate().logicalSchema(),
+                    TARGET,
+                    JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                    "Oracle domain is equivalent: " + domainName
+                );
+            }
+        } catch (Exception e) {
+            return driftOutcome(request, "Oracle domain schema could not be read: " + domainName + "; " + e.getMessage());
         }
+        return driftOutcome(request, "Oracle domain drift detected: " + domainName);
+    }
+
+    private static JsonSchemaRegistryOutcome driftOutcome(OracleMaterializationRequest request, String message) {
         boolean failure = request.driftMode() == JsonSchemaRegistryDriftMode.FAIL;
-        String message = "Oracle domain drift detected: " + domainName;
         return failure
             ? JsonSchemaRegistryOutcome.failure(request.candidate().logicalSchema(), TARGET, JsonSchemaRegistryOutcomeStatus.DRIFT, message)
             : JsonSchemaRegistryOutcome.ok(request.candidate().logicalSchema(), TARGET, JsonSchemaRegistryOutcomeStatus.DRIFT, message);
@@ -129,8 +144,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
             connection,
             new OracleSourceSpec("domains", OracleDomainDiscoveryProvider.class.getName(), owner, Map.of("include", domainName)),
             false,
-            ignored -> {
-            }
+            oracleLogger()
         );
         if (result.schemas().isEmpty()) {
             throw new IllegalStateException("Oracle domain exists but schema could not be discovered: " + domainName);
@@ -139,13 +153,71 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
     }
 
     private static void createDomain(Connection connection, String domainName, String schemaJson) throws Exception {
-        String sql = "CREATE DOMAIN " + domainName + " AS JSON VALIDATE USING '" + escapeSqlLiteral(schemaJson) + "'";
+        String sql = "CREATE DOMAIN " + domainName + " AS JSON VALIDATE USING " + schemaLiteral(schemaJson);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.executeUpdate();
         }
     }
 
+    static String schemaLiteral(String value) {
+        String escaped = escapeSqlLiteral(value);
+        if (utf8Length(escaped) <= SMALL_LITERAL_LIMIT) {
+            return "'" + escaped + "'";
+        }
+        StringBuilder builder = new StringBuilder(value.length() + (value.length() / CLOB_CHUNK_SIZE + 1) * 16);
+        int offset = 0;
+        while (offset < value.length()) {
+            if (offset > 0) {
+                builder.append(" || ");
+            }
+            int end = escapedChunkEnd(value, offset);
+            builder.append("to_clob('").append(escapeSqlLiteral(value.substring(offset, end))).append("')");
+            offset = end;
+        }
+        return builder.toString();
+    }
+
+    private static int escapedChunkEnd(String value, int offset) {
+        int end = offset;
+        int bytes = 0;
+        while (end < value.length()) {
+            int codePoint = value.codePointAt(end);
+            int codePointBytes = escapedUtf8Length(codePoint);
+            if (bytes + codePointBytes > CLOB_CHUNK_SIZE) {
+                break;
+            }
+            bytes += codePointBytes;
+            end += Character.charCount(codePoint);
+        }
+        return end == offset ? offset + Character.charCount(value.codePointAt(offset)) : end;
+    }
+
+    private static int escapedUtf8Length(int codePoint) {
+        if (codePoint == '\'') {
+            return 2;
+        }
+        return utf8Length(new String(Character.toChars(codePoint)));
+    }
+
+    private static int utf8Length(String value) {
+        return value.getBytes(StandardCharsets.UTF_8).length;
+    }
+
     private static String escapeSqlLiteral(String value) {
         return value.replace("'", "''");
+    }
+
+    private static OracleJsonSchemaLogger oracleLogger() {
+        return new OracleJsonSchemaLogger() {
+            @Override
+            public void info(String message) {
+                LOG.info(message);
+            }
+
+            @Override
+            public void warn(String message) {
+                LOG.warn(message);
+            }
+        };
     }
 }

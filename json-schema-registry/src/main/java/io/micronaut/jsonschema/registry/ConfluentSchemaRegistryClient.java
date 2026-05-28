@@ -37,6 +37,8 @@ import java.util.Optional;
  */
 final class ConfluentSchemaRegistryClient {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+    private static final int MAX_ATTEMPTS = 3;
+    private static final long RETRY_BACKOFF_MILLIS = 100;
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -65,10 +67,18 @@ final class ConfluentSchemaRegistryClient {
             return Optional.empty();
         }
         requireSuccess(response, "read latest schema for subject " + subject);
-        Map<?, ?> values = objectMapper.readValue(response.body(), Map.class);
+        Map<?, ?> values;
+        try {
+            values = objectMapper.readValue(response.body(), Map.class);
+        } catch (RuntimeException e) {
+            throw new UnreadableSchemaException("Schema Registry latest response is not readable JSON for subject " + subject, e);
+        }
+        if (values == null) {
+            throw new UnreadableSchemaException("Schema Registry latest response is not a JSON object for subject " + subject);
+        }
         Object schema = values.get("schema");
         if (!(schema instanceof String schemaText) || schemaText.isBlank()) {
-            throw new IOException("Schema Registry latest response does not contain schema text for subject " + subject);
+            throw new UnreadableSchemaException("Schema Registry latest response does not contain schema text for subject " + subject);
         }
         return Optional.of(schemaText);
     }
@@ -94,7 +104,26 @@ final class ConfluentSchemaRegistryClient {
     }
 
     private HttpResponse<String> send(HttpRequest request) throws IOException, InterruptedException {
-        return httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        IOException lastFailure = null;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                if (!shouldRetry(response.statusCode()) || attempt == MAX_ATTEMPTS) {
+                    return response;
+                }
+            } catch (IOException e) {
+                lastFailure = e;
+                if (attempt == MAX_ATTEMPTS) {
+                    throw e;
+                }
+            }
+            Thread.sleep(RETRY_BACKOFF_MILLIS * attempt);
+        }
+        throw lastFailure == null ? new IOException("Schema Registry request failed") : lastFailure;
+    }
+
+    private static boolean shouldRetry(int statusCode) {
+        return statusCode == 429 || statusCode >= 500;
     }
 
     private URI uri(String path) {
@@ -116,5 +145,15 @@ final class ConfluentSchemaRegistryClient {
             return "http://localhost:8081";
         }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+    }
+
+    static final class UnreadableSchemaException extends IOException {
+        UnreadableSchemaException(String message) {
+            super(message);
+        }
+
+        UnreadableSchemaException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

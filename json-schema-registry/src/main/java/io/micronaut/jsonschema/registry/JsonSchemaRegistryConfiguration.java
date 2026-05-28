@@ -39,6 +39,7 @@ public final class JsonSchemaRegistryConfiguration {
      * Configuration prefix.
      */
     public static final String PREFIX = "json-schema.registry";
+    private static final String GENERATOR_DOMAIN_PROVIDER = "io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider";
 
     private boolean enabled;
     private JsonSchemaRegistryAuthority authority = JsonSchemaRegistryAuthority.APPLICATION;
@@ -192,15 +193,49 @@ public final class JsonSchemaRegistryConfiguration {
     List<ProviderConfiguration> resolveOracleAuthorityProviders() {
         List<ProviderConfiguration> configured = oracle.getAuthority().getProviders();
         if (!configured.isEmpty()) {
-            return configured;
+            return configured.stream()
+                .map(this::applyBuiltInDomainSelection)
+                .toList();
         }
         ProviderConfiguration provider = new ProviderConfiguration();
         provider.setName("domains");
         provider.setProviderClassName(OracleDomainDiscoveryProvider.class.getName());
         if (!oracle.getDomains().isEmpty()) {
             provider.setOptions(Map.of("include", String.join(",", oracle.getDomains())));
+        } else if (!naming.getDomainPrefix().isBlank()) {
+            provider.setOptions(Map.of("prefix", naming.getDomainPrefix()));
         }
         return List.of(provider);
+    }
+
+    private ProviderConfiguration applyBuiltInDomainSelection(ProviderConfiguration provider) {
+        if (!isBuiltInDomainProvider(provider)) {
+            return provider;
+        }
+        if (oracle.getDomains().isEmpty()
+            && (naming.getDomainPrefix().isBlank() || provider.getOptions().containsKey("include"))) {
+            return provider;
+        }
+        ProviderConfiguration copy = new ProviderConfiguration();
+        copy.setName(provider.getName());
+        copy.setProviderClassName(provider.getProviderClassName());
+        copy.setOwner(provider.getOwner());
+        Map<String, String> options = new LinkedHashMap<>(provider.getOptions());
+        if (oracle.getDomains().isEmpty()) {
+            options.putIfAbsent("prefix", naming.getDomainPrefix());
+        } else {
+            options.put("include", String.join(",", oracle.getDomains()));
+            options.remove("prefix");
+        }
+        copy.setOptions(options);
+        return copy;
+    }
+
+    private boolean isBuiltInDomainProvider(ProviderConfiguration provider) {
+        String providerClassName = provider.getProviderClassName();
+        return providerClassName == null
+            || OracleDomainDiscoveryProvider.class.getName().equals(providerClassName)
+            || GENERATOR_DOMAIN_PROVIDER.equals(providerClassName);
     }
 
     List<ProviderConfiguration> resolveOracleMaterializers() {

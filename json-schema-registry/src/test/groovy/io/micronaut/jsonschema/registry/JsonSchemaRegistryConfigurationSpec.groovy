@@ -23,6 +23,9 @@ import io.micronaut.inject.qualifiers.Qualifiers
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySkipped
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryStep
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger
 import io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
 import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
@@ -45,6 +48,7 @@ import java.sql.Connection
 import java.sql.SQLException
 import java.sql.SQLFeatureNotSupportedException
 import java.time.Duration
+import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -100,6 +104,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
 
         expect:
         configuration.resolveOracleAuthorityProviders()[0].providerClassName == OracleDomainDiscoveryProvider.name
+        configuration.resolveOracleAuthorityProviders()[0].options.prefix == "APP_"
         configuration.resolveOracleMaterializers()[0].providerClassName == OracleDomainMaterializer.name
     }
 
@@ -114,6 +119,69 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         then:
         provider.providerClassName == OracleDomainDiscoveryProvider.name
         provider.options.include == "APP_COM_ACME_ORDER,APP_COM_ACME_INVOICE"
+        !provider.options.containsKey("prefix")
+    }
+
+    void "configured Oracle domains narrow explicitly configured built-in provider only"() {
+        given:
+        JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration()
+        configuration.oracle.domains = ["APP_COM_ACME_ORDER"]
+        JsonSchemaRegistryConfiguration.ProviderConfiguration domainProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
+                name: "domains",
+                providerClassName: OracleDomainDiscoveryProvider.name,
+                options: [exclude: "APP_OLD"]
+        )
+        JsonSchemaRegistryConfiguration.ProviderConfiguration customProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
+                name: "duality-views",
+                providerClassName: "example.oracle.OrderDualityViewDiscoveryProvider",
+                options: [include: "ORDER_DV"]
+        )
+        configuration.oracle.authority.providers = [domainProvider, customProvider]
+
+        when:
+        List<JsonSchemaRegistryConfiguration.ProviderConfiguration> providers = configuration.resolveOracleAuthorityProviders()
+
+        then:
+        providers[0].options.include == "APP_COM_ACME_ORDER"
+        providers[0].options.exclude == "APP_OLD"
+        providers[1].options == [include: "ORDER_DV"]
+    }
+
+    void "built-in domain authority discovery is constrained by naming prefix"() {
+        given:
+        JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration()
+        JsonSchemaRegistryConfiguration.ProviderConfiguration domainProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
+                name: "domains",
+                providerClassName: OracleDomainDiscoveryProvider.name
+        )
+        JsonSchemaRegistryConfiguration.ProviderConfiguration customProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
+                name: "duality-views",
+                providerClassName: "example.oracle.OrderDualityViewDiscoveryProvider"
+        )
+        configuration.oracle.authority.providers = [domainProvider, customProvider]
+        configuration.naming.domainPrefix = "ORD_"
+
+        when:
+        List<JsonSchemaRegistryConfiguration.ProviderConfiguration> providers = configuration.resolveOracleAuthorityProviders()
+
+        then:
+        providers[0].options.prefix == "ORD_"
+        providers[1].options.isEmpty()
+    }
+
+    void "explicit built-in domain include is not additionally narrowed by naming prefix"() {
+        given:
+        JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration()
+        JsonSchemaRegistryConfiguration.ProviderConfiguration domainProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
+                name: "domains",
+                providerClassName: OracleDomainDiscoveryProvider.name,
+                options: [include: "CUSTOM_DOMAIN"]
+        )
+        configuration.oracle.authority.providers = [domainProvider]
+        configuration.naming.domainPrefix = "APP_"
+
+        expect:
+        configuration.resolveOracleAuthorityProviders()[0].options == [include: "CUSTOM_DOMAIN"]
     }
 
     void "configured Oracle extension points replace built-in defaults"() {
@@ -144,6 +212,79 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                     .resolve(BeanDiscoveryProvider.name, getClass().classLoader)
                     .class == BeanDiscoveryProvider
         }
+    }
+
+    void "Oracle authority skipped schema is reported as unreadable authority"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                   : "skipped-authority-provider",
+                "json-schema.registry.enabled"                                : "true",
+                "json-schema.registry.authority"                              : "oracle",
+                "json-schema.registry.oracle.enabled"                         : "true",
+                "json-schema.registry.oracle.authority.providers[0].name"     : "domains",
+                "json-schema.registry.oracle.authority.providers[0].providerClassName": SkippedAuthorityProvider.name,
+                "json-schema.registry.sr.enabled"                             : "false"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "oracle.authority"
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.UNREADABLE_AUTHORITY
+        outcomes[0].logicalSchema().oracleArtifactName() == "APP_ORDER"
+        outcomes[0].message() == "bad schema"
+    }
+
+    void "Oracle domain authority derives subject from reversible domain name"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                   : "reversible-domain-provider",
+                "json-schema.registry.enabled"                                : "true",
+                "json-schema.registry.authority"                              : "oracle",
+                "json-schema.registry.oracle.enabled"                         : "true",
+                "json-schema.registry.oracle.authority.providers[0].name"     : "domains",
+                "json-schema.registry.oracle.authority.providers[0].providerClassName": ReversibleDomainProvider.name,
+                "json-schema.registry.naming.domain.prefix"                   : "APP_",
+                "json-schema.registry.sr.enabled"                             : "false"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "oracle.authority"
+        outcomes[0].logicalSchema().logicalFqcn() == "COM.ACME.ORDER"
+        outcomes[0].logicalSchema().subject() == "COM.ACME.ORDER"
+        outcomes[0].logicalSchema().oracleArtifactName() == "APP_COM_ACME_ORDER"
+    }
+
+    void "custom Oracle authority provider can supply logical identity through options"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                   : "custom-identity-provider",
+                "json-schema.registry.enabled"                                : "true",
+                "json-schema.registry.authority"                              : "oracle",
+                "json-schema.registry.oracle.enabled"                         : "true",
+                "json-schema.registry.oracle.authority.providers[0].name"     : "duality-views",
+                "json-schema.registry.oracle.authority.providers[0].providerClassName": CustomIdentityProvider.name,
+                "json-schema.registry.oracle.authority.providers[0].options.logicalFqcn": "com.acme.OrderView",
+                "json-schema.registry.oracle.authority.providers[0].options.subject": "orders-value",
+                "json-schema.registry.oracle.authority.providers[0].options.viewName": "ORDER_DV",
+                "json-schema.registry.sr.enabled"                             : "false"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "oracle.authority"
+        outcomes[0].logicalSchema().logicalFqcn() == "com.acme.OrderView"
+        outcomes[0].logicalSchema().subject() == "orders-value"
+        outcomes[0].logicalSchema().oracleArtifactName() == "ORDER_DV"
     }
 
     void "resolves Oracle materializer from Micronaut bean"() {
@@ -192,6 +333,97 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         then:
         outcomes.size() == 1
         outcomes[0].message() == null
+    }
+
+    void "Oracle materializer exception records one failed outcome and continues"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                     : "continuing-materializers",
+                "json-schema.registry.oracle.enabled"                           : "true",
+                "json-schema.registry.oracle.materializers[0].name"             : "throwing",
+                "json-schema.registry.oracle.materializers[0].providerClassName" : ThrowingMaterializer.name,
+                "json-schema.registry.oracle.materializers[1].name"             : "second",
+                "json-schema.registry.oracle.materializers[1].providerClassName" : SecondMaterializer.name
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
+                    new JsonSchemaCandidate(new LogicalSchema("com.acme.Order", "com.acme.Order", null), '{"type":"object"}', "test")
+            ])
+        }
+
+        then:
+        outcomes.size() == 2
+        outcomes[0].failure()
+        outcomes[0].target() == "oracle.throwing"
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.FAILED
+        outcomes[0].message() == "boom"
+        !outcomes[1].failure()
+        outcomes[1].target() == "oracle.second"
+        outcomes[1].status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
+    }
+
+    void "Oracle materializer projection outcome short circuits reconcile"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                     : "projection-materializer",
+                "json-schema.registry.oracle.enabled"                           : "true",
+                "json-schema.registry.oracle.materializers[0].name"             : "projection",
+                "json-schema.registry.oracle.materializers[0].providerClassName" : ProjectionMaterializer.name
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
+                    new JsonSchemaCandidate(new LogicalSchema("com.acme.Order", "com.acme.Order", null), '{"type":"object"}', "test")
+            ])
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].failure()
+        outcomes[0].target() == "oracle.projection"
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY
+        outcomes[0].message() == "unsupported projection"
+    }
+
+    void "Oracle projection incompatibility outcome is always a failure"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                     : "non-failing-projection-materializer",
+                "json-schema.registry.oracle.enabled"                           : "true",
+                "json-schema.registry.oracle.materializers[0].name"             : "projection",
+                "json-schema.registry.oracle.materializers[0].providerClassName" : NonFailingProjectionMaterializer.name
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
+                    new JsonSchemaCandidate(new LogicalSchema("com.acme.Order", "com.acme.Order", null), '{"type":"object"}', "test")
+            ])
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].failure()
+        outcomes[0].target() == "oracle.projection"
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY
+    }
+
+    void "built-in domain materializer requires mapping when SR subject prefix is not reversible"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.oracle.enabled"                 : "true",
+                "json-schema.registry.naming.subject.prefix"          : "com.acme.",
+                "json-schema.registry.oracle.materializers[0].name"   : "domains",
+                "json-schema.registry.oracle.materializers[0].providerClassName": OracleDomainMaterializer.name
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
+                    new JsonSchemaCandidate(new LogicalSchema("custom.order.subject", "custom.order.subject", null), '{"type":"object"}', "test")
+            ])
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].failure()
+        outcomes[0].target() == "oracle.domain"
+        outcomes[0].message().contains("missing_mapping")
     }
 
     void "built-in domain naming applies Oracle identifier truncation"() {
@@ -533,6 +765,65 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
     }
 
     @Singleton
+    @Requires(property = "spec.name", value = "skipped-authority-provider")
+    static final class SkippedAuthorityProvider implements OracleSchemaDiscoveryProvider {
+        @Override
+        OracleDiscoveryResult discover(Connection connection,
+                                       OracleSourceSpec source,
+                                       boolean skipOnError,
+                                       OracleJsonSchemaLogger logger) {
+            new OracleDiscoveryResult([], [], [
+                    new OracleDiscoverySkipped(
+                            OracleDiscoveryScope.DOMAIN,
+                            "APP_ORDER",
+                            OracleDiscoveryStep.SCHEMA_RETRIEVAL,
+                            "MALFORMED_JSON",
+                            "bad schema",
+                            null
+                    )
+            ])
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "reversible-domain-provider")
+    static final class ReversibleDomainProvider implements OracleSchemaDiscoveryProvider {
+        @Override
+        OracleDiscoveryResult discover(Connection connection,
+                                       OracleSourceSpec source,
+                                       boolean skipOnError,
+                                       OracleJsonSchemaLogger logger) {
+            new OracleDiscoveryResult([
+                    new io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema(
+                            OracleDiscoveryScope.DOMAIN,
+                            "APP_COM_ACME_ORDER",
+                            '{"type":"object"}',
+                            "test"
+                    )
+            ], [], [])
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "custom-identity-provider")
+    static final class CustomIdentityProvider implements OracleSchemaDiscoveryProvider {
+        @Override
+        OracleDiscoveryResult discover(Connection connection,
+                                       OracleSourceSpec source,
+                                       boolean skipOnError,
+                                       OracleJsonSchemaLogger logger) {
+            new OracleDiscoveryResult([
+                    new io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema(
+                            OracleDiscoveryScope.DUALITY_VIEW,
+                            "IGNORED_DV",
+                            '{"type":"object"}',
+                            "test"
+                    )
+            ], [], [])
+        }
+    }
+
+    @Singleton
     @Requires(property = "spec.name", value = "bean-materializer")
     static final class BeanMaterializer implements OracleSchemaMaterializer {
         @Override
@@ -543,6 +834,67 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                     JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                     request.artifactName()
             )
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "continuing-materializers")
+    static final class ThrowingMaterializer implements OracleSchemaMaterializer {
+        @Override
+        JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) {
+            throw new IllegalStateException("boom")
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "continuing-materializers")
+    static final class SecondMaterializer implements OracleSchemaMaterializer {
+        @Override
+        JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) {
+            JsonSchemaRegistryOutcome.ok(
+                    request.candidate().logicalSchema(),
+                    "oracle.second",
+                    JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                    "ok"
+            )
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "projection-materializer")
+    static final class ProjectionMaterializer implements OracleSchemaMaterializer {
+        @Override
+        Optional<JsonSchemaRegistryOutcome> projectionCompatibility(OracleMaterializationRequest request) {
+            Optional.of(JsonSchemaRegistryOutcome.failure(
+                    request.candidate().logicalSchema(),
+                    "oracle.projection",
+                    JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY,
+                    "unsupported projection"
+            ))
+        }
+
+        @Override
+        JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) {
+            throw new IllegalStateException("reconcile should not be called")
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "non-failing-projection-materializer")
+    static final class NonFailingProjectionMaterializer implements OracleSchemaMaterializer {
+        @Override
+        Optional<JsonSchemaRegistryOutcome> projectionCompatibility(OracleMaterializationRequest request) {
+            Optional.of(JsonSchemaRegistryOutcome.ok(
+                    request.candidate().logicalSchema(),
+                    "oracle.projection",
+                    JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY,
+                    "unsupported projection"
+            ))
+        }
+
+        @Override
+        JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) {
+            throw new IllegalStateException("reconcile should not be called")
         }
     }
 

@@ -42,6 +42,7 @@ public final class OracleDomainDiscoveryProvider implements OracleSchemaDiscover
         MetadataQueryScope scope = OracleDiscoverySupport.resolveScope(connection, source.owner(), "DOMAINS", OracleDiscoveryScope.DOMAIN, warnings);
         Set<String> includes = OracleDiscoverySupport.includeFilter(source);
         Set<String> excludes = OracleDiscoverySupport.excludeFilter(source);
+        Set<String> prefixes = OracleDiscoverySupport.prefixFilter(source);
         List<OracleDiscoveredSchema> schemas = new ArrayList<>();
         String sql = scope.currentUserScope()
             ? "SELECT name FROM " + scope.dictionaryViewName()
@@ -53,11 +54,11 @@ public final class OracleDomainDiscoveryProvider implements OracleSchemaDiscover
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     String domainName = rs.getString(1);
-                    if (!OracleDiscoverySupport.matches(domainName, includes, excludes)) {
+                    if (!OracleDiscoverySupport.matches(domainName, includes, excludes, prefixes)) {
                         continue;
                     }
                     try {
-                        DiscoveryPayload payload = OracleDiscoverySupport.readDomainPayload(connection, scope, domainName, source.owner(), warnings);
+                        DiscoveryPayload payload = OracleDiscoverySupport.readDomainPayload(connection, scope, domainName, source.owner(), warnings, logger);
                         schemas.add(new OracleDiscoveredSchema(OracleDiscoveryScope.DOMAIN, domainName, payload.jsonSchema(), payload.source()));
                     } catch (Exception e) {
                         if (skipOnError) {

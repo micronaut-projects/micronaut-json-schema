@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 @Internal
 final class OracleDiscoverySupport {
 
-    private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)VALIDATE\\s+USING\\s+'((?:''|[^'])*)'");
+    private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)\\bVALIDATE\\s+USING\\b");
 
     private OracleDiscoverySupport() {
     }
@@ -64,6 +64,16 @@ final class OracleDiscoverySupport {
     }
 
     /**
+     * Resolve the built-in prefix filter from a source specification.
+     *
+     * @param source The configured source
+     * @return The normalized prefix filter entries
+     */
+    static Set<String> prefixFilter(OracleSourceSpec source) {
+        return toFilter(parseListOption(source.option("prefix")));
+    }
+
+    /**
      * Match a discovered Oracle object name against built-in include and exclude filters.
      *
      * @param name The discovered object name
@@ -72,7 +82,23 @@ final class OracleDiscoverySupport {
      * @return {@code true} if the name should be included
      */
     static boolean matches(String name, Set<String> includes, Set<String> excludes) {
+        return matches(name, includes, excludes, Set.of());
+    }
+
+    /**
+     * Match a discovered Oracle object name against built-in include, exclude, and prefix filters.
+     *
+     * @param name The discovered object name
+     * @param includes The configured include filters
+     * @param excludes The configured exclude filters
+     * @param prefixes The configured prefix filters
+     * @return {@code true} if the name should be included
+     */
+    static boolean matches(String name, Set<String> includes, Set<String> excludes, Set<String> prefixes) {
         if (!matchesInclude(name, includes)) {
+            return false;
+        }
+        if (!matchesPrefix(name, prefixes)) {
             return false;
         }
         return !matchesExclude(name, excludes);
@@ -123,24 +149,34 @@ final class OracleDiscoverySupport {
                                               MetadataQueryScope scope,
                                               String domainName,
                                               String owner,
-                                              List<OracleDiscoveryWarning> warnings) throws SQLException, IOException {
+                                              List<OracleDiscoveryWarning> warnings,
+                                              OracleJsonSchemaLogger logger) throws SQLException, IOException {
         try {
             String ddl = readDomainDdl(connection, domainName, scope.currentUserScope() ? null : owner);
             if (ddl != null) {
                 String json = extractJsonLiteral(ddl);
                 ensureValidJson(json);
+                logger.info("Oracle domain " + domainName + " schema extracted via get_ddl");
                 return new DiscoveryPayload(json, "DOMAIN_DDL");
             }
-        } catch (SQLException e) {
-            warnings.add(new OracleDiscoveryWarning(OracleDiscoveryScope.DOMAIN, domainName, OracleDiscoveryStep.SCHEMA_RETRIEVAL, "GET_DDL_FAILED", e.getMessage()));
+        } catch (SQLException | IOException e) {
+            String code = e instanceof SQLException ? "GET_DDL_FAILED" : "GET_DDL_EXTRACTION_FAILED";
+            warnings.add(new OracleDiscoveryWarning(OracleDiscoveryScope.DOMAIN, domainName, OracleDiscoveryStep.SCHEMA_RETRIEVAL, code, e.getMessage()));
+            logger.warn("Oracle domain " + domainName + " get_ddl extraction failed (" + failureKind(e) + "): " + e.getMessage());
         }
-        String searchCondition = readDomainConstraint(connection, scope, domainName, owner);
-        if (searchCondition == null || searchCondition.isBlank()) {
-            throw new IOException("Unable to obtain JSON schema for domain " + domainName);
+        try {
+            String searchCondition = readDomainConstraint(connection, scope, domainName, owner);
+            if (searchCondition == null || searchCondition.isBlank()) {
+                throw new IOException("Unable to obtain JSON schema for domain " + domainName);
+            }
+            String json = extractJsonLiteral(searchCondition);
+            ensureValidJson(json);
+            logger.info("Oracle domain " + domainName + " schema extracted via search_condition");
+            return new DiscoveryPayload(json, "DOMAIN_CONSTRAINTS");
+        } catch (SQLException | IOException e) {
+            logger.warn("Oracle domain " + domainName + " search_condition extraction failed (" + failureKind(e) + "): " + e.getMessage());
+            throw e;
         }
-        String json = extractJsonLiteral(searchCondition);
-        ensureValidJson(json);
-        return new DiscoveryPayload(json, "DOMAIN_CONSTRAINTS");
     }
 
     /**
@@ -206,6 +242,15 @@ final class OracleDiscoverySupport {
         return matchesConfiguredName(name, excludes);
     }
 
+    private static boolean matchesPrefix(String name, Set<String> prefixes) {
+        if (prefixes.isEmpty()) {
+            return true;
+        }
+        String uppercaseName = name.toUpperCase(Locale.ENGLISH);
+        return prefixes.stream()
+            .anyMatch(prefix -> name.startsWith(prefix) || uppercaseName.startsWith(prefix.toUpperCase(Locale.ENGLISH)));
+    }
+
     private static boolean matchesConfiguredName(String name, Set<String> filters) {
         String uppercaseName = name.toUpperCase(Locale.ENGLISH);
         return filters.stream().anyMatch(filter -> filter.equals(name) || filter.toUpperCase(Locale.ENGLISH).equals(uppercaseName));
@@ -260,7 +305,88 @@ final class OracleDiscoverySupport {
         if (!matcher.find()) {
             throw new IOException("Failed to extract JSON schema text from Oracle metadata.");
         }
-        return matcher.group(1).replace("''", "'");
+        return parseValidateUsingExpression(text, matcher.end());
+    }
+
+    private static String parseValidateUsingExpression(String text, int offset) throws IOException {
+        StringBuilder value = new StringBuilder();
+        int position = offset;
+        boolean found = false;
+        while (position < text.length()) {
+            position = skipWhitespace(text, position);
+            boolean clobWrapper = startsWithIgnoreCase(text, position, "to_clob");
+            if (clobWrapper) {
+                position = skipWhitespace(text, position + "to_clob".length());
+                if (position >= text.length() || text.charAt(position) != '(') {
+                    throw new IOException("Failed to parse to_clob JSON schema literal from Oracle metadata.");
+                }
+                position = skipWhitespace(text, position + 1);
+            }
+            if (position >= text.length() || text.charAt(position) != '\'') {
+                if (found) {
+                    break;
+                }
+                throw new IOException("Failed to extract JSON schema text from Oracle metadata.");
+            }
+            LiteralResult literal = parseSqlStringLiteral(text, position);
+            value.append(literal.value());
+            position = literal.end();
+            if (clobWrapper) {
+                position = skipWhitespace(text, position);
+                if (position >= text.length() || text.charAt(position) != ')') {
+                    throw new IOException("Failed to parse to_clob JSON schema literal from Oracle metadata.");
+                }
+                position++;
+            }
+            found = true;
+            position = skipWhitespace(text, position);
+            if (position + 1 >= text.length() || text.charAt(position) != '|' || text.charAt(position + 1) != '|') {
+                break;
+            }
+            position += 2;
+        }
+        if (!found) {
+            throw new IOException("Failed to extract JSON schema text from Oracle metadata.");
+        }
+        return value.toString();
+    }
+
+    private static LiteralResult parseSqlStringLiteral(String text, int offset) throws IOException {
+        StringBuilder value = new StringBuilder();
+        int position = offset + 1;
+        while (position < text.length()) {
+            char current = text.charAt(position);
+            if (current == '\'') {
+                if (position + 1 < text.length() && text.charAt(position + 1) == '\'') {
+                    value.append('\'');
+                    position += 2;
+                } else {
+                    return new LiteralResult(value.toString(), position + 1);
+                }
+            } else {
+                value.append(current);
+                position++;
+            }
+        }
+        throw new IOException("Unterminated JSON schema literal in Oracle metadata.");
+    }
+
+    private static int skipWhitespace(String text, int offset) {
+        int position = offset;
+        while (position < text.length() && Character.isWhitespace(text.charAt(position))) {
+            position++;
+        }
+        return position;
+    }
+
+    private static boolean startsWithIgnoreCase(String text, int offset, String prefix) {
+        return offset >= 0
+            && offset + prefix.length() <= text.length()
+            && text.regionMatches(true, offset, prefix, 0, prefix.length());
+    }
+
+    private static String failureKind(Exception exception) {
+        return exception instanceof SQLException ? "privilege-or-sql" : "parse-or-extraction";
     }
 
     /**
@@ -280,6 +406,9 @@ final class OracleDiscoverySupport {
      * @param source The retrieval source identifier
      */
     record DiscoveryPayload(String jsonSchema, String source) {
+    }
+
+    private record LiteralResult(String value, int end) {
     }
 
     private static final class JsonSchemaMapperFactoryHolder {
