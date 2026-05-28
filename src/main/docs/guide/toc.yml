@@ -28,5 +28,7 @@ generator:
   example: Example Output of Generation
 configurationValidator:
   title: Validating Configuration Against Schemas
+jsonSchemaRegistry:
+  title: Runtime Schema Registry Reconciliation
 repository: Repository
 releaseHistory: Release History

@@ -1,0 +1,156 @@
+[[jsonSchemaRegistry]]
+
+The Micronaut JSON Schema registry module reconciles JSON Schemas between an authority source and configured targets at runtime.
+
+In the current implementation:
+
+* `application` authority reads generated schemas from application classes annotated with `@JsonSchema`
+* `sr` authority reads the latest schema from Confluent Schema Registry subjects
+* `oracle` authority reads schemas from configured Oracle authority discovery providers
+
+Targets are then reconciled according to policy:
+
+* Schema Registry can register missing or changed subjects
+* Oracle materializers can create missing artifacts and report drift for existing ones
+
+=== Dependency
+
+dependency:micronaut-json-schema-registry[groupId="io.micronaut.jsonschema"]
+
+=== Enabling the registry
+
+The registry is disabled by default. Enable it with the `json-schema.registry.enabled` property:
+
+[configuration]
+----
+json-schema:
+  registry:
+    enabled: true
+    authority: application
+----
+
+When enabled, the registry runs once on startup through api:jsonschema.registry.JsonSchemaRegistryStartupListener[].
+
+The startup behavior depends on `json-schema.registry.fail-fast-strategy`:
+
+* `readiness_gate` keeps readiness `DOWN` after a failed reconciliation
+* `startup_abort` throws during startup when the startup run fails
+* `none` records the failure and continues
+
+=== Authority modes
+
+The registry supports three authority modes:
+
+* `application`: discover candidate schemas from application classes annotated with `@JsonSchema`
+* `sr`: read authority schemas from Confluent Schema Registry
+* `oracle`: read authority schemas from configured Oracle authority discovery providers
+
+Example using application authority with both Schema Registry and Oracle enabled:
+
+[configuration]
+----
+json-schema:
+  registry:
+    enabled: true
+    authority: application
+    sr:
+      enabled: true
+      url: http://localhost:8081
+    oracle:
+      enabled: true
+      datasource: default
+----
+
+=== Configuration
+
+All public configuration is under the `json-schema.registry` prefix:
+
+include::{includedir}configurationProperties/io.micronaut.jsonschema.registry.JsonSchemaRegistryConfiguration.adoc[]
+
+The built-in Oracle defaults are applied when Oracle integration is enabled and no explicit provider/materializer list is configured:
+
+* authority provider: `io.micronaut.jsonschema.registry.oracle.OracleDomainDiscoveryProvider`
+* materializer: `io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer`
+
+If `json-schema.registry.oracle.authority.providers` or `json-schema.registry.oracle.materializers` is configured, the configured list replaces the built-in default list for that role.
+
+=== Runtime API
+
+The module exposes a programmatic reconciliation API through api:jsonschema.registry.JsonSchemaRegistryService[]:
+
+[source,java]
+----
+@Singleton
+final class RegistryResyncJob {
+    private final JsonSchemaRegistryService registryService;
+
+    RegistryResyncJob(JsonSchemaRegistryService registryService) {
+        this.registryService = registryService;
+    }
+
+    void run() {
+        registryService.resync();
+    }
+}
+----
+
+Each run returns a list of api:jsonschema.registry.JsonSchemaRegistryOutcome[] entries.
+
+=== Readiness and metrics
+
+When `micronaut-management` is present, the module exposes a readiness indicator through api:jsonschema.registry.JsonSchemaRegistryReadinessIndicator[].
+
+When Micrometer is present, reconciliation outcomes and duration are recorded automatically.
+
+=== Oracle runtime extensions
+
+There are two separate Oracle extension models in this project:
+
+* generator/plugin discovery providers in `generator/oracle.adoc`, loaded through Micronaut `SoftServiceLoader`
+* registry runtime Oracle providers and materializers, resolved from the Micronaut application context
+
+For the registry runtime:
+
+* configured Oracle authority discovery providers are resolved as Micronaut beans matched by `providerClassName`
+* configured Oracle materializers are resolved as Micronaut beans matched by `providerClassName`
+* custom runtime extensions therefore must be visible to the application context, typically as `@Singleton` beans
+
+The runtime provider contract uses the shared api:jsonschema.generator.oracle.OracleSchemaDiscoveryProvider[] SPI. The runtime materializer contract uses api:jsonschema.registry.oracle.OracleSchemaMaterializer[].
+
+Example custom Oracle authority provider:
+
+[source,java]
+----
+@Singleton
+final class OrderDualityViewDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+    @Override
+    public OracleDiscoveryResult discover(Connection connection,
+                                          OracleSourceSpec source,
+                                          boolean skipOnError,
+                                          OracleJsonSchemaLogger logger) throws Exception {
+        // custom Oracle discovery
+    }
+}
+----
+
+and the matching registry configuration:
+
+[configuration]
+----
+json-schema:
+  registry:
+    enabled: true
+    authority: oracle
+    oracle:
+      enabled: true
+      authority:
+        providers:
+          - name: duality-views
+            providerClassName: example.oracle.OrderDualityViewDiscoveryProvider
+            options:
+              logicalFqcn: com.acme.Order
+              subject: com.acme.Order
+              viewName: ORDER_DV
+----
+
+Unlike generator plugin providers, registry runtime providers and materializers do not need `META-INF/services` entries when they are used through the Micronaut registry module.
