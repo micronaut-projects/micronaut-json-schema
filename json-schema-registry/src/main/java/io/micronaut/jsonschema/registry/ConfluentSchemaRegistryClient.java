@@ -70,7 +70,7 @@ final class ConfluentSchemaRegistryClient {
         Map<?, ?> values;
         try {
             values = objectMapper.readValue(response.body(), Map.class);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             throw new UnreadableSchemaException("Schema Registry latest response is not readable JSON for subject " + subject, e);
         }
         if (values == null) {
@@ -81,6 +81,15 @@ final class ConfluentSchemaRegistryClient {
             throw new UnreadableSchemaException("Schema Registry latest response does not contain schema text for subject " + subject);
         }
         return Optional.of(schemaText);
+    }
+
+    String mode(String subject) throws IOException, InterruptedException {
+        HttpResponse<String> response = send(get("/mode/" + encodePath(subject)));
+        if (response.statusCode() == 404) {
+            response = send(get("/mode"));
+        }
+        requireSuccess(response, "read mode for subject " + subject);
+        return parseMode(response.body(), subject);
     }
 
     void register(String subject, String schemaText) throws IOException, InterruptedException {
@@ -134,6 +143,23 @@ final class ConfluentSchemaRegistryClient {
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
             throw new IOException("Schema Registry failed to " + action + ": HTTP " + response.statusCode() + " " + response.body());
         }
+    }
+
+    private String parseMode(String body, String subject) throws IOException {
+        try {
+            Object parsed = objectMapper.readValue(body, Object.class);
+            if (parsed instanceof Map<?, ?> values) {
+                Object mode = values.get("mode");
+                if (mode instanceof String modeText && !modeText.isBlank()) {
+                    return modeText;
+                }
+            } else if (parsed instanceof String modeText && !modeText.isBlank()) {
+                return modeText;
+            }
+        } catch (Exception e) {
+            throw new IOException("Schema Registry mode response is not readable JSON for subject " + subject, e);
+        }
+        throw new IOException("Schema Registry mode response does not contain mode for subject " + subject);
     }
 
     private static String encodePath(String value) {

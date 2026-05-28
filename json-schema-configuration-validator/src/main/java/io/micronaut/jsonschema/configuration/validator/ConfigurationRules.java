@@ -16,10 +16,9 @@
 package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.io.service.SoftServiceLoader;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.ServiceLoader;
 
 @Internal
 final class ConfigurationRules {
@@ -27,13 +26,6 @@ final class ConfigurationRules {
     }
 
     static List<ConfigurationRule> load(ClassLoader classLoader) {
-        ServiceLoader<ConfigurationRule> loader = ServiceLoader.load(ConfigurationRule.class, classLoader);
-        List<ConfigurationRule> rules = new ArrayList<>();
-        for (ConfigurationRule rule : loader) {
-            if (rule != null) {
-                rules.add(rule);
-            }
-        }
-        return List.copyOf(rules);
+        return SoftServiceLoader.load(ConfigurationRule.class, classLoader).collectAll();
     }
 }

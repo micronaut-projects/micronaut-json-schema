@@ -123,13 +123,8 @@ class ValueCoercerTest {
     }
 
     @Test
-    void splitCommaSeparatedTrimsAndDropsEmptyValues() throws Exception {
-        var m = ValueCoercer.class.getDeclaredMethod("splitCommaSeparated", String.class);
-        m.setAccessible(true);
-
-        @SuppressWarnings("unchecked")
-        List<String> result = (List<String>) m.invoke(null, "a, b,,c");
-
+    void splitCommaSeparatedTrimsAndDropsEmptyValues() {
+        List<String> result = ValueCoercer.splitCommaSeparated("a, b,,c");
         assertEquals(List.of("a", "b", "c"), result);
     }
 

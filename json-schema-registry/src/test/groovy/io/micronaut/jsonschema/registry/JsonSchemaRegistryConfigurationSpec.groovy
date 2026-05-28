@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.registry
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.event.StartupEvent
 import io.micronaut.health.HealthStatus
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micrometer.core.instrument.MeterRegistry
@@ -209,8 +210,17 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         expect:
         withContext(["spec.name": "bean-discovery-provider"]) { ApplicationContext context ->
             context.getBean(OracleSchemaDiscoveryProviderResolver)
-                    .resolve(BeanDiscoveryProvider.name, getClass().classLoader)
+                    .resolve(BeanDiscoveryProvider.name)
                     .class == BeanDiscoveryProvider
+        }
+    }
+
+    void "resolves built-in Oracle discovery provider from Micronaut bean"() {
+        expect:
+        withContext([:]) { ApplicationContext context ->
+            context.getBean(OracleSchemaDiscoveryProviderResolver)
+                    .resolve(OracleDomainDiscoveryProvider.name)
+                    .class == OracleDomainDiscoveryProvider
         }
     }
 
@@ -291,7 +301,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         expect:
         withContext(["spec.name": "bean-materializer"]) { ApplicationContext context ->
             context.getBean(OracleSchemaMaterializerResolver)
-                    .resolve(BeanMaterializer.name, getClass().classLoader)
+                    .resolve(BeanMaterializer.name)
                     .class == BeanMaterializer
         }
     }
@@ -426,6 +436,29 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         outcomes[0].message().contains("missing_mapping")
     }
 
+    void "custom Oracle materializer requires explicit pairing when SR logical schema identity is not derived"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                   : "bean-materializer",
+                "json-schema.registry.authority"                              : "sr",
+                "json-schema.registry.oracle.enabled"                         : "true",
+                "json-schema.registry.oracle.materializers[0].name"           : "duality-views",
+                "json-schema.registry.oracle.materializers[0].providerClassName": BeanMaterializer.name,
+                "json-schema.registry.oracle.materializers[0].options.viewName": "ORDER_DV"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
+                    new JsonSchemaCandidate(new LogicalSchema(null, "custom.order.subject", null), '{"type":"object"}', "test")
+            ])
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].failure()
+        outcomes[0].target() == "oracle.duality-views"
+        outcomes[0].message().contains("missing_mapping")
+    }
+
     void "built-in domain naming applies Oracle identifier truncation"() {
         given:
         String logicalName = "com.acme." + "OrderCreated".repeat(20)
@@ -511,7 +544,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         }
 
         then:
-        initial == HealthStatus.DOWN
+        initial == HealthStatus.UP
         failed == HealthStatus.DOWN
         strategy == JsonSchemaRegistryFailFastStrategy.READINESS_GATE
         recovered == HealthStatus.UP
@@ -565,9 +598,14 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                         "failure"
                 )]
         )
+        ApplicationContext startupContext = ApplicationContext.run()
 
         when:
-        listener.onApplicationEvent(null)
+        try {
+            listener.onApplicationEvent(new StartupEvent(startupContext))
+        } finally {
+            startupContext.close()
+        }
 
         then:
         JsonSchemaRegistryException exception = thrown()

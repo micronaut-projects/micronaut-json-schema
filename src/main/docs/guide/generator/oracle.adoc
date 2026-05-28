@@ -90,7 +90,7 @@ oracleJsonSchema {
 }
 ----
 
-Custom providers are selected by `providerClassName`, but they must also be registered through Java `ServiceLoader`:
+Custom providers are selected by `providerClassName`, but they must also be registered through Micronaut `SoftServiceLoader` using:
 
 [source]
 ----
@@ -104,7 +104,7 @@ For example:
 example.oracle.LegacySchemaDiscoveryProvider
 ----
 
-`providerClassName` must exactly match the implementation class name listed in that service file. The provider jar must be present on `oracleJsonSchemaProviders`, and the implementation must expose a public no-argument constructor. This keeps custom providers compatible with GraalVM native image builds without requiring reflective construction.
+`providerClassName` must exactly match the implementation class name listed in that service file. The provider jar must be present on `oracleJsonSchemaProviders`, and the implementation must expose a public no-argument constructor.
 
 The built-in providers currently support these source options:
 

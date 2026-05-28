@@ -24,14 +24,14 @@ import jakarta.inject.Singleton;
 import java.sql.Connection;
 
 /**
- * Registry package alias for the built-in generator Oracle domain discovery provider.
+ * Micronaut bean wrapper for the built-in Oracle duality-view discovery provider.
  *
  * @since 2.0.0
  */
 @Singleton
-public final class OracleDomainDiscoveryProvider implements OracleSchemaDiscoveryProvider {
-    private final io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider delegate =
-        new io.micronaut.jsonschema.generator.oracle.OracleDomainDiscoveryProvider();
+public final class OracleDualityJsonViewDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+    private final io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider delegate =
+        new io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider();
 
     @Override
     public OracleDiscoveryResult discover(Connection connection,

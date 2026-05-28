@@ -19,8 +19,8 @@ import java.sql.Connection;
 
 /**
  * SPI for retrieving JSON Schema documents from Oracle metadata.
- * Implementations must be registered through {@link java.util.ServiceLoader}
- * in {@code META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider}.
+ * Implementations are discovered via Micronaut {@link io.micronaut.core.io.service.SoftServiceLoader}
+ * using {@code META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider}.
  *
  * @since 2.0.0
  */

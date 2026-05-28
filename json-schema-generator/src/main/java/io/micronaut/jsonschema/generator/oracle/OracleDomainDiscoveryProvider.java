@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.generator.oracle;
 
+import io.micronaut.core.annotation.Introspected;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySupport.DiscoveryPayload;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySupport.MetadataQueryScope;
 
@@ -30,6 +31,7 @@ import java.util.Set;
  *
  * @since 2.0.0
  */
+@Introspected
 public final class OracleDomainDiscoveryProvider implements OracleSchemaDiscoveryProvider {
 
     @Override

@@ -16,8 +16,8 @@
 package io.micronaut.jsonschema.registry;
 
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.context.event.StartupEvent;
 import io.micronaut.context.event.ApplicationEventListener;
-import io.micronaut.runtime.server.event.ServerStartupEvent;
 import jakarta.inject.Singleton;
 
 import java.util.List;
@@ -29,7 +29,7 @@ import java.util.List;
  */
 @Singleton
 @Requires(property = JsonSchemaRegistryConfiguration.PREFIX + ".enabled", value = "true")
-public final class JsonSchemaRegistryStartupListener implements ApplicationEventListener<ServerStartupEvent> {
+public final class JsonSchemaRegistryStartupListener implements ApplicationEventListener<StartupEvent> {
     private final JsonSchemaRegistryConfiguration configuration;
     private final JsonSchemaRegistryService service;
 
@@ -44,7 +44,7 @@ public final class JsonSchemaRegistryStartupListener implements ApplicationEvent
     }
 
     @Override
-    public void onApplicationEvent(ServerStartupEvent event) {
+    public void onApplicationEvent(StartupEvent event) {
         List<JsonSchemaRegistryOutcome> outcomes = service.resync();
         if (configuration.getFailFastStrategy() == JsonSchemaRegistryFailFastStrategy.STARTUP_ABORT
             && outcomes.stream().anyMatch(JsonSchemaRegistryOutcome::failure)) {

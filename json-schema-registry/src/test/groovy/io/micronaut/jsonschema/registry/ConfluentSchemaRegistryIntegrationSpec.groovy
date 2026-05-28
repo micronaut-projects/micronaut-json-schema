@@ -77,7 +77,7 @@ final class ConfluentSchemaRegistryIntegrationSpec extends Specification {
                 "json-schema.registry.sr.url"         : schemaRegistryUrl(),
                 "json-schema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
-            context.getBean(JsonSchemaRegistryService).resync()
+            context.getBean(JsonSchemaRegistryState).snapshot().outcomes()
         }
 
         then:

@@ -21,7 +21,9 @@ import java.util.Set;
  * Service Provider Interface (SPI) that allows modules to extend configuration validation with
  * custom logic that goes beyond JSON Schema keywords.
  * <p>
- * Implementations are discovered via {@link java.util.ServiceLoader}.
+ * Implementations are discovered via Micronaut {@link io.micronaut.core.io.service.SoftServiceLoader}
+ * from the validator classloader using
+ * {@code META-INF/services/io.micronaut.jsonschema.configuration.validator.ConfigurationRule}.
  */
 public interface ConfigurationRule {
 

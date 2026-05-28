@@ -164,13 +164,13 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
             return discoveryErrors;
         }
 
-        Map<String, List<String>> disabledByBeanName = disabledReasonsByBeanName(resolveDisabledBeans(beanContext));
+        List<DisabledCandidate> disabledCandidates = disabledCandidates(resolveDisabledBeans(beanContext));
         List<BeanDefinition<Object>> roots = validationRoots(definitions);
 
         Set<DependencyInjectionError> errors = new LinkedHashSet<>();
         errors.addAll(discoveryErrors);
         Set<String> dedupe = new LinkedHashSet<>();
-        TraversalState traversalState = new TraversalState(beanContext, definitions, disabledByBeanName, errors, dedupe);
+        TraversalState traversalState = new TraversalState(beanContext, definitions, disabledCandidates, errors, dedupe);
         for (BeanDefinition<Object> root : roots) {
             traverse(traversalState, root, root, new LinkedHashSet<>(), new ArrayList<>());
         }
@@ -356,12 +356,11 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         return STARTUP_EVENT.equals(eventType) || SERVER_STARTUP_EVENT.equals(eventType);
     }
 
-    private static Map<String, List<String>> disabledReasonsByBeanName(Collection<DisabledBean<?>> disabledBeans) {
-        Map<String, List<String>> map = new LinkedHashMap<>();
-        for (DisabledBean<?> disabledBean : disabledBeans) {
-            map.put(disabledBean.getName(), disabledBean.reasons());
-        }
-        return map;
+    private static List<DisabledCandidate> disabledCandidates(Collection<DisabledBean<?>> disabledBeans) {
+        return disabledBeans.stream()
+            .map(disabledBean -> new DisabledCandidate(disabledBean.getName(), disabledBean.getBeanType(), disabledBean.reasons()))
+            .sorted(Comparator.comparing(DisabledCandidate::name))
+            .toList();
     }
 
     private void traverse(
@@ -422,7 +421,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
                 path,
                 state.errors(),
                 state.dedupe(),
-                state.disabledByBeanName()
+                state.disabledCandidates()
             );
             return Optional.empty();
         }
@@ -441,13 +440,13 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
                 path,
                 state.errors(),
                 state.dedupe(),
-                state.disabledByBeanName()
+                state.disabledCandidates()
             );
             return Optional.empty();
         }
         if (target.isEmpty()) {
-            String message = missingBeanMessage(state.beanContext(), state.definitions(), argument, requirement, state.disabledByBeanName());
-            addError(root, argument, requirement, message, path, state.errors(), state.dedupe(), state.disabledByBeanName());
+            String message = missingBeanMessage(state.beanContext(), state.definitions(), argument, requirement, state.disabledCandidates());
+            addError(root, argument, requirement, message, path, state.errors(), state.dedupe(), state.disabledCandidates());
             return Optional.empty();
         }
         BeanDefinition<?> targetDefinition = target.get();
@@ -846,16 +845,16 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         Collection<BeanDefinition<Object>> definitions,
         Argument<?> argument,
         DependencyRequirement requirement,
-        Map<String, List<String>> disabledByBeanName
+        List<DisabledCandidate> disabledCandidates
     ) {
         String message = "No bean of type [" + argument.getType().getName() + "] exists for " + requirement.injectionPoint();
         Optional<String> configurationKey = missingEachPropertyConfigurationKey(definitions, argument);
         if (configurationKey.isPresent() && !containsProperty(beanContext, configurationKey.get())) {
             return message + ". Bean may be non-creatable because configuration property [" + configurationKey.get() + "] is missing";
         }
-        List<DisabledCandidate> disabledCandidates = matchingDisabledCandidates(argument, disabledByBeanName);
-        if (!disabledCandidates.isEmpty()) {
-            String candidates = disabledCandidates.stream()
+        List<DisabledCandidate> matchingDisabledCandidates = matchingDisabledCandidates(argument, disabledCandidates);
+        if (!matchingDisabledCandidates.isEmpty()) {
+            String candidates = matchingDisabledCandidates.stream()
                 .map(DefaultDependencyInjectionValidator::formatDisabledCandidate)
                 .collect(Collectors.joining("; "));
             return message + ". Disabled candidate beans: " + candidates;
@@ -972,10 +971,10 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
         List<String> path,
         Set<DependencyInjectionError> errors,
         Set<String> dedupe,
-        Map<String, List<String>> disabledByBeanName
+        List<DisabledCandidate> disabledCandidates
     ) {
         String beanName = missingArgument.getType().getName();
-        String disabledReason = findDisabledReason(missingArgument, disabledByBeanName);
+        String disabledReason = findDisabledReason(missingArgument, disabledCandidates);
         List<String> failingPath = new ArrayList<>(path.size() + 1);
         for (String s : path) {
             failingPath.add("* " + s);
@@ -1040,57 +1039,35 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     }
 
     @Nullable
-    private static String findDisabledReason(Argument<?> argument, Map<String, List<String>> disabledByBeanName) {
-        List<DisabledCandidate> disabledCandidates = matchingDisabledCandidates(argument, disabledByBeanName);
-        if (!disabledCandidates.isEmpty()) {
-            return disabledCandidates.stream()
+    private static String findDisabledReason(Argument<?> argument, List<DisabledCandidate> disabledCandidates) {
+        List<DisabledCandidate> matchingDisabledCandidates = matchingDisabledCandidates(argument, disabledCandidates);
+        if (!matchingDisabledCandidates.isEmpty()) {
+            return matchingDisabledCandidates.stream()
                 .map(DefaultDependencyInjectionValidator::formatDisabledCandidate)
                 .collect(Collectors.joining("; "));
         }
-        String beanName = argument.getType().getName();
-        List<String> reasons = disabledByBeanName.get(beanName);
-        if (reasons == null || reasons.isEmpty()) {
-            for (Map.Entry<String, List<String>> entry : disabledByBeanName.entrySet()) {
-                if (entry.getKey().contains(beanName)) {
-                    reasons = entry.getValue();
-                    break;
-                }
-            }
-        }
-        if (reasons == null || reasons.isEmpty()) {
-            return null;
-        }
-        if (reasons.size() == 1) {
-            return reasons.getFirst();
-        }
-        return String.join("; ", reasons);
+        return null;
     }
 
     private static List<DisabledCandidate> matchingDisabledCandidates(
         Argument<?> argument,
-        Map<String, List<String>> disabledByBeanName
+        List<DisabledCandidate> disabledCandidates
     ) {
         Class<?> requiredType = argument.getType();
         String requiredTypeName = requiredType.getName();
         Map<String, DisabledCandidate> matched = new LinkedHashMap<>();
-        for (Map.Entry<String, List<String>> entry : disabledByBeanName.entrySet()) {
-            String candidateName = entry.getKey();
+        for (DisabledCandidate candidate : disabledCandidates) {
+            String candidateName = candidate.name();
             if (candidateName.isBlank()) {
                 continue;
             }
             if (candidateName.equals(requiredTypeName) || candidateName.contains(requiredTypeName)) {
-                matched.put(candidateName, new DisabledCandidate(candidateName, entry.getValue()));
+                matched.put(candidateName, candidate);
                 continue;
             }
 
-            String className = normalizeBeanClassName(candidateName);
-            try {
-                Class<?> candidateType = Class.forName(className, false, requiredType.getClassLoader());
-                if (requiredType.isAssignableFrom(candidateType)) {
-                    matched.put(candidateName, new DisabledCandidate(candidateName, entry.getValue()));
-                }
-            } catch (ClassNotFoundException | LinkageError ignored) {
-                LOG.trace("Unable to load disabled candidate type {} while matching {}", className, requiredTypeName, ignored);
+            if (requiredType.isAssignableFrom(candidate.beanType())) {
+                matched.put(candidateName, candidate);
             }
         }
         return matched.values().stream()
@@ -1221,7 +1198,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     ) {
     }
 
-    private record DisabledCandidate(String name, List<String> reasons) {
+    private record DisabledCandidate(String name, Class<?> beanType, List<String> reasons) {
     }
 
     private record EachPropertyOrigin(String prefix, Optional<String> primary) {
@@ -1230,7 +1207,7 @@ public final class DefaultDependencyInjectionValidator implements DependencyInje
     private record TraversalState(
         ConfigurableBeanContext beanContext,
         Collection<BeanDefinition<Object>> definitions,
-        Map<String, List<String>> disabledByBeanName,
+        List<DisabledCandidate> disabledCandidates,
         Set<DependencyInjectionError> errors,
         Set<String> dedupe
     ) {

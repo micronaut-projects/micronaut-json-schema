@@ -19,12 +19,9 @@ import io.micronaut.context.BeanContext;
 import jakarta.inject.Singleton;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
 
 /**
- * Resolves Oracle materializers from Micronaut beans or {@link ServiceLoader}.
+ * Resolves Oracle materializers from Micronaut beans.
  *
  * @since 2.0.0
  */
@@ -43,36 +40,24 @@ public final class OracleSchemaMaterializerResolver {
      * Resolve a materializer class name.
      *
      * @param providerClassName Materializer class name
-     * @param classLoader ClassLoader
      * @return The materializer instance
      */
-    public OracleSchemaMaterializer resolve(String providerClassName, ClassLoader classLoader) {
-        Optional<OracleSchemaMaterializer> beanMaterializer = beanContext.getBeansOfType(OracleSchemaMaterializer.class)
+    public OracleSchemaMaterializer resolve(String providerClassName) {
+        return beanContext.getBeansOfType(OracleSchemaMaterializer.class)
             .stream()
             .filter(materializer -> materializer.providerClassName().equals(providerClassName)
                 || materializer.getClass().getName().equals(providerClassName))
-            .findFirst();
-        if (beanMaterializer.isPresent()) {
-            return beanMaterializer.get();
-        }
-        try {
-            ServiceLoader<OracleSchemaMaterializer> loader = ServiceLoader.load(OracleSchemaMaterializer.class, classLoader);
-            return loader.stream()
-                .filter(materializer -> materializer.type().getName().equals(providerClassName))
-                .findFirst()
-                .map(ServiceLoader.Provider::get)
-                .orElseThrow(() -> new IllegalArgumentException(
-                    "Unable to locate Oracle materializer: " + providerClassName
-                        + ". Available materializers: " + availableMaterializers(loader)
-                ));
-        } catch (ServiceConfigurationError e) {
-            throw new IllegalArgumentException("Unable to load Oracle materializer: " + providerClassName, e);
-        }
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Unable to locate Oracle materializer bean: " + providerClassName
+                    + ". Available materializers: " + availableMaterializers()
+            ));
     }
 
-    private static List<String> availableMaterializers(ServiceLoader<OracleSchemaMaterializer> loader) {
-        return loader.stream()
-            .map(materializer -> materializer.type().getName())
+    private List<String> availableMaterializers() {
+        return beanContext.getBeansOfType(OracleSchemaMaterializer.class)
+            .stream()
+            .map(materializer -> materializer.getClass().getName())
             .sorted()
             .toList();
     }

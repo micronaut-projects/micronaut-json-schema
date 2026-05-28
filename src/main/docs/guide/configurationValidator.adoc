@@ -188,12 +188,12 @@ include::{includedir}configurationProperties/io.micronaut.jsonschema.configurati
 When enabled, the health indicator reports `DOWN` if any configuration validation errors are present.
 It also includes a bounded sample of the failing properties and messages in the response details.
 
-=== Custom validation rules (ServiceLoader)
+=== Custom validation rules (SoftServiceLoader)
 
 Some validation rules cannot be expressed as JSON Schema keywords alone, for example validating dependent configuration entries.
 
 The configuration validator supports custom rules via the api:jsonschema.configuration.validator.ConfigurationRule[] SPI.
-Implementations are discovered using `ServiceLoader` from the same classloader used to load configuration schemas.
+Implementations are discovered using Micronaut `SoftServiceLoader` from the same classloader used to load configuration schemas.
 
 ==== Rule API
 
@@ -213,7 +213,7 @@ The following example requires `datasources.default.url` when `jpa.default.prope
 
 snippet::io.micronaut.jsonschema.test.ConfigurationRuleExample[tags=rule]
 
-To register the rule, add a `ServiceLoader` entry:
+To register the rule, add a service entry:
 
 [source]
 ----

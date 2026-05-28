@@ -77,7 +77,7 @@ final class ValueCoercer {
         // 2) Try x-micronaut-javaType conversion if it's compatible with schema type.
         String javaType = schema.javaType();
         if (javaType != null && type != ConfigurationSchemaType.OBJECT) {
-            Class<?> target = loadJavaType(ctx, javaType);
+            Class<?> target = loadJavaType(javaType);
             if (target != null) {
                 Optional<?> converted = conversionService.convert(value, Argument.of(target));
                 if (converted.isPresent()) {
@@ -155,7 +155,7 @@ final class ValueCoercer {
     }
 
     @Nullable
-    private static Class<?> loadJavaType(SchemaContext ctx, String javaType) {
+    private static Class<?> loadJavaType(String javaType) {
         return switch (javaType) {
             case "boolean" -> Boolean.TYPE;
             case "byte" -> Byte.TYPE;
@@ -165,17 +165,29 @@ final class ValueCoercer {
             case "float" -> Float.TYPE;
             case "double" -> Double.TYPE;
             case "char" -> Character.TYPE;
-            default -> {
-                try {
-                    yield Class.forName(javaType, false, ctx.classLoader());
-                } catch (ClassNotFoundException e) {
-                    yield null;
-                }
-            }
+            case "java.lang.Boolean" -> Boolean.class;
+            case "java.lang.Byte" -> Byte.class;
+            case "java.lang.Short" -> Short.class;
+            case "java.lang.Integer" -> Integer.class;
+            case "java.lang.Long" -> Long.class;
+            case "java.lang.Float" -> Float.class;
+            case "java.lang.Double" -> Double.class;
+            case "java.lang.Character" -> Character.class;
+            case "java.lang.String" -> String.class;
+            case "java.math.BigDecimal" -> BigDecimal.class;
+            case "java.math.BigInteger" -> java.math.BigInteger.class;
+            case "java.util.List" -> List.class;
+            case "java.util.Set" -> java.util.Set.class;
+            case "java.util.Collection" -> java.util.Collection.class;
+            case "java.util.regex.Pattern" -> java.util.regex.Pattern.class;
+            case "java.net.URL" -> java.net.URL.class;
+            case "java.net.URI" -> java.net.URI.class;
+            case "java.time.Duration" -> java.time.Duration.class;
+            default -> null;
         };
     }
 
-    private static List<String> splitCommaSeparated(String value) {
+    static List<String> splitCommaSeparated(String value) {
         String[] parts = value.split(",");
         List<String> result = new ArrayList<>(parts.length);
         for (String part : parts) {

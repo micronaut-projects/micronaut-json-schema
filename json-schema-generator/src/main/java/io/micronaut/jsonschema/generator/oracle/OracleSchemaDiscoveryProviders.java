@@ -15,9 +15,11 @@
  */
 package io.micronaut.jsonschema.generator.oracle;
 
+import io.micronaut.core.io.service.ServiceDefinition;
+import io.micronaut.core.io.service.SoftServiceLoader;
+
 import java.util.List;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
+import java.util.stream.StreamSupport;
 
 final class OracleSchemaDiscoveryProviders {
 
@@ -25,26 +27,28 @@ final class OracleSchemaDiscoveryProviders {
     }
 
     static OracleSchemaDiscoveryProvider resolve(String providerClassName, ClassLoader classLoader) {
-        try {
-            ServiceLoader<OracleSchemaDiscoveryProvider> loader = ServiceLoader.load(OracleSchemaDiscoveryProvider.class, classLoader);
-            return loader.stream()
-                .filter(provider -> provider.type().getName().equals(providerClassName))
-                .findFirst()
-                .map(ServiceLoader.Provider::get)
-                .orElseThrow(() -> new IllegalArgumentException(
-                    "Unable to locate Oracle discovery provider: " + providerClassName
-                        + ". Ensure it is registered in META-INF/services/"
-                        + OracleSchemaDiscoveryProvider.class.getName()
-                        + ". Available providers: " + availableProviders(loader)
-                ));
-        } catch (ServiceConfigurationError e) {
-            throw new IllegalArgumentException("Unable to load Oracle discovery provider: " + providerClassName, e);
-        }
+        return StreamSupport.stream(
+                SoftServiceLoader.load(OracleSchemaDiscoveryProvider.class, classLoader).spliterator(),
+                false
+            )
+            .filter(ServiceDefinition::isPresent)
+            .filter(definition -> definition.getName().equals(providerClassName))
+            .findFirst()
+            .map(ServiceDefinition::load)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Unable to locate Oracle discovery provider: " + providerClassName
+                    + ". Ensure it is registered in META-INF/services/"
+                    + OracleSchemaDiscoveryProvider.class.getName()
+                    + ". Available providers: " + availableProviders(classLoader)
+            ));
     }
 
-    private static List<String> availableProviders(ServiceLoader<OracleSchemaDiscoveryProvider> loader) {
-        return loader.stream()
-            .map(provider -> provider.type().getName())
+    private static List<String> availableProviders(ClassLoader classLoader) {
+        return StreamSupport.stream(
+                SoftServiceLoader.load(OracleSchemaDiscoveryProvider.class, classLoader).spliterator(),
+                false
+            )
+            .map(ServiceDefinition::getName)
             .sorted()
             .toList();
     }

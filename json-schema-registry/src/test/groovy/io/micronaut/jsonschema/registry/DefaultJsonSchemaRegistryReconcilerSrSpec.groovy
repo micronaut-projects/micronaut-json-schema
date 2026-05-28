@@ -18,8 +18,10 @@ package io.micronaut.jsonschema.registry
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import io.micronaut.context.ApplicationContext
+import io.micronaut.inject.qualifiers.Qualifiers
 import spock.lang.Specification
 
+import javax.sql.DataSource
 import java.nio.charset.StandardCharsets
 
 final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
@@ -158,6 +160,7 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
     void "application authority registers missing SR subject"() {
         given:
         startServer([
+                "/mode"                                                                           : response(200, '{"mode":"READWRITE"}'),
                 "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest": response(404, "{}")
         ])
 
@@ -177,6 +180,57 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         outcomes.any { it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
         !registrations.isEmpty()
         registrations[0].contains('"schemaType":"JSON"')
+    }
+
+    void "application authority falls back to global SR mode when subject mode is unavailable"() {
+        given:
+        startServer([
+                "/mode"                                                                           : response(200, '{"mode":"READWRITE"}'),
+                "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest": response(404, "{}")
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "application",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            registrations.clear()
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
+        registrations.size() == 1
+    }
+
+    void "application authority reports failed when SR mode is not readwrite"() {
+        given:
+        startServer([
+                "/mode"                                                                           : response(200, '{"mode":"READONLY"}'),
+                "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest": response(404, "{}")
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "application",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "sr" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.FAILED &&
+                    it.message().contains("READWRITE")
+        }
+        registrations.isEmpty()
     }
 
     void "application authority reports missing SR subject in observe only"() {
@@ -205,6 +259,7 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
     void "application authority registers new SR version when subject drifts"() {
         given:
         startServer([
+                "/mode"                                                                           : response(200, '{"mode":"READWRITE"}'),
                 "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest":
                         response(200, '{"schema":"{\\"type\\":\\"string\\"}"}')
         ])
@@ -217,6 +272,7 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
                 "json-schema.registry.sr.url"         : serverUrl(),
                 "json-schema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
+            registrations.clear()
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
 
@@ -265,6 +321,40 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         outcomes.size() == 1
         outcomes[0].target() == "application.authority"
         outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
+    }
+
+    void "SR authority requires explicit pairing for custom Oracle materializer when subject prefix is not reversible"() {
+        given:
+        startServer([
+                "/subjects/custom.order.subject/versions/latest": response(200, '{"schema":"{\\"type\\":\\"object\\"}"}')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                   : "bean-materializer",
+                "json-schema.registry.enabled"                                : "true",
+                "json-schema.registry.authority"                              : "sr",
+                "json-schema.registry.sr.enabled"                             : "true",
+                "json-schema.registry.sr.url"                                 : serverUrl(),
+                "json-schema.registry.sr.subjects[0]"                         : "custom.order.subject",
+                "json-schema.registry.naming.subject.prefix"                  : "com.acme.",
+                "json-schema.registry.oracle.enabled"                         : "true",
+                "json-schema.registry.oracle.materializers[0].name"           : "duality-views",
+                "json-schema.registry.oracle.materializers[0].providerClassName": JsonSchemaRegistryConfigurationSpec.BeanMaterializer.name,
+                "json-schema.registry.oracle.materializers[0].options.viewName": "ORDER_DV"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new JsonSchemaRegistryConfigurationSpec.NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 2
+        outcomes.any { it.target() == "sr.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
+        outcomes.any {
+            it.target() == "oracle.duality-views" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.FAILED &&
+                    it.message().contains("missing_mapping")
+        }
     }
 
     private void startServer(Map<String, FixedResponse> responses) {
