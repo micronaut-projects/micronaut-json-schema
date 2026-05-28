@@ -235,21 +235,23 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             ));
         }
         List<JsonSchemaRegistryOutcome> outcomes = new ArrayList<>();
-        DataSource dataSource = resolveDataSource();
-        try (Connection connection = dataSource.getConnection()) {
-            List<JsonSchemaCandidate> candidates = discoverOracleCandidates(connection, outcomes);
-            if (candidates.isEmpty()) {
-                LOG.info("No Oracle JSON Schema authority objects discovered");
-            }
-            for (JsonSchemaCandidate candidate : candidates) {
-                outcomes.add(JsonSchemaRegistryOutcome.ok(
-                    candidate.logicalSchema(),
-                    "oracle.authority",
-                    JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
-                    "Read Oracle authority schema from " + candidate.authoritySource()
-                ));
-                if (configuration.getSr().isEnabled()) {
-                    outcomes.addAll(reconcileSrTarget(List.of(candidate)));
+        try {
+            DataSource dataSource = resolveDataSource();
+            try (Connection connection = dataSource.getConnection()) {
+                List<JsonSchemaCandidate> candidates = discoverOracleCandidates(connection, outcomes);
+                if (candidates.isEmpty()) {
+                    LOG.info("No Oracle JSON Schema authority objects discovered");
+                }
+                for (JsonSchemaCandidate candidate : candidates) {
+                    outcomes.add(JsonSchemaRegistryOutcome.ok(
+                        candidate.logicalSchema(),
+                        "oracle.authority",
+                        JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                        "Read Oracle authority schema from " + candidate.authoritySource()
+                    ));
+                    if (configuration.getSr().isEnabled()) {
+                        outcomes.addAll(reconcileSrTarget(List.of(candidate)));
+                    }
                 }
             }
         } catch (Exception e) {
@@ -322,77 +324,82 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         if (!configuration.getOracle().isEnabled()) {
             return List.of();
         }
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
         List<JsonSchemaRegistryOutcome> outcomes = new ArrayList<>();
-        DataSource dataSource = resolveDataSource();
-        try (Connection connection = dataSource.getConnection()) {
-            for (JsonSchemaRegistryConfiguration.ProviderConfiguration materializerConfiguration
-                : configuration.resolveOracleMaterializers()) {
-                String providerClassName = providerClassName(materializerConfiguration, OracleDomainMaterializer.class.getName());
-                OracleSchemaMaterializer materializer;
-                try {
-                    materializer = materializerResolver.resolve(providerClassName);
-                } catch (Exception e) {
-                    outcomes.add(JsonSchemaRegistryOutcome.failure(
-                        new LogicalSchema(providerName(materializerConfiguration, providerClassName), null, null),
-                        "oracle",
-                        JsonSchemaRegistryOutcomeStatus.FAILED,
-                        e.getMessage()
-                    ));
-                    continue;
-                }
-                for (JsonSchemaCandidate candidate : candidates) {
-                    JsonSchemaCandidate resolvedCandidate = resolveOracleCandidate(
-                        candidate,
-                        materializerConfiguration,
-                        providerClassName
-                    );
-                    if (resolvedCandidate == null) {
-                        outcomes.add(JsonSchemaRegistryOutcome.failure(
-                            candidate.logicalSchema(),
-                            materializerTargetName(materializerConfiguration, providerClassName),
-                            JsonSchemaRegistryOutcomeStatus.FAILED,
-                            oracleMappingFailureMessage(providerClassName)
-                        ));
-                        continue;
-                    }
-                    String artifactName = resolveOracleArtifactName(
-                        resolvedCandidate,
-                        materializerConfiguration,
-                        providerClassName
-                    );
-                    if (isDomainMaterializer(providerClassName) && (artifactName == null || artifactName.isBlank())) {
-                        outcomes.add(JsonSchemaRegistryOutcome.failure(
-                            resolvedCandidate.logicalSchema(),
-                            "oracle.domain",
-                            JsonSchemaRegistryOutcomeStatus.FAILED,
-                            "Unable to derive Oracle domain name; missing_mapping; "
-                                + "configure json-schema.registry.mappings for this logical schema"
-                        ));
-                        continue;
-                    }
-                    OracleMaterializationRequest request = new OracleMaterializationRequest(
-                        resolvedCandidate,
-                        artifactName,
-                        materializerConfiguration.getOwner(),
-                        materializerConfiguration.getOptions(),
-                        configuration.getOracle().getPolicy().getMode(),
-                        configuration.getOracle().getDrift().getMode(),
-                        configuration.isDryRun()
-                    );
+        try {
+            DataSource dataSource = resolveDataSource();
+            try (Connection connection = dataSource.getConnection()) {
+                for (JsonSchemaRegistryConfiguration.ProviderConfiguration materializerConfiguration
+                    : configuration.resolveOracleMaterializers()) {
+                    String providerClassName = providerClassName(materializerConfiguration, OracleDomainMaterializer.class.getName());
+                    OracleSchemaMaterializer materializer;
                     try {
-                        Optional<JsonSchemaRegistryOutcome> projection = materializer.projectionCompatibility(request);
-                        if (projection.isPresent()) {
-                            outcomes.add(enforceProjectionFailure(projection.get()));
-                            continue;
-                        }
-                        outcomes.add(materializer.reconcile(connection, request));
+                        materializer = materializerResolver.resolve(providerClassName);
                     } catch (Exception e) {
                         outcomes.add(JsonSchemaRegistryOutcome.failure(
-                            resolvedCandidate.logicalSchema(),
-                            materializerTargetName(materializerConfiguration, providerClassName),
+                            new LogicalSchema(providerName(materializerConfiguration, providerClassName), null, null),
+                            "oracle",
                             JsonSchemaRegistryOutcomeStatus.FAILED,
                             e.getMessage()
                         ));
+                        continue;
+                    }
+                    for (JsonSchemaCandidate candidate : candidates) {
+                        JsonSchemaCandidate resolvedCandidate = resolveOracleCandidate(
+                            candidate,
+                            materializerConfiguration,
+                            providerClassName
+                        );
+                        if (resolvedCandidate == null) {
+                            outcomes.add(JsonSchemaRegistryOutcome.failure(
+                                candidate.logicalSchema(),
+                                materializerTargetName(materializerConfiguration, providerClassName),
+                                JsonSchemaRegistryOutcomeStatus.FAILED,
+                                oracleMappingFailureMessage(providerClassName)
+                            ));
+                            continue;
+                        }
+                        String artifactName = resolveOracleArtifactName(
+                            resolvedCandidate,
+                            materializerConfiguration,
+                            providerClassName
+                        );
+                        if (isDomainMaterializer(providerClassName) && (artifactName == null || artifactName.isBlank())) {
+                            outcomes.add(JsonSchemaRegistryOutcome.failure(
+                                resolvedCandidate.logicalSchema(),
+                                "oracle.domain",
+                                JsonSchemaRegistryOutcomeStatus.FAILED,
+                                "Unable to derive Oracle domain name; missing_mapping; "
+                                    + "configure json-schema.registry.mappings for this logical schema"
+                            ));
+                            continue;
+                        }
+                        OracleMaterializationRequest request = new OracleMaterializationRequest(
+                            resolvedCandidate,
+                            artifactName,
+                            materializerConfiguration.getOwner(),
+                            materializerConfiguration.getOptions(),
+                            configuration.getOracle().getPolicy().getMode(),
+                            configuration.getOracle().getDrift().getMode(),
+                            configuration.isDryRun()
+                        );
+                        try {
+                            Optional<JsonSchemaRegistryOutcome> projection = materializer.projectionCompatibility(request);
+                            if (projection.isPresent()) {
+                                outcomes.add(enforceProjectionFailure(projection.get()));
+                                continue;
+                            }
+                            outcomes.add(materializer.reconcile(connection, request));
+                        } catch (Exception e) {
+                            outcomes.add(JsonSchemaRegistryOutcome.failure(
+                                resolvedCandidate.logicalSchema(),
+                                materializerTargetName(materializerConfiguration, providerClassName),
+                                JsonSchemaRegistryOutcomeStatus.FAILED,
+                                e.getMessage()
+                            ));
+                        }
                     }
                 }
             }
@@ -525,10 +532,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                 String logicalName = mapping.getSubject() == null ? domainName : logicalNameFromSubject(mapping.getSubject());
                 return new LogicalSchema(logicalName, mapping.getSubject(), domainName);
             }
-            Optional<String> logicalName = logicalNameFromReversibleDomainName(domainName);
-            return logicalName
-                .map(name -> new LogicalSchema(name, configuration.getNaming().getSubjectPrefix() + name, domainName))
-                .orElseGet(() -> new LogicalSchema(domainName, null, domainName));
+            return new LogicalSchema(domainName, null, domainName);
         }
         String logicalName = option(providerConfiguration, "logicalFqcn").orElse(schema.name());
         String subject = option(providerConfiguration, "subject")
@@ -549,10 +553,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                 String logicalName = mapping.getSubject() == null ? domainName : logicalNameFromSubject(mapping.getSubject());
                 return new LogicalSchema(logicalName, mapping.getSubject(), domainName);
             }
-            Optional<String> logicalName = logicalNameFromReversibleDomainName(domainName);
-            return logicalName
-                .map(name -> new LogicalSchema(name, configuration.getNaming().getSubjectPrefix() + name, domainName))
-                .orElseGet(() -> new LogicalSchema(domainName, null, domainName));
+            return new LogicalSchema(domainName, null, domainName);
         }
         String logicalName = option(providerConfiguration, "logicalFqcn").orElse(skipped.name());
         String subject = option(providerConfiguration, "subject")
@@ -720,22 +721,6 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             return subject.substring(prefix.length());
         }
         return null;
-    }
-
-    private Optional<String> logicalNameFromReversibleDomainName(String domainName) {
-        String prefix = configuration.getNaming().getDomainPrefix().toUpperCase(Locale.ENGLISH);
-        if (!prefix.isBlank() && !domainName.startsWith(prefix)) {
-            return Optional.empty();
-        }
-        String unprefixed = prefix.isBlank() ? domainName : domainName.substring(prefix.length());
-        if (unprefixed.isBlank()) {
-            return Optional.empty();
-        }
-        String logicalName = unprefixed.replace('_', '.');
-        if (domainNameFromLogicalName(logicalName).equals(domainName)) {
-            return Optional.of(logicalName);
-        }
-        return Optional.empty();
     }
 
     private boolean canDeriveOracleArtifactName(LogicalSchema logicalSchema) {

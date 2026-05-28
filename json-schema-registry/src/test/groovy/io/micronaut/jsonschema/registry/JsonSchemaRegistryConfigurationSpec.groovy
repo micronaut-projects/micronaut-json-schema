@@ -247,7 +247,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         outcomes[0].message() == "bad schema"
     }
 
-    void "Oracle domain authority derives subject from reversible domain name"() {
+    void "Oracle domain authority requires mapping to preserve subject identity"() {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
                 "spec.name"                                                   : "reversible-domain-provider",
@@ -266,9 +266,61 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         then:
         outcomes.size() == 1
         outcomes[0].target() == "oracle.authority"
-        outcomes[0].logicalSchema().logicalFqcn() == "COM.ACME.ORDER"
-        outcomes[0].logicalSchema().subject() == "COM.ACME.ORDER"
+        outcomes[0].logicalSchema().logicalFqcn() == "APP_COM_ACME_ORDER"
+        outcomes[0].logicalSchema().subject() == null
         outcomes[0].logicalSchema().oracleArtifactName() == "APP_COM_ACME_ORDER"
+    }
+
+    void "Oracle domain authority uses explicit mapping for SR pairing"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                   : "reversible-domain-provider",
+                "json-schema.registry.enabled"                                : "true",
+                "json-schema.registry.authority"                              : "oracle",
+                "json-schema.registry.oracle.enabled"                         : "true",
+                "json-schema.registry.oracle.authority.providers[0].name"     : "domains",
+                "json-schema.registry.oracle.authority.providers[0].providerClassName": ReversibleDomainProvider.name,
+                "json-schema.registry.naming.domain.prefix"                   : "APP_",
+                "json-schema.registry.mappings[0].subject"                    : "com.acme.Order",
+                "json-schema.registry.mappings[0].domain"                     : "APP_COM_ACME_ORDER",
+                "json-schema.registry.sr.enabled"                             : "false"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "oracle.authority"
+        outcomes[0].logicalSchema().logicalFqcn() == "com.acme.Order"
+        outcomes[0].logicalSchema().subject() == "com.acme.Order"
+        outcomes[0].logicalSchema().oracleArtifactName() == "APP_COM_ACME_ORDER"
+    }
+
+    void "Oracle domain authority reports missing mapping when SR target is enabled"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                   : "reversible-domain-provider",
+                "json-schema.registry.enabled"                                : "true",
+                "json-schema.registry.authority"                              : "oracle",
+                "json-schema.registry.oracle.enabled"                         : "true",
+                "json-schema.registry.oracle.authority.providers[0].name"     : "domains",
+                "json-schema.registry.oracle.authority.providers[0].providerClassName": ReversibleDomainProvider.name,
+                "json-schema.registry.naming.domain.prefix"                   : "APP_",
+                "json-schema.registry.sr.enabled"                             : "true"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 2
+        outcomes.any { it.target() == "oracle.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
+        outcomes.any {
+            it.target() == "sr" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.FAILED &&
+                    it.message().contains("missing_mapping")
+        }
     }
 
     void "custom Oracle authority provider can supply logical identity through options"() {
@@ -477,6 +529,41 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         domainName.endsWith("_" + hash)
     }
 
+    void "Oracle authority datasource failure is reported as Oracle authority outcome"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "oracle",
+                "json-schema.registry.oracle.enabled" : "true",
+                "json-schema.registry.sr.enabled"     : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "oracle.authority"
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.FAILED
+        outcomes[0].message().contains("No DataSource")
+    }
+
+    void "Oracle target datasource failure is reported as Oracle target outcome"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.oracle.enabled": "true"
+        ]) { ApplicationContext context ->
+            context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
+                    new JsonSchemaCandidate(new LogicalSchema("com.acme.Order", "com.acme.Order", null), '{"type":"object"}', "test")
+            ])
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "oracle"
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.FAILED
+        outcomes[0].message().contains("No DataSource")
+    }
+
     void "observability records metrics when MeterRegistry is available"() {
         when:
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry()
@@ -484,7 +571,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
             context.registerSingleton(MeterRegistry, meterRegistry)
             JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration(authority: JsonSchemaRegistryAuthority.SR)
             configuration.sr.policy.mode = JsonSchemaRegistryPolicyMode.OBSERVE_ONLY
-            DefaultJsonSchemaRegistryObservability observability = new DefaultJsonSchemaRegistryObservability(context)
+            MicrometerJsonSchemaRegistryObservability observability = new MicrometerJsonSchemaRegistryObservability(meterRegistry)
             observability.record(
                     configuration,
                     Duration.ofMillis(25),
@@ -512,6 +599,21 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                 .tag("failure", "false")
                 .timer()
                 .count() == 1
+    }
+
+    void "default observability bean does not require MeterRegistry"() {
+        expect:
+        withContext(["micronaut.metrics.enabled": "false"]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryObservability).class
+        } == DefaultJsonSchemaRegistryObservability
+    }
+
+    void "Micrometer observability replaces default bean when MeterRegistry is available"() {
+        expect:
+        withContext([:]) { ApplicationContext context ->
+            context.registerSingleton(MeterRegistry, new SimpleMeterRegistry())
+            context.getBean(JsonSchemaRegistryObservability).class
+        } == MicrometerJsonSchemaRegistryObservability
     }
 
     void "readiness indicator reads last reconciliation state"() {

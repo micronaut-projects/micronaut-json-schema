@@ -83,6 +83,27 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
     }
 
+    void "SR authority empty selection is no-op even when Oracle target is enabled"() {
+        given:
+        startServer([
+                "/subjects": response(200, '[]')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "sr",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.oracle.enabled" : "true"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.isEmpty()
+    }
+
     void "SR authority reports latest response without schema as unreadable authority"() {
         given:
         startServer([
