@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     compileOnly(mn.micronaut.core.processor)
+    compileOnly(libs.micronaut.build.plugin.sourcegen.annotations)
 
     implementation(mnSourcegen.micronaut.sourcegen.model)
     implementation(mnSourcegen.micronaut.sourcegen.generator)

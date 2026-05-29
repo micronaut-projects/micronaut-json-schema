@@ -261,7 +261,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         }
 
         @Override
-        protected int getLanguageLevel() {
+        protected Integer getLanguageLevel() {
             return languageLevel;
         }
 
@@ -276,17 +276,17 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         }
 
         @Override
-        protected List<SourceConfiguration> getSources() {
+        protected List<SourceConfiguration> getSourceConfigurations() {
             return sources;
         }
 
         @Override
-        protected boolean isSkipOnError() {
+        protected Boolean getSkipOnError() {
             return skipOnError;
         }
 
         @Override
-        protected boolean isFailOnMissingSource() {
+        protected Boolean getFailOnMissingSource() {
             return failOnMissingSource;
         }
 
@@ -338,7 +338,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         }
 
         @Override
-        protected int getLanguageLevel() {
+        protected Integer getLanguageLevel() {
             return languageLevel;
         }
 
@@ -353,17 +353,17 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         }
 
         @Override
-        protected List<SourceConfiguration> getSources() {
+        protected List<SourceConfiguration> getSourceConfigurations() {
             return sources;
         }
 
         @Override
-        protected boolean isSkipOnError() {
+        protected Boolean getSkipOnError() {
             return skipOnError;
         }
 
         @Override
-        protected boolean isFailOnMissingSource() {
+        protected Boolean getFailOnMissingSource() {
             return failOnMissingSource;
         }
 

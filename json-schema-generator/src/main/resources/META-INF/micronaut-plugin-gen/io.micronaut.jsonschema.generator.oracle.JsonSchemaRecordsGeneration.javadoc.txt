@@ -1,0 +1,12 @@
+Shared build-plugin task definition for Oracle JSON Schema discovery and Java record generation.
+jdbcUrl JDBC URL.
+username Database username.
+password Database password.
+targetPackage Target package for generated Java sources.
+languageLevel Java language level used for generated sources.
+schemaCacheDir Directory where discovered schemas are cached.
+outputDir Directory where Java sources are generated.
+sources Configured schema discovery sources.
+skipOnError Whether per-object discovery and generation failures should be skipped.
+failOnMissingSource Whether unavailable configured sources should fail the build.
+generate() Main execution of JSON Schema record generation.

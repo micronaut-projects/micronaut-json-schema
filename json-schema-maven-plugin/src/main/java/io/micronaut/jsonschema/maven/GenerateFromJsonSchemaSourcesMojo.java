@@ -15,11 +15,11 @@
  */
 package io.micronaut.jsonschema.maven;
 
+import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneration;
 import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneratorConfig;
 import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsLogger;
 import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsPipeline;
 import io.micronaut.jsonschema.generator.oracle.SourceSpec;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -40,7 +40,7 @@ import java.util.Map;
  * @since 2.0.0
  */
 @Mojo(name = "generate-from-json-schema-sources", defaultPhase = LifecyclePhase.GENERATE_SOURCES, threadSafe = true)
-public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
+public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonSchemaSourcesMojo {
 
     /**
      * JDBC URL.
@@ -121,12 +121,6 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
     private boolean skip = true;
 
     /**
-     * Maven project for source-root registration.
-     */
-    @Parameter(defaultValue = "${project}", readonly = true, required = true)
-    private MavenProject project;
-
-    /**
      * Maven settings for resolving server credentials.
      */
     @Parameter(defaultValue = "${settings}", readonly = true)
@@ -157,18 +151,18 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
                     getLog().warn(message);
                 }
             };
-            executePipeline(logger, new JsonSchemaRecordsGeneratorConfig(
+            executePipeline(logger, new JsonSchemaRecordsGeneration(
                 getJdbcUrl(),
                 getUsername(),
                 getPassword(),
                 resolvedTargetPackage,
                 getLanguageLevel(),
-                getSchemaCacheDir().toPath(),
-                getOutputDir().toPath(),
-                getSources().stream().map(SourceConfiguration::toSourceSpec).toList(),
-                isSkipOnError(),
-                isFailOnMissingSource()
-            ));
+                getSchemaCacheDir(),
+                getOutputDir(),
+                getSources(),
+                getSkipOnError(),
+                getFailOnMissingSource()
+            ).toGeneratorConfig());
             getProject().addCompileSourceRoot(getOutputDir().getAbsolutePath());
         } catch (MojoExecutionException e) {
             throw e;
@@ -180,6 +174,7 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
     /**
      * @return The JDBC URL.
      */
+    @Override
     protected String getJdbcUrl() {
         String configuredJdbcUrl = blankToNull(jdbcUrl);
         if (configuredJdbcUrl != null) {
@@ -192,6 +187,7 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
     /**
      * @return The database username.
      */
+    @Override
     protected String getUsername() {
         String configuredUsername = blankToNull(username);
         if (configuredUsername != null) {
@@ -209,6 +205,7 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
     /**
      * @return The database password.
      */
+    @Override
     protected String getPassword() {
         String configuredPassword = blankToNull(password);
         if (configuredPassword != null) {
@@ -240,6 +237,7 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
     /**
      * @return The target package.
      */
+    @Override
     protected String getTargetPackage() {
         return targetPackage;
     }
@@ -247,13 +245,15 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
     /**
      * @return Java language level used for generation.
      */
-    protected int getLanguageLevel() {
+    @Override
+    protected Integer getLanguageLevel() {
         return languageLevel;
     }
 
     /**
      * @return The schema cache directory.
      */
+    @Override
     protected File getSchemaCacheDir() {
         return schemaCacheDir;
     }
@@ -261,29 +261,56 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
     /**
      * @return The output directory.
      */
+    @Override
     protected File getOutputDir() {
         return outputDir;
     }
 
     /**
-     * @return Configured source definitions.
+     * @return Generated/common source definitions.
      */
-    protected List<SourceConfiguration> getSources() {
-        return sources;
+    @Override
+    protected List<Map<String, Object>> getSources() {
+        return getSourceConfigurations().stream()
+            .map(SourceConfiguration::toSourceMap)
+            .toList();
+    }
+
+    /**
+     * @return Maven-bound source definitions.
+     */
+    protected List<SourceConfiguration> getSourceConfigurations() {
+        return sources == null ? List.of() : sources;
+    }
+
+    /**
+     * @return Whether skip-on-error is enabled.
+     */
+    @Override
+    protected Boolean getSkipOnError() {
+        return skipOnError;
     }
 
     /**
      * @return Whether skip-on-error is enabled.
      */
     protected boolean isSkipOnError() {
-        return skipOnError;
+        return getSkipOnError();
+    }
+
+    /**
+     * @return Whether missing source should fail the build.
+     */
+    @Override
+    protected Boolean getFailOnMissingSource() {
+        return failOnMissingSource;
     }
 
     /**
      * @return Whether missing source should fail the build.
      */
     protected boolean isFailOnMissingSource() {
-        return failOnMissingSource;
+        return getFailOnMissingSource();
     }
 
     /**
@@ -406,11 +433,34 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
         }
 
         SourceSpec toSourceSpec() {
+            Map<String, Object> resolvedOptions = toSourceMapOptions();
+            return new SourceSpec(name, providerClassName, resolvedOptions);
+        }
+
+        Map<String, Object> toSourceMap() {
+            Map<String, Object> source = new LinkedHashMap<>();
+            source.put("name", name);
+            source.put("providerClassName", providerClassName);
+            source.put("options", options == null ? Map.of() : new LinkedHashMap<>(options));
+            source.put("optionValues", copyOptionValues());
+            return source;
+        }
+
+        private Map<String, Object> toSourceMapOptions() {
             Map<String, Object> resolvedOptions = options == null ? new LinkedHashMap<>() : new LinkedHashMap<>(options);
             if (optionValues != null) {
                 optionValues.forEach((key, value) -> resolvedOptions.put(key, value == null ? null : List.copyOf(value)));
             }
-            return new SourceSpec(name, providerClassName, resolvedOptions);
+            return resolvedOptions;
+        }
+
+        private Map<String, List<String>> copyOptionValues() {
+            if (optionValues == null) {
+                return Map.of();
+            }
+            Map<String, List<String>> values = new LinkedHashMap<>();
+            optionValues.forEach((key, value) -> values.put(key, value == null ? null : List.copyOf(value)));
+            return values;
         }
     }
 

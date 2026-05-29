@@ -23,6 +23,8 @@ micronaut-serde = "3.0.0"
 micronaut-sourcegen = "2.0.0-RC4"
 micronaut-validation = "5.0.0"
 micronaut-testresources = "4.0.0-RC1"
+micronaut-build-plugin-sourcegen = "1.0.0-M1"
+javaparser-sourcegen = "3.27.1"
 managed-json-schema-validator = "3.0.2"
 micronaut-toml = "3.0.0-M2"
 micronaut-sql = "7.0.0-RC1"
@@ -38,6 +40,10 @@ micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
 micronaut-testresources = { module = "io.micronaut.testresources:micronaut-test-resources-bom", version.ref = "micronaut-testresources" }
 micronaut-sql = { module = "io.micronaut.sql:micronaut-sql-bom", version.ref = "micronaut-sql" }
+micronaut-build-plugin-sourcegen-annotations = { module = "io.micronaut.build.plugin.sourcegen:micronaut-build-plugin-sourcegen-annotations", version.ref = "micronaut-build-plugin-sourcegen" }
+micronaut-build-plugin-sourcegen-generator = { module = "io.micronaut.build.plugin.sourcegen:micronaut-build-plugin-sourcegen-generator", version.ref = "micronaut-build-plugin-sourcegen" }
+javaparser-core-sourcegen = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser-sourcegen" }
+javaparser-symbol-solver-sourcegen = { module = "com.github.javaparser:javaparser-symbol-solver-core", version.ref = "javaparser-sourcegen" }
 
 managed-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "managed-json-schema-validator" }
 

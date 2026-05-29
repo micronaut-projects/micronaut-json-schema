@@ -15,20 +15,13 @@
  */
 package io.micronaut.jsonschema.gradle;
 
+import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneration;
 import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneratorConfig;
 import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsLogger;
 import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsPipeline;
-import io.micronaut.jsonschema.generator.oracle.SourceSpec;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.DirectoryProperty;
-import org.gradle.api.provider.ListProperty;
-import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Classpath;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
-import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
 import java.net.URL;
@@ -38,11 +31,8 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -50,59 +40,7 @@ import java.util.Properties;
  *
  * @since 2.0.0
  */
-public abstract class GenerateFromJsonSchemaSourcesTask extends DefaultTask {
-
-    /**
-     * @return The JDBC URL.
-     */
-    @Input
-    @Optional
-    public abstract Property<String> getJdbcUrl();
-
-    /**
-     * @return The database username.
-     */
-    @Input
-    @Optional
-    public abstract Property<String> getUsername();
-
-    /**
-     * @return The database password.
-     */
-    @Input
-    @Optional
-    public abstract Property<String> getPassword();
-
-    /**
-     * @return The target package.
-     */
-    @Input
-    public abstract Property<String> getTargetPackage();
-
-    /**
-     * @return Java language level used for generation.
-     */
-    @Input
-    public abstract Property<Integer> getLanguageLevel();
-
-    /**
-     * @return The schema cache directory.
-     */
-    @OutputDirectory
-    public abstract DirectoryProperty getSchemaCacheDir();
-
-    /**
-     * @return The generated sources directory.
-     */
-    @OutputDirectory
-    public abstract DirectoryProperty getOutputDir();
-
-    /**
-     * @return The configured discovery sources. Each map supports the keys
-     * {@code name}, {@code providerClassName}, and {@code options}.
-     */
-    @Input
-    public abstract ListProperty<Map<String, Object>> getSources();
+public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerateFromJsonSchemaSourcesTask {
 
     /**
      * @return The optional JDBC driver classpath.
@@ -117,23 +55,23 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends DefaultTask {
     public abstract ConfigurableFileCollection getProviderClasspath();
 
     /**
-     * @return Whether to skip individual failures.
+     * Execute the pipeline.
      */
-    @Input
-    public abstract Property<Boolean> getSkipOnError();
-
-    /**
-     * @return Whether unavailable configured sources should fail the build.
-     */
-    @Input
-    public abstract Property<Boolean> getFailOnMissingSource();
+    @TaskAction
+    @Override
+    public void execute() {
+        try {
+            generate();
+        } catch (Exception e) {
+            throw new IllegalStateException("jsonSchemaRecords generation failed", e);
+        }
+    }
 
     /**
      * Execute the pipeline.
      *
      * @throws Exception If execution fails
      */
-    @TaskAction
     public void generate() throws Exception {
         registerJdbcDrivers();
         ClassLoader providerClassLoader = createClassLoader(getProviderClasspath(), getClass().getClassLoader());
@@ -148,18 +86,19 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends DefaultTask {
                 getLogger().warn(message);
             }
         };
-        executePipeline(logger, new JsonSchemaRecordsGeneratorConfig(
+        JsonSchemaRecordsGeneration generation = new JsonSchemaRecordsGeneration(
             getJdbcUrl().getOrNull(),
             getUsername().getOrNull(),
             getPassword().getOrNull(),
             getTargetPackage().get(),
             getLanguageLevel().getOrElse(21),
-            getSchemaCacheDir().get().getAsFile().toPath(),
-            getOutputDir().get().getAsFile().toPath(),
-            toSourceSpecs(getSources().getOrElse(List.of())),
+            getSchemaCacheDir().get().getAsFile(),
+            getOutputDir().get().getAsFile(),
+            getSources().getOrElse(List.of()),
             getSkipOnError().getOrElse(false),
             getFailOnMissingSource().getOrElse(true)
-        ), providerClassLoader);
+        );
+        executePipeline(logger, generation.toGeneratorConfig(), providerClassLoader);
     }
 
     /**
@@ -182,69 +121,6 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends DefaultTask {
                          JsonSchemaRecordsGeneratorConfig config,
                          ClassLoader providerClassLoader) throws Exception {
         new JsonSchemaRecordsPipeline(logger, providerClassLoader).execute(config);
-    }
-
-    private List<SourceSpec> toSourceSpecs(List<Map<String, Object>> configuredSources) {
-        return configuredSources.stream()
-            .map(this::toSourceSpec)
-            .toList();
-    }
-
-    private SourceSpec toSourceSpec(Map<String, Object> sourceMap) {
-        Map<String, Object> safeMap = sourceMap == null ? Map.of() : sourceMap;
-        return new SourceSpec(
-            toStringValue(safeMap.get("name")),
-            requiredStringValue("providerClassName", safeMap.get("providerClassName")),
-            toOptionMap(safeMap.get("options"))
-        );
-    }
-
-    private Map<String, Object> toOptionMap(Object value) {
-        if (value == null) {
-            return Map.of();
-        }
-        if (!(value instanceof Map<?, ?> options)) {
-            throw new IllegalArgumentException("Schema source options must be configured as a map.");
-        }
-        Map<String, Object> result = new LinkedHashMap<>();
-        for (Map.Entry<?, ?> entry : options.entrySet()) {
-            result.put(String.valueOf(entry.getKey()), toOptionValue(entry.getValue()));
-        }
-        return result;
-    }
-
-    private Object toOptionValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Iterable<?> iterable) {
-            List<Object> values = new ArrayList<>();
-            for (Object element : iterable) {
-                values.add(toOptionValue(element));
-            }
-            return values;
-        }
-        if (value.getClass().isArray()) {
-            List<Object> values = new ArrayList<>();
-            int length = java.lang.reflect.Array.getLength(value);
-            for (int i = 0; i < length; i++) {
-                values.add(toOptionValue(java.lang.reflect.Array.get(value, i)));
-            }
-            return values;
-        }
-        return value;
-    }
-
-    private String requiredStringValue(String name, Object value) {
-        String stringValue = toStringValue(value);
-        if (stringValue == null || stringValue.isBlank()) {
-            throw new IllegalArgumentException("Missing required schema source field: " + name);
-        }
-        return stringValue;
-    }
-
-    private String toStringValue(Object value) {
-        return value == null ? null : String.valueOf(value);
     }
 
     private void registerJdbcDrivers() throws SQLException {
