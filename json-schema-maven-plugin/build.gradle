@@ -11,16 +11,6 @@ dependencies {
     compileOnly(libs.maven.plugin.annotations)
     annotationProcessor(libs.micronaut.build.plugin.sourcegen.generator)
     annotationProcessor(projects.micronautJsonSchemaGenerator)
-    annotationProcessor(libs.javaparser.core.sourcegen) {
-        version {
-            strictly(libs.versions.javaparser.sourcegen.get())
-        }
-    }
-    annotationProcessor(libs.javaparser.symbol.solver.sourcegen) {
-        version {
-            strictly(libs.versions.javaparser.sourcegen.get())
-        }
-    }
     testCompileOnly(libs.maven.plugin.annotations)
     testImplementation(libs.maven.plugin.testing.harness)
     testImplementation(mnTest.junit.jupiter.api)
@@ -47,6 +37,7 @@ tasks.named("processTestResources") {
 }
 
 configurations.named("annotationProcessor") {
+    // Isolate sourcegen 1.0.0-M1 processor dependencies from this project's newer Micronaut/SourceGen/JavaParser BOMs.
     resolutionStrategy.force(
         "io.micronaut:micronaut-core:5.0.0-M8",
         "io.micronaut:micronaut-inject:5.0.0-M8",
