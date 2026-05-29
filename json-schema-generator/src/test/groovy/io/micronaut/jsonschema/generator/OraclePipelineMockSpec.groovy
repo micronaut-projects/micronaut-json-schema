@@ -380,6 +380,57 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "MOONPHASE"
     }
 
+    void "pipeline accepts Oracle include and exclude filters as list options"() {
+        given:
+        Connection connection = Mock()
+        PreparedStatement domainListStatement = Mock()
+        PreparedStatement ddlStatement = Mock()
+        ResultSet domainListResult = Mock()
+        ResultSet ddlResult = Mock()
+        Path schemaCacheDir = Files.createTempDirectory("oracle-mock-schema-cache")
+        Path outputDir = Files.createTempDirectory("oracle-mock-output")
+        Driver driver = driverReturning(connection)
+
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * domainListStatement.executeQuery() >> domainListResult
+        3 * domainListResult.next() >>> [true, true, false]
+        2 * domainListResult.getString(1) >>> ["MARS", "MoonPhase"]
+
+        1 * connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual") >> ddlStatement
+        1 * ddlStatement.setString(1, "MOONPHASE")
+        1 * ddlStatement.executeQuery() >> ddlResult
+        1 * ddlResult.next() >> true
+        1 * ddlResult.getString(1) >> """CREATE DOMAIN MOONPHASE AS JSON CHECK (VALUE IS JSON VALIDATE USING '{"type":"object","properties":{"phase":{"type":"string"}},"required":["phase"]}')"""
+
+        when:
+        def result = withRegisteredDriver(driver) {
+            new JsonSchemaRecordsPipeline({ }).execute(
+                new JsonSchemaRecordsGeneratorConfig(
+                    "jdbc:mockoracle:test",
+                    "test",
+                    "test",
+                    "io.micronaut.jsonschema.oracle.generated",
+                    21,
+                    schemaCacheDir,
+                    outputDir,
+                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [
+                        include: [" mars ", "moonphase"],
+                        exclude: ["MARS"]
+                    ])],
+                    false,
+                    true
+                )
+            )
+        }
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "MOONPHASE"
+        jsonAt(manifest, "parameters", "sources", 0, "options", "include").isArray()
+        jsonAt(manifest, "parameters", "sources", 0, "options", "include").size() == 2
+    }
+
     void "pipeline writes manifest and warning when source is unavailable and fail on missing source is disabled"() {
         given:
         List<String> logs = []
@@ -411,6 +462,7 @@ class OraclePipelineMockSpec extends Specification {
         and:
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "warnings", 0, "sourceName").getStringValue() == "domains"
+        jsonAt(manifest, "warnings", 0, "scope").getStringValue() == "DOMAIN"
         jsonAt(manifest, "warnings", 0, "code").getStringValue() == "SOURCE_UNAVAILABLE"
     }
 
@@ -612,6 +664,33 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "generatedJavaFiles").size() == 0
     }
 
+    void "pipeline warns and continues for non default schema dialect"() {
+        when:
+        def result = new JsonSchemaRecordsPipeline({ }).execute(
+            new JsonSchemaRecordsGeneratorConfig(
+                null,
+                null,
+                null,
+                "io.micronaut.jsonschema.custom.generated",
+                21,
+                Files.createTempDirectory("custom-schema-cache"),
+                Files.createTempDirectory("custom-output"),
+                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                    schemaName: "DRAFT_SEVEN",
+                    schema: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","additionalProperties":false}'
+                ])],
+                false,
+                true
+            )
+        )
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "warnings", 0, "code").getStringValue() == "SCHEMA_DIALECT"
+        jsonAt(manifest, "warnings", 0, "step").getStringValue() == "GENERATION"
+    }
+
     void "pipeline fails root unsupported composition by default"() {
         when:
         new JsonSchemaRecordsPipeline({ }).execute(
@@ -744,6 +823,40 @@ class OraclePipelineMockSpec extends Specification {
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "warnings", 0, "code").getStringValue() == "UNSUPPORTED_KEYWORD"
         jsonAt(manifest, "skipped", 0, "code").getStringValue() == "UNSUPPORTED_KEYWORD"
+    }
+
+    void "pipeline sanitizes schema cache paths deterministically"() {
+        given:
+        String schemaName = "A---B" + ("C" * 140)
+        Path schemaCacheDir = Files.createTempDirectory("custom-schema-cache")
+
+        when:
+        def result = new JsonSchemaRecordsPipeline({ }).execute(
+            new JsonSchemaRecordsGeneratorConfig(
+                null,
+                null,
+                null,
+                "io.micronaut.jsonschema.custom.generated",
+                21,
+                schemaCacheDir,
+                Files.createTempDirectory("custom-output"),
+                [new SourceSpec("custom source", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                    schemaName: schemaName,
+                    schema: '{"type":"object","additionalProperties":false}'
+                ])],
+                false,
+                true
+            )
+        )
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        String schemaFile = jsonAt(manifest, "discovery", "schemas", 0, "schemaFile").getStringValue()
+        schemaFile.startsWith("sources/custom_source/A_B")
+        !schemaFile.contains("__")
+        schemaFile.substring(schemaFile.lastIndexOf("/") + 1, schemaFile.length() - ".schema.json".length()).length() <= 128
+        Files.exists(schemaCacheDir.resolve(schemaFile))
     }
 
     void "pipeline fails root external ref by default"() {

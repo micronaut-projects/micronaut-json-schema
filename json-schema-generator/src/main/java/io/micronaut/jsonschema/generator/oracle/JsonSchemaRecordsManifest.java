@@ -66,7 +66,7 @@ public record JsonSchemaRecordsManifest(
     public record SourceMetadata(
         String sourceName,
         String providerClassName,
-        Map<String, String> metadata
+        Map<String, Object> metadata
     ) {
     }
 
@@ -102,7 +102,7 @@ public record JsonSchemaRecordsManifest(
     public record ConfiguredSource(
         String name,
         String providerClassName,
-        Map<String, String> options
+        Map<String, Object> options
     ) {
     }
 

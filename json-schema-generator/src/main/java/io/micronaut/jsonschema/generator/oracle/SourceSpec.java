@@ -15,8 +15,11 @@
  */
 package io.micronaut.jsonschema.generator.oracle;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,7 +33,7 @@ import java.util.Map;
 public record SourceSpec(
     String name,
     String providerClassName,
-    Map<String, String> options
+    Map<String, Object> options
 ) {
 
     /**
@@ -45,12 +48,55 @@ public record SourceSpec(
     }
 
     /**
+     * Resolve a provider option in its configured form.
+     *
+     * @param key The option key
+     * @return The configured value or {@code null}
+     */
+    public Object optionValue(String key) {
+        return options.get(key);
+    }
+
+    /**
      * Resolve a provider option as a string.
      *
      * @param key The option key
      * @return The configured value or {@code null}
      */
     public String option(String key) {
-        return options.get(key);
+        return optionToString(options.get(key));
+    }
+
+    /**
+     * Resolve a provider option as one or more string values.
+     *
+     * @param key The option key
+     * @return The configured values
+     */
+    public List<String> optionValues(String key) {
+        Object value = options.get(key);
+        if (value == null) {
+            return List.of();
+        }
+        if (value instanceof Iterable<?> iterable) {
+            List<String> values = new ArrayList<>();
+            for (Object element : iterable) {
+                values.add(optionToString(element));
+            }
+            return values;
+        }
+        if (value.getClass().isArray()) {
+            List<String> values = new ArrayList<>();
+            int length = Array.getLength(value);
+            for (int i = 0; i < length; i++) {
+                values.add(optionToString(Array.get(value, i)));
+            }
+            return values;
+        }
+        return List.of(optionToString(value));
+    }
+
+    private static String optionToString(Object value) {
+        return value == null ? null : String.valueOf(value);
     }
 }

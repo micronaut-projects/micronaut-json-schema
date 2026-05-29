@@ -38,6 +38,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -194,50 +195,44 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends DefaultTask {
         return new SourceSpec(
             toStringValue(safeMap.get("name")),
             requiredStringValue("providerClassName", safeMap.get("providerClassName")),
-            toStringMap(safeMap.get("options"))
+            toOptionMap(safeMap.get("options"))
         );
     }
 
-    private Map<String, String> toStringMap(Object value) {
+    private Map<String, Object> toOptionMap(Object value) {
         if (value == null) {
             return Map.of();
         }
         if (!(value instanceof Map<?, ?> options)) {
             throw new IllegalArgumentException("Schema source options must be configured as a map.");
         }
-        Map<String, String> result = new LinkedHashMap<>();
+        Map<String, Object> result = new LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : options.entrySet()) {
             result.put(String.valueOf(entry.getKey()), toOptionValue(entry.getValue()));
         }
         return result;
     }
 
-    private String toOptionValue(Object value) {
+    private Object toOptionValue(Object value) {
         if (value == null) {
             return null;
         }
         if (value instanceof Iterable<?> iterable) {
-            StringBuilder builder = new StringBuilder();
+            List<Object> values = new ArrayList<>();
             for (Object element : iterable) {
-                if (!builder.isEmpty()) {
-                    builder.append(',');
-                }
-                builder.append(element);
+                values.add(toOptionValue(element));
             }
-            return builder.toString();
+            return values;
         }
         if (value.getClass().isArray()) {
-            StringBuilder builder = new StringBuilder();
+            List<Object> values = new ArrayList<>();
             int length = java.lang.reflect.Array.getLength(value);
             for (int i = 0; i < length; i++) {
-                if (!builder.isEmpty()) {
-                    builder.append(',');
-                }
-                builder.append(java.lang.reflect.Array.get(value, i));
+                values.add(toOptionValue(java.lang.reflect.Array.get(value, i)));
             }
-            return builder.toString();
+            return values;
         }
-        return String.valueOf(value);
+        return value;
     }
 
     private String requiredStringValue(String name, Object value) {

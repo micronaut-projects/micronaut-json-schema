@@ -369,7 +369,13 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
          * Provider-specific options.
          */
         @Parameter
-        private Map<String, String> options = Map.of();
+        private Map<String, Object> options = Map.of();
+
+        /**
+         * Provider-specific list-valued options.
+         */
+        @Parameter
+        private Map<String, List<String>> optionValues = Map.of();
 
         /**
          * @return The configured source name.
@@ -388,12 +394,23 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
         /**
          * @return Provider-specific options.
          */
-        public Map<String, String> getOptions() {
+        public Map<String, Object> getOptions() {
             return options;
         }
 
+        /**
+         * @return Provider-specific list-valued options.
+         */
+        public Map<String, List<String>> getOptionValues() {
+            return optionValues;
+        }
+
         SourceSpec toSourceSpec() {
-            return new SourceSpec(name, providerClassName, options == null ? Map.of() : new LinkedHashMap<>(options));
+            Map<String, Object> resolvedOptions = options == null ? new LinkedHashMap<>() : new LinkedHashMap<>(options);
+            if (optionValues != null) {
+                optionValues.forEach((key, value) -> resolvedOptions.put(key, value == null ? null : List.copyOf(value)));
+            }
+            return new SourceSpec(name, providerClassName, resolvedOptions);
         }
     }
 

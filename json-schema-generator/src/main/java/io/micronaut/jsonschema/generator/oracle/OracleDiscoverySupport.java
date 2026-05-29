@@ -50,7 +50,7 @@ final class OracleDiscoverySupport {
      * @return The normalized include filter entries
      */
     static Set<String> includeFilter(SourceSpec source) {
-        return toFilter(parseListOption(source.option("include")));
+        return toFilter(parseListOption(source.optionValues("include")));
     }
 
     /**
@@ -60,7 +60,7 @@ final class OracleDiscoverySupport {
      * @return The normalized exclude filter entries
      */
     static Set<String> excludeFilter(SourceSpec source) {
-        return toFilter(parseListOption(source.option("exclude")));
+        return toFilter(parseListOption(source.optionValues("exclude")));
     }
 
     /**
@@ -255,11 +255,13 @@ final class OracleDiscoverySupport {
         return filters;
     }
 
-    private static List<String> parseListOption(String value) {
-        if (value == null || value.isBlank()) {
+    private static List<String> parseListOption(List<String> values) {
+        if (values.isEmpty()) {
             return List.of();
         }
-        return value.lines()
+        return values.stream()
+            .filter(value -> value != null && !value.isBlank())
+            .flatMap(value -> value.lines())
             .flatMap(line -> java.util.Arrays.stream(line.split(",")))
             .map(String::trim)
             .filter(entry -> !entry.isEmpty())

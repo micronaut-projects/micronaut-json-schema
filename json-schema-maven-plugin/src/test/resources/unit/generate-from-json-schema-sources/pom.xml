@@ -23,8 +23,13 @@
               <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider</providerClassName>
               <options>
                 <owner>APP</owner>
-                <include>APP_JSON</include>
               </options>
+              <optionValues>
+                <include>
+                  <value>APP_JSON</value>
+                  <value>ALT_JSON</value>
+                </include>
+              </optionValues>
             </source>
             <source>
               <name>views</name>

@@ -15,9 +15,12 @@
  */
 package io.micronaut.jsonschema.maven;
 
+import io.micronaut.jsonschema.generator.oracle.SourceSpec;
 import org.apache.maven.api.plugin.testing.InjectMojo;
 import org.apache.maven.api.plugin.testing.MojoTest;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,7 +46,9 @@ class GenerateFromJsonSchemaSourcesMojoHarnessTest {
         assertEquals("domains", mojo.getSources().get(0).getName());
         assertEquals("io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", mojo.getSources().get(0).getProviderClassName());
         assertEquals("APP", mojo.getSources().get(0).getOptions().get("owner"));
-        assertEquals("APP_JSON", mojo.getSources().get(0).getOptions().get("include"));
+        assertEquals(List.of("APP_JSON", "ALT_JSON"), mojo.getSources().get(0).getOptionValues().get("include"));
+        SourceSpec domainSource = mojo.getSources().get(0).toSourceSpec();
+        assertEquals(List.of("APP_JSON", "ALT_JSON"), domainSource.options().get("include"));
         assertEquals("views", mojo.getSources().get(1).getName());
         assertEquals("io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider", mojo.getSources().get(1).getProviderClassName());
         assertEquals("APP", mojo.getSources().get(1).getOptions().get("owner"));

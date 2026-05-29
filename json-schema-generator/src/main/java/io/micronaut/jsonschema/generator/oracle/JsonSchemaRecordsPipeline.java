@@ -53,6 +53,8 @@ import java.util.Set;
 public final class JsonSchemaRecordsPipeline {
 
     private static final String GENERATOR_NAME = "json-schema-record-generator";
+    private static final String DRAFT_2020_12_SCHEMA = "https://json-schema.org/draft/2020-12/schema";
+    private static final int MAX_CACHE_NAME_LENGTH = 128;
     private final ObjectMapper objectMapper = JsonSchemaMapperFactory.createMapper();
     private final JsonSchemaRecordsLogger logger;
     private final ClassLoader providerClassLoader;
@@ -133,15 +135,16 @@ public final class JsonSchemaRecordsPipeline {
                     if (config.failOnMissingSource()) {
                         throw e;
                     }
+                    String scope = sourceLevelScope(source);
                     warnings.add(new JsonSchemaRecordsManifest.Warning(
                         source.name(),
-                        "SOURCE",
+                        scope,
                         null,
                         DiscoveryStep.DISCOVERY,
                         "SOURCE_UNAVAILABLE",
                         e.getMessage()
                     ));
-                    logger.warn(formatWarning(source.name(), "SOURCE", null, DiscoveryStep.DISCOVERY, "SOURCE_UNAVAILABLE", e.getMessage()));
+                    logger.warn(formatWarning(source.name(), scope, null, DiscoveryStep.DISCOVERY, "SOURCE_UNAVAILABLE", e.getMessage()));
                     continue;
                 }
                 for (DiscoveryWarning warning : result.warnings()) {
@@ -243,6 +246,7 @@ public final class JsonSchemaRecordsPipeline {
             SourceGenerator generator = new SourceGenerator("java");
             try {
                 Schema rootSchema = loadSchema(config, plan);
+                warnIfNonDefaultDialect(rootSchema, discovered, warnings);
                 SchemaCompositionSupport.normalizeLocalReferences(rootSchema);
                 validateRootSchema(rootSchema, plan);
                 Set<String> beforeGeneration = generatedJavaFiles(config.outputDir());
@@ -338,6 +342,31 @@ public final class JsonSchemaRecordsPipeline {
                 .filter(type -> !Schema.Type.NULL.equals(type))
                 .distinct()
                 .count() > 1;
+    }
+
+    private void warnIfNonDefaultDialect(Schema schema,
+                                         DiscoveredSchemaEntry discovered,
+                                         List<JsonSchemaRecordsManifest.Warning> warnings) {
+        String schemaUri = blankToNull(schema.get$schema());
+        if (schemaUri == null || isDraft202012(schemaUri)) {
+            return;
+        }
+        DiscoveredSchema discoveredSchema = discovered.schema();
+        String message = "Schema declares $schema=" + schemaUri + "; processing as Draft 2020-12 best effort";
+        warnings.add(new JsonSchemaRecordsManifest.Warning(
+            discovered.source().name(),
+            discoveredSchema.scope(),
+            discoveredSchema.name(),
+            DiscoveryStep.GENERATION,
+            "SCHEMA_DIALECT",
+            message
+        ));
+        logger.warn(formatWarning(discovered.source().name(), discoveredSchema.scope(), discoveredSchema.name(), DiscoveryStep.GENERATION, "SCHEMA_DIALECT", message));
+    }
+
+    private boolean isDraft202012(String schemaUri) {
+        String normalized = schemaUri.endsWith("#") ? schemaUri.substring(0, schemaUri.length() - 1) : schemaUri;
+        return DRAFT_2020_12_SCHEMA.equals(normalized);
     }
 
     private Set<String> generatedJavaFiles(Path outputDir) throws IOException {
@@ -543,10 +572,33 @@ public final class JsonSchemaRecordsPipeline {
         return source.name() + "(" + source.providerClassName() + ", options=" + sanitizeOptions(source.options()) + ")";
     }
 
-    private Map<String, String> sanitizeOptions(Map<String, String> options) {
-        Map<String, String> sanitized = new LinkedHashMap<>();
-        options.forEach((key, value) -> sanitized.put(key, isSensitiveOptionKey(key) ? "<redacted>" : value));
+    private Map<String, Object> sanitizeOptions(Map<String, ?> options) {
+        Map<String, Object> sanitized = new LinkedHashMap<>();
+        options.forEach((key, value) -> sanitized.put(key, isSensitiveOptionKey(key) ? "<redacted>" : sanitizeOptionValue(value)));
         return sanitized;
+    }
+
+    private Object sanitizeOptionValue(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> sanitized = new LinkedHashMap<>();
+            map.forEach((key, entryValue) -> sanitized.put(String.valueOf(key),
+                isSensitiveOptionKey(String.valueOf(key)) ? "<redacted>" : sanitizeOptionValue(entryValue)));
+            return sanitized;
+        }
+        if (value instanceof Iterable<?> iterable) {
+            List<Object> sanitized = new ArrayList<>();
+            iterable.forEach(entry -> sanitized.add(sanitizeOptionValue(entry)));
+            return sanitized;
+        }
+        if (value != null && value.getClass().isArray()) {
+            List<Object> sanitized = new ArrayList<>();
+            int length = java.lang.reflect.Array.getLength(value);
+            for (int i = 0; i < length; i++) {
+                sanitized.add(sanitizeOptionValue(java.lang.reflect.Array.get(value, i)));
+            }
+            return sanitized;
+        }
+        return value;
     }
 
     private boolean isSensitiveOptionKey(String key) {
@@ -581,16 +633,44 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private String sanitizeSegment(String value) {
-        return value.toLowerCase(Locale.ENGLISH).replaceAll("[^a-z0-9_\\-]", "_");
+        return sanitizeNamePart(value, false);
     }
 
     private String sanitizeFileName(String name, String owner) {
-        String sanitized = name.toUpperCase(Locale.ENGLISH).replaceAll("[^A-Z0-9_]", "_");
+        String sanitized = sanitizeNamePart(name, true);
         if (owner != null && !owner.isBlank()) {
-            String ownerPrefix = owner.trim().toUpperCase(Locale.ENGLISH).replaceAll("[^A-Z0-9_]", "_");
-            return ownerPrefix + "_" + sanitized + ".schema.json";
+            sanitized = trimCacheName(sanitizeNamePart(owner, true) + "_" + sanitized);
         }
         return sanitized + ".schema.json";
+    }
+
+    private String sanitizeNamePart(String value, boolean uppercase) {
+        String sanitized = value == null ? "" : value.trim();
+        sanitized = uppercase ? sanitized.toUpperCase(Locale.ENGLISH) : sanitized.toLowerCase(Locale.ENGLISH);
+        sanitized = sanitized.replaceAll("[^a-zA-Z0-9]+", "_").replaceAll("_+", "_");
+        sanitized = sanitized.replaceAll("^_+", "").replaceAll("_+$", "");
+        if (sanitized.isBlank()) {
+            sanitized = "schema";
+        }
+        if (uppercase) {
+            sanitized = sanitized.toUpperCase(Locale.ENGLISH);
+        }
+        return trimCacheName(sanitized);
+    }
+
+    private String trimCacheName(String value) {
+        return value.length() <= MAX_CACHE_NAME_LENGTH ? value : value.substring(0, MAX_CACHE_NAME_LENGTH);
+    }
+
+    private String sourceLevelScope(SourceSpec source) {
+        String providerClassName = source.providerClassName();
+        if (OracleDomainSchemaDiscoveryProvider.class.getName().equals(providerClassName)) {
+            return OracleDiscoveryScope.DOMAIN.name();
+        }
+        if (OracleDualityViewSchemaDiscoveryProvider.class.getName().equals(providerClassName)) {
+            return OracleDiscoveryScope.DUALITY_VIEW.name();
+        }
+        return "SOURCE";
     }
 
     private Path uniqueSchemaPath(Path sourceDirectory, String fileName, Set<String> usedRelativeFiles) {
@@ -603,7 +683,11 @@ public final class JsonSchemaRecordsPipeline {
         String baseName = fileName.endsWith(suffix) ? fileName.substring(0, fileName.length() - suffix.length()) : fileName;
         int counter = 2;
         do {
-            candidate = sourceDirectory.resolve(baseName + "_" + counter + suffix);
+            String counterSuffix = "_" + counter;
+            String numberedBaseName = baseName.length() + counterSuffix.length() <= MAX_CACHE_NAME_LENGTH
+                ? baseName
+                : baseName.substring(0, MAX_CACHE_NAME_LENGTH - counterSuffix.length());
+            candidate = sourceDirectory.resolve(numberedBaseName + counterSuffix + suffix);
             relativeFile = candidate.toString().replace('\\', '/');
             counter++;
         } while (usedRelativeFiles.contains(relativeFile));
