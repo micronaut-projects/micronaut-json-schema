@@ -16,6 +16,12 @@
 package io.micronaut.jsonschema.generator.oracle;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.jsonschema.generator.discovery.DiscoverySkipped;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryStep;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryWarning;
+import io.micronaut.jsonschema.generator.discovery.SchemaRetrievalException;
+import io.micronaut.jsonschema.generator.discovery.SourceSpec;
+import io.micronaut.jsonschema.generator.discovery.SourceUnavailableException;
 
 import java.io.IOException;
 import java.sql.Connection;

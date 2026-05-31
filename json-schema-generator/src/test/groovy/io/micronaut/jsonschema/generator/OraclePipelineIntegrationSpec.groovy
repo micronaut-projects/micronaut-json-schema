@@ -3,9 +3,9 @@ package io.micronaut.jsonschema.generator
 import io.micronaut.context.ApplicationContext
 import io.micronaut.json.JsonMapper
 import io.micronaut.json.tree.JsonNode
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneratorConfig
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsPipeline
-import io.micronaut.jsonschema.generator.oracle.SourceSpec
+import io.micronaut.jsonschema.generator.records.JsonSchemaRecordsGeneratorConfig
+import io.micronaut.jsonschema.generator.records.JsonSchemaRecordsPipeline
+import io.micronaut.jsonschema.generator.discovery.SourceSpec
 import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Specification

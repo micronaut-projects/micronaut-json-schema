@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.discovery;
 
 /**
  * A configured discovery source is unavailable before per-object schema retrieval can start.
  *
  * @since 2.0.0
  */
-final class SourceUnavailableException extends Exception {
+public final class SourceUnavailableException extends Exception {
 
     private final String scope;
     private final String name;
     private final DiscoveryStep step;
     private final String code;
 
-    SourceUnavailableException(String scope, String name, DiscoveryStep step, String code, String message) {
+    public SourceUnavailableException(String scope, String name, DiscoveryStep step, String code, String message) {
         super(message);
         this.scope = scope;
         this.name = name;
@@ -35,19 +35,19 @@ final class SourceUnavailableException extends Exception {
         this.code = code;
     }
 
-    String scope() {
+    public String scope() {
         return scope;
     }
 
-    String name() {
+    public String name() {
         return name;
     }
 
-    DiscoveryStep step() {
+    public DiscoveryStep step() {
         return step;
     }
 
-    String code() {
+    public String code() {
         return code;
     }
 }

@@ -22,7 +22,7 @@ import io.micronaut.sourcegen.annotations.GenerateMavenMojo;
  */
 @GenerateMavenMojo(
     namePrefix = "AbstractGenerateFromJsonSchemaSources",
-    source = "io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneration",
+    source = "io.micronaut.jsonschema.generator.records.JsonSchemaRecordsGeneration",
     micronautPlugin = false,
     parameterPrefix = "jsonSchemaRecords",
     enabledPropertyName = "jsonSchemaRecords.enabled",

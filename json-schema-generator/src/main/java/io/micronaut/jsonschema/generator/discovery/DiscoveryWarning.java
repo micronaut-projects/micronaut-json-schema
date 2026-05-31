@@ -13,21 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.discovery;
 
 /**
- * A discovered JSON Schema document.
+ * A non-fatal warning emitted during discovery.
  *
- * @param scope Provider-defined discovery scope used in diagnostics
+ * @param scope Provider-defined warning scope
  * @param name Input object name
- * @param schemaJson The discovered JSON Schema text
- * @param retrievalMode Retrieval mode used to obtain the schema
+ * @param step Pipeline step
+ * @param code Warning code
+ * @param message Warning message
  * @since 2.0.0
  */
-public record DiscoveredSchema(
+public record DiscoveryWarning(
     String scope,
     String name,
-    String schemaJson,
-    String retrievalMode
+    DiscoveryStep step,
+    String code,
+    String message
 ) {
 }

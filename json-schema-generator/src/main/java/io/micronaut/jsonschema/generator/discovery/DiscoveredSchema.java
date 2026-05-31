@@ -13,26 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.discovery;
 
 /**
- * Pipeline step used in Oracle diagnostics.
+ * A discovered JSON Schema document.
  *
+ * @param scope Provider-defined discovery scope used in diagnostics
+ * @param name Input object name
+ * @param schemaJson The discovered JSON Schema text
+ * @param retrievalMode Retrieval mode used to obtain the schema
  * @since 2.0.0
  */
-public enum DiscoveryStep {
-    /**
-     * Metadata object discovery before schema retrieval.
-     */
-    DISCOVERY,
-
-    /**
-     * Retrieval of a JSON Schema document from Oracle metadata.
-     */
-    SCHEMA_RETRIEVAL,
-
-    /**
-     * Java source generation from a discovered schema.
-     */
-    GENERATION
+public record DiscoveredSchema(
+    String scope,
+    String name,
+    String schemaJson,
+    String retrievalMode
+) {
 }

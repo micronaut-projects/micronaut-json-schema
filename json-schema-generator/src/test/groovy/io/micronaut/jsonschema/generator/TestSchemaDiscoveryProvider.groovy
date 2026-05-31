@@ -1,4 +1,9 @@
-package io.micronaut.jsonschema.generator.oracle
+package io.micronaut.jsonschema.generator
+
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider
+import io.micronaut.jsonschema.generator.discovery.SourceSpec
 
 class TestSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 

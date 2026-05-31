@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.discovery;
 
-final class SchemaDiscoveryProviders {
+public final class SchemaDiscoveryProviders {
 
     private SchemaDiscoveryProviders() {
     }
 
-    static SchemaDiscoveryProvider resolve(String providerClassName, ClassLoader classLoader) {
+    public static SchemaDiscoveryProvider resolve(String providerClassName, ClassLoader classLoader) {
         try {
             Class<?> providerClass = Class.forName(providerClassName, true, classLoader);
             Class<? extends SchemaDiscoveryProvider> providerType = providerClass.asSubclass(SchemaDiscoveryProvider.class);

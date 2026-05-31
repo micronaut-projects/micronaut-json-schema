@@ -1,6 +1,7 @@
-package io.micronaut.jsonschema.generator.oracle
+package io.micronaut.jsonschema.generator.discovery
 
 import io.micronaut.jsonschema.generator.DirectOnlySchemaDiscoveryProvider
+import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider
 import spock.lang.Specification
 
 class SchemaDiscoveryProvidersSpec extends Specification {

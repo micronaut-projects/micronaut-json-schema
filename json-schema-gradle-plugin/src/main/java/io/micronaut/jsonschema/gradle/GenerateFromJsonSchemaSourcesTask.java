@@ -15,10 +15,10 @@
  */
 package io.micronaut.jsonschema.gradle;
 
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneration;
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneratorConfig;
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsLogger;
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsPipeline;
+import io.micronaut.jsonschema.generator.records.JsonSchemaRecordsGeneration;
+import io.micronaut.jsonschema.generator.records.JsonSchemaRecordsGeneratorConfig;
+import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger;
+import io.micronaut.jsonschema.generator.records.JsonSchemaRecordsPipeline;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Internal;

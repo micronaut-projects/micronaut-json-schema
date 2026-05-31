@@ -97,7 +97,7 @@ jsonSchemaRecords {
 ----
 
 Custom providers are selected by `providerClassName` and loaded directly from the plugin/provider classpath.
-The provider jar must be present on `jsonSchemaRecordsProviders`, the configured class must implement `SchemaDiscoveryProvider`, and the implementation must expose an accessible no-argument constructor.
+The provider jar must be present on `jsonSchemaRecordsProviders`, the configured class must implement `io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider`, and the implementation must expose an accessible no-argument constructor.
 Java `ServiceLoader` registration is optional and may be used by providers for their own discovery/validation, but it is not required when `providerClassName` is configured.
 
 The built-in providers currently support these source options:

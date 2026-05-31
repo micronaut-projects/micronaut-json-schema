@@ -15,6 +15,17 @@
  */
 package io.micronaut.jsonschema.generator.oracle;
 
+import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult;
+import io.micronaut.jsonschema.generator.discovery.DiscoverySkipped;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryStep;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryWarning;
+import io.micronaut.jsonschema.generator.discovery.JdbcConnectionProvider;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.discovery.SchemaRetrievalException;
+import io.micronaut.jsonschema.generator.discovery.SourceSpec;
+import io.micronaut.jsonschema.generator.discovery.SourceUnavailableException;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySupport.DiscoveryPayload;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySupport.MetadataQueryScope;
 

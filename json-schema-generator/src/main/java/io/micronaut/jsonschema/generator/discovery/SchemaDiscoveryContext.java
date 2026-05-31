@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.discovery;
 
 import java.nio.file.Path;
 import java.util.Map;

@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.records;
 
+import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger;
+import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 import io.micronaut.sourcegen.annotations.PluginTask;
 import io.micronaut.sourcegen.annotations.PluginTaskExecutable;
 import io.micronaut.sourcegen.annotations.PluginTaskParameter;
@@ -29,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Shared build-plugin task definition for Oracle JSON Schema discovery and Java record generation.
+ * Shared build-plugin task definition for JSON Schema discovery and Java record generation.
  *
  * @param jdbcUrl JDBC URL
  * @param username Database username

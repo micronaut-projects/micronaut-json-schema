@@ -13,27 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.discovery;
 
 /**
- * Logging abstraction used by the schema records pipeline.
+ * Pipeline step used in Oracle diagnostics.
  *
  * @since 2.0.0
  */
-@FunctionalInterface
-public interface JsonSchemaRecordsLogger {
+public enum DiscoveryStep {
+    /**
+     * Metadata object discovery before schema retrieval.
+     */
+    DISCOVERY,
 
     /**
-     * Log an informational line.
-     * @param message The message
+     * Retrieval of a JSON Schema document from Oracle metadata.
      */
-    void info(String message);
+    SCHEMA_RETRIEVAL,
 
     /**
-     * Log a warning line.
-     * @param message The message
+     * Java source generation from a discovered schema.
      */
-    default void warn(String message) {
-        info(message);
-    }
+    GENERATION
 }

@@ -13,31 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
-
-import java.io.IOException;
+package io.micronaut.jsonschema.generator.discovery;
 
 /**
- * Input-level schema retrieval failure with a stable diagnostic code.
+ * Logging abstraction used by the schema records pipeline.
  *
  * @since 2.0.0
  */
-final class SchemaRetrievalException extends IOException {
+@FunctionalInterface
+public interface JsonSchemaRecordsLogger {
 
-    private final String code;
-    private final String retrievalMode;
+    /**
+     * Log an informational line.
+     * @param message The message
+     */
+    void info(String message);
 
-    SchemaRetrievalException(String code, String message, String retrievalMode) {
-        super(message);
-        this.code = code;
-        this.retrievalMode = retrievalMode;
-    }
-
-    String code() {
-        return code;
-    }
-
-    String retrievalMode() {
-        return retrievalMode;
+    /**
+     * Log a warning line.
+     * @param message The message
+     */
+    default void warn(String message) {
+        info(message);
     }
 }

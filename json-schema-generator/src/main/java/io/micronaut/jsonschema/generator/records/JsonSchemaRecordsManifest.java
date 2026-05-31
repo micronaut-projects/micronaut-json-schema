@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.records;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryStep;
 import io.micronaut.core.annotation.Internal;
 
 import java.util.List;

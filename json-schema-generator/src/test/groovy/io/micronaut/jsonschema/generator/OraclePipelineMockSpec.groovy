@@ -2,9 +2,9 @@ package io.micronaut.jsonschema.generator
 
 import io.micronaut.json.JsonMapper
 import io.micronaut.json.tree.JsonNode
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneratorConfig
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsPipeline
-import io.micronaut.jsonschema.generator.oracle.SourceSpec
+import io.micronaut.jsonschema.generator.records.JsonSchemaRecordsGeneratorConfig
+import io.micronaut.jsonschema.generator.records.JsonSchemaRecordsPipeline
+import io.micronaut.jsonschema.generator.discovery.SourceSpec
 import spock.lang.Specification
 
 import java.nio.file.Files
@@ -899,7 +899,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 schemaCacheDir,
                 outputDir,
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.oracle.TestSchemaDiscoveryProvider", [apiToken: "secret", include: "SAFE"])],
+                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.TestSchemaDiscoveryProvider", [apiToken: "secret", include: "SAFE"])],
                 false,
                 true
             )

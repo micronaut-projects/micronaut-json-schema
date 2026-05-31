@@ -15,9 +15,9 @@
  */
 package io.micronaut.jsonschema.maven;
 
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneratorConfig;
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsLogger;
-import io.micronaut.jsonschema.generator.oracle.SourceSpec;
+import io.micronaut.jsonschema.generator.records.JsonSchemaRecordsGeneratorConfig;
+import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger;
+import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.settings.Server;

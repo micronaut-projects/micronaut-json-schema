@@ -13,9 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.records;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult;
+import io.micronaut.jsonschema.generator.discovery.DiscoverySkipped;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryStep;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryWarning;
+import io.micronaut.jsonschema.generator.discovery.JdbcConnectionProvider;
+import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProviders;
+import io.micronaut.jsonschema.generator.discovery.SourceSpec;
+import io.micronaut.jsonschema.generator.discovery.SourceUnavailableException;
 import io.micronaut.jsonschema.generator.SchemaCompositionSupport;
 import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.loaders.FileLoader;
@@ -664,11 +676,11 @@ public final class JsonSchemaRecordsPipeline {
 
     private String sourceLevelScope(SourceSpec source) {
         String providerClassName = source.providerClassName();
-        if (OracleDomainSchemaDiscoveryProvider.class.getName().equals(providerClassName)) {
-            return OracleDiscoveryScope.DOMAIN.name();
+        if ("io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider".equals(providerClassName)) {
+            return "DOMAIN";
         }
-        if (OracleDualityViewSchemaDiscoveryProvider.class.getName().equals(providerClassName)) {
-            return OracleDiscoveryScope.DUALITY_VIEW.name();
+        if ("io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider".equals(providerClassName)) {
+            return "DUALITY_VIEW";
         }
         return "SOURCE";
     }

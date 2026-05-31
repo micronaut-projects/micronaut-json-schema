@@ -15,9 +15,9 @@
  */
 package io.micronaut.jsonschema.gradle;
 
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneratorConfig;
-import io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsLogger;
-import io.micronaut.jsonschema.generator.oracle.SourceSpec;
+import io.micronaut.jsonschema.generator.records.JsonSchemaRecordsGeneratorConfig;
+import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger;
+import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSetContainer;

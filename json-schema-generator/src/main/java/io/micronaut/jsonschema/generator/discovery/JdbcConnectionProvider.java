@@ -13,23 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.discovery;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
- * A non-fatal warning emitted during discovery.
+ * Lazily supplies a JDBC connection to discovery providers that need one.
  *
- * @param scope Provider-defined warning scope
- * @param name Input object name
- * @param step Pipeline step
- * @param code Warning code
- * @param message Warning message
  * @since 2.0.0
  */
-public record DiscoveryWarning(
-    String scope,
-    String name,
-    DiscoveryStep step,
-    String code,
-    String message
-) {
+public interface JdbcConnectionProvider {
+
+    /**
+     * @return The JDBC connection
+     * @throws SQLException If the connection cannot be opened
+     */
+    Connection getConnection() throws SQLException;
 }

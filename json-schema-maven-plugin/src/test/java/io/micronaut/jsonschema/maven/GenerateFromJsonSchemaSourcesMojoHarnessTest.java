@@ -15,7 +15,7 @@
  */
 package io.micronaut.jsonschema.maven;
 
-import io.micronaut.jsonschema.generator.oracle.SourceSpec;
+import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 import org.apache.maven.api.plugin.testing.InjectMojo;
 import org.apache.maven.api.plugin.testing.MojoTest;
 import org.junit.jupiter.api.Test;

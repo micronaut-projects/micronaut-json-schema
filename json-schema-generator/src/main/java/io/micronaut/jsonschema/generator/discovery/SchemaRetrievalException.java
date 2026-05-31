@@ -13,21 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.generator.oracle;
+package io.micronaut.jsonschema.generator.discovery;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.io.IOException;
 
 /**
- * Lazily supplies a JDBC connection to discovery providers that need one.
+ * Input-level schema retrieval failure with a stable diagnostic code.
  *
  * @since 2.0.0
  */
-public interface JdbcConnectionProvider {
+public final class SchemaRetrievalException extends IOException {
 
-    /**
-     * @return The JDBC connection
-     * @throws SQLException If the connection cannot be opened
-     */
-    Connection getConnection() throws SQLException;
+    private final String code;
+    private final String retrievalMode;
+
+    public SchemaRetrievalException(String code, String message, String retrievalMode) {
+        super(message);
+        this.code = code;
+        this.retrievalMode = retrievalMode;
+    }
+
+    public String code() {
+        return code;
+    }
+
+    public String retrievalMode() {
+        return retrievalMode;
+    }
 }

@@ -1,10 +1,10 @@
 package io.micronaut.jsonschema.generator
 
-import io.micronaut.jsonschema.generator.oracle.DiscoveredSchema
-import io.micronaut.jsonschema.generator.oracle.DiscoveryResult
-import io.micronaut.jsonschema.generator.oracle.SchemaDiscoveryContext
-import io.micronaut.jsonschema.generator.oracle.SchemaDiscoveryProvider
-import io.micronaut.jsonschema.generator.oracle.SourceSpec
+import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider
+import io.micronaut.jsonschema.generator.discovery.SourceSpec
 
 class CollidingSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 

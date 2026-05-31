@@ -26,7 +26,7 @@ import io.micronaut.sourcegen.annotations.GenerateGradlePlugin;
     types = GenerateGradlePlugin.Type.GRADLE_TASK,
     tasks = @GenerateGradlePlugin.GenerateGradleTask(
         namePrefix = "AbstractGenerateFromJsonSchemaSources",
-        source = "io.micronaut.jsonschema.generator.oracle.JsonSchemaRecordsGeneration"
+        source = "io.micronaut.jsonschema.generator.records.JsonSchemaRecordsGeneration"
     )
 )
 final class JsonSchemaRecordsGradleSourcegenTrigger {
