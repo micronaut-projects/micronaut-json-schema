@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Minimal Confluent Schema Registry JSON Schema client for the registry POC.
+ * Minimal Confluent Schema Registry JSON Schema client for runtime registry reconciliation.
  *
  * @since 2.0.0
  */
