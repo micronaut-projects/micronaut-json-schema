@@ -156,6 +156,74 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "warnings", 0, "code").getStringValue() == "GET_DDL_FAILED"
     }
 
+    void "pipeline falls back to owner scoped domain constraints when get ddl cannot be parsed"() {
+        given:
+        Connection connection = Mock()
+        PreparedStatement scopeProbeStatement = Mock()
+        PreparedStatement domainListStatement = Mock()
+        PreparedStatement ddlStatement = Mock()
+        PreparedStatement constraintProbeStatement = Mock()
+        PreparedStatement constraintStatement = Mock()
+        ResultSet scopeProbeResult = Mock()
+        ResultSet domainListResult = Mock()
+        ResultSet ddlResult = Mock()
+        ResultSet constraintProbeResult = Mock()
+        ResultSet constraintResult = Mock()
+        Driver driver = driverReturning(connection)
+
+        1 * connection.prepareStatement("SELECT 1 FROM ALL_DOMAINS WHERE owner = ? FETCH FIRST 1 ROWS ONLY") >> scopeProbeStatement
+        1 * scopeProbeStatement.setString(1, "HR")
+        1 * scopeProbeStatement.executeQuery() >> scopeProbeResult
+
+        1 * connection.prepareStatement("SELECT name FROM ALL_DOMAINS WHERE owner = ?") >> domainListStatement
+        1 * domainListStatement.setString(1, "HR")
+        1 * domainListStatement.executeQuery() >> domainListResult
+        2 * domainListResult.next() >>> [true, false]
+        1 * domainListResult.getString(1) >> "MOONPHASE"
+
+        1 * connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?, ?) FROM dual") >> ddlStatement
+        1 * ddlStatement.setString(1, "MOONPHASE")
+        1 * ddlStatement.setString(2, "HR")
+        1 * ddlStatement.executeQuery() >> ddlResult
+        1 * ddlResult.next() >> true
+        1 * ddlResult.getString(1) >> "CREATE DOMAIN MOONPHASE AS JSON"
+
+        1 * connection.prepareStatement("SELECT 1 FROM ALL_DOMAIN_CONSTRAINTS WHERE domain_owner = ? FETCH FIRST 1 ROWS ONLY") >> constraintProbeStatement
+        1 * constraintProbeStatement.setString(1, "HR")
+        1 * constraintProbeStatement.executeQuery() >> constraintProbeResult
+
+        1 * connection.prepareStatement("SELECT search_condition FROM ALL_DOMAIN_CONSTRAINTS WHERE domain_owner = ? AND domain_name = ?") >> constraintStatement
+        1 * constraintStatement.setString(1, "HR")
+        1 * constraintStatement.setString(2, "MOONPHASE")
+        1 * constraintStatement.executeQuery() >> constraintResult
+        1 * constraintResult.next() >> true
+        1 * constraintResult.getString(1) >> """CHECK (VALUE IS JSON VALIDATE USING '{"type":"object","properties":{"phase":{"type":"string"}},"required":["phase"]}')"""
+
+        when:
+        def result = withRegisteredDriver(driver) {
+            new JsonSchemaRecordsPipeline({ }).execute(
+                new JsonSchemaRecordsGeneratorConfig(
+                    "jdbc:mockoracle:test",
+                    "test",
+                    "test",
+                    "io.micronaut.jsonschema.oracle.generated",
+                    21,
+                    Files.createTempDirectory("oracle-mock-schema-cache"),
+                    Files.createTempDirectory("oracle-mock-output"),
+                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [owner: "hr", include: "MOONPHASE"])],
+                    false,
+                    true
+                )
+            )
+        }
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "discovery", "schemas", 0, "retrievalMode").getStringValue() == "DOMAIN_CONSTRAINTS"
+        jsonAt(manifest, "warnings", 0, "code").getStringValue() == "GET_DDL_FAILED"
+    }
+
     void "pipeline skips domain when domain constraints fallback view is unavailable"() {
         given:
         Connection connection = Mock()

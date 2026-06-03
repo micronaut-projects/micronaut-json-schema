@@ -322,7 +322,7 @@ final class OracleDiscoverySupport {
     private static boolean isConstraintViewQueryable(Connection connection, String viewName, String owner) {
         String sql = owner == null || owner.isBlank()
             ? "SELECT 1 FROM " + viewName + " FETCH FIRST 1 ROWS ONLY"
-            : "SELECT 1 FROM " + viewName + " WHERE owner = ? FETCH FIRST 1 ROWS ONLY";
+            : "SELECT 1 FROM " + viewName + " WHERE domain_owner = ? FETCH FIRST 1 ROWS ONLY";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (owner != null && !owner.isBlank()) {
                 statement.setString(1, owner.toUpperCase(Locale.ENGLISH));
@@ -352,7 +352,7 @@ final class OracleDiscoverySupport {
     private static String readDomainConstraint(Connection connection, String constraintView, MetadataQueryScope scope, String domainName, String owner) throws SQLException {
         String sql = scope.currentUserScope()
             ? "SELECT search_condition FROM " + constraintView + " WHERE domain_name = ?"
-            : "SELECT search_condition FROM " + constraintView + " WHERE owner = ? AND domain_name = ?";
+            : "SELECT search_condition FROM " + constraintView + " WHERE domain_owner = ? AND domain_name = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (scope.currentUserScope()) {
                 statement.setString(1, domainName);

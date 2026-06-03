@@ -20,9 +20,14 @@ import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.tools.JavaCompiler;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -193,7 +198,124 @@ tasks.register('assertOracleProviderFamilyMapping') {
         assertTrue(result.getOutput().contains("oracle-provider-family-mapping-ok"));
     }
 
+    @Test
+    void compileJavaSeesGeneratedSourcesWhenGenerationTaskIsInSameGraph(@TempDir Path projectDir) throws Exception {
+        writeSettings(projectDir);
+        compileStaticProvider(projectDir);
+        Path appSource = projectDir.resolve("src/main/java/example/app/UsesGeneratedRecord.java");
+        Files.createDirectories(appSource.getParent());
+        Files.writeString(appSource, """
+package example.app;
+
+import example.generated.MoonPhase;
+
+public class UsesGeneratedRecord {
+    private final MoonPhase value;
+
+    public UsesGeneratedRecord(MoonPhase value) {
+        this.value = value;
+    }
+
+    public MoonPhase value() {
+        return value;
+    }
+}
+""");
+        Files.writeString(projectDir.resolve("build.gradle"), """
+plugins {
+    id 'java'
+    id 'io.micronaut.jsonschema.records'
+}
+
+jsonSchemaRecords {
+    targetPackage = 'example.generated'
+    providerClasspath.from(files('provider-classes'))
+    sources = [
+        [name: 'static', providerClassName: 'test.provider.StaticSchemaDiscoveryProvider']
+    ]
+}
+
+dependencies {
+    compileOnly files(%s)
+}
+""".formatted(compileOnlyFilesForGeneratedAnnotations()));
+
+        BuildResult result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("compileJava", "generateFromJsonSchemaSources", "--stacktrace")
+            .withPluginClasspath()
+            .build();
+
+        assertTrue(result.getOutput().contains(":generateFromJsonSchemaSources"));
+        assertTrue(result.getOutput().contains(":compileJava"));
+        assertTrue(Files.exists(projectDir.resolve("build/generated/sources/jsonschema/example/generated/MoonPhase.java")));
+    }
+
     private void writeSettings(Path projectDir) throws IOException {
         Files.writeString(projectDir.resolve("settings.gradle"), "rootProject.name = 'jsonschema-testkit'\n");
+    }
+
+    private void compileStaticProvider(Path projectDir) throws IOException {
+        Path sourceFile = projectDir.resolve("provider-src/test/provider/StaticSchemaDiscoveryProvider.java");
+        Path classesDir = projectDir.resolve("provider-classes");
+        Files.createDirectories(sourceFile.getParent());
+        Files.createDirectories(classesDir);
+        Files.writeString(sourceFile, """
+package test.provider;
+
+import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.discovery.SourceSpec;
+import java.util.List;
+import java.util.Map;
+
+public final class StaticSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
+    @Override
+    public DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+        String schema = "{\\"type\\":\\"object\\",\\"properties\\":{\\"phase\\":{\\"type\\":\\"string\\"}},\\"additionalProperties\\":false}";
+        return new DiscoveryResult(
+            List.of(new DiscoveredSchema("CUSTOM", "moon_phase", schema, "STATIC")),
+            List.of(),
+            List.of(),
+            Map.of()
+        );
+    }
+}
+""");
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        assertTrue(compiler != null, "JDK compiler is required for this test");
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
+            Boolean compiled = compiler.getTask(
+                null,
+                fileManager,
+                null,
+                List.of("-classpath", System.getProperty("java.class.path"), "-d", classesDir.toString()),
+                null,
+                fileManager.getJavaFileObjects(sourceFile.toFile())
+            ).call();
+            assertTrue(compiled, "Static schema provider should compile");
+        }
+    }
+
+    private String compileOnlyFilesForGeneratedAnnotations() throws ReflectiveOperationException, URISyntaxException {
+        return List.of(
+                classPathEntry("io.micronaut.jsonschema.JsonSchema"),
+                classPathEntry("io.micronaut.serde.annotation.Serdeable")
+            )
+            .stream()
+            .map(path -> "'" + path.replace("\\", "\\\\").replace("'", "\\'") + "'")
+            .reduce((first, second) -> first + ", " + second)
+            .orElse("");
+    }
+
+    private String classPathEntry(String className) throws ReflectiveOperationException, URISyntaxException {
+        return Path.of(Class.forName(className)
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .toURI())
+            .toString();
     }
 }
