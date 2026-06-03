@@ -22,10 +22,10 @@ micronaut-serde = "3.0.0"
 micronaut-sourcegen = "2.0.0"
 micronaut-validation = "5.0.0"
 managed-json-schema-validator = "3.0.3"
-micronaut-testresources = "4.0.0-RC1"
-micronaut-micrometer = "6.0.1-M1"
-micronaut-toml = "3.0.0-M2"
-micronaut-sql = "7.0.1-M2"
+micronaut-testresources = "4.0.0"
+micronaut-micrometer = "6.0.0"
+micronaut-toml = "3.0.0"
+micronaut-sql = "7.0.1"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
