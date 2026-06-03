@@ -61,6 +61,24 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
     private String password;
 
     /**
+     * Oracle TNS admin directory.
+     */
+    @Parameter(property = "jsonSchemaRecords.tnsAdmin")
+    private String tnsAdmin;
+
+    /**
+     * Oracle wallet location.
+     */
+    @Parameter(property = "jsonSchemaRecords.walletLocation")
+    private String walletLocation;
+
+    /**
+     * Additional JDBC connection properties.
+     */
+    @Parameter
+    private Map<String, String> jdbcProperties = Map.of();
+
+    /**
      * Optional Maven settings server identifier for credential lookup.
      */
     @Parameter(property = "jsonSchemaRecords.serverId")
@@ -155,6 +173,9 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
                 getJdbcUrl(),
                 getUsername(),
                 getPassword(),
+                getTnsAdmin(),
+                getWalletLocation(),
+                getJdbcProperties(),
                 resolvedTargetPackage,
                 getLanguageLevel(),
                 getSchemaCacheDir(),
@@ -218,6 +239,52 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
         Server server = getConfiguredServer();
         String settingsPassword = server == null ? null : blankToNull(server.getPassword());
         return settingsPassword == null ? blankToNull(System.getenv("DB_PASSWORD")) : settingsPassword;
+    }
+
+    /**
+     * @return Oracle TNS admin directory.
+     */
+    protected String getTnsAdmin() {
+        String configuredTnsAdmin = blankToNull(tnsAdmin);
+        if (configuredTnsAdmin != null) {
+            return configuredTnsAdmin;
+        }
+        String oracleTnsAdmin = getOracleProviderValue(OracleProviderConfiguration::getTnsAdmin);
+        return oracleTnsAdmin == null ? blankToNull(System.getenv("TNS_ADMIN")) : oracleTnsAdmin;
+    }
+
+    /**
+     * @return Oracle wallet location.
+     */
+    protected String getWalletLocation() {
+        String configuredWalletLocation = blankToNull(walletLocation);
+        return configuredWalletLocation == null ? getOracleProviderValue(OracleProviderConfiguration::getWalletLocation) : configuredWalletLocation;
+    }
+
+    /**
+     * @return Additional JDBC properties.
+     */
+    protected Map<String, String> getJdbcProperties() {
+        Map<String, String> properties = new LinkedHashMap<>();
+        ProvidersConfiguration configuredProviders = getProviders();
+        if (configuredProviders != null && configuredProviders.getOracle() != null && configuredProviders.getOracle().getJdbcProperties() != null) {
+            putJdbcProperties(properties, configuredProviders.getOracle().getJdbcProperties());
+        }
+        putJdbcProperties(properties, jdbcProperties);
+        return properties;
+    }
+
+    private void putJdbcProperties(Map<String, String> target, Map<String, String> source) {
+        if (source == null) {
+            return;
+        }
+        source.forEach((key, value) -> {
+            String normalizedKey = blankToNull(key);
+            String normalizedValue = blankToNull(value);
+            if (normalizedKey != null && normalizedValue != null) {
+                target.put(normalizedKey, normalizedValue);
+            }
+        });
     }
 
     /**
@@ -505,6 +572,24 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
         private String password;
 
         /**
+         * Oracle TNS admin directory.
+         */
+        @Parameter
+        private String tnsAdmin;
+
+        /**
+         * Oracle wallet location.
+         */
+        @Parameter
+        private String walletLocation;
+
+        /**
+         * Additional JDBC connection properties.
+         */
+        @Parameter
+        private Map<String, String> jdbcProperties = Map.of();
+
+        /**
          * @return JDBC URL.
          */
         public String getJdbcUrl() {
@@ -523,6 +608,27 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
          */
         public String getPassword() {
             return password;
+        }
+
+        /**
+         * @return Oracle TNS admin directory.
+         */
+        public String getTnsAdmin() {
+            return tnsAdmin;
+        }
+
+        /**
+         * @return Oracle wallet location.
+         */
+        public String getWalletLocation() {
+            return walletLocation;
+        }
+
+        /**
+         * @return Additional JDBC connection properties.
+         */
+        public Map<String, String> getJdbcProperties() {
+            return jdbcProperties;
         }
     }
 }

@@ -20,10 +20,12 @@ import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Configuration for schema discovery and Java record generation.
@@ -31,6 +33,9 @@ import java.util.Map;
  * @param jdbcUrl The JDBC URL
  * @param username The database username
  * @param password The database password
+ * @param tnsAdmin Oracle TNS admin directory
+ * @param walletLocation Oracle wallet location
+ * @param jdbcProperties Additional JDBC connection properties
  * @param targetPackage Target Java package
  * @param languageLevel Java language level used for generation
  * @param schemaCacheDir Discovery output directory
@@ -45,6 +50,9 @@ public record JsonSchemaRecordsGeneratorConfig(
     String jdbcUrl,
     String username,
     String password,
+    String tnsAdmin,
+    String walletLocation,
+    Map<String, String> jdbcProperties,
     String targetPackage,
     int languageLevel,
     Path schemaCacheDir,
@@ -55,7 +63,7 @@ public record JsonSchemaRecordsGeneratorConfig(
 ) {
 
     /**
-     * Create a normalized generator configuration.
+     * Create a generator configuration without wallet or additional JDBC properties.
      *
      * @param jdbcUrl The JDBC URL
      * @param username The database username
@@ -68,10 +76,55 @@ public record JsonSchemaRecordsGeneratorConfig(
      * @param skipOnError Whether to skip individual failures
      * @param failOnMissingSource Whether unavailable configured sources should fail the build
      */
+    public JsonSchemaRecordsGeneratorConfig(String jdbcUrl,
+                                            String username,
+                                            String password,
+                                            String targetPackage,
+                                            int languageLevel,
+                                            Path schemaCacheDir,
+                                            Path outputDir,
+                                            List<SourceSpec> sources,
+                                            boolean skipOnError,
+                                            boolean failOnMissingSource) {
+        this(
+            jdbcUrl,
+            username,
+            password,
+            null,
+            null,
+            Map.of(),
+            targetPackage,
+            languageLevel,
+            schemaCacheDir,
+            outputDir,
+            sources,
+            skipOnError,
+            failOnMissingSource
+        );
+    }
+
+    /**
+     * Create a normalized generator configuration.
+     *
+     * @param jdbcUrl The JDBC URL
+     * @param username The database username
+     * @param password The database password
+     * @param tnsAdmin Oracle TNS admin directory
+     * @param walletLocation Oracle wallet location
+     * @param jdbcProperties Additional JDBC connection properties
+     * @param targetPackage Target Java package
+     * @param languageLevel Java language level used for generation
+     * @param schemaCacheDir Discovery output directory
+     * @param outputDir Generated source directory
+     * @param sources Configured discovery sources
+     * @param skipOnError Whether to skip individual failures
+     * @param failOnMissingSource Whether unavailable configured sources should fail the build
+     */
     public JsonSchemaRecordsGeneratorConfig {
         if (languageLevel <= 0) {
             throw new IllegalArgumentException("jsonSchemaRecords languageLevel must be a positive integer.");
         }
+        jdbcProperties = normalizeJdbcProperties(jdbcProperties);
         sources = normalizeSources(sources);
     }
 
@@ -85,6 +138,43 @@ public record JsonSchemaRecordsGeneratorConfig(
             throw new IllegalStateException("At least one jsonSchemaRecords source must be configured.");
         }
         return sources;
+    }
+
+    /**
+     * Build JDBC connection properties for the configured Oracle connection mode.
+     *
+     * @return JDBC properties
+     */
+    public Properties connectionProperties() {
+        Properties properties = new Properties();
+        jdbcProperties.forEach(properties::setProperty);
+        putIfPresent(properties, "oracle.net.tns_admin", tnsAdmin);
+        putIfPresent(properties, "oracle.net.wallet_location", walletLocation);
+        putIfPresent(properties, "user", username);
+        putIfPresent(properties, "password", password);
+        return properties;
+    }
+
+    private static void putIfPresent(Properties properties, String key, String value) {
+        String normalized = blankToNull(value);
+        if (normalized != null) {
+            properties.setProperty(key, normalized);
+        }
+    }
+
+    private static Map<String, String> normalizeJdbcProperties(Map<String, String> configuredProperties) {
+        if (configuredProperties == null || configuredProperties.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> normalized = new LinkedHashMap<>();
+        configuredProperties.forEach((key, value) -> {
+            String normalizedKey = blankToNull(key);
+            String normalizedValue = blankToNull(value);
+            if (normalizedKey != null && normalizedValue != null) {
+                normalized.put(normalizedKey, normalizedValue);
+            }
+        });
+        return Collections.unmodifiableMap(normalized);
     }
 
     private static List<SourceSpec> normalizeSources(List<SourceSpec> configuredSources) {

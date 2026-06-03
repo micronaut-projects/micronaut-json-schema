@@ -65,6 +65,9 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         mojo.jdbcUrl = "jdbc:oracle:thin:@localhost:1521/FREEPDB1";
         mojo.username = "app";
         mojo.password = "secret";
+        mojo.tnsAdmin = "/opt/oracle/network/admin";
+        mojo.walletLocation = "/opt/oracle/wallet";
+        mojo.jdbcProperties = Map.of("oracle.net.ssl_server_dn_match", "true");
         mojo.targetPackage = "io.micronaut.jsonschema.oracle.generated";
         mojo.languageLevel = 17;
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
@@ -84,6 +87,9 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         assertEquals("jdbc:oracle:thin:@localhost:1521/FREEPDB1", config.jdbcUrl());
         assertEquals("app", config.username());
         assertEquals("secret", config.password());
+        assertEquals("/opt/oracle/network/admin", config.tnsAdmin());
+        assertEquals("/opt/oracle/wallet", config.walletLocation());
+        assertEquals(Map.of("oracle.net.ssl_server_dn_match", "true"), config.jdbcProperties());
         assertEquals("io.micronaut.jsonschema.oracle.generated", config.targetPackage());
         assertEquals(17, config.languageLevel());
         assertEquals(tempDir.resolve("schema-cache"), config.schemaCacheDir());
@@ -172,6 +178,9 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         setField(oracle, "jdbcUrl", "jdbc:oracle:thin:@localhost:1521/FREEPDB1");
         setField(oracle, "username", "app");
         setField(oracle, "password", "secret");
+        setField(oracle, "tnsAdmin", "/opt/oracle/network/admin");
+        setField(oracle, "walletLocation", "/opt/oracle/wallet");
+        setField(oracle, "jdbcProperties", Map.of("oracle.net.ssl_server_dn_match", "true"));
         setField(providers, "oracle", oracle);
         setField(mojo, "skip", false);
         setField(mojo, "providers", providers);
@@ -187,6 +196,9 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         assertEquals("jdbc:oracle:thin:@localhost:1521/FREEPDB1", config.jdbcUrl());
         assertEquals("app", config.username());
         assertEquals("secret", config.password());
+        assertEquals("/opt/oracle/network/admin", config.tnsAdmin());
+        assertEquals("/opt/oracle/wallet", config.walletLocation());
+        assertEquals(Map.of("oracle.net.ssl_server_dn_match", "true"), config.jdbcProperties());
     }
 
     private static GenerateFromJsonSchemaSourcesMojo.SourceConfiguration source(String name,
@@ -228,6 +240,9 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         private String jdbcUrl;
         private String username;
         private String password;
+        private String tnsAdmin;
+        private String walletLocation;
+        private Map<String, String> jdbcProperties = Map.of();
         private String targetPackage;
         private int languageLevel = 21;
         private File schemaCacheDir;
@@ -253,6 +268,21 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         @Override
         protected String getPassword() {
             return password;
+        }
+
+        @Override
+        protected String getTnsAdmin() {
+            return tnsAdmin;
+        }
+
+        @Override
+        protected String getWalletLocation() {
+            return walletLocation;
+        }
+
+        @Override
+        protected Map<String, String> getJdbcProperties() {
+            return jdbcProperties;
         }
 
         @Override
@@ -314,6 +344,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
      */
     static final class SettingsBackedGenerateFromJsonSchemaSourcesMojo extends GenerateFromJsonSchemaSourcesMojo {
         private String jdbcUrl;
+        private String tnsAdmin;
         private String targetPackage;
         private int languageLevel = 21;
         private File schemaCacheDir;
@@ -330,6 +361,11 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         @Override
         protected String getJdbcUrl() {
             return jdbcUrl;
+        }
+
+        @Override
+        protected String getTnsAdmin() {
+            return tnsAdmin;
         }
 
         @Override

@@ -29,6 +29,21 @@
           <required>false</required>
         </parameter>
         <parameter>
+          <name>tnsAdmin</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+        </parameter>
+        <parameter>
+          <name>walletLocation</name>
+          <type>java.lang.String</type>
+          <required>false</required>
+        </parameter>
+        <parameter>
+          <name>jdbcProperties</name>
+          <type>java.util.Map</type>
+          <required>false</required>
+        </parameter>
+        <parameter>
           <name>serverId</name>
           <type>java.lang.String</type>
           <required>false</required>
@@ -88,6 +103,8 @@
         <jdbcUrl implementation="java.lang.String">${jsonSchemaRecords.jdbcUrl}</jdbcUrl>
         <username implementation="java.lang.String">${jsonSchemaRecords.username}</username>
         <password implementation="java.lang.String">${jsonSchemaRecords.password}</password>
+        <tnsAdmin implementation="java.lang.String">${jsonSchemaRecords.tnsAdmin}</tnsAdmin>
+        <walletLocation implementation="java.lang.String">${jsonSchemaRecords.walletLocation}</walletLocation>
         <serverId implementation="java.lang.String">${jsonSchemaRecords.serverId}</serverId>
         <targetPackage implementation="java.lang.String">${jsonSchemaRecords.targetPackage}</targetPackage>
         <languageLevel implementation="int" default-value="21">${jsonSchemaRecords.languageLevel}</languageLevel>

@@ -781,7 +781,7 @@ public final class JsonSchemaRecordsPipeline {
                     throw new SQLException("Missing JDBC URL for JDBC-backed schema discovery source.");
                 }
                 logger.info("[jsonschema-records] INFO jdbcUrl=" + sanitizeJdbcUrl(config.jdbcUrl()));
-                connection = DriverManager.getConnection(config.jdbcUrl(), config.username(), config.password());
+                connection = DriverManager.getConnection(config.jdbcUrl(), config.connectionProperties());
             }
             return connection;
         }

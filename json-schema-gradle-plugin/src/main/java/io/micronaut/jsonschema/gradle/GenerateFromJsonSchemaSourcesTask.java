@@ -33,6 +33,7 @@ import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -90,6 +91,9 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
             getJdbcUrl().getOrNull(),
             getUsername().getOrNull(),
             getPassword().getOrNull(),
+            getTnsAdmin().getOrNull(),
+            getWalletLocation().getOrNull(),
+            getJdbcProperties().getOrElse(Map.of()),
             getTargetPackage().get(),
             getLanguageLevel().getOrElse(21),
             getSchemaCacheDir().get().getAsFile(),

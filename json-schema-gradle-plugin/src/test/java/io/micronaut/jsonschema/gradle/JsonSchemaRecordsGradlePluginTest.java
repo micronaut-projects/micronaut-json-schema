@@ -72,6 +72,9 @@ class JsonSchemaRecordsGradlePluginTest {
         task.getJdbcUrl().set("jdbc:oracle:thin:@localhost:1521/FREEPDB1");
         task.getUsername().set("app");
         task.getPassword().set("secret");
+        task.getTnsAdmin().set("/opt/oracle/network/admin");
+        task.getWalletLocation().set("/opt/oracle/wallet");
+        task.getJdbcProperties().put("oracle.net.ssl_server_dn_match", "true");
         task.getTargetPackage().set("io.micronaut.jsonschema.oracle.generated");
         task.getLanguageLevel().set(17);
         task.getSchemaCacheDir().set(tempDir.resolve("schema-cache").toFile());
@@ -90,6 +93,9 @@ class JsonSchemaRecordsGradlePluginTest {
         assertEquals("jdbc:oracle:thin:@localhost:1521/FREEPDB1", config.jdbcUrl());
         assertEquals("app", config.username());
         assertEquals("secret", config.password());
+        assertEquals("/opt/oracle/network/admin", config.tnsAdmin());
+        assertEquals("/opt/oracle/wallet", config.walletLocation());
+        assertEquals(Map.of("oracle.net.ssl_server_dn_match", "true"), config.jdbcProperties());
         assertEquals("io.micronaut.jsonschema.oracle.generated", config.targetPackage());
         assertEquals(17, config.languageLevel());
         assertEquals(tempDir.resolve("schema-cache"), config.schemaCacheDir());

@@ -36,6 +36,9 @@ import java.util.Map;
  * @param jdbcUrl JDBC URL
  * @param username Database username
  * @param password Database password
+ * @param tnsAdmin Oracle TNS admin directory
+ * @param walletLocation Oracle wallet location
+ * @param jdbcProperties Additional JDBC connection properties
  * @param targetPackage Target package for generated Java sources
  * @param languageLevel Java language level used for generated sources
  * @param schemaCacheDir Directory where discovered schemas are cached
@@ -55,6 +58,15 @@ public record JsonSchemaRecordsGeneration(
 
     @PluginTaskParameter(internal = true)
     String password,
+
+    @PluginTaskParameter(internal = true)
+    String tnsAdmin,
+
+    @PluginTaskParameter(internal = true)
+    String walletLocation,
+
+    @PluginTaskParameter(internal = true)
+    Map<String, String> jdbcProperties,
 
     @PluginTaskParameter(required = true, internal = true)
     String targetPackage,
@@ -84,6 +96,9 @@ public record JsonSchemaRecordsGeneration(
      * @param jdbcUrl JDBC URL
      * @param username Database username
      * @param password Database password
+     * @param tnsAdmin Oracle TNS admin directory
+     * @param walletLocation Oracle wallet location
+     * @param jdbcProperties Additional JDBC connection properties
      * @param targetPackage Target package for generated Java sources
      * @param languageLevel Java language level used for generated sources
      * @param schemaCacheDir Directory where discovered schemas are cached
@@ -94,6 +109,7 @@ public record JsonSchemaRecordsGeneration(
      */
     public JsonSchemaRecordsGeneration {
         languageLevel = languageLevel == null ? 21 : languageLevel;
+        jdbcProperties = jdbcProperties == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(jdbcProperties));
         sources = sources == null ? List.of() : Collections.unmodifiableList(new ArrayList<>(sources));
         skipOnError = skipOnError != null && skipOnError;
         failOnMissingSource = failOnMissingSource == null || failOnMissingSource;
@@ -129,6 +145,9 @@ public record JsonSchemaRecordsGeneration(
             jdbcUrl,
             username,
             password,
+            tnsAdmin,
+            walletLocation,
+            jdbcProperties,
             targetPackage,
             languageLevel,
             schemaCacheDir.toPath(),

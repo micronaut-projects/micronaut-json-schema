@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.gradle;
 
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 
 /**
@@ -38,4 +39,19 @@ public abstract class OracleProviderConfiguration {
      * @return DB password.
      */
     public abstract Property<String> getPassword();
+
+    /**
+     * @return Oracle TNS admin directory.
+     */
+    public abstract Property<String> getTnsAdmin();
+
+    /**
+     * @return Oracle wallet location.
+     */
+    public abstract Property<String> getWalletLocation();
+
+    /**
+     * @return Additional JDBC connection properties.
+     */
+    public abstract MapProperty<String, String> getJdbcProperties();
 }

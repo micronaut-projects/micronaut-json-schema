@@ -20,6 +20,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 
 import javax.inject.Inject;
@@ -56,6 +57,21 @@ public abstract class JsonSchemaRecordsExtension {
      * @return The database password.
      */
     public abstract Property<String> getPassword();
+
+    /**
+     * @return Oracle TNS admin directory.
+     */
+    public abstract Property<String> getTnsAdmin();
+
+    /**
+     * @return Oracle wallet location.
+     */
+    public abstract Property<String> getWalletLocation();
+
+    /**
+     * @return Additional JDBC connection properties.
+     */
+    public abstract MapProperty<String, String> getJdbcProperties();
 
     /**
      * @return Provider-family configuration.

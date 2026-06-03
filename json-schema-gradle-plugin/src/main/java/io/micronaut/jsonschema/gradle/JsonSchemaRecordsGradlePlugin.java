@@ -23,6 +23,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSetContainer;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Gradle plugin that adds opt-in schema discovery and generation support.
@@ -45,6 +46,9 @@ public final class JsonSchemaRecordsGradlePlugin implements Plugin<Project> {
         extension.getJdbcUrl().convention(gradlePropertyOrEnv(project, "jsonSchemaRecords.jdbcUrl", "DB_URL", "JSON_SCHEMA_RECORDS_JDBC_URL"));
         extension.getUsername().convention(gradlePropertyOrEnv(project, "jsonSchemaRecords.username", "DB_USER", "JSON_SCHEMA_RECORDS_USERNAME"));
         extension.getPassword().convention(gradlePropertyOrEnv(project, "jsonSchemaRecords.password", "DB_PASSWORD", "JSON_SCHEMA_RECORDS_PASSWORD"));
+        extension.getTnsAdmin().convention(gradlePropertyOrEnv(project, "jsonSchemaRecords.tnsAdmin", "TNS_ADMIN", "JSON_SCHEMA_RECORDS_TNS_ADMIN"));
+        extension.getWalletLocation().convention(gradlePropertyOrEnv(project, "jsonSchemaRecords.walletLocation", "JSON_SCHEMA_RECORDS_WALLET_LOCATION"));
+        extension.getJdbcProperties().convention(Map.of());
         extension.getLanguageLevel().convention(21);
         extension.getSchemaCacheDir().convention(project.getLayout().getBuildDirectory().dir("jsonschema-cache"));
         extension.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("generated/sources/jsonschema"));
@@ -57,6 +61,10 @@ public final class JsonSchemaRecordsGradlePlugin implements Plugin<Project> {
             task.getJdbcUrl().convention(extension.getProviders().getOracle().getJdbcUrl().orElse(extension.getJdbcUrl()));
             task.getUsername().convention(extension.getProviders().getOracle().getUsername().orElse(extension.getUsername()));
             task.getPassword().convention(extension.getProviders().getOracle().getPassword().orElse(extension.getPassword()));
+            task.getTnsAdmin().convention(extension.getProviders().getOracle().getTnsAdmin().orElse(extension.getTnsAdmin()));
+            task.getWalletLocation().convention(extension.getProviders().getOracle().getWalletLocation().orElse(extension.getWalletLocation()));
+            task.getJdbcProperties().convention(extension.getJdbcProperties());
+            task.getJdbcProperties().putAll(extension.getProviders().getOracle().getJdbcProperties());
             task.getTargetPackage().convention(extension.getTargetPackage());
             task.getLanguageLevel().convention(extension.getLanguageLevel());
             task.getSchemaCacheDir().convention(extension.getSchemaCacheDir());
