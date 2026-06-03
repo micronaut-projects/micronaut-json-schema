@@ -68,6 +68,11 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
     }
 
     @Override
+    public String representationDescription() {
+        return "Configured Oracle JSON Relational Duality View schema; explicit view DDL is required for create-missing actions";
+    }
+
+    @Override
     public Optional<JsonSchemaRegistryOutcome> projectionCompatibility(OracleMaterializationRequest request) {
         try {
             Object schema = objectMapper.readValue(request.candidate().schemaJson(), Object.class);

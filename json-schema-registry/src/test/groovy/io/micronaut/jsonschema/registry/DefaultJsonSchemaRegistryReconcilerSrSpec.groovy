@@ -18,9 +18,22 @@ package io.micronaut.jsonschema.registry
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.annotation.Requires
+import io.micronaut.inject.qualifiers.Qualifiers
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope
+import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger
+import io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
+import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
+import jakarta.inject.Singleton
 import spock.lang.Specification
 
+import javax.sql.DataSource
 import java.nio.charset.StandardCharsets
+import java.sql.Connection
+import java.sql.PreparedStatement
+import java.sql.ResultSet
 
 final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
@@ -103,6 +116,33 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         outcomes.any { it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
         !registrations.isEmpty()
         registrations[0].contains('"schemaType":"JSON"')
+    }
+
+    void "application authority dry run does not register missing SR subject"() {
+        given:
+        startServer([
+                "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest": response(404, "{}")
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "application",
+                "json-schema.registry.dry-run"        : "true",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "sr" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.CREATED &&
+                    it.message().contains("[DRY-RUN]")
+        }
+        registrations.isEmpty()
     }
 
     void "application authority reports missing SR subject in observe only"() {
@@ -253,6 +293,120 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         }
     }
 
+    void "Oracle domain authority mapping registers missing SR subject"() {
+        given:
+        startServer([
+                "/subjects/sr.com.acme.Order/versions/latest": response(404, "{}")
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                        : "sr-domain-discovery-provider",
+                "json-schema.registry.enabled"                                      : "true",
+                "json-schema.registry.authority"                                    : "oracle",
+                "json-schema.registry.naming.subject.prefix"                        : "sr.",
+                "json-schema.registry.oracle.enabled"                               : "true",
+                "json-schema.registry.oracle.authority.providers[0].name"           : "domains",
+                "json-schema.registry.oracle.authority.providers[0].providerClassName": SrDomainDiscoveryProvider.name,
+                "json-schema.registry.mappings[0].subject"                         : "sr.com.acme.Order",
+                "json-schema.registry.mappings[0].domain"                          : "APP_COM_ACME_ORDER",
+                "json-schema.registry.sr.enabled"                                   : "true",
+                "json-schema.registry.sr.url"                                       : serverUrl()
+        ]) { ApplicationContext context ->
+            DataSource dataSource = Stub()
+            dataSource.getConnection() >> null
+            context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any { it.target() == "oracle.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
+        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
+        registrations.size() == 1
+        registrations[0].contains('"schemaType":"JSON"')
+    }
+
+    void "SR authority reconciles built-in Oracle domain target"() {
+        given:
+        startServer([
+                "/subjects/com.acme.Order/versions/latest": response(200, '{"schema":"{\\"type\\":\\"object\\"}"}')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"               : "true",
+                "json-schema.registry.authority"             : "sr",
+                "json-schema.registry.sr.enabled"            : "true",
+                "json-schema.registry.sr.url"                : serverUrl(),
+                "json-schema.registry.sr.subjects[0]"        : "com.acme.Order",
+                "json-schema.registry.oracle.enabled"        : "true",
+                "json-schema.registry.oracle.policy.mode"    : "observe_only",
+                "json-schema.registry.naming.domain.prefix"  : "APP_"
+        ]) { ApplicationContext context ->
+            DataSource dataSource = Mock()
+            Connection connection = Mock()
+            PreparedStatement statement = Mock()
+            ResultSet resultSet = Mock()
+            dataSource.getConnection() >> connection
+            connection.prepareStatement("SELECT name FROM user_domains WHERE name = ?") >> statement
+            statement.executeQuery() >> resultSet
+            resultSet.next() >> false
+            context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any { it.target() == "sr.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
+        outcomes.any {
+            it.target() == "oracle.domain" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.MISSING_TARGET &&
+                    it.logicalSchema().oracleArtifactName() == null &&
+                    it.message().contains("APP_COM_ACME_ORDER")
+        }
+    }
+
+    void "built-in Oracle domain authority provider registers missing SR subject"() {
+        given:
+        startServer([
+                "/subjects/sr.com.acme.Order/versions/latest": response(404, "{}")
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"                       : "true",
+                "json-schema.registry.authority"                     : "oracle",
+                "json-schema.registry.naming.subject.prefix"         : "sr.",
+                "json-schema.registry.oracle.enabled"                : "true",
+                "json-schema.registry.oracle.domains[0]"             : "APP_COM_ACME_ORDER",
+                "json-schema.registry.mappings[0].subject"          : "sr.com.acme.Order",
+                "json-schema.registry.mappings[0].domain"           : "APP_COM_ACME_ORDER",
+                "json-schema.registry.sr.enabled"                   : "true",
+                "json-schema.registry.sr.url"                       : serverUrl()
+        ]) { ApplicationContext context ->
+            DataSource dataSource = Mock()
+            Connection connection = Mock()
+            PreparedStatement ddlStatement = Mock()
+            ResultSet ddlResultSet = Mock()
+            dataSource.getConnection() >> connection
+            connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual") >> ddlStatement
+            ddlStatement.executeQuery() >> ddlResultSet
+            ddlResultSet.next() >> true
+            ddlResultSet.getObject(1) >> 'CREATE DOMAIN APP_COM_ACME_ORDER AS JSON VALIDATE USING \'{"type":"object"}\''
+            context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "oracle.authority" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT &&
+                    it.logicalSchema().subject() == "sr.com.acme.Order"
+        }
+        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
+        registrations.size() == 1
+        registrations[0].contains('"schemaType":"JSON"')
+    }
+
     void "application authority validates generated schema when targets are disabled"() {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
@@ -322,5 +476,19 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
     }
 
     private record FixedResponse(int status, String body) {
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "sr-domain-discovery-provider")
+    static final class SrDomainDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+        @Override
+        OracleDiscoveryResult discover(Connection connection,
+                                       OracleSourceSpec source,
+                                       boolean skipOnError,
+                                       OracleJsonSchemaLogger logger) {
+            new OracleDiscoveryResult([
+                    new OracleDiscoveredSchema(OracleDiscoveryScope.DOMAIN, "APP_COM_ACME_ORDER", '{"type":"object"}', "test")
+            ], [], [])
+        }
     }
 }

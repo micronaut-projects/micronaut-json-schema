@@ -71,6 +71,7 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
         if (context != null && jdbcUrl != null) {
             withConnection { Connection connection ->
                 dropDomain(connection, "REG_CREATE_${suffix}")
+                dropDomain(connection, "REG_DRYRUN_${suffix}")
                 dropDomain(connection, "REG_OBSERVE_${suffix}")
                 dropDomain(connection, "REG_EQUIV_${suffix}")
                 dropDomain(connection, "REG_DRIFT_${suffix}")
@@ -90,6 +91,20 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
         outcome.status() == JsonSchemaRegistryOutcomeStatus.CREATED
         !outcome.failure()
         domainExists(domainName)
+    }
+
+    void "dry run reports missing domain creation without DDL"() {
+        given:
+        String domainName = "REG_DRYRUN_${suffix}"
+
+        when:
+        JsonSchemaRegistryOutcome outcome = reconcile(domainName, SCHEMA, JsonSchemaRegistryPolicyMode.MANAGE, JsonSchemaRegistryDriftMode.REPORT, true)
+
+        then:
+        outcome.status() == JsonSchemaRegistryOutcomeStatus.CREATED
+        !outcome.failure()
+        outcome.message().contains("[DRY-RUN]")
+        !domainExists(domainName)
     }
 
     void "observe only reports missing domain without creating it"() {
@@ -135,6 +150,14 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
                                                String schemaJson,
                                                JsonSchemaRegistryPolicyMode policyMode,
                                                JsonSchemaRegistryDriftMode driftMode) {
+        reconcile(domainName, schemaJson, policyMode, driftMode, false)
+    }
+
+    private JsonSchemaRegistryOutcome reconcile(String domainName,
+                                               String schemaJson,
+                                               JsonSchemaRegistryPolicyMode policyMode,
+                                               JsonSchemaRegistryDriftMode driftMode,
+                                               boolean dryRun) {
         withConnection { Connection connection ->
             materializer.reconcile(
                     connection,
@@ -145,7 +168,7 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
                             [:],
                             policyMode,
                             driftMode,
-                            false
+                            dryRun
                     )
             )
         }

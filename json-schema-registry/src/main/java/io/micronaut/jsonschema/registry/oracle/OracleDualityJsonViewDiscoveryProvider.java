@@ -52,14 +52,19 @@ public final class OracleDualityJsonViewDiscoveryProvider implements OracleSchem
         List<OracleDiscoverySkipped> skipped = new ArrayList<>();
         for (String viewName : selectedViewNames(connection, source)) {
             try {
-                String schema = readViewSchema(connection, source.owner(), viewName);
-                if (schema == null || schema.isBlank()) {
+                SchemaRead schema = readViewSchema(connection, source.owner(), viewName);
+                if (schema == null || schema.schemaJson().isBlank()) {
                     skipped.add(skipped(viewName, "MISSING_SCHEMA", "Oracle duality view JSON schema is missing", null));
                     continue;
                 }
-                OBJECT_MAPPER.readValue(schema, Object.class);
-                logger.info("Oracle duality view schema retrieved: " + viewName);
-                schemas.add(new OracleDiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW, viewName, schema, "duality_view_metadata"));
+                OBJECT_MAPPER.readValue(schema.schemaJson(), Object.class);
+                logger.info("Oracle duality view schema retrieved with " + schema.retrievalMode() + ": " + viewName);
+                schemas.add(new OracleDiscoveredSchema(
+                    OracleDiscoveryScope.DUALITY_VIEW,
+                    viewName,
+                    schema.schemaJson(),
+                    schema.retrievalMode()
+                ));
             } catch (Exception e) {
                 if (!skipOnError) {
                     throw e;
@@ -86,9 +91,38 @@ public final class OracleDualityJsonViewDiscoveryProvider implements OracleSchem
     }
 
     private static List<String> discoverViewNames(Connection connection, String owner) throws SQLException {
-        String sql = owner == null || owner.isBlank()
-            ? "SELECT view_name FROM user_json_duality_views ORDER BY view_name"
-            : "SELECT view_name FROM all_json_duality_views WHERE owner = ? ORDER BY view_name";
+        if (owner == null || owner.isBlank()) {
+            return discoverViewNames(connection, "SELECT view_name FROM user_json_duality_views ORDER BY view_name", null);
+        }
+        SQLException allFailure = null;
+        try {
+            List<String> names = discoverViewNames(
+                connection,
+                "SELECT view_name FROM all_json_duality_views WHERE owner = ? ORDER BY view_name",
+                owner
+            );
+            if (!names.isEmpty()) {
+                return names;
+            }
+        } catch (SQLException ignored) {
+            allFailure = ignored;
+            // Fall through to DBA_ metadata when ALL_ metadata is unavailable for this Oracle version or privilege set.
+        }
+        try {
+            return discoverViewNames(
+                connection,
+                "SELECT view_name FROM dba_json_duality_views WHERE owner = ? ORDER BY view_name",
+                owner
+            );
+        } catch (SQLException e) {
+            if (allFailure != null) {
+                throw allFailure;
+            }
+            return List.of();
+        }
+    }
+
+    private static List<String> discoverViewNames(Connection connection, String sql, String owner) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (owner != null && !owner.isBlank()) {
                 statement.setString(1, owner.toUpperCase(Locale.ENGLISH));
@@ -103,10 +137,53 @@ public final class OracleDualityJsonViewDiscoveryProvider implements OracleSchem
         }
     }
 
-    private static String readViewSchema(Connection connection, String owner, String viewName) throws SQLException {
-        String sql = owner == null || owner.isBlank()
-            ? "SELECT json_serialize(json_schema RETURNING CLOB) FROM user_json_duality_views WHERE view_name = ?"
-            : "SELECT json_serialize(json_schema RETURNING CLOB) FROM all_json_duality_views WHERE owner = ? AND view_name = ?";
+    private static SchemaRead readViewSchema(Connection connection, String owner, String viewName) throws SQLException {
+        if (owner == null || owner.isBlank()) {
+            return readViewSchema(
+                connection,
+                "SELECT json_serialize(json_schema RETURNING CLOB) FROM user_json_duality_views WHERE view_name = ?",
+                null,
+                viewName,
+                "duality_user_metadata"
+            );
+        }
+        SQLException allFailure = null;
+        try {
+            SchemaRead schema = readViewSchema(
+                connection,
+                "SELECT json_serialize(json_schema RETURNING CLOB) FROM all_json_duality_views WHERE owner = ? AND view_name = ?",
+                owner,
+                viewName,
+                "duality_all_metadata"
+            );
+            if (schema != null) {
+                return schema;
+            }
+        } catch (SQLException ignored) {
+            allFailure = ignored;
+            // Fall through to DBA_ metadata when ALL_ metadata is unavailable for this Oracle version or privilege set.
+        }
+        try {
+            return readViewSchema(
+                connection,
+                "SELECT json_serialize(json_schema RETURNING CLOB) FROM dba_json_duality_views WHERE owner = ? AND view_name = ?",
+                owner,
+                viewName,
+                "duality_dba_metadata"
+            );
+        } catch (SQLException e) {
+            if (allFailure != null) {
+                throw allFailure;
+            }
+            return null;
+        }
+    }
+
+    private static SchemaRead readViewSchema(Connection connection,
+                                             String sql,
+                                             String owner,
+                                             String viewName,
+                                             String retrievalMode) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (owner == null || owner.isBlank()) {
                 statement.setString(1, viewName.toUpperCase(Locale.ENGLISH));
@@ -120,14 +197,17 @@ public final class OracleDualityJsonViewDiscoveryProvider implements OracleSchem
                 }
                 Object value = resultSet.getObject(1);
                 if (value instanceof Clob clob) {
-                    return clob.getSubString(1, Math.toIntExact(clob.length()));
+                    return new SchemaRead(clob.getSubString(1, Math.toIntExact(clob.length())), retrievalMode);
                 }
-                return value == null ? null : value.toString();
+                return value == null ? null : new SchemaRead(value.toString(), retrievalMode);
             }
         }
     }
 
     private static OracleDiscoverySkipped skipped(String viewName, String reason, String message, Exception cause) {
         return new OracleDiscoverySkipped(OracleDiscoveryScope.DUALITY_VIEW, viewName, OracleDiscoveryStep.SCHEMA_RETRIEVAL, reason, message, cause);
+    }
+
+    private record SchemaRead(String schemaJson, String retrievalMode) {
     }
 }

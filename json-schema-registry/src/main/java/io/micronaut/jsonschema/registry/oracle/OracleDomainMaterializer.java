@@ -62,6 +62,11 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
     }
 
     @Override
+    public String representationDescription() {
+        return "Self-contained Oracle JSON Domain validation schema; remote JSON Schema $ref is not supported";
+    }
+
+    @Override
     public Optional<JsonSchemaRegistryOutcome> projectionCompatibility(OracleMaterializationRequest request) {
         try {
             Object schema = objectMapper.readValue(request.candidate().schemaJson(), Object.class);

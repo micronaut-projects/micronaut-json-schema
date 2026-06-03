@@ -15,6 +15,9 @@
  */
 package io.micronaut.jsonschema.registry.oracle
 
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult
+import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger
+import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
 import io.micronaut.jsonschema.registry.DefaultJsonSchemaNormalizer
 import io.micronaut.jsonschema.registry.JsonSchemaCandidate
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryDriftMode
@@ -101,6 +104,40 @@ final class OracleDualityJsonViewMaterializerSpec extends Specification {
         1 * statement.close()
         outcome.status() == JsonSchemaRegistryOutcomeStatus.MISSING_TARGET
         !outcome.failure()
+    }
+
+    void "duality view discovery falls back to DBA metadata for owner scoped schema read"() {
+        given:
+        OracleDualityJsonViewDiscoveryProvider provider = new OracleDualityJsonViewDiscoveryProvider()
+        Connection connection = Mock()
+        PreparedStatement allStatement = Mock()
+        PreparedStatement dbaStatement = Mock()
+        ResultSet allResultSet = Mock()
+        ResultSet dbaResultSet = Mock()
+
+        when:
+        OracleDiscoveryResult result = provider.discover(
+                connection,
+                new OracleSourceSpec("duality-views", OracleDualityJsonViewDiscoveryProvider.name, "HR", [include: "ORDER_DV"]),
+                true,
+                { String ignored -> } as OracleJsonSchemaLogger
+        )
+
+        then:
+        1 * connection.prepareStatement("SELECT json_serialize(json_schema RETURNING CLOB) FROM all_json_duality_views WHERE owner = ? AND view_name = ?") >> allStatement
+        1 * allStatement.setString(1, "HR")
+        1 * allStatement.setString(2, "ORDER_DV")
+        1 * allStatement.executeQuery() >> allResultSet
+        1 * allResultSet.next() >> false
+        1 * connection.prepareStatement("SELECT json_serialize(json_schema RETURNING CLOB) FROM dba_json_duality_views WHERE owner = ? AND view_name = ?") >> dbaStatement
+        1 * dbaStatement.setString(1, "HR")
+        1 * dbaStatement.setString(2, "ORDER_DV")
+        1 * dbaStatement.executeQuery() >> dbaResultSet
+        1 * dbaResultSet.next() >> true
+        1 * dbaResultSet.getObject(1) >> '{"type":"object"}'
+        result.schemas().size() == 1
+        result.schemas()[0].name() == "ORDER_DV"
+        result.schemas()[0].retrievalMode() == "duality_dba_metadata"
     }
 
     private static OracleMaterializationRequest request(Map<String, String> options,

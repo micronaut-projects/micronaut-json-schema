@@ -35,6 +35,13 @@ public interface OracleSchemaMaterializer {
     }
 
     /**
+     * @return Human-readable description of the Oracle artifact representation supported by this materializer
+     */
+    default String representationDescription() {
+        return "Oracle schema materializer " + providerClassName();
+    }
+
+    /**
      * Reconcile the configured Oracle artifact.
      *
      * @param connection JDBC connection

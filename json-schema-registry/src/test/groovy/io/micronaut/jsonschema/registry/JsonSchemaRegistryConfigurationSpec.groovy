@@ -30,6 +30,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micronaut.jsonschema.registry.oracle.OracleDomainDiscoveryProvider
 import io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer
+import io.micronaut.jsonschema.registry.oracle.OracleDualityJsonViewMaterializer
 import io.micronaut.jsonschema.registry.oracle.OracleMaterializationRequest
 import io.micronaut.jsonschema.registry.oracle.OracleSchemaDiscoveryProviderResolver
 import io.micronaut.jsonschema.registry.oracle.OracleSchemaMaterializer
@@ -118,6 +119,51 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         provider.options.include == "APP_COM_ACME_ORDER,APP_COM_ACME_INVOICE"
     }
 
+    void "configured Oracle domains narrow explicitly configured built-in domain provider"() {
+        given:
+        JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration()
+        configuration.oracle.domains = ["APP_COM_ACME_ORDER"]
+        JsonSchemaRegistryConfiguration.ProviderConfiguration domainProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
+                name: "domains",
+                providerClassName: OracleDomainDiscoveryProvider.name,
+                options: [prefix: "APP_"]
+        )
+        JsonSchemaRegistryConfiguration.ProviderConfiguration dualityProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
+                name: "duality-views",
+                providerClassName: "example.oracle.OrderDualityViewDiscoveryProvider",
+                options: [include: "ORDER_DV"]
+        )
+        configuration.oracle.authority.providers = [domainProvider, dualityProvider]
+
+        when:
+        List<JsonSchemaRegistryConfiguration.ProviderConfiguration> providers = configuration.resolveOracleAuthorityProviders()
+
+        then:
+        providers[0].providerClassName == OracleDomainDiscoveryProvider.name
+        providers[0].options.include == "APP_COM_ACME_ORDER"
+        !providers[0].options.containsKey("prefix")
+        providers[1] == dualityProvider
+    }
+
+    void "configured Oracle domains narrow defaulted built-in domain provider"() {
+        given:
+        JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration()
+        configuration.oracle.domains = ["APP_COM_ACME_ORDER"]
+        JsonSchemaRegistryConfiguration.ProviderConfiguration domainProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
+                name: "domains",
+                options: [prefix: "APP_"]
+        )
+        configuration.oracle.authority.providers = [domainProvider]
+
+        when:
+        JsonSchemaRegistryConfiguration.ProviderConfiguration provider = configuration.resolveOracleAuthorityProviders()[0]
+
+        then:
+        provider.providerClassName == null
+        provider.options.include == "APP_COM_ACME_ORDER"
+        !provider.options.containsKey("prefix")
+    }
+
     void "configured Oracle extension points replace built-in defaults"() {
         given:
         JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration()
@@ -193,6 +239,60 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         outcomes[0].logicalSchema().oracleArtifactName() == "ORDER_DV"
     }
 
+    void "Oracle domain authority mapping derives logical identity from mapped subject"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                        : "domain-discovery-provider",
+                "json-schema.registry.enabled"                                      : "true",
+                "json-schema.registry.authority"                                    : "oracle",
+                "json-schema.registry.naming.subject.prefix"                        : "sr.",
+                "json-schema.registry.oracle.enabled"                               : "true",
+                "json-schema.registry.oracle.authority.providers[0].name"           : "domains",
+                "json-schema.registry.oracle.authority.providers[0].providerClassName": DomainDiscoveryProvider.name,
+                "json-schema.registry.oracle.authority.providers[0].options.domain" : "APP_COM_ACME_ORDER",
+                "json-schema.registry.mappings[0].subject"                         : "sr.com.acme.Order",
+                "json-schema.registry.mappings[0].domain"                          : "APP_COM_ACME_ORDER",
+                "json-schema.registry.sr.enabled"                                   : "false"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "oracle.authority"
+        outcomes[0].logicalSchema().logicalFqcn() == "com.acme.Order"
+        outcomes[0].logicalSchema().subject() == "sr.com.acme.Order"
+        outcomes[0].logicalSchema().oracleArtifactName() == "APP_COM_ACME_ORDER"
+    }
+
+    void "Oracle domain authority reports missing mapping for lossy domain to SR pairing"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                        : "domain-discovery-provider",
+                "json-schema.registry.enabled"                                      : "true",
+                "json-schema.registry.authority"                                    : "oracle",
+                "json-schema.registry.naming.subject.prefix"                        : "sr.",
+                "json-schema.registry.naming.domain.prefix"                         : "APP_",
+                "json-schema.registry.oracle.enabled"                               : "true",
+                "json-schema.registry.oracle.authority.providers[0].name"           : "domains",
+                "json-schema.registry.oracle.authority.providers[0].providerClassName": DomainDiscoveryProvider.name,
+                "json-schema.registry.oracle.authority.providers[0].options.domain" : "APP_COM_ACME_ORDER",
+                "json-schema.registry.sr.enabled"                                   : "true",
+                "json-schema.registry.sr.url"                                       : "http://localhost:8081"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "sr" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.FAILED &&
+                    it.message().contains("missing_mapping")
+        }
+    }
+
     void "resolves Oracle materializer from Micronaut bean"() {
         expect:
         withContext(["spec.name": "bean-materializer"]) { ApplicationContext context ->
@@ -200,6 +300,16 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                     .resolve(BeanMaterializer.name, getClass().classLoader)
                     .class == BeanMaterializer
         }
+    }
+
+    void "built-in Oracle materializers expose representation descriptions"() {
+        expect:
+        new OracleDomainMaterializer(new DefaultJsonSchemaNormalizer())
+                .representationDescription()
+                .contains("Oracle JSON Domain")
+        new OracleDualityJsonViewMaterializer(new DefaultJsonSchemaNormalizer())
+                .representationDescription()
+                .contains("JSON Relational Duality View")
     }
 
     void "configured Oracle materializer receives provider specific artifact name"() {
@@ -653,6 +763,25 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                                        OracleJsonSchemaLogger logger) {
             new OracleDiscoveryResult([
                     new OracleDiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW, "ORDER_DV", '{"type":"object"}', "test")
+            ], [], [])
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "domain-discovery-provider")
+    static final class DomainDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+        @Override
+        OracleDiscoveryResult discover(Connection connection,
+                                       OracleSourceSpec source,
+                                       boolean skipOnError,
+                                       OracleJsonSchemaLogger logger) {
+            new OracleDiscoveryResult([
+                    new OracleDiscoveredSchema(
+                            OracleDiscoveryScope.DOMAIN,
+                            source.options().getOrDefault("domain", "APP_COM_ACME_ORDER"),
+                            '{"type":"object"}',
+                            "test"
+                    )
             ], [], [])
         }
     }

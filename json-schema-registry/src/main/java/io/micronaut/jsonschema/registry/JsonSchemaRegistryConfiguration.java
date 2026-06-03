@@ -200,17 +200,38 @@ public final class JsonSchemaRegistryConfiguration {
     List<ProviderConfiguration> resolveOracleAuthorityProviders() {
         List<ProviderConfiguration> configured = oracle.getAuthority().getProviders();
         if (!configured.isEmpty()) {
-            return configured;
+            return configured.stream()
+                .map(this::applyBuiltInDomainSelection)
+                .toList();
         }
         ProviderConfiguration provider = new ProviderConfiguration();
         provider.setName("domains");
         provider.setProviderClassName(OracleDomainDiscoveryProvider.class.getName());
-        if (!oracle.getDomains().isEmpty()) {
-            provider.setOptions(Map.of("include", String.join(",", oracle.getDomains())));
-        } else if (!naming.getDomainPrefix().isBlank()) {
-            provider.setOptions(Map.of("prefix", naming.getDomainPrefix()));
+        return List.of(applyBuiltInDomainSelection(provider));
+    }
+
+    private ProviderConfiguration applyBuiltInDomainSelection(ProviderConfiguration provider) {
+        if (!OracleDomainDiscoveryProvider.class.getName().equals(providerClassName(provider, OracleDomainDiscoveryProvider.class.getName()))) {
+            return provider;
         }
-        return List.of(provider);
+        Map<String, String> options = new LinkedHashMap<>(provider.getOptions());
+        if (!oracle.getDomains().isEmpty()) {
+            options.put("include", String.join(",", oracle.getDomains()));
+            options.remove("prefix");
+        } else if (!naming.getDomainPrefix().isBlank()) {
+            options.putIfAbsent("prefix", naming.getDomainPrefix());
+        }
+        ProviderConfiguration copy = new ProviderConfiguration();
+        copy.setName(provider.getName());
+        copy.setProviderClassName(provider.getProviderClassName());
+        copy.setOwner(provider.getOwner());
+        copy.setOptions(options);
+        return copy;
+    }
+
+    private static String providerClassName(ProviderConfiguration provider, String defaultClassName) {
+        String providerClassName = provider.getProviderClassName();
+        return providerClassName == null || providerClassName.isBlank() ? defaultClassName : providerClassName;
     }
 
     List<ProviderConfiguration> resolveOracleMaterializers() {

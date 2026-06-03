@@ -533,8 +533,17 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         if (isDomainProvider(providerClassName, schema)) {
             String domainName = schema.name().toUpperCase(Locale.ENGLISH);
             JsonSchemaRegistryConfiguration.Mapping mapping = configuration.mappingsByDomain().get(domainName);
-            if (mapping != null) {
-                return new LogicalSchema(mapping.getSubject() == null ? domainName : mapping.getSubject(), mapping.getSubject(), domainName);
+            if (mapping != null && mapping.getSubject() != null && !mapping.getSubject().isBlank()) {
+                String logicalName = logicalNameFromSubject(mapping.getSubject());
+                return new LogicalSchema(logicalName, mapping.getSubject(), domainName);
+            }
+            Optional<String> logicalName = logicalNameFromDomainName(domainName);
+            if (logicalName.isPresent()) {
+                return new LogicalSchema(
+                    logicalName.get(),
+                    configuration.getNaming().getSubjectPrefix() + logicalName.get(),
+                    domainName
+                );
             }
             return new LogicalSchema(domainName, null, domainName);
         }
@@ -548,14 +557,32 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
     private LogicalSchema logicalSchemaFromSubject(String subject) {
         JsonSchemaRegistryConfiguration.Mapping mapping = configuration.mappingsBySubject().get(subject);
         if (mapping != null) {
-            return new LogicalSchema(subject, subject, mapping.getDomain());
+            return new LogicalSchema(logicalNameFromSubject(subject), subject, mapping.getDomain());
         }
+        return new LogicalSchema(logicalNameFromSubject(subject), subject, null);
+    }
+
+    private String logicalNameFromSubject(String subject) {
         String prefix = configuration.getNaming().getSubjectPrefix();
         String logicalName = subject;
         if (!prefix.isBlank() && subject.startsWith(prefix)) {
             logicalName = subject.substring(prefix.length());
         }
-        return new LogicalSchema(logicalName, subject, null);
+        return logicalName;
+    }
+
+    private Optional<String> logicalNameFromDomainName(String domainName) {
+        String prefix = configuration.getNaming().getDomainPrefix().toUpperCase(Locale.ENGLISH);
+        if (!prefix.isBlank() && !domainName.startsWith(prefix)) {
+            return Optional.empty();
+        }
+        String logicalName = domainName.substring(prefix.length());
+        if (logicalName.isBlank() || logicalName.contains("_")) {
+            return Optional.empty();
+        }
+        return domainNameFromLogicalName(logicalName).equals(domainName)
+            ? Optional.of(logicalName)
+            : Optional.empty();
     }
 
     private boolean requiresExplicitSrPairing(String subject) {

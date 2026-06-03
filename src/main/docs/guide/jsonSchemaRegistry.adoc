@@ -58,6 +58,16 @@ json-schema:
 
 Schema Registry authority uses configured subjects when `json-schema.registry.sr.subjects` is set. Otherwise, it discovers subjects from `GET /subjects` and keeps subjects that start with `json-schema.registry.naming.subject.prefix`.
 
+When Schema Registry is used, the registry uses these Confluent Schema Registry API calls:
+
+* subject enumeration: `GET /subjects`, filtered client-side by `json-schema.registry.naming.subject.prefix`
+* authority or target latest schema lookup: `GET /subjects/{subject}/versions/latest`
+* target mode check before writes: `GET /mode/{subject}`, falling back to `GET /mode` when the subject mode is not set
+* compatibility check before registering a changed target schema: `POST /compatibility/subjects/{subject}/versions/latest`
+* target registration: `POST /subjects/{subject}/versions` with `schemaType=JSON`
+
+HTTP 5xx and HTTP 429 responses are retried with a bounded retry policy. Other HTTP 4xx responses are not retried.
+
 [configuration]
 ----
 json-schema:
@@ -120,7 +130,46 @@ If `json-schema.registry.oracle.materializers` is not configured, the built-in J
 
 The built-in domain provider supports explicit selection through `json-schema.registry.oracle.domains`. When no explicit domain list is configured, it applies `json-schema.registry.naming.domain.prefix` as a prefix filter.
 
-The built-in domain materializer computes domain names from logical schema names by replacing `.` with `_`, uppercasing the result, and prepending `json-schema.registry.naming.domain.prefix`.
+The built-in domain authority provider enumerates domains with:
+
+[source,sql]
+----
+SELECT name FROM user_domains WHERE name LIKE ? ORDER BY name
+SELECT name FROM all_domains WHERE owner = ? AND name LIKE ? ORDER BY name
+----
+
+When `json-schema.registry.oracle.domains` is set, those configured names are used as the selected set and uppercased before lookup. When no explicit domain list is set, the prefix filter is `json-schema.registry.naming.domain.prefix` uppercased plus `%`.
+
+For each selected domain, schema extraction uses this order:
+
+1. `SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual`, or `SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?, ?) FROM dual` when `owner` is configured
+2. `SELECT search_condition FROM user_domain_constraints WHERE domain_name = ?`, or `SELECT search_condition FROM all_domain_constraints WHERE owner = ? AND domain_name = ?` when `owner` is configured
+
+The provider extracts the JSON text from a single-quoted `VALIDATE USING` clause, unescapes doubled single quotes, parses the text as JSON, and logs whether `get_ddl` or `search_condition` was used.
+
+The built-in domain materializer computes domain names from logical schema names by prepending `json-schema.registry.naming.domain.prefix`, replacing `.` with `_`, and uppercasing the result. If the computed identifier is longer than 128 UTF-8 bytes, it is truncated and suffixed with `_` plus the first 8 uppercase hex characters of the SHA-256 hash of the full computed name.
+
+In Oracle authority mode, built-in domain names are paired to Schema Registry subjects through `json-schema.registry.mappings` when the domain name cannot be reversed deterministically. Names that include `_`, truncation, hash suffixing, or case-sensitive Java-style package names require an explicit mapping.
+
+The built-in duality-view discovery provider enumerates owner-scoped views with:
+
+[source,sql]
+----
+SELECT view_name FROM user_json_duality_views ORDER BY view_name
+SELECT view_name FROM all_json_duality_views WHERE owner = ? ORDER BY view_name
+SELECT view_name FROM dba_json_duality_views WHERE owner = ? ORDER BY view_name
+----
+
+It reads view schemas with:
+
+[source,sql]
+----
+SELECT json_serialize(json_schema RETURNING CLOB) FROM user_json_duality_views WHERE view_name = ?
+SELECT json_serialize(json_schema RETURNING CLOB) FROM all_json_duality_views WHERE owner = ? AND view_name = ?
+SELECT json_serialize(json_schema RETURNING CLOB) FROM dba_json_duality_views WHERE owner = ? AND view_name = ?
+----
+
+`USER_` metadata is used when no owner is configured. With an owner, `ALL_` metadata is tried first and `DBA_` metadata is used as a fallback when appropriate.
 
 == Oracle Extensions
 
@@ -164,6 +213,7 @@ json-schema:
 ----
 
 Materializers implement api:jsonschema.registry.oracle.OracleSchemaMaterializer[] and are resolved as Micronaut beans or `ServiceLoader` providers matched by `providerClassName`.
+The materializer SPI exposes `representationDescription()` so implementations can describe the Oracle artifact representation they support. The registry still calls `projectionCompatibility(...)` for each candidate before materialization.
 
 The registry includes a duality-view materializer, `io.micronaut.jsonschema.registry.oracle.OracleDualityJsonViewMaterializer`. It verifies existing JSON Relational Duality Views by reading Oracle duality-view metadata and comparing normalized schema text. It can create a missing view only when `options.viewDdl` or `options.viewDdlResource` supplies explicit DDL. Existing views are never replaced or mutated.
 
