@@ -4,3 +4,5 @@ JSON data consistency, validity and interoperability.
 Micronaut JSON Schema assists transforming schemas to beans and beans to schemas in your applications.
 
 It also includes a configuration validator that can validate Micronaut configuration against JSON Schemas on the classpath.
+
+The runtime JSON Schema Registry module can reconcile schemas between application models, Confluent Schema Registry, and Oracle-backed JSON schema artifacts.

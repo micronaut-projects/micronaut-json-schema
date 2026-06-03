@@ -1,0 +1,214 @@
+[[jsonSchemaRegistry]]
+
+The Micronaut JSON Schema Registry module reconciles JSON Schemas between one authority source and configured targets at runtime.
+
+The registry supports three authority modes:
+
+* `application`: discover application classes annotated with api:jsonschema.JsonSchema[] and resolve their generated JSON Schemas
+* `sr`: read the latest JSON Schema from Confluent Schema Registry subjects
+* `oracle`: read JSON Schemas from configured Oracle authority discovery providers
+
+The non-authoritative systems are reconciled as targets. Schema Registry can register missing or changed subjects. Oracle materializers can create missing configured artifacts and report drift for existing artifacts.
+
+== Dependency
+
+To use runtime reconciliation, add the registry module:
+
+dependency:micronaut-json-schema-registry[groupId="io.micronaut.jsonschema"]
+
+Application authority mode also requires the normal JSON Schema annotation processor setup so schema resources are generated during compilation.
+
+== Enabling the Registry
+
+The registry is disabled by default. Enable it with `json-schema.registry.enabled`:
+
+[configuration]
+----
+json-schema:
+  registry:
+    enabled: true
+    authority: application
+----
+
+When enabled, the registry runs once on startup. Startup failure handling is controlled by `json-schema.registry.fail-fast-strategy`:
+
+* `readiness_gate`: record the failure and keep readiness down until a later successful run
+* `startup_abort`: fail application startup when startup reconciliation fails
+* `none`: record the failure and continue without gating readiness
+
+The registry also exposes api:jsonschema.registry.JsonSchemaRegistryService[], which can trigger the same reconciliation logic programmatically.
+
+== Authority Modes
+
+Application authority discovers api:jsonschema.JsonSchema[] types and resolves their generated schemas through api:jsonschema.JsonSchemaMapper[].
+
+[configuration]
+----
+json-schema:
+  registry:
+    enabled: true
+    authority: application
+    sr:
+      enabled: true
+      url: http://localhost:8081
+    oracle:
+      enabled: true
+      datasource: default
+----
+
+Schema Registry authority uses configured subjects when `json-schema.registry.sr.subjects` is set. Otherwise, it discovers subjects from `GET /subjects` and keeps subjects that start with `json-schema.registry.naming.subject.prefix`.
+
+[configuration]
+----
+json-schema:
+  registry:
+    enabled: true
+    authority: sr
+    sr:
+      enabled: true
+      url: http://localhost:8081
+      subjects:
+        - com.acme.Order
+----
+
+Oracle authority uses configured Oracle authority discovery providers. If none are configured, the built-in JSON Domain discovery provider is used.
+
+[configuration]
+----
+json-schema:
+  registry:
+    enabled: true
+    authority: oracle
+    oracle:
+      enabled: true
+      datasource: default
+      domains:
+        - APP_COM_ACME_ORDER
+----
+
+== Schema Registry Target
+
+Schema Registry is enabled with `json-schema.registry.sr.enabled=true`.
+
+When Schema Registry is a target:
+
+* `manage` registers a missing subject or a new version when the latest schema differs
+* `observe_only` reads the latest subject and reports `missing_target`, `equivalent`, or `drift`
+
+Schema Registry writes are skipped when `json-schema.registry.dry-run=true`; outcomes are labelled with `[DRY-RUN]`.
+
+The registry can authenticate to Schema Registry using:
+
+* `json-schema.registry.sr.username` and `json-schema.registry.sr.password`
+* `json-schema.registry.sr.bearer-token`
+* `json-schema.registry.sr.headers.*`
+
+Bearer authentication takes precedence over basic authentication when both are configured.
+
+== Oracle Authority and Materialization
+
+Oracle integration requires `json-schema.registry.oracle.enabled=true` and a `javax.sql.DataSource` bean. The datasource bean name is selected with `json-schema.registry.oracle.datasource`; the default is `default`.
+
+Oracle integration has two roles:
+
+* authority discovery providers read existing Oracle-backed JSON Schemas when `authority=oracle`
+* materializers reconcile a candidate schema to Oracle artifacts when Oracle is a target
+
+If `json-schema.registry.oracle.authority.providers` is not configured, the built-in domain authority provider is used. If the provider list is configured, the configured list replaces the default list.
+
+If `json-schema.registry.oracle.materializers` is not configured, the built-in JSON Domain materializer is used. If the materializer list is configured, the configured list replaces the default list.
+
+The built-in domain provider supports explicit selection through `json-schema.registry.oracle.domains`. When no explicit domain list is configured, it applies `json-schema.registry.naming.domain.prefix` as a prefix filter.
+
+The built-in domain materializer computes domain names from logical schema names by replacing `.` with `_`, uppercasing the result, and prepending `json-schema.registry.naming.domain.prefix`.
+
+== Oracle Extensions
+
+Authority discovery providers use the shared Oracle discovery SPI from the generator module:
+
+[source,java]
+----
+public interface OracleSchemaDiscoveryProvider {
+    OracleDiscoveryResult discover(Connection connection,
+                                   OracleSourceSpec source,
+                                   boolean skipOnError,
+                                   OracleJsonSchemaLogger logger) throws Exception;
+}
+----
+
+Registry provider resolution supports Micronaut beans and `ServiceLoader` entries for:
+
+[source]
+----
+META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
+----
+
+Custom provider configuration is passed through `providerClassName`, optional `owner`, and provider-specific `options`:
+
+[configuration]
+----
+json-schema:
+  registry:
+    enabled: true
+    authority: oracle
+    oracle:
+      enabled: true
+      authority:
+        providers:
+          - name: duality-views
+            providerClassName: example.oracle.OrderDualityViewDiscoveryProvider
+            options:
+              logicalFqcn: com.acme.Order
+              subject: com.acme.Order
+              viewName: ORDER_DV
+----
+
+Materializers implement api:jsonschema.registry.oracle.OracleSchemaMaterializer[] and are resolved as Micronaut beans or `ServiceLoader` providers matched by `providerClassName`.
+
+The registry includes a duality-view materializer, `io.micronaut.jsonschema.registry.oracle.OracleDualityJsonViewMaterializer`. It verifies existing JSON Relational Duality Views by reading Oracle duality-view metadata and comparing normalized schema text. It can create a missing view only when `options.viewDdl` or `options.viewDdlResource` supplies explicit DDL. Existing views are never replaced or mutated.
+
+== Drift and Projection Compatibility
+
+Before reconciling a schema to Oracle, each materializer checks whether its Oracle artifact model can represent the candidate schema exactly. If exact representation is not possible, the registry reports `projection_incompatibility`.
+
+Oracle materializers are create-missing only in this version:
+
+* missing target + `manage`: create the configured artifact
+* missing target + `observe_only`: report `missing_target`
+* existing equivalent artifact: report `equivalent`
+* existing different or unreadable artifact: report `drift`
+
+Existing Oracle artifacts are not altered, replaced, dropped, or migrated.
+
+`json-schema.registry.oracle.drift.mode` controls whether drift is treated as a reconciliation failure:
+
+* `report`: report drift without marking the outcome as a failure
+* `fail`: report drift and mark the outcome as a failure
+
+== Mapping
+
+The registry derives names from configured naming rules where possible. Explicit `json-schema.registry.mappings` entries are available as a built-in domain pairing shortcut:
+
+[configuration]
+----
+json-schema:
+  registry:
+    mappings:
+      - subject: com.acme.Order
+        domain: APP_COM_ACME_ORDER
+----
+
+Mappings are used to override or disambiguate subject/domain pairing. They are not a generic mapping format for every Oracle artifact kind. Non-domain providers and materializers should define their mapping options under their own `options`.
+
+== Readiness and Metrics
+
+When Micronaut Management is present, the registry exposes a readiness indicator backed by the last reconciliation state. Health checks do not query Schema Registry or Oracle directly.
+
+When Micrometer is present, the registry records:
+
+* reconciliation outcomes
+* discovered authority schema counts
+* reconciliation run duration
+* target operation duration for Schema Registry HTTP operations and Oracle introspection/DDL operations
+
+Metrics avoid high-cardinality schema identifiers. Schema names, subjects, and Oracle artifact names are logged in structured reconciliation outcome messages.

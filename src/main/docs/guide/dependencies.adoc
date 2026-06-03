@@ -10,3 +10,5 @@ dependency:micronaut-json-schema-generator[groupId="io.micronaut.jsonschema"]
 
 NOTE: The Generator module can also be directly used with the Micronaut's https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#[Gradle] and https://micronaut-projects.github.io/micronaut-maven-plugin/latest/[Maven] Plugins.
 
+In order to reconcile runtime JSON Schemas between application models, Confluent Schema Registry, and Oracle-backed artifacts, add the registry module:
+dependency:micronaut-json-schema-registry[groupId="io.micronaut.jsonschema"]
