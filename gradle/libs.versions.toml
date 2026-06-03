@@ -17,6 +17,7 @@
 
 [versions]
 micronaut = "5.0.0"
+micronaut-gradle-plugin = "5.0.0"
 micronaut-serde = "3.0.0"
 micronaut-sourcegen = "2.0.0"
 micronaut-validation = "5.0.0"
@@ -39,6 +40,7 @@ managed-json-schema-validator = { module = "com.networknt:json-schema-validator"
 
 micronaut-toml = { module = "io.micronaut.toml:micronaut-toml", version.ref = "micronaut-toml" }
 micronaut-sql-jdbc-hikari = { module = "io.micronaut.sql:micronaut-jdbc-hikari", version.ref = "micronaut-sql" }
+gradle-micronaut = { module = "io.micronaut.gradle:micronaut-gradle-plugin", version.ref = "micronaut-gradle-plugin" }
 
 [bundles]
 

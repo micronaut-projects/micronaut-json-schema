@@ -17,7 +17,6 @@ package io.micronaut.jsonschema.registry.oracle
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.inject.qualifiers.Qualifiers
-import io.micronaut.jsonschema.generator.oracle.OracleDualityJsonViewDiscoveryProvider
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcome
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcomeStatus
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryReconciler

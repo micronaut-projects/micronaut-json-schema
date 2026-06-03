@@ -128,16 +128,20 @@ public final class JsonSchemaRegistryConfiguration {
      */
     @Inject
     void readNestedProperties(Environment environment) {
-        environment.getProperty(PREFIX + ".naming.subject.prefix", String.class).ifPresent(naming::setSubjectPrefix);
-        environment.getProperty(PREFIX + ".naming.domain.prefix", String.class).ifPresent(naming::setDomainPrefix);
+        stringProperty(environment, PREFIX + ".naming.subject.prefix").ifPresent(naming::setSubjectPrefix);
+        stringProperty(environment, PREFIX + ".naming.domain.prefix").ifPresent(naming::setDomainPrefix);
 
         environment.getProperty(PREFIX + ".sr.enabled", Boolean.class).ifPresent(sr::setEnabled);
-        environment.getProperty(PREFIX + ".sr.url", String.class).ifPresent(sr::setUrl);
+        stringProperty(environment, PREFIX + ".sr.url").ifPresent(sr::setUrl);
         environment.getProperty(PREFIX + ".sr.subjects", Argument.listOf(String.class)).ifPresent(sr::setSubjects);
+        stringProperty(environment, PREFIX + ".sr.username").ifPresent(sr::setUsername);
+        stringProperty(environment, PREFIX + ".sr.password").ifPresent(sr::setPassword);
+        stringProperty(environment, PREFIX + ".sr.bearer-token").ifPresent(sr::setBearerToken);
+        environment.getProperty(PREFIX + ".sr.headers", Argument.mapOf(String.class, String.class)).ifPresent(sr::setHeaders);
         environment.getProperty(PREFIX + ".sr.policy.mode", JsonSchemaRegistryPolicyMode.class).ifPresent(sr.getPolicy()::setMode);
 
         environment.getProperty(PREFIX + ".oracle.enabled", Boolean.class).ifPresent(oracle::setEnabled);
-        environment.getProperty(PREFIX + ".oracle.datasource", String.class).ifPresent(oracle::setDatasource);
+        stringProperty(environment, PREFIX + ".oracle.datasource").ifPresent(oracle::setDatasource);
         environment.getProperty(PREFIX + ".oracle.domains", Argument.listOf(String.class)).ifPresent(oracle::setDomains);
         environment.getProperty(PREFIX + ".oracle.policy.mode", JsonSchemaRegistryPolicyMode.class).ifPresent(oracle.getPolicy()::setMode);
         environment.getProperty(PREFIX + ".oracle.drift.mode", JsonSchemaRegistryDriftMode.class).ifPresent(oracle.getDrift()::setMode);
@@ -145,6 +149,10 @@ public final class JsonSchemaRegistryConfiguration {
             .ifPresent(oracle.getAuthority()::setProviders);
         environment.getProperty(PREFIX + ".oracle.materializers", Argument.listOf(ProviderConfiguration.class))
             .ifPresent(oracle::setMaterializers);
+    }
+
+    private static java.util.Optional<String> stringProperty(Environment environment, String key) {
+        return environment.getProperty(key, Object.class).map(Object::toString);
     }
 
     /**
@@ -199,6 +207,8 @@ public final class JsonSchemaRegistryConfiguration {
         provider.setProviderClassName(OracleDomainDiscoveryProvider.class.getName());
         if (!oracle.getDomains().isEmpty()) {
             provider.setOptions(Map.of("include", String.join(",", oracle.getDomains())));
+        } else if (!naming.getDomainPrefix().isBlank()) {
+            provider.setOptions(Map.of("prefix", naming.getDomainPrefix()));
         }
         return List.of(provider);
     }
@@ -318,6 +328,10 @@ public final class JsonSchemaRegistryConfiguration {
         private boolean enabled;
         private String url = "http://localhost:8081";
         private List<String> subjects = List.of();
+        private String username;
+        private String password;
+        private String bearerToken;
+        private Map<String, String> headers = Map.of();
         private TargetPolicyConfiguration policy = new TargetPolicyConfiguration();
 
         /**
@@ -360,6 +374,65 @@ public final class JsonSchemaRegistryConfiguration {
          */
         public void setSubjects(@Nullable List<String> subjects) {
             this.subjects = subjects == null ? List.of() : List.copyOf(subjects);
+        }
+
+        /**
+         * @return Basic authentication username
+         */
+        @Nullable
+        public String getUsername() {
+            return username;
+        }
+
+        /**
+         * @param username Basic authentication username
+         */
+        public void setUsername(@Nullable String username) {
+            this.username = username;
+        }
+
+        /**
+         * @return Basic authentication password
+         */
+        @Nullable
+        public String getPassword() {
+            return password;
+        }
+
+        /**
+         * @param password Basic authentication password
+         */
+        public void setPassword(@Nullable String password) {
+            this.password = password;
+        }
+
+        /**
+         * @return Bearer authentication token
+         */
+        @Nullable
+        public String getBearerToken() {
+            return bearerToken;
+        }
+
+        /**
+         * @param bearerToken Bearer authentication token
+         */
+        public void setBearerToken(@Nullable String bearerToken) {
+            this.bearerToken = bearerToken;
+        }
+
+        /**
+         * @return Additional Schema Registry HTTP headers
+         */
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+
+        /**
+         * @param headers Additional Schema Registry HTTP headers
+         */
+        public void setHeaders(@Nullable Map<String, String> headers) {
+            this.headers = headers == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(headers));
         }
 
         /**

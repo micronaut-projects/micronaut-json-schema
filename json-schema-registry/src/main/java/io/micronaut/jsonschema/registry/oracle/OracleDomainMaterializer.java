@@ -15,22 +15,26 @@
  */
 package io.micronaut.jsonschema.registry.oracle;
 
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema;
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult;
 import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
 import io.micronaut.jsonschema.registry.JsonSchemaNormalizer;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryDriftMode;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcome;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcomeStatus;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryPolicyMode;
+import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import jakarta.inject.Singleton;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -42,9 +46,11 @@ import java.util.regex.Pattern;
 public final class OracleDomainMaterializer implements OracleSchemaMaterializer {
     private static final Pattern SIMPLE_IDENTIFIER = Pattern.compile("[A-Z][A-Z0-9_$#]{0,127}");
     private static final String TARGET = "oracle.domain";
+    private static final int SQL_LITERAL_CHUNK_SIZE = 3_000;
 
     private final JsonSchemaNormalizer normalizer;
     private final OracleDomainDiscoveryProvider discoveryProvider;
+    private final ObjectMapper objectMapper;
 
     /**
      * @param normalizer Schema normalizer
@@ -52,12 +58,38 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
     public OracleDomainMaterializer(JsonSchemaNormalizer normalizer) {
         this.normalizer = normalizer;
         this.discoveryProvider = new OracleDomainDiscoveryProvider();
+        this.objectMapper = JsonSchemaMapperFactory.createMapper();
+    }
+
+    @Override
+    public Optional<JsonSchemaRegistryOutcome> projectionCompatibility(OracleMaterializationRequest request) {
+        try {
+            Object schema = objectMapper.readValue(request.candidate().schemaJson(), Object.class);
+            Optional<String> remoteRef = firstRemoteReference(schema);
+            if (remoteRef.isPresent()) {
+                return Optional.of(JsonSchemaRegistryOutcome.failure(
+                    request.candidate().logicalSchema(),
+                    TARGET,
+                    JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY,
+                    "Oracle domain projection does not support remote JSON Schema $ref: " + remoteRef.get()
+                ));
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(JsonSchemaRegistryOutcome.failure(
+                request.candidate().logicalSchema(),
+                TARGET,
+                JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY,
+                e.getMessage()
+            ));
+        }
     }
 
     @Override
     public JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) throws Exception {
         String domainName = normalizeIdentifier(Objects.requireNonNull(request.artifactName(), "Oracle domain materializer requires an artifact name"));
-        if (!domainExists(connection, domainName, request.owner())) {
+        String owner = normalizeOwner(request.owner());
+        if (!request.recordOperation("introspection", () -> domainExists(connection, domainName, request.owner()))) {
             if (request.policyMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
                 return JsonSchemaRegistryOutcome.ok(
                     request.candidate().logicalSchema(),
@@ -71,32 +103,34 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
                     request.candidate().logicalSchema(),
                     TARGET,
                     JsonSchemaRegistryOutcomeStatus.CREATED,
-                    "Dry run: would create Oracle domain " + domainName
+                    "[DRY-RUN] would create Oracle domain " + qualifiedName(owner, domainName)
                 );
             }
-            createDomain(connection, domainName, request.candidate().schemaJson());
+            request.recordOperation("ddl", () -> {
+                createDomain(connection, owner, domainName, request.candidate().schemaJson());
+                return null;
+            });
             return JsonSchemaRegistryOutcome.ok(
                 request.candidate().logicalSchema(),
                 TARGET,
                 JsonSchemaRegistryOutcomeStatus.CREATED,
-                "Created Oracle domain " + domainName
+                "Created Oracle domain " + qualifiedName(owner, domainName)
             );
         }
 
-        OracleDiscoveredSchema current = readDomain(connection, domainName, request.owner());
-        if (normalizer.equivalent(request.candidate().schemaJson(), current.schemaJson())) {
+        Optional<OracleDiscoveredSchema> current = request.recordOperation("introspection", () -> readDomain(connection, domainName, owner));
+        if (current.isEmpty()) {
+            return driftOutcome(request, "Oracle domain exists but schema could not be discovered: " + qualifiedName(owner, domainName));
+        }
+        if (normalizer.equivalent(request.candidate().schemaJson(), current.get().schemaJson())) {
             return JsonSchemaRegistryOutcome.ok(
                 request.candidate().logicalSchema(),
                 TARGET,
                 JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
-                "Oracle domain is equivalent: " + domainName
+                "Oracle domain is equivalent: " + qualifiedName(owner, domainName)
             );
         }
-        boolean failure = request.driftMode() == JsonSchemaRegistryDriftMode.FAIL;
-        String message = "Oracle domain drift detected: " + domainName;
-        return failure
-            ? JsonSchemaRegistryOutcome.failure(request.candidate().logicalSchema(), TARGET, JsonSchemaRegistryOutcomeStatus.DRIFT, message)
-            : JsonSchemaRegistryOutcome.ok(request.candidate().logicalSchema(), TARGET, JsonSchemaRegistryOutcomeStatus.DRIFT, message);
+        return driftOutcome(request, "Oracle domain drift detected: " + qualifiedName(owner, domainName));
     }
 
     private static String normalizeIdentifier(String identifier) {
@@ -124,25 +158,81 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
         }
     }
 
-    private OracleDiscoveredSchema readDomain(Connection connection, String domainName, String owner) throws Exception {
+    private Optional<OracleDiscoveredSchema> readDomain(Connection connection, String domainName, String owner) throws Exception {
         OracleDiscoveryResult result = discoveryProvider.discover(
             connection,
             new OracleSourceSpec("domains", OracleDomainDiscoveryProvider.class.getName(), owner, Map.of("include", domainName)),
-            false,
+            true,
             ignored -> {
             }
         );
         if (result.schemas().isEmpty()) {
-            throw new IllegalStateException("Oracle domain exists but schema could not be discovered: " + domainName);
+            return Optional.empty();
         }
-        return result.schemas().get(0);
+        return Optional.of(result.schemas().get(0));
     }
 
-    private static void createDomain(Connection connection, String domainName, String schemaJson) throws Exception {
-        String sql = "CREATE DOMAIN " + domainName + " AS JSON VALIDATE USING '" + escapeSqlLiteral(schemaJson) + "'";
+    private static void createDomain(Connection connection, String owner, String domainName, String schemaJson) throws Exception {
+        String sql = "CREATE DOMAIN " + qualifiedName(owner, domainName) + " AS JSON VALIDATE USING " + clobLiteral(schemaJson);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.executeUpdate();
         }
+    }
+
+    private static JsonSchemaRegistryOutcome driftOutcome(OracleMaterializationRequest request, String message) {
+        boolean failure = request.driftMode() == JsonSchemaRegistryDriftMode.FAIL;
+        return failure
+            ? JsonSchemaRegistryOutcome.failure(request.candidate().logicalSchema(), TARGET, JsonSchemaRegistryOutcomeStatus.DRIFT, message)
+            : JsonSchemaRegistryOutcome.ok(request.candidate().logicalSchema(), TARGET, JsonSchemaRegistryOutcomeStatus.DRIFT, message);
+    }
+
+    private static String normalizeOwner(String owner) {
+        if (owner == null || owner.isBlank()) {
+            return null;
+        }
+        return normalizeIdentifier(owner);
+    }
+
+    private static String qualifiedName(String owner, String domainName) {
+        return owner == null ? domainName : owner + "." + domainName;
+    }
+
+    private static Optional<String> firstRemoteReference(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Object ref = map.get("$ref");
+            if (ref instanceof String refValue && !refValue.startsWith("#")) {
+                return Optional.of(refValue);
+            }
+            for (Object nested : map.values()) {
+                Optional<String> remote = firstRemoteReference(nested);
+                if (remote.isPresent()) {
+                    return remote;
+                }
+            }
+        } else if (value instanceof List<?> list) {
+            for (Object nested : list) {
+                Optional<String> remote = firstRemoteReference(nested);
+                if (remote.isPresent()) {
+                    return remote;
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static String clobLiteral(String value) {
+        if (value.length() <= SQL_LITERAL_CHUNK_SIZE) {
+            return "'" + escapeSqlLiteral(value) + "'";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < value.length(); i += SQL_LITERAL_CHUNK_SIZE) {
+            if (builder.length() > 0) {
+                builder.append(" || ");
+            }
+            int end = Math.min(i + SQL_LITERAL_CHUNK_SIZE, value.length());
+            builder.append("to_clob('").append(escapeSqlLiteral(value.substring(i, end))).append("')");
+        }
+        return builder.toString();
     }
 
     private static String escapeSqlLiteral(String value) {

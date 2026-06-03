@@ -20,12 +20,14 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.health.HealthStatus
 import io.micronaut.inject.qualifiers.Qualifiers
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger
 import io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
 import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micronaut.jsonschema.registry.oracle.OracleDomainDiscoveryProvider
 import io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer
 import io.micronaut.jsonschema.registry.oracle.OracleMaterializationRequest
@@ -146,6 +148,51 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         }
     }
 
+    void "resolves reusable generator Oracle discovery provider from Micronaut bean"() {
+        when:
+        OracleDiscoveryResult result = withContext(["spec.name": "generator-bean-discovery-provider"]) { ApplicationContext context ->
+            OracleSchemaDiscoveryProvider provider = context.getBean(OracleSchemaDiscoveryProviderResolver)
+                    .resolve(GeneratorBeanDiscoveryProvider.name, getClass().classLoader)
+            provider.discover(
+                    null,
+                    new OracleSourceSpec("generator", GeneratorBeanDiscoveryProvider.name, null, [:]),
+                    false,
+                    { String ignored -> } as OracleJsonSchemaLogger
+            )
+        }
+
+        then:
+        result.schemas().size() == 1
+        result.schemas()[0].scope() == OracleDiscoveryScope.CUSTOM
+        result.schemas()[0].name() == "ORDER_DV"
+    }
+
+    void "Oracle authority provider options resolve non domain logical identity"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                        : "option-discovery-provider",
+                "json-schema.registry.enabled"                                      : "true",
+                "json-schema.registry.authority"                                    : "oracle",
+                "json-schema.registry.oracle.enabled"                               : "true",
+                "json-schema.registry.oracle.authority.providers[0].name"           : "duality-views",
+                "json-schema.registry.oracle.authority.providers[0].providerClassName": OptionDiscoveryProvider.name,
+                "json-schema.registry.oracle.authority.providers[0].options.logicalFqcn": "com.acme.OrderView",
+                "json-schema.registry.oracle.authority.providers[0].options.subject": "orders-value",
+                "json-schema.registry.oracle.authority.providers[0].options.viewName": "ORDER_DV",
+                "json-schema.registry.sr.enabled"                                   : "false"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].target() == "oracle.authority"
+        outcomes[0].logicalSchema().logicalFqcn() == "com.acme.OrderView"
+        outcomes[0].logicalSchema().subject() == "orders-value"
+        outcomes[0].logicalSchema().oracleArtifactName() == "ORDER_DV"
+    }
+
     void "resolves Oracle materializer from Micronaut bean"() {
         expect:
         withContext(["spec.name": "bean-materializer"]) { ApplicationContext context ->
@@ -194,6 +241,60 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         outcomes[0].message() == null
     }
 
+    void "Oracle materializer operation metrics include projection materialize and introspection"() {
+        given:
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry()
+
+        when:
+        withContext([
+                "spec.name"                                                   : "bean-materializer",
+                "json-schema.registry.oracle.enabled"                         : "true",
+                "json-schema.registry.oracle.materializers[0].name"           : "duality-views",
+                "json-schema.registry.oracle.materializers[0].providerClassName": BeanMaterializer.name,
+                "json-schema.registry.oracle.materializers[0].options.viewName": "ORDER_DV"
+        ]) { ApplicationContext context ->
+            context.registerSingleton(MeterRegistry, meterRegistry)
+            context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
+            context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
+                    new JsonSchemaCandidate(new LogicalSchema("com.acme.Order", "com.acme.Order", null), '{"type":"object"}', "test")
+            ])
+        }
+
+        then:
+        meterRegistry.get("json.schema.registry.operation.duration")
+                .tag("target", "oracle")
+                .tag("operation", "projection")
+                .tag("failure", "false")
+                .timer()
+                .count() == 1
+        meterRegistry.get("json.schema.registry.operation.duration")
+                .tag("target", "oracle")
+                .tag("operation", "materialize")
+                .tag("failure", "false")
+                .timer()
+                .count() == 1
+        meterRegistry.get("json.schema.registry.operation.duration")
+                .tag("target", "oracle")
+                .tag("operation", "introspection")
+                .tag("failure", "false")
+                .timer()
+                .count() == 1
+    }
+
+    void "duality view materializer resolves classpath DDL resource"() {
+        given:
+        def method = io.micronaut.jsonschema.registry.oracle.OracleDualityJsonViewMaterializer
+                .getDeclaredMethod("resolveDdl", Map)
+        method.accessible = true
+
+        when:
+        Optional<String> ddl = method.invoke(null, [viewDdlResource: "classpath:oracle/test-duality-view.sql"]) as Optional<String>
+
+        then:
+        ddl.present
+        ddl.get().contains("CREATE JSON RELATIONAL DUALITY VIEW")
+    }
+
     void "built-in domain naming applies Oracle identifier truncation"() {
         given:
         String logicalName = "com.acme." + "OrderCreated".repeat(20)
@@ -225,7 +326,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                     Duration.ofMillis(25),
                     [JsonSchemaRegistryOutcome.ok(
                             new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                            "sr",
+                            "sr.authority",
                             JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                             "ok"
                     )]
@@ -247,6 +348,11 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                 .tag("failure", "false")
                 .timer()
                 .count() == 1
+        meterRegistry.get("json.schema.registry.discovered")
+                .tag("authority", "sr")
+                .tag("source", "sr")
+                .counter()
+                .count() == 1.0d
     }
 
     void "readiness indicator reads last reconciliation state"() {
@@ -368,6 +474,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         List<JsonSchemaRegistryOutcome> outcomes
         JsonSchemaRegistryState.RunStatus status
         int records
+        String runId
         withContext(["spec.name": "throwing-reconciler"]) { ApplicationContext context ->
             JsonSchemaRegistryService service = context.getBean(JsonSchemaRegistryService)
             JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState)
@@ -375,6 +482,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
             outcomes = service.resync()
             status = state.snapshot().status()
             records = observability.records.get()
+            runId = observability.lastRunId
         }
 
         then:
@@ -383,6 +491,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.FAILED
         status == JsonSchemaRegistryState.RunStatus.FAILED
         records == 1
+        runId != "none"
     }
 
     void "resync service rejects concurrent runs"() {
@@ -461,12 +570,14 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
     @Requires(property = "spec.name", pattern = "service-reconciler|throwing-reconciler|slow-reconciler")
     static final class CountingObservability implements JsonSchemaRegistryObservability {
         final AtomicInteger records = new AtomicInteger()
+        volatile String lastRunId
 
         @Override
         void record(JsonSchemaRegistryConfiguration configuration,
                     Duration duration,
                     List<JsonSchemaRegistryOutcome> outcomes) {
             records.incrementAndGet()
+            lastRunId = JsonSchemaRegistryRunContext.runId()
         }
     }
 
@@ -533,15 +644,50 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
     }
 
     @Singleton
+    @Requires(property = "spec.name", value = "option-discovery-provider")
+    static final class OptionDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+        @Override
+        OracleDiscoveryResult discover(Connection connection,
+                                       OracleSourceSpec source,
+                                       boolean skipOnError,
+                                       OracleJsonSchemaLogger logger) {
+            new OracleDiscoveryResult([
+                    new OracleDiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW, "ORDER_DV", '{"type":"object"}', "test")
+            ], [], [])
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "generator-bean-discovery-provider")
+    static final class GeneratorBeanDiscoveryProvider implements io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider {
+        @Override
+        io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult discover(
+                Connection connection,
+                io.micronaut.jsonschema.generator.oracle.OracleSourceSpec source,
+                boolean skipOnError,
+                io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger logger) {
+            new io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult([
+                    new io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema(
+                            io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope.CUSTOM,
+                            "ORDER_DV",
+                            '{"type":"object"}',
+                            "test"
+                    )
+            ], [], [])
+        }
+    }
+
+    @Singleton
     @Requires(property = "spec.name", value = "bean-materializer")
     static final class BeanMaterializer implements OracleSchemaMaterializer {
         @Override
-        JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) {
+        JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) throws Exception {
+            String artifactName = request.recordOperation("introspection", () -> request.artifactName())
             JsonSchemaRegistryOutcome.ok(
                     request.candidate().logicalSchema(),
                     "oracle.duality-view",
                     JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
-                    request.artifactName()
+                    artifactName
             )
         }
     }

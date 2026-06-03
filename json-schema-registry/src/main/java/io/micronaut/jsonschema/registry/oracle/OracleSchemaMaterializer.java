@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.registry.oracle;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcome;
 
 import java.sql.Connection;
+import java.util.Optional;
 
 /**
  * Oracle materializer extension point.
@@ -42,4 +43,14 @@ public interface OracleSchemaMaterializer {
      * @throws Exception If materialization fails
      */
     JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) throws Exception;
+
+    /**
+     * Validate whether the candidate schema can be projected into this Oracle artifact.
+     *
+     * @param request Materialization request
+     * @return Optional incompatibility outcome
+     */
+    default Optional<JsonSchemaRegistryOutcome> projectionCompatibility(OracleMaterializationRequest request) {
+        return Optional.empty();
+    }
 }

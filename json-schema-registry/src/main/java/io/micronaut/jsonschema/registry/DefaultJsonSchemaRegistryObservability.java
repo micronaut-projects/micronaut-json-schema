@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaRegistryObservability {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultJsonSchemaRegistryObservability.class);
     private static final String OUTCOME_COUNTER = "json.schema.registry.outcomes";
+    private static final String DISCOVERED_COUNTER = "json.schema.registry.discovered";
     private static final String DURATION_TIMER = "json.schema.registry.reconcile.duration";
 
     private final Optional<MeterRegistry> meterRegistry;
@@ -55,11 +56,13 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
                        Duration duration,
                        List<JsonSchemaRegistryOutcome> outcomes) {
         boolean failure = outcomes.stream().anyMatch(JsonSchemaRegistryOutcome::failure);
+        String runId = JsonSchemaRegistryRunContext.runId();
         for (JsonSchemaRegistryOutcome outcome : outcomes) {
-            logOutcome(configuration, outcome);
+            logOutcome(configuration, runId, outcome);
             meterRegistry.ifPresent(meterRegistry -> recordOutcome(meterRegistry, configuration, outcome));
         }
-        LOG.info("JSON Schema Registry reconciliation summary: authority={} dryRun={} failFastStrategy={} outcomes={} failures={} durationMs={} results={}",
+        LOG.info("JSON Schema Registry reconciliation summary: runId={} authority={} dryRun={} failFastStrategy={} outcomes={} failures={} durationMs={} results={}",
+            runId,
             tagValue(configuration.getAuthority()),
             configuration.isDryRun(),
             tagValue(configuration.getFailFastStrategy()),
@@ -77,24 +80,31 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
     }
 
     private static void logOutcome(JsonSchemaRegistryConfiguration configuration,
+                                   String runId,
                                    JsonSchemaRegistryOutcome outcome) {
         if (outcome.failure()) {
-            LOG.warn("JSON Schema Registry reconciliation outcome: authority={} target={} mode={} result={} failure={} logicalSchema={} message={}",
+            LOG.warn("JSON Schema Registry reconciliation outcome: runId={} authority={} target={} mode={} result={} failure={} logicalSchema={} subject={} oracleArtifact={} message={}",
+                runId,
                 tagValue(configuration.getAuthority()),
                 outcome.target(),
                 mode(configuration, outcome.target()),
                 tagValue(outcome.status()),
                 outcome.failure(),
                 outcome.logicalSchema().logicalFqcn(),
+                outcome.logicalSchema().subject(),
+                outcome.logicalSchema().oracleArtifactName(),
                 outcome.message());
         } else {
-            LOG.info("JSON Schema Registry reconciliation outcome: authority={} target={} mode={} result={} failure={} logicalSchema={} message={}",
+            LOG.info("JSON Schema Registry reconciliation outcome: runId={} authority={} target={} mode={} result={} failure={} logicalSchema={} subject={} oracleArtifact={} message={}",
+                runId,
                 tagValue(configuration.getAuthority()),
                 outcome.target(),
                 mode(configuration, outcome.target()),
                 tagValue(outcome.status()),
                 outcome.failure(),
                 outcome.logicalSchema().logicalFqcn(),
+                outcome.logicalSchema().subject(),
+                outcome.logicalSchema().oracleArtifactName(),
                 outcome.message());
         }
     }
@@ -111,6 +121,14 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
             .tag("failure", Boolean.toString(outcome.failure()))
             .register(meterRegistry)
             .increment();
+        if (outcome.target() != null && outcome.target().endsWith(".authority") && !outcome.failure()) {
+            Counter.builder(DISCOVERED_COUNTER)
+                .description("JSON Schema Registry discovered authority schemas")
+                .tag("authority", tagValue(configuration.getAuthority()))
+                .tag("source", targetTag(outcome.target()))
+                .register(meterRegistry)
+                .increment();
+        }
     }
 
     private static Map<String, Long> summarize(List<JsonSchemaRegistryOutcome> outcomes) {

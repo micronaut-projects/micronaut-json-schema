@@ -58,7 +58,7 @@ public final class OracleSchemaDiscoveryProviderResolver {
         try {
             ServiceLoader<OracleSchemaDiscoveryProvider> loader = ServiceLoader.load(OracleSchemaDiscoveryProvider.class, classLoader);
             return loader.stream()
-                .filter(provider -> provider.type().getName().equals(providerClassName))
+                .filter(loadedProvider -> loadedProvider.type().getName().equals(providerClassName))
                 .findFirst()
                 .map(ServiceLoader.Provider::get)
                 .orElseThrow(() -> new IllegalArgumentException(

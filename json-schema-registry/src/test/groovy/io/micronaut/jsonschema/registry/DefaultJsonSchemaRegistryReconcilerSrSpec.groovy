@@ -176,6 +176,83 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         registrations.isEmpty()
     }
 
+    void "SR target reports compatibility rejection as failed"() {
+        given:
+        startServer([
+                "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest":
+                        response(200, '{"schema":"{\\"type\\":\\"string\\"}"}'),
+                "/compatibility/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest":
+                        response(200, '{"is_compatible":false}')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "application",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.FAILED && it.failure() }
+        !outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY }
+        registrations.isEmpty()
+    }
+
+    void "SR target honors global non writable mode fallback"() {
+        given:
+        startServer([
+                "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest": response(404, "{}"),
+                "/mode"                                                                   : response(200, '{"mode":"READONLY"}')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "application",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.FAILED && it.message().contains("READONLY") }
+        registrations.isEmpty()
+    }
+
+    void "SR authority requires explicit mapping for non prefixed subjects when Oracle target is enabled"() {
+        given:
+        startServer([
+                "/subjects/legacy.Order/versions/latest": response(200, '{"schema":"{\\"type\\":\\"object\\"}"}')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"               : "true",
+                "json-schema.registry.authority"             : "sr",
+                "json-schema.registry.sr.enabled"            : "true",
+                "json-schema.registry.sr.url"                : serverUrl(),
+                "json-schema.registry.sr.subjects[0]"        : "legacy.Order",
+                "json-schema.registry.naming.subject.prefix" : "com.acme.",
+                "json-schema.registry.oracle.enabled"        : "true"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "oracle" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.FAILED &&
+                    it.message().contains("missing_mapping") &&
+                    it.message().contains("Unable to derive logicalFqcn")
+        }
+    }
+
     void "application authority validates generated schema when targets are disabled"() {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
@@ -197,6 +274,15 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         server = HttpServer.create(new InetSocketAddress("localhost", 0), 0)
         server.createContext("/") { HttpExchange exchange ->
             if (exchange.requestMethod == "POST") {
+                if (exchange.requestURI.path.startsWith("/compatibility/")) {
+                    FixedResponse fixedResponse = responses[exchange.requestURI.path]
+                    if (fixedResponse == null) {
+                        send(exchange, 200, '{"is_compatible":true}')
+                    } else {
+                        send(exchange, fixedResponse.status, fixedResponse.body)
+                    }
+                    return
+                }
                 registrations << new String(exchange.requestBody.readAllBytes(), StandardCharsets.UTF_8)
                 send(exchange, 200, '{"id":1}')
                 return

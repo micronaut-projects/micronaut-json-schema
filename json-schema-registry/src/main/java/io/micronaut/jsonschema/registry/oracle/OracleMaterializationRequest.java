@@ -32,6 +32,7 @@ import java.util.Map;
  * @param policyMode Oracle policy mode
  * @param driftMode Oracle drift mode
  * @param dryRun Whether writes should be previewed only
+ * @param operationRecorder Operation recorder
  * @since 2.0.0
  */
 public record OracleMaterializationRequest(
@@ -41,8 +42,30 @@ public record OracleMaterializationRequest(
     Map<String, String> options,
     JsonSchemaRegistryPolicyMode policyMode,
     JsonSchemaRegistryDriftMode driftMode,
-    boolean dryRun
+    boolean dryRun,
+    OracleOperationRecorder operationRecorder
 ) {
+
+    /**
+     * Create an immutable materialization request.
+     *
+     * @param candidate Candidate schema
+     * @param artifactName Resolved Oracle artifact name, or null when the materializer resolves it from options
+     * @param owner Optional Oracle owner/schema
+     * @param options Materializer options
+     * @param policyMode Oracle policy mode
+     * @param driftMode Oracle drift mode
+     * @param dryRun Whether writes should be previewed only
+     */
+    public OracleMaterializationRequest(JsonSchemaCandidate candidate,
+                                        @Nullable String artifactName,
+                                        @Nullable String owner,
+                                        Map<String, String> options,
+                                        JsonSchemaRegistryPolicyMode policyMode,
+                                        JsonSchemaRegistryDriftMode driftMode,
+                                        boolean dryRun) {
+        this(candidate, artifactName, owner, options, policyMode, driftMode, dryRun, OracleOperationRecorder.NOOP);
+    }
 
     /**
      * Create an immutable materialization request.
@@ -57,5 +80,19 @@ public record OracleMaterializationRequest(
      */
     public OracleMaterializationRequest {
         options = options == null ? Map.of() : Map.copyOf(options);
+        operationRecorder = operationRecorder == null ? OracleOperationRecorder.NOOP : operationRecorder;
+    }
+
+    /**
+     * Record a materializer operation.
+     *
+     * @param operationName Operation name
+     * @param operation Operation callback
+     * @param <T> Operation return type
+     * @return Operation result
+     * @throws Exception If the operation fails
+     */
+    public <T> T recordOperation(String operationName, OracleOperationRecorder.OracleOperation<T> operation) throws Exception {
+        return operationRecorder.record(operationName, operation);
     }
 }
