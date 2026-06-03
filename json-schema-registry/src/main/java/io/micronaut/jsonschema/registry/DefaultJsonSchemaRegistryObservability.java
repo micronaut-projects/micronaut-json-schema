@@ -41,8 +41,9 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
         for (JsonSchemaRegistryOutcome outcome : outcomes) {
             logOutcome(configuration, outcome);
         }
-        LOG.info("{}JSON Schema Registry reconciliation summary: authority={} dryRun={} failFastStrategy={} outcomes={} failures={} durationMs={} results={}",
+        LOG.info("{}JSON Schema Registry reconciliation summary: runId={} authority={} dryRun={} failFastStrategy={} outcomes={} failures={} durationMs={} results={}",
             dryRunPrefix(configuration),
+            JsonSchemaRegistryRunContext.runId(),
             tagValue(configuration.getAuthority()),
             configuration.isDryRun(),
             tagValue(configuration.getFailFastStrategy()),
@@ -55,24 +56,30 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
     private static void logOutcome(JsonSchemaRegistryConfiguration configuration,
                                    JsonSchemaRegistryOutcome outcome) {
         if (outcome.failure()) {
-            LOG.warn("{}JSON Schema Registry reconciliation outcome: authority={} target={} mode={} result={} failure={} logicalSchema={} message={}",
+            LOG.warn("{}JSON Schema Registry reconciliation outcome: runId={} authority={} target={} mode={} result={} failure={} logicalSchema={} subject={} oracleArtifact={} message={}",
                 dryRunPrefix(configuration),
+                JsonSchemaRegistryRunContext.runId(),
                 tagValue(configuration.getAuthority()),
                 outcome.target(),
                 mode(configuration, outcome.target()),
                 tagValue(outcome.status()),
                 outcome.failure(),
                 outcome.logicalSchema().logicalFqcn(),
+                outcome.logicalSchema().subject(),
+                outcome.logicalSchema().oracleArtifactName(),
                 outcome.message());
         } else {
-            LOG.info("{}JSON Schema Registry reconciliation outcome: authority={} target={} mode={} result={} failure={} logicalSchema={} message={}",
+            LOG.info("{}JSON Schema Registry reconciliation outcome: runId={} authority={} target={} mode={} result={} failure={} logicalSchema={} subject={} oracleArtifact={} message={}",
                 dryRunPrefix(configuration),
+                JsonSchemaRegistryRunContext.runId(),
                 tagValue(configuration.getAuthority()),
                 outcome.target(),
                 mode(configuration, outcome.target()),
                 tagValue(outcome.status()),
                 outcome.failure(),
                 outcome.logicalSchema().logicalFqcn(),
+                outcome.logicalSchema().subject(),
+                outcome.logicalSchema().oracleArtifactName(),
                 outcome.message());
         }
     }

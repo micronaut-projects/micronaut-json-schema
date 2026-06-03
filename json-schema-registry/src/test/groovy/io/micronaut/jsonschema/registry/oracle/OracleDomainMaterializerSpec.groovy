@@ -29,6 +29,7 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
+import java.util.Optional
 
 final class OracleDomainMaterializerSpec extends Specification {
 
@@ -63,6 +64,85 @@ final class OracleDomainMaterializerSpec extends Specification {
     void "small schema literal is escaped as regular SQL literal"() {
         expect:
         OracleDomainMaterializer.schemaLiteral('{"const":"can\'t"}') == '\'{"const":"can\'\'t"}\''
+    }
+
+    void "remote references are projection incompatible for built-in domain materializer"() {
+        given:
+        OracleDomainMaterializer materializer = new OracleDomainMaterializer(new DefaultJsonSchemaNormalizer())
+
+        when:
+        Optional<JsonSchemaRegistryOutcome> outcome = materializer.projectionCompatibility(
+                new OracleMaterializationRequest(
+                        new JsonSchemaCandidate(new LogicalSchema("com.acme.Order", "com.acme.Order", "APP_ORDER"), '{"$ref":"https://example.com/order.schema.json"}', "test"),
+                        "APP_ORDER",
+                        null,
+                        [:],
+                        JsonSchemaRegistryPolicyMode.MANAGE,
+                        JsonSchemaRegistryDriftMode.REPORT,
+                        false
+                )
+        )
+
+        then:
+        outcome.present
+        outcome.get().failure()
+        outcome.get().status() == JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY
+        outcome.get().message().contains("remote \$ref")
+    }
+
+    void "local references remain representable for built-in domain materializer"() {
+        given:
+        OracleDomainMaterializer materializer = new OracleDomainMaterializer(new DefaultJsonSchemaNormalizer())
+
+        expect:
+        materializer.projectionCompatibility(
+                new OracleMaterializationRequest(
+                        new JsonSchemaCandidate(new LogicalSchema("com.acme.Order", "com.acme.Order", "APP_ORDER"), '{"$ref":"#/$defs/order","$defs":{"order":{"type":"object"}}}', "test"),
+                        "APP_ORDER",
+                        null,
+                        [:],
+                        JsonSchemaRegistryPolicyMode.MANAGE,
+                        JsonSchemaRegistryDriftMode.REPORT,
+                        false
+                )
+        ).empty
+    }
+
+    void "missing owned domain is created with owner qualified name"() {
+        given:
+        OracleDomainMaterializer materializer = new OracleDomainMaterializer(new DefaultJsonSchemaNormalizer())
+        Connection connection = Mock()
+        PreparedStatement existsStatement = Mock()
+        ResultSet existsResult = Mock()
+        PreparedStatement createStatement = Mock()
+
+        when:
+        JsonSchemaRegistryOutcome outcome = materializer.reconcile(
+                connection,
+                new OracleMaterializationRequest(
+                        new JsonSchemaCandidate(new LogicalSchema("REG_OWNER", null, "REG_OWNER"), '{"type":"object"}', "test"),
+                        "REG_OWNER",
+                        "hr",
+                        [:],
+                        JsonSchemaRegistryPolicyMode.MANAGE,
+                        JsonSchemaRegistryDriftMode.REPORT,
+                        false
+                )
+        )
+
+        then:
+        1 * connection.prepareStatement("SELECT name FROM all_domains WHERE owner = ? AND name = ?") >> existsStatement
+        1 * existsStatement.setString(1, "HR")
+        1 * existsStatement.setString(2, "REG_OWNER")
+        1 * existsStatement.executeQuery() >> existsResult
+        1 * existsResult.next() >> false
+        1 * existsResult.close()
+        1 * existsStatement.close()
+        1 * connection.prepareStatement("CREATE DOMAIN HR.REG_OWNER AS JSON VALIDATE USING '{\"type\":\"object\"}'") >> createStatement
+        1 * createStatement.executeUpdate()
+        1 * createStatement.close()
+        outcome.status() == JsonSchemaRegistryOutcomeStatus.CREATED
+        !outcome.failure()
     }
 
     void "dry run missing domain outcome is prefixed"() {

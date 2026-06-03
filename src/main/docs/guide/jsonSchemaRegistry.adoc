@@ -74,6 +74,28 @@ The built-in Oracle defaults are applied when Oracle integration is enabled and 
 
 If `json-schema.registry.oracle.authority.providers` or `json-schema.registry.oracle.materializers` is configured, the configured list replaces the built-in default list for that role.
 
+Schema Registry requests use the Micronaut HTTP client. Configure `json-schema.registry.sr.username` and `json-schema.registry.sr.password` for basic authentication, `json-schema.registry.sr.bearer-token` for bearer authentication, and `json-schema.registry.sr.headers.*` for additional request headers. Bearer authentication takes precedence over basic authentication when both are configured.
+
+When Schema Registry is a target in `manage` mode, the registry reads `/mode/{subject}` with fallback to `/mode` before writes and reads `/config/{subject}` with fallback to `/config` for compatibility diagnostics. Compatibility configuration is not modified by the registry.
+
+=== Discovery behavior
+
+Schema Registry authority discovery is deterministic:
+
+* if `json-schema.registry.sr.subjects` is configured, only those subjects are selected
+* otherwise the registry calls `GET /subjects` and keeps subjects that start with `json-schema.registry.naming.subject.prefix`
+* for each selected subject, the candidate schema is read from `GET /subjects/{subject}/versions/latest`
+
+The built-in Oracle domain authority provider is deterministic:
+
+* if `json-schema.registry.oracle.domains` is configured, only those domains are selected
+* otherwise the provider queries `USER_DOMAINS` when no owner is configured
+* when an owner is configured, the provider probes `ALL_DOMAINS` and `DBA_DOMAINS` and falls back to `USER_DOMAINS` if neither cross-schema dictionary view is queryable
+* `json-schema.registry.naming.domain.prefix` is applied as a domain-name prefix filter when no explicit domain list is configured
+* domain schema extraction uses `DBMS_METADATA.GET_DDL('SQL_DOMAIN', ...)` first, then falls back to `USER_DOMAIN_CONSTRAINTS` or `ALL_DOMAIN_CONSTRAINTS`
+
+The built-in Oracle duality-view authority provider queries `USER_JSON_DUALITY_VIEWS` when no owner is configured. With an owner it probes `ALL_JSON_DUALITY_VIEWS` and `DBA_JSON_DUALITY_VIEWS`, then falls back to the current-user view. Provider `options.include` and `options.exclude` narrow selected view names.
+
 === Runtime API
 
 The module exposes a programmatic reconciliation API through api:jsonschema.registry.JsonSchemaRegistryService[]:
@@ -116,6 +138,8 @@ For the registry runtime:
 * custom runtime extensions therefore must be visible to the application context, typically as `@Singleton` beans
 
 The runtime provider contract uses the shared api:jsonschema.generator.oracle.OracleSchemaDiscoveryProvider[] SPI. The runtime materializer contract uses api:jsonschema.registry.oracle.OracleSchemaMaterializer[].
+
+The module also provides an opt-in duality-view materializer, `io.micronaut.jsonschema.registry.oracle.OracleDualityJsonViewMaterializer`. It verifies existing JSON relational duality views by reading `JSON_SCHEMA` from the Oracle duality-view dictionary views and comparing normalized schema text. It creates a missing view only when `options.viewDdl` or `options.viewDdlResource` supplies explicit DDL. Existing views are never replaced or mutated.
 
 Example custom Oracle authority provider:
 

@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -61,27 +62,29 @@ public final class DefaultJsonSchemaRegistryService implements JsonSchemaRegistr
         }
         state.running();
         long started = System.nanoTime();
-        try {
-            List<JsonSchemaRegistryOutcome> outcomes = reconciler.reconcile();
-            Duration duration = Duration.ofNanos(System.nanoTime() - started);
-            state.completed(duration, outcomes);
-            observability.record(configuration, duration, outcomes);
-            if (outcomes.stream().anyMatch(JsonSchemaRegistryOutcome::failure)) {
-                logFailure();
+        try (JsonSchemaRegistryRunContext ignored = JsonSchemaRegistryRunContext.open(UUID.randomUUID().toString())) {
+            try {
+                List<JsonSchemaRegistryOutcome> outcomes = reconciler.reconcile();
+                Duration duration = Duration.ofNanos(System.nanoTime() - started);
+                state.completed(duration, outcomes);
+                observability.record(configuration, duration, outcomes);
+                if (outcomes.stream().anyMatch(JsonSchemaRegistryOutcome::failure)) {
+                    logFailure();
+                }
+                return outcomes;
+            } catch (RuntimeException e) {
+                Duration duration = Duration.ofNanos(System.nanoTime() - started);
+                List<JsonSchemaRegistryOutcome> outcomes = List.of(JsonSchemaRegistryOutcome.failure(
+                    new LogicalSchema("registry", null, null),
+                    "registry",
+                    JsonSchemaRegistryOutcomeStatus.FAILED,
+                    e.getMessage()
+                ));
+                state.completed(duration, outcomes);
+                observability.record(configuration, duration, outcomes);
+                logFailure(e);
+                return outcomes;
             }
-            return outcomes;
-        } catch (RuntimeException e) {
-            Duration duration = Duration.ofNanos(System.nanoTime() - started);
-            List<JsonSchemaRegistryOutcome> outcomes = List.of(JsonSchemaRegistryOutcome.failure(
-                new LogicalSchema("registry", null, null),
-                "registry",
-                JsonSchemaRegistryOutcomeStatus.FAILED,
-                e.getMessage()
-            ));
-            state.completed(duration, outcomes);
-            observability.record(configuration, duration, outcomes);
-            logFailure(e);
-            return outcomes;
         } finally {
             running.set(false);
         }

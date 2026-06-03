@@ -64,6 +64,10 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                 "json-schema.registry.enabled"                                      : "false",
                 "json-schema.registry.authority"                                    : "oracle",
                 "json-schema.registry.fail-fast-strategy"                           : "startup_abort",
+                "json-schema.registry.sr.username"                                  : "sr-user",
+                "json-schema.registry.sr.password"                                  : "sr-secret",
+                "json-schema.registry.sr.bearer-token"                              : "sr-token",
+                "json-schema.registry.sr.headers.X-Schema-Registry-Cluster"         : "primary",
                 "json-schema.registry.oracle.policy.mode"                           : "observe_only",
                 "json-schema.registry.oracle.drift.mode"                            : "fail",
                 "json-schema.registry.oracle.datasource"                            : "orders",
@@ -86,6 +90,10 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         !configuration.enabled
         configuration.authority == JsonSchemaRegistryAuthority.ORACLE
         configuration.failFastStrategy == JsonSchemaRegistryFailFastStrategy.STARTUP_ABORT
+        configuration.sr.username == "sr-user"
+        configuration.sr.password == "sr-secret"
+        configuration.sr.bearerToken == "sr-token"
+        configuration.sr.headers["x-schema-registry-cluster"] == "primary"
         configuration.oracle.policy.mode == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY
         configuration.oracle.drift.mode == JsonSchemaRegistryDriftMode.FAIL
         configuration.oracle.datasource == "orders"
@@ -577,7 +585,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                     Duration.ofMillis(25),
                     [JsonSchemaRegistryOutcome.ok(
                             new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                            "sr",
+                            "sr.authority",
                             JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                             "ok"
                     )]
@@ -599,6 +607,10 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                 .tag("failure", "false")
                 .timer()
                 .count() == 1
+        meterRegistry.get("json.schema.registry.discovered.schemas")
+                .tag("authority", "sr")
+                .counter()
+                .count() == 1.0d
     }
 
     void "default observability bean does not require MeterRegistry"() {
@@ -719,6 +731,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         List<JsonSchemaRegistryOutcome> outcomes
         JsonSchemaRegistryState.RunStatus status
         int records
+        String runId
         withContext(["spec.name": "service-reconciler"]) { ApplicationContext context ->
             JsonSchemaRegistryService service = context.getBean(JsonSchemaRegistryService)
             JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState)
@@ -726,6 +739,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
             outcomes = service.resync()
             status = state.snapshot().status()
             records = observability.records.get()
+            runId = observability.lastRunId
         }
 
         then:
@@ -733,6 +747,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
         status == JsonSchemaRegistryState.RunStatus.SUCCESS
         records == 1
+        runId != "none"
     }
 
     void "resync service records exception as failed outcome"() {
@@ -740,6 +755,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         List<JsonSchemaRegistryOutcome> outcomes
         JsonSchemaRegistryState.RunStatus status
         int records
+        String runId
         withContext(["spec.name": "throwing-reconciler"]) { ApplicationContext context ->
             JsonSchemaRegistryService service = context.getBean(JsonSchemaRegistryService)
             JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState)
@@ -747,6 +763,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
             outcomes = service.resync()
             status = state.snapshot().status()
             records = observability.records.get()
+            runId = observability.lastRunId
         }
 
         then:
@@ -755,6 +772,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.FAILED
         status == JsonSchemaRegistryState.RunStatus.FAILED
         records == 1
+        runId != "none"
     }
 
     void "resync service rejects concurrent runs"() {
@@ -833,12 +851,14 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
     @Requires(property = "spec.name", pattern = "service-reconciler|throwing-reconciler|slow-reconciler")
     static final class CountingObservability implements JsonSchemaRegistryObservability {
         final AtomicInteger records = new AtomicInteger()
+        String lastRunId
 
         @Override
         void record(JsonSchemaRegistryConfiguration configuration,
                     Duration duration,
                     List<JsonSchemaRegistryOutcome> outcomes) {
             records.incrementAndGet()
+            lastRunId = JsonSchemaRegistryRunContext.runId()
         }
     }
 

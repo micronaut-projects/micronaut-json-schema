@@ -36,6 +36,7 @@ import java.util.List;
 @Requires(beans = MeterRegistry.class)
 public final class MicrometerJsonSchemaRegistryObservability implements JsonSchemaRegistryObservability {
     private static final String OUTCOME_COUNTER = "json.schema.registry.outcomes";
+    private static final String DISCOVERED_COUNTER = "json.schema.registry.discovered.schemas";
     private static final String DURATION_TIMER = "json.schema.registry.reconcile.duration";
 
     private final MeterRegistry meterRegistry;
@@ -57,6 +58,7 @@ public final class MicrometerJsonSchemaRegistryObservability implements JsonSche
         for (JsonSchemaRegistryOutcome outcome : outcomes) {
             recordOutcome(configuration, outcome);
         }
+        recordDiscovered(configuration, outcomes);
         Timer.builder(DURATION_TIMER)
             .description("JSON Schema Registry reconciliation run duration")
             .tag("authority", DefaultJsonSchemaRegistryObservability.tagValue(configuration.getAuthority()))
@@ -77,5 +79,21 @@ public final class MicrometerJsonSchemaRegistryObservability implements JsonSche
             .tag("failure", Boolean.toString(outcome.failure()))
             .register(meterRegistry)
             .increment();
+    }
+
+    private void recordDiscovered(JsonSchemaRegistryConfiguration configuration,
+                                  List<JsonSchemaRegistryOutcome> outcomes) {
+        long discovered = outcomes.stream()
+            .filter(outcome -> outcome.target() != null && outcome.target().endsWith(".authority"))
+            .filter(outcome -> outcome.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT)
+            .count();
+        if (discovered == 0) {
+            return;
+        }
+        Counter.builder(DISCOVERED_COUNTER)
+            .description("JSON Schema Registry authority schemas discovered successfully")
+            .tag("authority", DefaultJsonSchemaRegistryObservability.tagValue(configuration.getAuthority()))
+            .register(meterRegistry)
+            .increment(discovered);
     }
 }

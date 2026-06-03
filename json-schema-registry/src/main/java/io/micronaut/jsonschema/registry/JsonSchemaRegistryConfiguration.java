@@ -134,6 +134,10 @@ public final class JsonSchemaRegistryConfiguration {
 
         environment.getProperty(PREFIX + ".sr.enabled", Boolean.class).ifPresent(sr::setEnabled);
         environment.getProperty(PREFIX + ".sr.url", String.class).ifPresent(sr::setUrl);
+        environment.getProperty(PREFIX + ".sr.username", String.class).ifPresent(sr::setUsername);
+        environment.getProperty(PREFIX + ".sr.password", String.class).ifPresent(sr::setPassword);
+        environment.getProperty(PREFIX + ".sr.bearer-token", String.class).ifPresent(sr::setBearerToken);
+        environment.getProperty(PREFIX + ".sr.headers", Argument.mapOf(String.class, String.class)).ifPresent(sr::setHeaders);
         environment.getProperty(PREFIX + ".sr.subjects", Argument.listOf(String.class)).ifPresent(sr::setSubjects);
         environment.getProperty(PREFIX + ".sr.policy.mode", JsonSchemaRegistryPolicyMode.class).ifPresent(sr.getPolicy()::setMode);
 
@@ -352,6 +356,10 @@ public final class JsonSchemaRegistryConfiguration {
     public static final class SrConfiguration {
         private boolean enabled;
         private String url = "http://localhost:8081";
+        private String username;
+        private String password;
+        private String bearerToken;
+        private Map<String, String> headers = Map.of();
         private List<String> subjects = List.of();
         private TargetPolicyConfiguration policy = new TargetPolicyConfiguration();
 
@@ -381,6 +389,65 @@ public final class JsonSchemaRegistryConfiguration {
          */
         public void setUrl(@Nullable String url) {
             this.url = url == null ? "http://localhost:8081" : url;
+        }
+
+        /**
+         * @return Optional Schema Registry basic-auth username
+         */
+        @Nullable
+        public String getUsername() {
+            return username;
+        }
+
+        /**
+         * @param username Optional Schema Registry basic-auth username
+         */
+        public void setUsername(@Nullable String username) {
+            this.username = username;
+        }
+
+        /**
+         * @return Optional Schema Registry basic-auth password
+         */
+        @Nullable
+        public String getPassword() {
+            return password;
+        }
+
+        /**
+         * @param password Optional Schema Registry basic-auth password
+         */
+        public void setPassword(@Nullable String password) {
+            this.password = password;
+        }
+
+        /**
+         * @return Optional Schema Registry bearer token
+         */
+        @Nullable
+        public String getBearerToken() {
+            return bearerToken;
+        }
+
+        /**
+         * @param bearerToken Optional Schema Registry bearer token
+         */
+        public void setBearerToken(@Nullable String bearerToken) {
+            this.bearerToken = bearerToken;
+        }
+
+        /**
+         * @return Additional Schema Registry request headers
+         */
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
+
+        /**
+         * @param headers Additional Schema Registry request headers
+         */
+        public void setHeaders(@Nullable Map<String, String> headers) {
+            this.headers = headers == null ? Map.of() : Map.copyOf(headers);
         }
 
         /**

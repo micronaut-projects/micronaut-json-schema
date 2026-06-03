@@ -16,16 +16,17 @@
 package io.micronaut.jsonschema.registry;
 
 import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.MutableHttpRequest;
+import io.micronaut.http.client.HttpClient;
+import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.net.URI;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,23 +36,31 @@ import java.util.Optional;
  *
  * @since 2.0.0
  */
-final class ConfluentSchemaRegistryClient {
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+final class ConfluentSchemaRegistryClient implements AutoCloseable {
     private static final int MAX_ATTEMPTS = 3;
     private static final long RETRY_BACKOFF_MILLIS = 100;
 
+    private final JsonSchemaRegistryConfiguration.SrConfiguration configuration;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final String baseUrl;
+    private final String basePath;
 
     ConfluentSchemaRegistryClient(String baseUrl) {
-        this.httpClient = HttpClient.newHttpClient();
+        this(configuration(baseUrl));
+    }
+
+    ConfluentSchemaRegistryClient(JsonSchemaRegistryConfiguration.SrConfiguration configuration) {
+        this.configuration = configuration;
+        this.baseUrl = trimTrailingSlash(configuration.getUrl());
+        URL url = toUrl(this.baseUrl);
+        this.httpClient = HttpClient.create(origin(url));
+        this.basePath = trimTrailingPathSlash(url.getPath());
         this.objectMapper = JsonSchemaMapperFactory.createMapper();
-        this.baseUrl = trimTrailingSlash(baseUrl);
     }
 
     List<String> subjects(String prefix) throws IOException, InterruptedException {
-        HttpResponse<String> response = send(get("/subjects"));
+        SrResponse response = send(get("/subjects"));
         requireSuccess(response, "list subjects");
         List<?> values = objectMapper.readValue(response.body(), List.class);
         return values.stream()
@@ -62,7 +71,7 @@ final class ConfluentSchemaRegistryClient {
     }
 
     Optional<String> latestSchema(String subject) throws IOException, InterruptedException {
-        HttpResponse<String> response = send(get("/subjects/" + encodePath(subject) + "/versions/latest"));
+        SrResponse response = send(get("/subjects/" + encodePath(subject) + "/versions/latest"));
         if (response.statusCode() == 404) {
             return Optional.empty();
         }
@@ -83,8 +92,34 @@ final class ConfluentSchemaRegistryClient {
         return Optional.of(schemaText);
     }
 
+    Optional<String> compatibility(String subject) throws IOException, InterruptedException {
+        SrResponse response = send(get("/config/" + encodePath(subject)));
+        if (response.statusCode() == 404) {
+            response = send(get("/config"));
+        }
+        if (response.statusCode() == 404) {
+            return Optional.empty();
+        }
+        requireSuccess(response, "read compatibility configuration for subject " + subject);
+        try {
+            Object parsed = objectMapper.readValue(response.body(), Object.class);
+            if (parsed instanceof Map<?, ?> values) {
+                Object compatibility = values.get("compatibilityLevel");
+                if (!(compatibility instanceof String)) {
+                    compatibility = values.get("compatibility");
+                }
+                if (compatibility instanceof String compatibilityText && !compatibilityText.isBlank()) {
+                    return Optional.of(compatibilityText);
+                }
+            }
+        } catch (Exception e) {
+            throw new IOException("Schema Registry compatibility response is not readable JSON for subject " + subject, e);
+        }
+        throw new IOException("Schema Registry compatibility response does not contain compatibility for subject " + subject);
+    }
+
     String mode(String subject) throws IOException, InterruptedException {
-        HttpResponse<String> response = send(get("/mode/" + encodePath(subject)));
+        SrResponse response = send(get("/mode/" + encodePath(subject)));
         if (response.statusCode() == 404) {
             response = send(get("/mode"));
         }
@@ -97,49 +132,81 @@ final class ConfluentSchemaRegistryClient {
             "schemaType", "JSON",
             "schema", schemaText
         ));
-        HttpResponse<String> response = send(HttpRequest.newBuilder(uri("/subjects/" + encodePath(subject) + "/versions"))
-            .timeout(REQUEST_TIMEOUT)
-            .header("Content-Type", "application/vnd.schemaregistry.v1+json")
-            .POST(HttpRequest.BodyPublishers.ofString(body))
-            .build());
+        SrResponse response = send(applyAuthentication(HttpRequest.POST(
+                path("/subjects/" + encodePath(subject) + "/versions"),
+                body
+            ))
+            .header("Content-Type", "application/vnd.schemaregistry.v1+json"));
         requireSuccess(response, "register schema for subject " + subject);
     }
 
-    private HttpRequest get(String path) {
-        return HttpRequest.newBuilder(uri(path))
-            .timeout(REQUEST_TIMEOUT)
-            .GET()
-            .build();
+    @Override
+    public void close() {
+        httpClient.close();
     }
 
-    private HttpResponse<String> send(HttpRequest request) throws IOException, InterruptedException {
-        IOException lastFailure = null;
+    private MutableHttpRequest<?> get(String path) {
+        return applyAuthentication(HttpRequest.GET(path(path)));
+    }
+
+    private SrResponse send(HttpRequest<?> request) throws IOException, InterruptedException {
+        Exception lastFailure = null;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                io.micronaut.http.HttpResponse<String> response = httpClient.toBlocking().exchange(request, String.class);
+                SrResponse srResponse = new SrResponse(
+                    response.code(),
+                    response.getBody(String.class).orElse("")
+                );
+                if (!shouldRetry(srResponse.statusCode()) || attempt == MAX_ATTEMPTS) {
+                    return srResponse;
+                }
+            } catch (HttpClientResponseException e) {
+                SrResponse response = new SrResponse(
+                    e.getResponse().code(),
+                    e.getResponse().getBody(String.class).orElse("")
+                );
                 if (!shouldRetry(response.statusCode()) || attempt == MAX_ATTEMPTS) {
                     return response;
                 }
-            } catch (IOException e) {
+                lastFailure = e;
+            } catch (RuntimeException e) {
                 lastFailure = e;
                 if (attempt == MAX_ATTEMPTS) {
-                    throw e;
+                    throw new IOException("Schema Registry request failed", e);
                 }
             }
             Thread.sleep(RETRY_BACKOFF_MILLIS * attempt);
         }
-        throw lastFailure == null ? new IOException("Schema Registry request failed") : lastFailure;
+        if (lastFailure instanceof IOException ioException) {
+            throw ioException;
+        }
+        throw lastFailure == null ? new IOException("Schema Registry request failed") : new IOException("Schema Registry request failed", lastFailure);
     }
 
     private static boolean shouldRetry(int statusCode) {
         return statusCode == 429 || statusCode >= 500;
     }
 
-    private URI uri(String path) {
-        return URI.create(baseUrl + path);
+    private MutableHttpRequest<?> applyAuthentication(MutableHttpRequest<?> request) {
+        configuration.getHeaders().forEach(request::header);
+        String bearerToken = configuration.getBearerToken();
+        if (bearerToken != null && !bearerToken.isBlank()) {
+            return request.bearerAuth(bearerToken);
+        }
+        String username = configuration.getUsername();
+        if (username != null && !username.isBlank()) {
+            return request.basicAuth(username, configuration.getPassword() == null ? "" : configuration.getPassword());
+        }
+        return request;
     }
 
-    private static void requireSuccess(HttpResponse<String> response, String action) throws IOException {
+    private String path(String path) {
+        String normalizedPath = path.startsWith("/") ? path : "/" + path;
+        return basePath.isEmpty() ? normalizedPath : basePath + normalizedPath;
+    }
+
+    private static void requireSuccess(SrResponse response, String action) throws IOException {
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
             throw new IOException("Schema Registry failed to " + action + ": HTTP " + response.statusCode() + " " + response.body());
         }
@@ -171,6 +238,38 @@ final class ConfluentSchemaRegistryClient {
             return "http://localhost:8081";
         }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+    }
+
+    private static String trimTrailingPathSlash(String value) {
+        if (value == null || value.isBlank() || "/".equals(value)) {
+            return "";
+        }
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+    }
+
+    private static URL toUrl(String value) {
+        try {
+            return new URL(value);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Invalid Schema Registry URL: " + value, e);
+        }
+    }
+
+    private static URL origin(URL url) {
+        try {
+            return new URL(url.getProtocol(), url.getHost(), url.getPort(), "");
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Invalid Schema Registry URL: " + url, e);
+        }
+    }
+
+    private static JsonSchemaRegistryConfiguration.SrConfiguration configuration(String baseUrl) {
+        JsonSchemaRegistryConfiguration.SrConfiguration configuration = new JsonSchemaRegistryConfiguration.SrConfiguration();
+        configuration.setUrl(baseUrl);
+        return configuration;
+    }
+
+    private record SrResponse(int statusCode, String body) {
     }
 
     static final class UnreadableSchemaException extends IOException {

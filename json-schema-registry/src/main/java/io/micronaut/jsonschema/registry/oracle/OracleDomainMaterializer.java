@@ -19,6 +19,7 @@ import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema;
 import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger;
 import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
+import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import io.micronaut.jsonschema.registry.JsonSchemaNormalizer;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryDriftMode;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcome;
@@ -27,14 +28,17 @@ import io.micronaut.jsonschema.registry.JsonSchemaRegistryPolicyMode;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -52,6 +56,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
 
     private final JsonSchemaNormalizer normalizer;
     private final OracleDomainDiscoveryProvider discoveryProvider;
+    private final ObjectMapper objectMapper;
 
     /**
      * @param normalizer Schema normalizer
@@ -59,6 +64,31 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
     public OracleDomainMaterializer(JsonSchemaNormalizer normalizer) {
         this.normalizer = normalizer;
         this.discoveryProvider = new OracleDomainDiscoveryProvider();
+        this.objectMapper = JsonSchemaMapperFactory.createMapper();
+    }
+
+    @Override
+    public Optional<JsonSchemaRegistryOutcome> projectionCompatibility(OracleMaterializationRequest request) {
+        try {
+            Object schema = objectMapper.readValue(request.candidate().schemaJson(), Object.class);
+            String remoteRef = findRemoteReference(schema);
+            if (remoteRef != null) {
+                return Optional.of(JsonSchemaRegistryOutcome.failure(
+                    request.candidate().logicalSchema(),
+                    TARGET,
+                    JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY,
+                    "Oracle JSON domain materializer requires self-contained schemas; remote $ref is not supported: " + remoteRef
+                ));
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.of(JsonSchemaRegistryOutcome.failure(
+                request.candidate().logicalSchema(),
+                TARGET,
+                JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY,
+                "Oracle JSON domain materializer cannot parse candidate schema: " + e.getMessage()
+            ));
+        }
     }
 
     @Override
@@ -81,7 +111,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
                     "[DRY-RUN] would create Oracle domain " + domainName
                 );
             }
-            createDomain(connection, domainName, request.candidate().schemaJson());
+            createDomain(connection, domainName, request.owner(), request.candidate().schemaJson());
             return JsonSchemaRegistryOutcome.ok(
                 request.candidate().logicalSchema(),
                 TARGET,
@@ -152,11 +182,41 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
         return result.schemas().get(0);
     }
 
-    private static void createDomain(Connection connection, String domainName, String schemaJson) throws Exception {
-        String sql = "CREATE DOMAIN " + domainName + " AS JSON VALIDATE USING " + schemaLiteral(schemaJson);
+    private static void createDomain(Connection connection, String domainName, String owner, String schemaJson) throws Exception {
+        String qualifiedName = owner == null || owner.isBlank()
+            ? domainName
+            : normalizeIdentifier(owner) + "." + domainName;
+        String sql = "CREATE DOMAIN " + qualifiedName + " AS JSON VALIDATE USING " + schemaLiteral(schemaJson);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.executeUpdate();
         }
+    }
+
+    private static String findRemoteReference(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Object ref = map.get("$ref");
+            if (ref instanceof String reference && isRemoteReference(reference)) {
+                return reference;
+            }
+            for (Object child : map.values()) {
+                String remoteRef = findRemoteReference(child);
+                if (remoteRef != null) {
+                    return remoteRef;
+                }
+            }
+        } else if (value instanceof List<?> list) {
+            for (Object child : list) {
+                String remoteRef = findRemoteReference(child);
+                if (remoteRef != null) {
+                    return remoteRef;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean isRemoteReference(String reference) {
+        return !reference.startsWith("#");
     }
 
     static String schemaLiteral(String value) {

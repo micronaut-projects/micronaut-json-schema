@@ -28,6 +28,7 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
     private HttpServer server
     private final List<String> registrations = []
+    private final List<String> authorizationHeaders = []
 
     void cleanup() {
         server?.stop(0)
@@ -45,6 +46,30 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
                 "json-schema.registry.authority"      : "sr",
                 "json-schema.registry.sr.enabled"     : "true",
                 "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.sr.subjects[0]" : "com.acme.Order",
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.size() == 1
+        outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
+        outcomes[0].target() == "sr.authority"
+    }
+
+    void "SR authority preserves configured URL base path"() {
+        given:
+        startServer([
+                "/schema-registry/subjects/com.acme.Order/versions/latest": response(200, '{"schema":"{\\"type\\":\\"object\\"}"}')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "sr",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl("/schema-registry"),
                 "json-schema.registry.sr.subjects[0]" : "com.acme.Order",
                 "json-schema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
@@ -193,13 +218,14 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
                 "json-schema.registry.sr.url"         : serverUrl(),
                 "json-schema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
+            registrations.clear()
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
 
         then:
         outcomes.any { it.target() == "application.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
         outcomes.any { it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
-        !registrations.isEmpty()
+        registrations.size() == 1
         registrations[0].contains('"schemaType":"JSON"')
     }
 
@@ -275,6 +301,41 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         then:
         outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.MISSING_TARGET }
         registrations.isEmpty()
+    }
+
+    void "application authority reads compatibility diagnostics and sends configured auth"() {
+        given:
+        registrations.clear()
+        authorizationHeaders.clear()
+        String subject = "io.micronaut.jsonschema.registry.ApplicationAuthorityExample"
+        startServer([
+                "/mode"                                : response(200, '{"mode":"READWRITE"}'),
+                ("/config/${subject}".toString())       : response(200, '{"compatibilityLevel":"BACKWARD"}'),
+                ("/subjects/${subject}/versions/latest".toString()): response(404, "{}")
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "json-schema.registry.enabled"        : "true",
+                "json-schema.registry.authority"      : "application",
+                "json-schema.registry.sr.enabled"     : "true",
+                "json-schema.registry.sr.url"         : serverUrl(),
+                "json-schema.registry.sr.username"    : "user",
+                "json-schema.registry.sr.password"    : "secret",
+                "json-schema.registry.oracle.enabled" : "false"
+        ]) { ApplicationContext context ->
+            registrations.clear()
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "sr" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.CREATED &&
+                    it.message().contains("compatibility=BACKWARD")
+        }
+        authorizationHeaders.any { it != null && it.startsWith("Basic ") }
+        registrations.size() == 1
     }
 
     void "application authority registers new SR version when subject drifts"() {
@@ -381,6 +442,7 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
     private void startServer(Map<String, FixedResponse> responses) {
         server = HttpServer.create(new InetSocketAddress("localhost", 0), 0)
         server.createContext("/") { HttpExchange exchange ->
+            authorizationHeaders.add(exchange.requestHeaders.getFirst("Authorization"))
             if (exchange.requestMethod == "POST") {
                 registrations << new String(exchange.requestBody.readAllBytes(), StandardCharsets.UTF_8)
                 send(exchange, 200, '{"id":1}')
@@ -398,6 +460,10 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
     private String serverUrl() {
         "http://localhost:${server.address.port}"
+    }
+
+    private String serverUrl(String path) {
+        serverUrl() + path
     }
 
     private static FixedResponse response(int status, String body) {

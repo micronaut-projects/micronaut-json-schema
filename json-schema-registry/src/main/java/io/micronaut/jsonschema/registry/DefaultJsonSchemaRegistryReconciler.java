@@ -156,8 +156,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         }
         List<JsonSchemaRegistryOutcome> outcomes = new ArrayList<>();
         List<JsonSchemaCandidate> candidates = new ArrayList<>();
-        ConfluentSchemaRegistryClient srClient = new ConfluentSchemaRegistryClient(configuration.getSr().getUrl());
-        try {
+        try (ConfluentSchemaRegistryClient srClient = new ConfluentSchemaRegistryClient(configuration.getSr())) {
             List<String> subjects = configuration.getSr().getSubjects().isEmpty()
                 ? srClient.subjects(configuration.getNaming().getSubjectPrefix())
                 : configuration.getSr().getSubjects();
@@ -419,87 +418,99 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             return List.of();
         }
         List<JsonSchemaRegistryOutcome> outcomes = new ArrayList<>();
-        ConfluentSchemaRegistryClient srClient = new ConfluentSchemaRegistryClient(configuration.getSr().getUrl());
-        for (JsonSchemaCandidate candidate : candidates) {
-            String subject = resolveSrSubject(candidate);
-            if (subject == null || subject.isBlank()) {
-                outcomes.add(JsonSchemaRegistryOutcome.failure(
-                    candidate.logicalSchema(),
-                    "sr",
-                    JsonSchemaRegistryOutcomeStatus.FAILED,
-                    "Unable to derive Schema Registry subject; missing_mapping; "
-                        + "configure json-schema.registry.mappings for this logical schema"
-                ));
-                continue;
-            }
-            try {
-                Optional<String> latest = srClient.latestSchema(subject);
-                if (latest.isEmpty()) {
-                    if (configuration.getSr().getPolicy().getMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
+        try (ConfluentSchemaRegistryClient srClient = new ConfluentSchemaRegistryClient(configuration.getSr())) {
+            for (JsonSchemaCandidate candidate : candidates) {
+                String subject = resolveSrSubject(candidate);
+                if (subject == null || subject.isBlank()) {
+                    outcomes.add(JsonSchemaRegistryOutcome.failure(
+                        candidate.logicalSchema(),
+                        "sr",
+                        JsonSchemaRegistryOutcomeStatus.FAILED,
+                        "Unable to derive Schema Registry subject; missing_mapping; "
+                            + "configure json-schema.registry.mappings for this logical schema"
+                    ));
+                    continue;
+                }
+                try {
+                    Optional<String> latest = srClient.latestSchema(subject);
+                    if (latest.isEmpty()) {
+                        if (configuration.getSr().getPolicy().getMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
+                            outcomes.add(JsonSchemaRegistryOutcome.ok(
+                                candidate.logicalSchema(),
+                                "sr",
+                                JsonSchemaRegistryOutcomeStatus.MISSING_TARGET,
+                                "Schema Registry subject is missing: " + subject
+                            ));
+                        } else if (configuration.isDryRun()) {
+                            outcomes.add(JsonSchemaRegistryOutcome.ok(
+                                candidate.logicalSchema(),
+                                "sr",
+                                JsonSchemaRegistryOutcomeStatus.CREATED,
+                                "[DRY-RUN] would register Schema Registry subject " + subject
+                                    + compatibilityMessage(srClient, subject)
+                            ));
+                        } else {
+                            ensureSchemaRegistryWritable(srClient, subject);
+                            String compatibility = compatibilityMessage(srClient, subject);
+                            srClient.register(subject, candidate.schemaJson());
+                            outcomes.add(JsonSchemaRegistryOutcome.ok(
+                                candidate.logicalSchema(),
+                                "sr",
+                                JsonSchemaRegistryOutcomeStatus.CREATED,
+                                "Registered Schema Registry subject " + subject + compatibility
+                            ));
+                        }
+                        continue;
+                    }
+                    if (normalizer.equivalent(latest.get(), candidate.schemaJson())) {
                         outcomes.add(JsonSchemaRegistryOutcome.ok(
                             candidate.logicalSchema(),
                             "sr",
-                            JsonSchemaRegistryOutcomeStatus.MISSING_TARGET,
-                            "Schema Registry subject is missing: " + subject
+                            JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                            "Schema Registry subject is equivalent: " + subject
+                        ));
+                    } else if (configuration.getSr().getPolicy().getMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
+                        outcomes.add(JsonSchemaRegistryOutcome.ok(
+                            candidate.logicalSchema(),
+                            "sr",
+                            JsonSchemaRegistryOutcomeStatus.DRIFT,
+                            "Schema Registry subject drift detected: " + subject
                         ));
                     } else if (configuration.isDryRun()) {
                         outcomes.add(JsonSchemaRegistryOutcome.ok(
                             candidate.logicalSchema(),
                             "sr",
                             JsonSchemaRegistryOutcomeStatus.CREATED,
-                            "[DRY-RUN] would register Schema Registry subject " + subject
+                            "[DRY-RUN] would register new Schema Registry version for " + subject
+                                + compatibilityMessage(srClient, subject)
                         ));
                     } else {
                         ensureSchemaRegistryWritable(srClient, subject);
+                        String compatibility = compatibilityMessage(srClient, subject);
                         srClient.register(subject, candidate.schemaJson());
                         outcomes.add(JsonSchemaRegistryOutcome.ok(
                             candidate.logicalSchema(),
                             "sr",
                             JsonSchemaRegistryOutcomeStatus.CREATED,
-                            "Registered Schema Registry subject " + subject
+                            "Registered new Schema Registry version for " + subject + compatibility
                         ));
                     }
-                    continue;
-                }
-                if (normalizer.equivalent(latest.get(), candidate.schemaJson())) {
-                    outcomes.add(JsonSchemaRegistryOutcome.ok(
+                } catch (Exception e) {
+                    outcomes.add(JsonSchemaRegistryOutcome.failure(
                         candidate.logicalSchema(),
                         "sr",
-                        JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
-                        "Schema Registry subject is equivalent: " + subject
-                    ));
-                } else if (configuration.getSr().getPolicy().getMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
-                    outcomes.add(JsonSchemaRegistryOutcome.ok(
-                        candidate.logicalSchema(),
-                        "sr",
-                        JsonSchemaRegistryOutcomeStatus.DRIFT,
-                        "Schema Registry subject drift detected: " + subject
-                    ));
-                } else if (configuration.isDryRun()) {
-                    outcomes.add(JsonSchemaRegistryOutcome.ok(
-                        candidate.logicalSchema(),
-                        "sr",
-                        JsonSchemaRegistryOutcomeStatus.CREATED,
-                        "[DRY-RUN] would register new Schema Registry version for " + subject
-                    ));
-                } else {
-                    ensureSchemaRegistryWritable(srClient, subject);
-                    srClient.register(subject, candidate.schemaJson());
-                    outcomes.add(JsonSchemaRegistryOutcome.ok(
-                        candidate.logicalSchema(),
-                        "sr",
-                        JsonSchemaRegistryOutcomeStatus.CREATED,
-                        "Registered new Schema Registry version for " + subject
+                        JsonSchemaRegistryOutcomeStatus.FAILED,
+                        e.getMessage()
                     ));
                 }
-            } catch (Exception e) {
-                outcomes.add(JsonSchemaRegistryOutcome.failure(
-                    candidate.logicalSchema(),
-                    "sr",
-                    JsonSchemaRegistryOutcomeStatus.FAILED,
-                    e.getMessage()
-                ));
             }
+        } catch (Exception e) {
+            outcomes.add(JsonSchemaRegistryOutcome.failure(
+                new LogicalSchema("sr", null, null),
+                "sr",
+                JsonSchemaRegistryOutcomeStatus.FAILED,
+                e.getMessage()
+            ));
         }
         return outcomes;
     }
@@ -511,6 +522,17 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             throw new JsonSchemaRegistryException(
                 "Schema Registry mode is not READWRITE for subject " + subject + ": " + mode
             );
+        }
+    }
+
+    private static String compatibilityMessage(ConfluentSchemaRegistryClient srClient, String subject) {
+        try {
+            return srClient.compatibility(subject)
+                .map(compatibility -> "; compatibility=" + compatibility)
+                .orElse("");
+        } catch (Exception e) {
+            LOG.warn("Unable to read Schema Registry compatibility configuration for subject {}: {}", subject, e.getMessage());
+            return "";
         }
     }
 
