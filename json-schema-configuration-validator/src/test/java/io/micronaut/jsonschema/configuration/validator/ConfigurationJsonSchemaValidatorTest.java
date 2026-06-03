@@ -55,6 +55,7 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.home"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.log.level.*"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.processing"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.test-resources*"));
 
@@ -62,6 +63,7 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.home"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.log.level.*"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.processing"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.test-resources*"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.http.*"));
@@ -70,6 +72,7 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.db-type"));
         assertTrue(validator.getSuppressionPatterns().contains("datasources.*.x-protocol-url"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.home"));
+        assertTrue(validator.getSuppressionPatterns().contains("micronaut.log.level.*"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.processing"));
         assertTrue(validator.getSuppressionPatterns().contains("micronaut.test-resources*"));
     }
@@ -80,6 +83,7 @@ class ConfigurationJsonSchemaValidatorTest {
             "datasources.default.db-type", "postgres",
             "datasources.default.x-protocol-url", "jdbc:mysql://localhost/test",
             "micronaut.home", "/tmp/micronaut",
+            "micronaut.log.level.io.micronaut.context.env", "TRACE",
             "micronaut.processing.group", "com.example",
             "micronaut.test-resources", "enabled",
             "micronaut.test-resources-server-uri", "http://localhost:8080"
@@ -96,6 +100,8 @@ class ConfigurationJsonSchemaValidatorTest {
             () -> "Expected datasource x-protocol-url default suppression to be silent, got: " + errors);
         assertFalse(errors.stream().anyMatch(e -> e.property().equals("micronaut.home")),
             () -> "Expected micronaut.home default suppression to be silent, got: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("micronaut.log.level.io.micronaut.context.env")),
+            () -> "Expected micronaut.log.level.* default suppression to be silent, got: " + errors);
         assertFalse(errors.stream().anyMatch(e -> e.property().equals("micronaut.processing")),
             () -> "Expected micronaut.processing default suppression to be silent, got: " + errors);
         assertFalse(errors.stream().anyMatch(e -> e.property().equals("micronaut.test-resources")),
@@ -119,6 +125,14 @@ class ConfigurationJsonSchemaValidatorTest {
             && e.message().contains("Missing required")), () -> "Unexpected missing required error for initial-pool-size: " + errors);
         assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.bindable.max-pool-size")
             && e.message().contains("Missing required")), () -> "Unexpected missing required error for max-pool-size: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.bindable.documented-mode")
+            && e.message().contains("Missing required")), () -> "Unexpected missing required error for valid documented default: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.bindable.documented-host")
+            && e.message().contains("Missing required")), () -> "Unexpected missing required error for dotted documented default: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.bindable.documented-ratio")
+            && e.message().contains("Missing required")), () -> "Unexpected missing required error for decimal documented default: " + errors);
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.bindable.invalid-documented-mode")
+            && e.message().contains("Missing required")), () -> "Expected missing required error for invalid documented default: " + errors);
     }
 
     @Test
@@ -238,6 +252,43 @@ class ConfigurationJsonSchemaValidatorTest {
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.executors.alpha.n-threads") && e.message().contains(">=")));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.executors.beta.n-threads") && e.message().contains("Missing required")));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.executors.beta.unknown") && e.message().contains("not present")));
+    }
+
+    @Test
+    void nestedConfigurationSchemaBranchesAreNotReportedByParentSchemas() {
+        Environment environment = createEnvironment(Map.of(
+            "test.security.token.enabled", StringUtils.TRUE,
+            "test.security.token.jwt.generator.refresh-token.secret", "pleaseChangeThisSecretForANewOne",
+            "test.security.token.jwt.signatures.enabled", StringUtils.TRUE,
+            "test.security.token.jwt.signatures.secret.generator.secret", "pleaseChangeThisSecretForANewOne"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.security.token.jwt")),
+            () -> "Nested JWT schema branch should be validated by its own schema, got: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.security.token.jwt.signatures.secret")),
+            () -> "Nested each-property schema branch should be validated by its own schema, got: " + errors);
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.security.token.jwt.signatures.secret.generator")),
+            () -> "Each-property entry should be validated by its own schema, got: " + errors);
+    }
+
+    @Test
+    void repeatedEachPropertyEntrySegmentIsUnwrappedBeforeValidation() {
+        Environment environment = createEnvironment(Map.of(
+            "test.security.token.jwt.signatures.secret.generator.generator.secret", "pleaseChangeThisSecretForANewOne"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertFalse(errors.stream().anyMatch(e -> e.property().equals("test.security.token.jwt.signatures.secret.generator")),
+            () -> "Repeated each-property entry segment should be unwrapped, got: " + errors);
     }
 
     @Test

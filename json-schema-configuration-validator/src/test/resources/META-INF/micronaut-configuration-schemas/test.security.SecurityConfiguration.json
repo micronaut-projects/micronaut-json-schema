@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.security.SecurityConfiguration",
+  "title": "test.security.SecurityConfiguration",
+  "x-micronaut": {
+    "prefix": "test.security",
+    "type": "test.security.SecurityConfiguration",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "x-micronaut-path": "test.security.token.enabled"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
