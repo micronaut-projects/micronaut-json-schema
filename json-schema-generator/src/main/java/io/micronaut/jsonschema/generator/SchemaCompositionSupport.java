@@ -41,15 +41,15 @@ public final class SchemaCompositionSupport {
     }
 
     /**
-     * Normalize local references that must be flattened before generation.
+     * Prepare supported local composition references for generation.
      *
-     * @param schema The schema to normalize
+     * @param schema The schema to prepare
      */
-    public static void normalizeLocalReferences(Schema schema) {
+    public static void prepareLocalCompositionReferences(Schema schema) {
         // Track by instance identity because schemas can be mutable and structurally equal while
         // still representing different nodes.
         Set<Schema> path = Collections.newSetFromMap(new IdentityHashMap<>());
-        normalizeDefinitions(schema, schema, path);
+        prepareDefinitions(schema, schema, path);
         flattenLocalAllOfReferences(schema, schema, path);
         flattenRootReference(schema, schema, path);
     }
@@ -184,8 +184,8 @@ public final class SchemaCompositionSupport {
         }
         path.add(schema);
         try {
-            // A referenced definition may itself be a ref or contain allOf refs, so normalize the
-            // target before merging it here.
+            // A referenced definition may itself be a ref or contain allOf refs, so prepare the
+            // target shape before merging it here.
             flattenLocalAllOfReferences(referenced, documentRoot, path);
             if (!flattenRootReference(referenced, documentRoot, path)) {
                 return false;
@@ -204,12 +204,12 @@ public final class SchemaCompositionSupport {
         }
     }
 
-    private static void normalizeDefinitions(Schema schema, Schema documentRoot, Set<Schema> path) {
+    private static void prepareDefinitions(Schema schema, Schema documentRoot, Set<Schema> path) {
         if (schema == null || !schema.has$defs()) {
             return;
         }
         schema.get$defs().values().forEach(definition -> {
-            // Definitions are generation candidates too, so normalize their internal refs before
+            // Definitions are generation candidates too, so prepare their internal refs before
             // later compatibility checks.
             flattenLocalAllOfReferences(definition, documentRoot, path);
             flattenRootReference(definition, documentRoot, path);

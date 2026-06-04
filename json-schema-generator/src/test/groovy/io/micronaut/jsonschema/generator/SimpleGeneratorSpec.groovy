@@ -418,7 +418,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "allOf local ref branch flattens into generated object"() {
         when:
-        var content = generatePreparedTypeAndGetContent("Composed", '''
+        var content = generatePreparedCompositionTypeAndGetContent("Composed", '''
         {
           "title":"Composed",
           "allOf": [
@@ -450,7 +450,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "allOf definitions ref branch flattens into generated object"() {
         when:
-        var content = generatePreparedTypeAndGetContent("Composed", '''
+        var content = generatePreparedCompositionTypeAndGetContent("Composed", '''
         {
           "title":"Composed",
           "allOf": [
@@ -478,9 +478,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         content.contains("String name")
     }
 
-    void "compatible allOf duplicate property constraints merge only during composition normalization"() {
+    void "compatible allOf duplicate property constraints merge only during composition preparation"() {
         when:
-        var content = generatePreparedTypeAndGetContent("Constrained", '''
+        var content = generatePreparedCompositionTypeAndGetContent("Constrained", '''
         {
           "title":"Constrained",
           "allOf": [
@@ -510,7 +510,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "root local ref generates requested top-level object"() {
         when:
-        var content = generatePreparedTypeAndGetContent("Alias", '''
+        var content = generatePreparedCompositionTypeAndGetContent("Alias", '''
         {
           "$ref": "#/$defs/Base",
           "$defs": {
@@ -561,7 +561,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             .withOutputFileName("DefinitionReference")
             .build()
         def schema = FileProcessor.getJsonSchema(config)
-        SchemaCompositionSupport.normalizeLocalReferences(schema)
+        SchemaCompositionSupport.prepareLocalCompositionReferences(schema)
         File generated = generator.generate(config, schema)
 
         then:
@@ -610,7 +610,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             .withOutputPackageName("com.example.project")
             .build()
         def schema = FileProcessor.getJsonSchema(config)
-        SchemaCompositionSupport.normalizeLocalReferences(schema)
+        SchemaCompositionSupport.prepareLocalCompositionReferences(schema)
         generator.generate(config, schema)
         String definitionContent = Files.readString(outputPath.resolve("com/example/project/Composed.java"))
 

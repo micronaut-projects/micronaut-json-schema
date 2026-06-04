@@ -43,7 +43,9 @@ class AbstractGeneratorSpec extends Specification {
         }
     }
 
-    TypeDeclaration generatePreparedType(String className, String jsonSchema, Consumer<SourceGeneratorConfigBuilder> consumer) {
+    TypeDeclaration generatePreparedCompositionType(String className,
+                                                    String jsonSchema,
+                                                    Consumer<SourceGeneratorConfigBuilder> consumer) {
         SourceGenerator generator = new SourceGenerator("java")
 
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
@@ -57,7 +59,9 @@ class AbstractGeneratorSpec extends Specification {
         consumer.accept(builder)
         SourceGeneratorConfig config = builder.build()
         var schema = FileProcessor.getJsonSchema(config)
-        SchemaCompositionSupport.normalizeLocalReferences(schema)
+        // This mirrors the record-generator pipeline, where schema composition and local
+        // definition refs are resolved before handing the schema to SourceGenerator.
+        SchemaCompositionSupport.prepareLocalCompositionReferences(schema)
         File generated = generator.generate(config, schema)
 
         try {
@@ -100,16 +104,18 @@ class AbstractGeneratorSpec extends Specification {
         return generateRecordProfileType(className, jsonSchema).getTokenRange().get().toString()
     }
 
-    TypeDeclaration generatePreparedType(String className, String jsonSchema) {
-        return generatePreparedType(className, jsonSchema, b -> {})
+    TypeDeclaration generatePreparedCompositionType(String className, String jsonSchema) {
+        return generatePreparedCompositionType(className, jsonSchema, b -> {})
     }
 
-    String generatePreparedTypeAndGetContent(String className, String jsonSchema, Consumer<SourceGeneratorConfigBuilder> configConsumer) {
-        return generatePreparedType(className, jsonSchema, configConsumer).getTokenRange().get().toString()
+    String generatePreparedCompositionTypeAndGetContent(String className,
+                                                        String jsonSchema,
+                                                        Consumer<SourceGeneratorConfigBuilder> configConsumer) {
+        return generatePreparedCompositionType(className, jsonSchema, configConsumer).getTokenRange().get().toString()
     }
 
-    String generatePreparedTypeAndGetContent(String className, String jsonSchema) {
-        return generatePreparedType(className, jsonSchema).getTokenRange().get().toString()
+    String generatePreparedCompositionTypeAndGetContent(String className, String jsonSchema) {
+        return generatePreparedCompositionType(className, jsonSchema).getTokenRange().get().toString()
     }
 
     TypeDeclaration generateType(String className, String jsonSchema) {

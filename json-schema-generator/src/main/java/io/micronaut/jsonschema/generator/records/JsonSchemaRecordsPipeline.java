@@ -262,7 +262,7 @@ public final class JsonSchemaRecordsPipeline {
             try {
                 Schema rootSchema = loadSchema(config, plan);
                 warnIfNonDefaultDialect(rootSchema, discovered, warnings);
-                SchemaCompositionSupport.normalizeLocalReferences(rootSchema);
+                SchemaCompositionSupport.prepareLocalCompositionReferences(rootSchema);
                 validateRootSchema(rootSchema, plan);
                 Set<String> beforeGeneration = generatedJavaFiles(config.outputDir());
                 SourceGeneratorConfig sourceGeneratorConfig = new SourceGeneratorConfig(
