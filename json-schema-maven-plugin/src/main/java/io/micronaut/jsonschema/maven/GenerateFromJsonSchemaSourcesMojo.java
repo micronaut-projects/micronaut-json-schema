@@ -449,7 +449,7 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
         private Map<String, Object> toSourceMapOptions() {
             Map<String, Object> resolvedOptions = options == null ? new LinkedHashMap<>() : new LinkedHashMap<>(options);
             if (optionValues != null) {
-                optionValues.forEach((key, value) -> resolvedOptions.put(key, value == null ? null : List.copyOf(value)));
+                optionValues.forEach((key, val) -> resolvedOptions.put(key, val == null ? null : List.copyOf(val)));
             }
             return resolvedOptions;
         }
@@ -459,7 +459,7 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
                 return Map.of();
             }
             Map<String, List<String>> values = new LinkedHashMap<>();
-            optionValues.forEach((key, value) -> values.put(key, value == null ? null : List.copyOf(value)));
+            optionValues.forEach((key, val) -> values.put(key, val == null ? null : List.copyOf(val)));
             return values;
         }
     }

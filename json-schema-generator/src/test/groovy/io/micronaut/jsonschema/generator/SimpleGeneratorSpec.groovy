@@ -751,6 +751,27 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'my unusual property' | '{"type": "string"}'                                                  | '@JsonProperty("my unusual property") String myUnusualProperty'
     }
 
+    void "default property generation keeps existing scalar primitive behavior"() {
+        when:
+        var content = generatePropertyAndGetContent(propertyName, propertySchema)
+
+        then:
+        content == expectedJava
+
+        where:
+        propertyName  | propertySchema                                                    | expectedJava
+        'integer'     | '{"type": "integer"}'                                             | 'int integer'
+        'test'        | '{"type": "number"}'                                              | 'float test'
+        'test'        | '{"type": "number", "pattern": "^[0]|[-+]?[1-9][0-9]*$"}'         | 'int test'
+        'test'        | '{"type": "number", "pattern": "^[0]|[-+]?[1-9][0-9]*.?[0-9]+$"}' | 'float test'
+        'predicate'   | '{"type": "boolean"}'                                             | 'boolean predicate'
+        'isTrue'      | '{"type": "boolean"}'                                             | 'boolean isTrue'
+        'short'       | '{"type": "number"}'                                              | '@JsonProperty("short") float short_json'
+        '#bikes'      | '{"type": ["integer"]}'                                           | '@JsonProperty("#bikes") int bikes'
+        '9bikes'      | '{"type": ["integer"]}'                                           | '@JsonProperty("9bikes") int bikes'
+        'bikes9times' | '{"type": "integer"}'                                             | 'int bikes9times'
+    }
+
     void testPropertyValidationGeneration() {
         when:
         var content = generateRecordProfilePropertyAndGetContent(propertyName, propertySchema)
@@ -789,6 +810,32 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'array'      | '{"type": "array", "items": {"type":["string", "null"]}}'          | "List<@Nullable String> array"
         'array'      | '{"type": "array", "items": {"type":"number"},"nullable": true}'  | "@Nullable List<Float> array"
         'array'      | '{"type": "array", "items": {"type":"number"},"nullable": false}' | "@NotNull List<Float> array"
+    }
+
+    void "default property validation generation keeps existing const and nullable behavior"() {
+        when:
+        var content = generatePropertyAndGetContent(propertyName, propertySchema)
+
+        then:
+        content == expectedJava
+
+        where:
+        propertyName | propertySchema                                                    | expectedJava
+        'test'       | '{"type": "number", "minimum": 10}'                               | "@DecimalMin(\"10\") float test"
+        'test'       | '{"type": "number", "maximum": 10}'                               | "@DecimalMax(\"10\") float test"
+        'test'       | '{"type": "number", "exclusiveMaximum": 10.0}'                    | "@DecimalMax(\"9.999\") float test"
+        'test'       | '{"type": "number", "exclusiveMinimum": 10.0}'                    | "@DecimalMin(\"10.001\") float test"
+        'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*$"}'                  | "@Min(1) int test"
+        'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*.?[0-9]+$"}'          | "@DecimalMin(\"0.001\") float test"
+        'test'       | '{"type": "number", "pattern": "^[0]|([1-9][0-9]*)$"}'            | "@Min(0) int test"
+        'test'       | '{"type": "number", "pattern": "^-d+$"}'                          | "@Max(0) int test"
+        'test'       | '{"type": "number", "pattern": "^[0]|[-+]?[1-9][0-9]*$"}'         | "int test"
+        'test'       | '{"type": "boolean", "const": true}'                              | "@AssertTrue boolean test"
+        'test'       | '{"type": "boolean", "const": false}'                             | "@AssertFalse boolean test"
+        'test'       | '{"type": ["boolean", "null"]}'                                   | "Boolean test"
+        'test'       | '{"type": ["integer", "null"]}'                                   | "Integer test"
+        'test'       | '{"type": ["number", "null"]}'                                    | "Float test"
+        'test'       | '{"type": ["object", "null"]}'                                    | "Object test"
     }
 
     void "array without items maps to List of Object"() {

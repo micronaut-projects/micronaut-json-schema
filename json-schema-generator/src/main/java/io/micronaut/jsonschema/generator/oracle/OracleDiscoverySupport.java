@@ -266,8 +266,8 @@ final class OracleDiscoverySupport {
             return List.of();
         }
         return values.stream()
-            .filter(value -> value != null && !value.isBlank())
-            .flatMap(value -> value.lines())
+            .filter(val -> val != null && !val.isBlank())
+            .flatMap(val -> val.lines())
             .flatMap(line -> java.util.Arrays.stream(line.split(",")))
             .map(String::trim)
             .filter(entry -> !entry.isEmpty())

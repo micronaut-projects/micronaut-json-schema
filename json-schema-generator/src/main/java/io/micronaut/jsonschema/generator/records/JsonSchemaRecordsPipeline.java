@@ -125,7 +125,7 @@ public final class JsonSchemaRecordsPipeline {
                     config.outputDir(),
                     contextSourceMetadata,
                     logger,
-                    Map.of(JdbcConnectionProvider.class, jdbcConnectionProvider)
+                    jdbcConnectionProvider
                 );
                 SchemaDiscoveryProvider provider = SchemaDiscoveryProviders.resolve(source.provider(), providerClassLoader);
                 DiscoveryResult result;

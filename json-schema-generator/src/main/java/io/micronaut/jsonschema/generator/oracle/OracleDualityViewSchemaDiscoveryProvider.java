@@ -20,7 +20,6 @@ import io.micronaut.jsonschema.generator.discovery.DiscoveryResult;
 import io.micronaut.jsonschema.generator.discovery.DiscoverySkipped;
 import io.micronaut.jsonschema.generator.discovery.DiscoveryStep;
 import io.micronaut.jsonschema.generator.discovery.DiscoveryWarning;
-import io.micronaut.jsonschema.generator.discovery.JdbcConnectionProvider;
 import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext;
 import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
 import io.micronaut.jsonschema.generator.discovery.SourceSpec;
@@ -51,7 +50,7 @@ public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDis
     @Override
     public DiscoveryResult discover(SchemaDiscoveryContext context,
                                     SourceSpec source) throws Exception {
-        Connection connection = context.requireService(JdbcConnectionProvider.class).getConnection();
+        Connection connection = context.requireJdbcConnectionProvider().getConnection();
         boolean skipOnError = context.skipOnError();
         List<DiscoveryWarning> warnings = OracleDiscoverySupport.warnings();
         List<DiscoverySkipped> skipped = OracleDiscoverySupport.skipped();

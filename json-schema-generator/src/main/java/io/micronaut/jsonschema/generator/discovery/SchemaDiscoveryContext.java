@@ -28,7 +28,7 @@ import java.util.Optional;
  * @param outputDir Generated source output directory
  * @param sourceMetadata Sanitized provider source metadata available to the provider
  * @param logger Logger for diagnostics
- * @param services Provider-specific execution services
+ * @param jdbcConnectionProvider JDBC connection provider for JDBC-backed discovery providers
  * @since 2.0.0
  */
 public record SchemaDiscoveryContext(
@@ -38,7 +38,7 @@ public record SchemaDiscoveryContext(
     Path outputDir,
     Map<String, String> sourceMetadata,
     JsonSchemaRecordsLogger logger,
-    Map<Class<?>, Object> services
+    JdbcConnectionProvider jdbcConnectionProvider
 ) {
 
     /**
@@ -50,33 +50,27 @@ public record SchemaDiscoveryContext(
      * @param outputDir Generated source output directory
      * @param sourceMetadata Sanitized provider source metadata available to the provider
      * @param logger Logger for diagnostics
-     * @param services Provider-specific execution services
+     * @param jdbcConnectionProvider JDBC connection provider for JDBC-backed discovery providers
      */
     public SchemaDiscoveryContext {
         sourceMetadata = sourceMetadata == null ? Map.of() : Map.copyOf(sourceMetadata);
-        services = services == null ? Map.of() : Map.copyOf(services);
     }
 
     /**
-     * Resolve a provider-specific service from the context.
+     * Resolve the JDBC connection provider when the configured discovery provider needs JDBC.
      *
-     * @param type Service type
-     * @return The service when present
-     * @param <T> Service type
+     * @return The JDBC connection provider when present
      */
-    public <T> Optional<T> findService(Class<T> type) {
-        Object service = services.get(type);
-        return type.isInstance(service) ? Optional.of(type.cast(service)) : Optional.empty();
+    public Optional<JdbcConnectionProvider> findJdbcConnectionProvider() {
+        return Optional.ofNullable(jdbcConnectionProvider);
     }
 
     /**
-     * Resolve a required provider-specific service from the context.
+     * Resolve the JDBC connection provider required by JDBC-backed discovery providers.
      *
-     * @param type Service type
-     * @return The service
-     * @param <T> Service type
+     * @return The JDBC connection provider
      */
-    public <T> T requireService(Class<T> type) {
-        return findService(type).orElseThrow(() -> new IllegalStateException("Missing discovery context service: " + type.getName()));
+    public JdbcConnectionProvider requireJdbcConnectionProvider() {
+        return findJdbcConnectionProvider().orElseThrow(() -> new IllegalStateException("Missing JDBC connection provider for JDBC-backed schema discovery source."));
     }
 }
