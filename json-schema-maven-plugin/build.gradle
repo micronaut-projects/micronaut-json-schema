@@ -25,12 +25,14 @@ micronautBuild {
 }
 
 tasks.named("processResources") {
+    inputs.property("projectVersion", project.version.toString())
     filesMatching("META-INF/maven/plugin.xml") {
         filter { line -> line.replace('${project.version}', project.version.toString()) }
     }
 }
 
 tasks.named("processTestResources") {
+    inputs.property("projectVersion", project.version.toString())
     filesMatching("META-INF/plexus/components.xml") {
         filter { line -> line.replace('${project.version}', project.version.toString()) }
     }
