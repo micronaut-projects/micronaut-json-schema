@@ -328,9 +328,6 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private void validateRootSchema(Schema schema, GenerationPlan plan) throws GenerationDiagnosticException {
-        if (schema.hasOneOf()) {
-            throw new GenerationDiagnosticException("UNSUPPORTED_KEYWORD", "Root oneOf is not supported for " + plan.discovered().schema().name());
-        }
         if (schema.hasAnyOf()) {
             throw new GenerationDiagnosticException("UNSUPPORTED_KEYWORD", "Root anyOf is not supported for " + plan.discovered().schema().name());
         }

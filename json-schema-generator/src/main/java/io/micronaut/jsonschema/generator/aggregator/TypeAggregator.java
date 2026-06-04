@@ -36,8 +36,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
 import static io.micronaut.jsonschema.generator.loaders.UrlLoader.isValidUrl;
@@ -66,7 +64,6 @@ public final class TypeAggregator {
         "number", TypeDef.Primitive.FLOAT_WRAPPER,
         "null", TypeDef.OBJECT
     );
-    private static final Pattern ALPHANUMERIC_RUN = Pattern.compile("[A-Za-z0-9]+");
 
     static {
         TYPE_MAP = new HashMap<>();
@@ -105,10 +102,6 @@ public final class TypeAggregator {
             }
             return TypeDef.OBJECT;
         } else if (schema.hasAnyOf()) {
-            if (context.isStrictUnsupportedKeywords()) {
-                context.warn("UNSUPPORTED_KEYWORD", "anyOf is not supported at property level; using java.lang.Object");
-                return TypeDef.OBJECT;
-            }
             return chooseFromAnyOf(schema.getAnyOf(), context);
         } else if (schema.isEnum()) {
             return TypeDef.OBJECT;
@@ -339,59 +332,6 @@ public final class TypeAggregator {
             }
         }
         return camelCaseString.toString();
-    }
-
-    public static String getPropertyName(String input, GeneratorContext context) {
-        if (context == null || !context.isStrictUnsupportedKeywords()) {
-            return getPropertyName(input);
-        }
-        if (input == null || input.isBlank()) {
-            return "_";
-        }
-        boolean hasSeparator = !input.chars().allMatch(Character::isLetterOrDigit);
-        if (!hasSeparator && SourceVersion.isName(input) && !isReservedJavaLiteral(input)) {
-            return input;
-        }
-        Matcher matcher = ALPHANUMERIC_RUN.matcher(input);
-        List<String> words = new java.util.ArrayList<>();
-        while (matcher.find()) {
-            words.add(matcher.group());
-        }
-        if (words.isEmpty()) {
-            return "_";
-        }
-        StringBuilder camelCaseString = new StringBuilder();
-        for (int i = 0; i < words.size(); i++) {
-            String word = words.get(i).trim();
-            if (!word.isEmpty()) {
-                if (i == 0) {
-                    camelCaseString.append(word.toLowerCase());
-                } else {
-                    camelCaseString.append(Character.toUpperCase(word.charAt(0)))
-                        .append(word.substring(1).toLowerCase());
-                }
-            }
-        }
-        if (camelCaseString.isEmpty()) {
-            return "_";
-        }
-        if (!Character.isJavaIdentifierStart(camelCaseString.charAt(0))) {
-            camelCaseString.insert(0, '_');
-        }
-        for (int i = 1; i < camelCaseString.length(); i++) {
-            if (!Character.isJavaIdentifierPart(camelCaseString.charAt(i))) {
-                camelCaseString.setCharAt(i, '_');
-            }
-        }
-        String name = camelCaseString.toString();
-        if (SourceVersion.isKeyword(name) || isReservedJavaLiteral(name)) {
-            return name + "_";
-        }
-        return name;
-    }
-
-    private static boolean isReservedJavaLiteral(String value) {
-        return "true".equals(value) || "false".equals(value) || "null".equals(value);
     }
 
     public static String unicodeToString(String input) {

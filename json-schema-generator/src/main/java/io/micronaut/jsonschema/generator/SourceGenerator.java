@@ -96,7 +96,6 @@ public final class SourceGenerator {
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
     private final io.micronaut.sourcegen.generator.SourceGenerator sourceGenerator;
     private final GeneratorContext context;
-    private final LinkedList<String> typeNameStack = new LinkedList<>();
     private String discriminatorProperty = "";
 
     /**
@@ -435,12 +434,7 @@ public final class SourceGenerator {
                         parameters.get(0).asExpressionSwitch(TypeDef.STRING, cases, defaultValue).returning()
                     ));
         }
-        pushTypeName(builderClassName);
-        try {
-            addFields(jsonSchema, enumBuilder);
-        } finally {
-            popTypeName();
-        }
+        addFields(jsonSchema, enumBuilder);
         return enumBuilder.build();
     }
 
@@ -450,12 +444,7 @@ public final class SourceGenerator {
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
         addJsonSchemaAnnotation(objectBuilder);
 
-        pushTypeName(builderClassName);
-        try {
-            addFields(jsonSchema, objectBuilder);
-        } finally {
-            popTypeName();
-        }
+        addFields(jsonSchema, objectBuilder);
         return objectBuilder.build();
     }
 
@@ -476,12 +465,7 @@ public final class SourceGenerator {
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
         }
 
-        pushTypeName(builderClassName);
-        try {
-            addFields(jsonSchema, objectBuilder);
-        } finally {
-            popTypeName();
-        }
+        addFields(jsonSchema, objectBuilder);
 
         if (!discriminatorProperty.isBlank()) {
             objectBuilder.addAnnotation(getJsonTypeInfoAnn(discriminatorProperty));
@@ -524,11 +508,7 @@ public final class SourceGenerator {
                 validateMemberNameCollisions(jsonSchema);
             }
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();
-            Stream<Map.Entry<String, Schema>> propertyStream = jsonSchema.getProperties().entrySet().stream();
-            if (shouldSortPropertiesByName()) {
-                propertyStream = propertyStream.sorted(Map.Entry.comparingByKey());
-            }
-            propertyStream.forEach(entry -> addField(
+            jsonSchema.getProperties().entrySet().forEach(entry -> addField(
                     builder,
                     entry.getKey(),
                     entry.getValue(),
@@ -538,21 +518,10 @@ public final class SourceGenerator {
             if (shouldGenerateAdditionalProperties(jsonSchema)) {
                 addAdditionalField(jsonSchema, builder);
             }
-        } else if (supportsAdditionalPropertiesAsField() && shouldGenerateAdditionalProperties(jsonSchema)) {
-            addAdditionalField(jsonSchema, builder);
         }
     }
 
     private void addAdditionalField(Schema jsonSchema, ObjectDefBuilder builder) {
-        if (supportsAdditionalPropertiesAsField()) {
-            if (jsonSchema.hasProperties()) {
-                context.warn("OPEN_OBJECT_GENERATED", "Generated additionalProperties map for " + inputFileName);
-            }
-            builder.addProperty(PropertyDef.builder("additionalProperties")
-                .ofType(TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, getAdditionalPropertyValueType(jsonSchema, builder)))
-                .build());
-            return;
-        }
         TypeDef mapType;
         if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
             mapType = TypeDef.OBJECT;
@@ -600,7 +569,7 @@ public final class SourceGenerator {
         if (propertyName.equals(discriminatorProperty)) {
             return;
         }
-        String name = getPropertyName(propertyName, context);
+        String name = getPropertyName(propertyName);
         PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name)
             .addModifiers(Modifier.PUBLIC);
         if (!name.equals(propertyName)) {
@@ -672,8 +641,6 @@ public final class SourceGenerator {
             propertyType = getListTypeDef(objectBuilder, name, schema);
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
-        } else if (supportsAdditionalPropertiesAsField() && propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties() && shouldGenerateAdditionalProperties(schema)) {
-            return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, getAdditionalPropertyValueType(schema, objectBuilder));
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties()) {
             if (schema.getAdditionalProperties().equals(Schema.TRUE)) {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
@@ -686,7 +653,7 @@ public final class SourceGenerator {
     }
 
     private boolean hasUnsupportedPropertyShape(Schema schema) {
-        if (schema.hasOneOf() || schema.hasAnyOf()) {
+        if (schema.hasOneOf()) {
             return true;
         }
         if (schema.hasType() && schema.getType().stream()
@@ -735,7 +702,7 @@ public final class SourceGenerator {
     }
 
     private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
-        EnumDef enumDef = buildEnum(schema, nestedTypeName(propertyName));
+        EnumDef enumDef = buildEnum(schema, getClassName(propertyName));
         objectBuilder.addInnerType(enumDef);
         return enumDef.asTypeDef();
     }
@@ -764,7 +731,7 @@ public final class SourceGenerator {
     private TypeDef buildInnerType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         // inner type
         ObjectDef builder;
-        String nestedTypeName = nestedTypeName(propertyName);
+        String nestedTypeName = getClassName(propertyName);
         if (shouldBeAClass(schema)) {
             builder = buildClass(schema, nestedTypeName);
         } else {
@@ -779,9 +746,6 @@ public final class SourceGenerator {
             return true;
         }
         boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
-        if (supportsAdditionalPropertiesAsField()) {
-            return hasOverLimitParameters || schema.hasConstValue();
-        }
         return hasOverLimitParameters || schema.hasAdditionalProperties() || schema.hasConstValue();
     }
 
@@ -824,67 +788,11 @@ public final class SourceGenerator {
     }
 
     private boolean shouldGenerateAdditionalProperties(Schema schema) {
-        return supportsAdditionalPropertiesAsField()
-            ? !Schema.FALSE.equals(schema.getAdditionalProperties())
-            : schema.hasAdditionalProperties() && !Schema.FALSE.equals(schema.getAdditionalProperties());
-    }
-
-    private boolean supportsAdditionalPropertiesAsField() {
-        return context.isTreatAdditionalPropertiesAsField();
+        return schema.hasAdditionalProperties() && !Schema.FALSE.equals(schema.getAdditionalProperties());
     }
 
     private boolean shouldBoxOptionalBooleans() {
         return context.isBoxOptionalBooleans();
-    }
-
-    private boolean shouldSortPropertiesByName() {
-        return context.isSortPropertiesByName();
-    }
-
-    private void pushTypeName(String builderClassName) {
-        typeNameStack.push(simpleTypeName(builderClassName));
-    }
-
-    private void popTypeName() {
-        typeNameStack.pop();
-    }
-
-    private String nestedTypeName(String propertyName) {
-        String propertyTypeName = capitalize(propertyName);
-        if (!context.isStrictUnsupportedKeywords()) {
-            return propertyTypeName;
-        }
-        String parentTypeName = typeNameStack.peek();
-        String rawName = parentTypeName == null || parentTypeName.isBlank()
-            ? propertyTypeName
-            : parentTypeName + "_" + propertyTypeName;
-        return sanitizeNestedTypeName(rawName);
-    }
-
-    private String sanitizeNestedTypeName(String rawName) {
-        String sanitized = rawName.replaceAll("[^A-Za-z0-9]", "_").replaceAll("_+", "_");
-        if (sanitized.isBlank()) {
-            sanitized = "GeneratedNestedType";
-        }
-        if (!Character.isJavaIdentifierStart(sanitized.charAt(0))) {
-            sanitized = "_" + sanitized;
-        }
-        if (sanitized.length() > 128) {
-            sanitized = sanitized.substring(0, 128);
-        }
-        return sanitized;
-    }
-
-    private String simpleTypeName(String builderClassName) {
-        int packageSeparator = builderClassName.lastIndexOf('.');
-        return packageSeparator < 0 ? builderClassName : builderClassName.substring(packageSeparator + 1);
-    }
-
-    private TypeDef getAdditionalPropertyValueType(Schema schema, ObjectDefBuilder objectBuilder) {
-        if (!schema.hasAdditionalProperties() || Schema.TRUE.equals(schema.getAdditionalProperties())) {
-            return TypeDef.OBJECT;
-        }
-        return boxPrimitive(getPropertyType(objectBuilder, schema.getAdditionalProperties(), "additionalProperties"));
     }
 
     private TypeDef boxPrimitive(TypeDef type) {
@@ -898,10 +806,10 @@ public final class SourceGenerator {
         Map<String, List<String>> jsonNamesByJavaName = new LinkedHashMap<>();
         if (schema.hasProperties()) {
             schema.getProperties().keySet().forEach(jsonName ->
-                jsonNamesByJavaName.computeIfAbsent(getPropertyName(jsonName, context), ignored -> new LinkedList<>()).add(jsonName));
+                jsonNamesByJavaName.computeIfAbsent(getPropertyName(jsonName), ignored -> new LinkedList<>()).add(jsonName));
         }
         if (shouldGenerateAdditionalProperties(schema)) {
-            jsonNamesByJavaName.computeIfAbsent("additionalProperties", ignored -> new LinkedList<>()).add("<additionalProperties>");
+            jsonNamesByJavaName.computeIfAbsent("unknownFields", ignored -> new LinkedList<>()).add("<additionalProperties>");
         }
         jsonNamesByJavaName.entrySet().stream()
             .filter(entry -> entry.getValue().size() > 1)

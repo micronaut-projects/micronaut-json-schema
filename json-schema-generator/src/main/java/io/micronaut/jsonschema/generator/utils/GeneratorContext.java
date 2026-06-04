@@ -50,8 +50,6 @@ public final class GeneratorContext {
     private final List<Warning> warnings = new LinkedList<>();
     private boolean addGeneratedJsonSchemaAnnotation;
     private boolean boxOptionalBooleans;
-    private boolean treatAdditionalPropertiesAsField;
-    private boolean sortPropertiesByName;
     private boolean strictUnsupportedKeywords;
     private SourceGeneratorConfig configuration;
 
@@ -198,8 +196,6 @@ public final class GeneratorContext {
     public void enableJsonSchemaRecordsProfile() {
         addGeneratedJsonSchemaAnnotation = true;
         boxOptionalBooleans = true;
-        treatAdditionalPropertiesAsField = true;
-        sortPropertiesByName = true;
         strictUnsupportedKeywords = true;
     }
 
@@ -255,20 +251,6 @@ public final class GeneratorContext {
      */
     public boolean isBoxOptionalBooleans() {
         return boxOptionalBooleans;
-    }
-
-    /**
-     * @return Whether open content should be exposed as an additionalProperties field
-     */
-    public boolean isTreatAdditionalPropertiesAsField() {
-        return treatAdditionalPropertiesAsField;
-    }
-
-    /**
-     * @return Whether generated properties should be sorted by name
-     */
-    public boolean isSortPropertiesByName() {
-        return sortPropertiesByName;
     }
 
     /**

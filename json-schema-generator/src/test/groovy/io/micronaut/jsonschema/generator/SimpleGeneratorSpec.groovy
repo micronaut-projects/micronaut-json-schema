@@ -366,45 +366,6 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         }""".stripIndent().trim()
     }
 
-    void "oracle profile boxes primitive additionalProperties map value types"() {
-        when:
-        var content = generateRecordProfileTypeAndGetContent("OpenCounts", '''
-        {
-          "title":"OpenCounts",
-          "type":"object",
-          "additionalProperties": {
-            "type": "integer"
-          }
-        }
-        ''')
-
-        then:
-        content.contains("Map<String, Integer> additionalProperties")
-    }
-
-    void "oracle profile maps additionalProperties schema object to typed nested value"() {
-        when:
-        var content = generateRecordProfileTypeAndGetContent("OpenValues", '''
-        {
-          "title":"OpenValues",
-          "type":"object",
-          "additionalProperties": {
-            "type": "object",
-            "properties": {
-              "label": { "type": "string" }
-            },
-            "required": ["label"],
-            "additionalProperties": false
-          }
-        }
-        ''')
-
-        then:
-        content.contains("Map<String, OpenValues_AdditionalProperties> additionalProperties")
-        content.contains("public record OpenValues_AdditionalProperties(")
-        content.contains("@NotNull String label")
-    }
-
     void testAllOf() {
         when:
         var content = generateTypeAndGetContent("Llama3", '''
@@ -750,12 +711,12 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         // booleans
         'predicate'           | '{"type": "boolean"}'                                                 | 'Boolean predicate'
         // enums
-        'status'              | '{"type": "string", "enum": ["SINGLE", "TAKEN"]}'                     | 'TestRecord_Status status'
+        'status'              | '{"type": "string", "enum": ["SINGLE", "TAKEN"]}'                     | 'Status status'
         // support unusual names
         'isTrue'              | '{"type": "boolean"}'                                                 | 'Boolean isTrue'
-        'short'               | '{"type": "number"}'                                                  | '@JsonProperty("short") Float short_'
+        'short'               | '{"type": "number"}'                                                  | '@JsonProperty("short") Float short_json'
         '#bikes'              | '{"type": ["integer"]}'                                               | '@JsonProperty("#bikes") Integer bikes'
-        '9bikes'              | '{"type": ["integer"]}'                                               | '@JsonProperty("9bikes") Integer _9bikes'
+        '9bikes'              | '{"type": ["integer"]}'                                               | '@JsonProperty("9bikes") Integer bikes'
         'bikes9times'         | '{"type": "integer"}'                                                 | 'Integer bikes9times'
         'my unusual property' | '{"type": "string"}'                                                  | '@JsonProperty("my unusual property") String myUnusualProperty'
     }
@@ -771,8 +732,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         propertyName | propertySchema                                                    | expectedJava
         'test'       | '{"type": "number", "minimum": 10}'                               | "@DecimalMin(\"10\") Float test"
         'test'       | '{"type": "number", "maximum": 10}'                               | "@DecimalMax(\"10\") Float test"
-        'test'       | '{"type": "number", "exclusiveMaximum": 10.0}'                    | "@DecimalMax(value = \"10.0\", inclusive = false) Float test"
-        'test'       | '{"type": "number", "exclusiveMinimum": 10.0}'                    | "@DecimalMin(value = \"10.0\", inclusive = false) Float test"
+        'test'       | '{"type": "number", "exclusiveMaximum": 10.0}'                    | "@DecimalMax(\"9.999\") Float test"
+        'test'       | '{"type": "number", "exclusiveMinimum": 10.0}'                    | "@DecimalMin(\"10.001\") Float test"
         'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*$"}'                  | "@Min(1) Integer test"
         'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*.?[0-9]+$"}'          | "@DecimalMin(\"0.001\") Float test"
         'test'       | '{"type": "number", "pattern": "^[0]|([1-9][0-9]*)$"}'            | "@Min(0) Integer test"
@@ -857,7 +818,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         generated.text.contains("Object multi")
         generated.text.contains("Object external")
         generated.text.contains("Object ambiguous")
-        generator.warnings*.code() == ["UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD"]
+        generator.warnings*.code() == ["UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD"]
     }
 
     void "unsupported local ref outside defs falls back to Object and records warning at property level"() {
@@ -890,14 +851,14 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         generator.warnings*.code() == ["UNSUPPORTED_KEYWORD"]
     }
 
-    void "synthetic additionalProperties member collision fails generation"() {
+    void "open object unknownFields member collision fails generation"() {
         when:
         generateRecordProfileType("OpenCollision", '''
         {
           "title":"OpenCollision",
           "type":"object",
           "properties":{
-            "additionalProperties":{"type":"string"}
+            "unknownFields":{"type":"string"}
           },
           "additionalProperties": true
         }
@@ -906,7 +867,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         then:
         def exception = thrown(IllegalArgumentException)
         exception.message.contains("NAME_COLLISION")
-        exception.message.contains("additionalProperties")
+        exception.message.contains("unknownFields")
     }
 
 }

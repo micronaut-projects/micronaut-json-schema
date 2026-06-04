@@ -703,8 +703,9 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "emittedSchemaFiles", 1).getStringValue() == "sources/custom/CUSTOMER_2.schema.json"
     }
 
-    void "pipeline skips root unsupported composition when skip on error is enabled"() {
+    void "pipeline delegates root oneOf to existing generator behavior"() {
         when:
+        Path outputDir = Files.createTempDirectory("custom-output")
         def result = new JsonSchemaRecordsPipeline({ }).execute(
             new JsonSchemaRecordsGeneratorConfig(
                 null,
@@ -713,10 +714,10 @@ class OraclePipelineMockSpec extends Specification {
                 "io.micronaut.jsonschema.custom.generated",
                 21,
                 Files.createTempDirectory("custom-schema-cache"),
-                Files.createTempDirectory("custom-output"),
+                outputDir,
                 [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
                     schemaName: "POLY_ROOT",
-                    schema: '{"oneOf":[{"type":"object","properties":{"a":{"type":"string"}}},{"type":"object","properties":{"b":{"type":"string"}}}]}'
+                    schema: '{"oneOf":[{"title":"Alpha","type":"object","properties":{"a":{"type":"string"}}},{"title":"Beta","type":"object","properties":{"b":{"type":"string"}}}]}'
                 ])],
                 true,
                 true
@@ -724,12 +725,14 @@ class OraclePipelineMockSpec extends Specification {
         )
 
         then:
-        result.generatedTypes() == 0
+        result.generatedTypes() == 1
         def manifest = readJson(result.manifestPath())
-        jsonAt(manifest, "warnings", 0, "code").getStringValue() == "UNSUPPORTED_KEYWORD"
-        jsonAt(manifest, "skipped", 0, "code").getStringValue() == "UNSUPPORTED_KEYWORD"
-        jsonAt(manifest, "skipped", 0, "step").getStringValue() == "GENERATION"
-        jsonAt(manifest, "generatedJavaFiles").size() == 0
+        jsonAt(manifest, "warnings").size() == 0
+        jsonAt(manifest, "skipped").size() == 0
+        jsonAt(manifest, "generatedJavaFiles").size() == 3
+        outputDir.resolve("io/micronaut/jsonschema/custom/generated/PolyRoot.java").toFile().text.contains("public interface PolyRoot")
+        outputDir.resolve("io/micronaut/jsonschema/custom/generated/Alpha.java").toFile().text.contains("public class Alpha implements PolyRoot")
+        outputDir.resolve("io/micronaut/jsonschema/custom/generated/Beta.java").toFile().text.contains("public class Beta implements PolyRoot")
     }
 
     void "pipeline warns and continues for non default schema dialect"() {
@@ -757,31 +760,6 @@ class OraclePipelineMockSpec extends Specification {
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "warnings", 0, "code").getStringValue() == "SCHEMA_DIALECT"
         jsonAt(manifest, "warnings", 0, "step").getStringValue() == "GENERATION"
-    }
-
-    void "pipeline fails root unsupported composition by default"() {
-        when:
-        new JsonSchemaRecordsPipeline({ }).execute(
-            new JsonSchemaRecordsGeneratorConfig(
-                null,
-                null,
-                null,
-                "io.micronaut.jsonschema.custom.generated",
-                21,
-                Files.createTempDirectory("custom-schema-cache"),
-                Files.createTempDirectory("custom-output"),
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
-                    schemaName: "POLY_ROOT",
-                    schema: '{"oneOf":[{"type":"object"},{"type":"object"}]}'
-                ])],
-                false,
-                true
-            )
-        )
-
-        then:
-        IOException exception = thrown()
-        exception.message.contains("UNSUPPORTED_KEYWORD")
     }
 
     void "pipeline skips root incompatible allOf when skip on error is enabled"() {

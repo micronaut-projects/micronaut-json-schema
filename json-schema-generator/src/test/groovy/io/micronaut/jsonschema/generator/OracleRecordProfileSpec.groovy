@@ -30,15 +30,14 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
         then:
         type.annotations*.nameAsString.containsAll(["Serdeable", "JsonSchema"])
         type.parameters.collect { it.nameAsString } == [
-            "active",
-            "createdAt",
-            "gateway",
             "id",
-            "metadata",
             "name",
+            "createdAt",
             "sessionId",
             "website",
-            "additionalProperties"
+            "gateway",
+            "active",
+            "metadata"
         ]
         type.parameters.find { it.nameAsString == "active" }.typeAsString == "Boolean"
         type.parameters.find { it.nameAsString == "createdAt" }.typeAsString == "ZonedDateTime"
@@ -47,7 +46,6 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
         type.parameters.find { it.nameAsString == "metadata" }.typeAsString == "Map<String,Object>"
         type.parameters.find { it.nameAsString == "sessionId" }.typeAsString == "UUID"
         type.parameters.find { it.nameAsString == "website" }.typeAsString == "URI"
-        type.parameters.find { it.nameAsString == "additionalProperties" }.typeAsString == "Map<String,Object>"
         type.parameters.find { it.nameAsString == "id" }.annotations*.nameAsString.contains("NotNull")
         !type.parameters.find { it.nameAsString == "active" }.annotations*.nameAsString.contains("Nullable")
         !type.parameters.find { it.nameAsString == "metadata" }.annotations*.nameAsString.contains("Nullable")
@@ -76,8 +74,8 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
         ''')
 
         then:
-        type.parameters*.nameAsString.containsAll(["id", "name"])
-        type.parameters.find { it.nameAsString == "id" }.annotations*.nameAsString.contains("JsonProperty")
-        type.members.find { it instanceof RecordDeclaration && it.nameAsString == "ApartmentView_Id" } != null
+        type.parameters*.nameAsString.containsAll(["_id", "name"])
+        !type.parameters.find { it.nameAsString == "_id" }.annotations*.nameAsString.contains("JsonProperty")
+        type.members.find { it instanceof RecordDeclaration && it.nameAsString == "Id" } != null
     }
 }

@@ -63,6 +63,7 @@ public class AnnotationsAggregator {
     private static final String DECIMAL_MAX_ANN = JAKARTA_VALIDATION_PREFIX + "DecimalMax";
     private static final String PATTERN_ANN = JAKARTA_VALIDATION_PREFIX + "Pattern";
     private static final String EMAIL_ANN = JAKARTA_VALIDATION_PREFIX + "Email";
+    private static final int EXCLUSIVE_DELTA_INT = 1;
     private static final double EXCLUSIVE_DELTA_DOUBLE = 0.001;
 
     public static AnnotationDef getJsonTypeInfoAnn(String propertyName) {
@@ -121,17 +122,19 @@ public class AnnotationsAggregator {
         if (schema.getExclusiveMinimum() != null) {
             var value = schema.getExclusiveMinimum();
             annotations.add(AnnotationDef
-                .builder(ClassTypeDef.of(DECIMAL_MIN_ANN))
-                .addMember("value", String.valueOf(value))
-                .addMember("inclusive", false)
+                .builder(ClassTypeDef.of(minAnn))
+                .addMember("value", isFloat ?
+                    "" + (((double) value) + EXCLUSIVE_DELTA_DOUBLE) :
+                    ((int) value) + EXCLUSIVE_DELTA_INT)
                 .build());
         }
         if (schema.getExclusiveMaximum() != null) {
             var value = schema.getExclusiveMaximum();
             annotations.add(AnnotationDef
-                .builder(ClassTypeDef.of(DECIMAL_MAX_ANN))
-                .addMember("value", String.valueOf(value))
-                .addMember("inclusive", false)
+                .builder(ClassTypeDef.of(maxAnn))
+                .addMember("value", isFloat ?
+                    "" + (((double) value) - EXCLUSIVE_DELTA_DOUBLE) :
+                    ((int) value) - EXCLUSIVE_DELTA_INT)
                 .build());
         }
         if (schema.getMaxLength() != null || schema.getMaxItems() != null || schema.getMaxContains() != null) {
