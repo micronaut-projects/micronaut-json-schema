@@ -95,7 +95,7 @@ public abstract class JsonSchemaRecordsExtension {
 
     /**
      * @return The configured discovery sources. Each map supports the keys
-     * {@code name}, {@code providerClassName}, and {@code options}.
+     * {@code name}, {@code provider}, and {@code options}.
      */
     public abstract ListProperty<Map<String, Object>> getSources();
 

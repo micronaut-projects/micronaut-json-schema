@@ -32,6 +32,8 @@ import io.micronaut.jsonschema.generator.discovery.SourceUnavailableException;
 import io.micronaut.jsonschema.generator.SchemaCompositionSupport;
 import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.loaders.FileLoader;
+import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy;
@@ -125,7 +127,7 @@ public final class JsonSchemaRecordsPipeline {
                     logger,
                     Map.of(JdbcConnectionProvider.class, jdbcConnectionProvider)
                 );
-                SchemaDiscoveryProvider provider = SchemaDiscoveryProviders.resolve(source.providerClassName(), providerClassLoader);
+                SchemaDiscoveryProvider provider = SchemaDiscoveryProviders.resolve(source.provider(), providerClassLoader);
                 DiscoveryResult result;
                 try {
                     result = provider.discover(context, source);
@@ -225,7 +227,7 @@ public final class JsonSchemaRecordsPipeline {
             byRelativeFile.put(relativeFile, discovered);
             schemaEntries.add(new JsonSchemaRecordsManifest.SchemaFile(
                 discovered.source().name(),
-                discovered.source().providerClassName(),
+                discovered.source().provider(),
                 discovered.schema().scope(),
                 discovered.schema().name(),
                 relativeFile,
@@ -508,7 +510,7 @@ public final class JsonSchemaRecordsPipeline {
             .map(plan -> {
                 DiscoveredSchemaEntry discovered = plan.discovered();
                 return "sourceName=" + discovered.source().name()
-                    + ", providerClassName=" + discovered.source().providerClassName()
+                    + ", provider=" + discovered.source().provider()
                     + ", name=" + discovered.schema().name()
                     + ", topLevelTypeName=" + plan.topLevelTypeName()
                     + ", fqcn=" + plan.fqcn()
@@ -530,7 +532,7 @@ public final class JsonSchemaRecordsPipeline {
             config.sources().stream()
                 .map(source -> new JsonSchemaRecordsManifest.SourceMetadata(
                     source.name(),
-                    source.providerClassName(),
+                    source.provider(),
                     sanitizeOptions(sourceMetadata.getOrDefault(source.name(), Map.of()))
                 ))
                 .toList(),
@@ -542,7 +544,7 @@ public final class JsonSchemaRecordsPipeline {
                 config.sources().stream()
                     .map(source -> new JsonSchemaRecordsManifest.ConfiguredSource(
                         source.name(),
-                        source.providerClassName(),
+                        source.provider(),
                         sanitizeOptions(source.options())
                     ))
                     .toList(),
@@ -562,7 +564,7 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private Map<String, String> sourceMetadata(SourceSpec source, JsonSchemaRecordsGeneratorConfig config) {
-        if (source.providerClassName().startsWith("io.micronaut.jsonschema.generator.oracle.Oracle")) {
+        if (isOracleProvider(source.provider())) {
             return Map.of("jdbcUrlSanitized", sanitizeJdbcUrl(config.jdbcUrl()));
         }
         return Map.of();
@@ -578,7 +580,7 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private String describeSource(SourceSpec source) {
-        return source.name() + "(" + source.providerClassName() + ", options=" + sanitizeOptions(source.options()) + ")";
+        return source.name() + "(" + source.provider() + ", options=" + sanitizeOptions(source.options()) + ")";
     }
 
     private Map<String, Object> sanitizeOptions(Map<String, ?> options) {
@@ -672,14 +674,19 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private String sourceLevelScope(SourceSpec source) {
-        String providerClassName = source.providerClassName();
-        if ("io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider".equals(providerClassName)) {
+        String provider = source.provider();
+        if (OracleDomainSchemaDiscoveryProvider.PROVIDER_ID.equals(provider)) {
             return "DOMAIN";
         }
-        if ("io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider".equals(providerClassName)) {
+        if (OracleDualityViewSchemaDiscoveryProvider.PROVIDER_ID.equals(provider)) {
             return "DUALITY_VIEW";
         }
         return "SOURCE";
+    }
+
+    private static boolean isOracleProvider(String provider) {
+        return OracleDomainSchemaDiscoveryProvider.PROVIDER_ID.equals(provider)
+            || OracleDualityViewSchemaDiscoveryProvider.PROVIDER_ID.equals(provider);
     }
 
     private Path uniqueSchemaPath(Path sourceDirectory, String fileName, Set<String> usedRelativeFiles) {

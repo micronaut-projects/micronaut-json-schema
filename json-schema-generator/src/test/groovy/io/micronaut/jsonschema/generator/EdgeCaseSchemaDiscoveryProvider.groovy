@@ -8,6 +8,13 @@ import io.micronaut.jsonschema.generator.discovery.SourceSpec
 
 class EdgeCaseSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 
+    static final String ID = "test-edge-cases"
+
+    @Override
+    String providerId() {
+        ID
+    }
+
     @Override
     DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) throws Exception {
         return new DiscoveryResult([

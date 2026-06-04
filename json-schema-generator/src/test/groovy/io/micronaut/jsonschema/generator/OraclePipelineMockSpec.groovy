@@ -66,7 +66,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     schemaCacheDir,
                     outputDir,
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [include: "MOONPHASE"])],
+                    [new SourceSpec("domains", "oracle-domains", [include: "MOONPHASE"])],
                     false,
                     true
                 )
@@ -142,7 +142,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     Files.createTempDirectory("oracle-mock-schema-cache"),
                     Files.createTempDirectory("oracle-mock-output"),
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [include: "MOONPHASE"])],
+                    [new SourceSpec("domains", "oracle-domains", [include: "MOONPHASE"])],
                     false,
                     true
                 )
@@ -210,7 +210,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     Files.createTempDirectory("oracle-mock-schema-cache"),
                     Files.createTempDirectory("oracle-mock-output"),
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [owner: "hr", include: "MOONPHASE"])],
+                    [new SourceSpec("domains", "oracle-domains", [owner: "hr", include: "MOONPHASE"])],
                     false,
                     true
                 )
@@ -256,7 +256,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     Files.createTempDirectory("oracle-mock-schema-cache"),
                     Files.createTempDirectory("oracle-mock-output"),
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [include: "MOONPHASE"])],
+                    [new SourceSpec("domains", "oracle-domains", [include: "MOONPHASE"])],
                     true,
                     true
                 )
@@ -298,7 +298,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     schemaCacheDir,
                     outputDir,
-                    [new SourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider", [include: "APARTMENT_VIEW"])],
+                    [new SourceSpec("duality_views", "oracle-duality-views", [include: "APARTMENT_VIEW"])],
                     true,
                     true
                 )
@@ -313,7 +313,7 @@ class OraclePipelineMockSpec extends Specification {
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "discovery", "schemas").isArray()
         jsonAt(manifest, "discovery", "schemas").size() == 0
-        jsonAt(manifest, "skipped", 0, "sourceName").getStringValue() == "views"
+        jsonAt(manifest, "skipped", 0, "sourceName").getStringValue() == "duality_views"
         jsonAt(manifest, "skipped", 0, "name").getStringValue() == "APARTMENT_VIEW"
         jsonAt(manifest, "skipped", 0, "code").getStringValue() == "MISSING_JSON_SCHEMA"
         jsonAt(manifest, "emittedSchemaFiles").size() == 0
@@ -343,7 +343,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     Files.createTempDirectory("oracle-mock-schema-cache"),
                     Files.createTempDirectory("oracle-mock-output"),
-                    [new SourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider", [include: "BROKEN_DV"])],
+                    [new SourceSpec("duality_views", "oracle-duality-views", [include: "BROKEN_DV"])],
                     true,
                     true
                 )
@@ -356,6 +356,65 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "skipped", 0, "code").getStringValue() == "MALFORMED_JSON"
         jsonAt(manifest, "skipped", 0, "retrievalMode").getStringValue() == "DUALITY_DB_PROVIDED"
         jsonAt(manifest, "warnings", 0, "code").getStringValue() == "MALFORMED_JSON"
+    }
+
+    void "pipeline falls back to user duality view scope when owner matches session user and cross schema views are unavailable"() {
+        given:
+        Connection connection = Mock()
+        PreparedStatement allStatement = Mock()
+        PreparedStatement dbaStatement = Mock()
+        PreparedStatement sessionUserStatement = Mock()
+        PreparedStatement dualityStatement = Mock()
+        ResultSet sessionUserResult = Mock()
+        ResultSet dualityResult = Mock()
+        Path schemaCacheDir = Files.createTempDirectory("oracle-mock-schema-cache")
+        Path outputDir = Files.createTempDirectory("oracle-mock-output")
+        Driver driver = driverReturning(connection)
+
+        1 * connection.prepareStatement("SELECT 1 FROM ALL_JSON_DUALITY_VIEWS WHERE owner = ? FETCH FIRST 1 ROWS ONLY") >> allStatement
+        1 * allStatement.setString(1, "HR")
+        1 * allStatement.executeQuery() >> { throw new SQLException("ALL_JSON_DUALITY_VIEWS denied") }
+        1 * connection.prepareStatement("SELECT 1 FROM DBA_JSON_DUALITY_VIEWS WHERE owner = ? FETCH FIRST 1 ROWS ONLY") >> dbaStatement
+        1 * dbaStatement.setString(1, "HR")
+        1 * dbaStatement.executeQuery() >> { throw new SQLException("DBA_JSON_DUALITY_VIEWS denied") }
+        1 * connection.prepareStatement("SELECT SYS_CONTEXT('USERENV', 'SESSION_USER') FROM dual") >> sessionUserStatement
+        1 * sessionUserStatement.executeQuery() >> sessionUserResult
+        1 * sessionUserResult.next() >> true
+        1 * sessionUserResult.getString(1) >> "HR"
+
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS") >> dualityStatement
+        1 * dualityStatement.executeQuery() >> dualityResult
+        2 * dualityResult.next() >>> [true, false]
+        1 * dualityResult.getString(1) >> "PRODUCT_DV"
+        1 * dualityResult.getString(2) >> '{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}'
+
+        when:
+        def result = withRegisteredDriver(driver) {
+            new JsonSchemaRecordsPipeline({ }).execute(
+                new JsonSchemaRecordsGeneratorConfig(
+                    "jdbc:mockoracle:test",
+                    "test",
+                    "test",
+                    "io.micronaut.jsonschema.oracle.generated",
+                    21,
+                    schemaCacheDir,
+                    outputDir,
+                    [new SourceSpec("duality_views", "oracle-duality-views", [owner: " hr ", include: "PRODUCT_DV"])],
+                    false,
+                    true
+                )
+            )
+        }
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "warnings", 0, "sourceName").getStringValue() == "duality_views"
+        jsonAt(manifest, "warnings", 0, "scope").getStringValue() == "DUALITY_VIEW"
+        jsonAt(manifest, "warnings", 0, "name").isNull()
+        jsonAt(manifest, "warnings", 0, "code").getStringValue() == "OWNER_SCOPE_FALLBACK"
+        jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "PRODUCT_DV"
+        jsonAt(manifest, "discovery", "schemas", 0, "schemaFile").getStringValue() == "sources/duality_views/HR_PRODUCT_DV.schema.json"
     }
 
     void "pipeline records no inputs discovered as source-level warning when fail on missing source is disabled"() {
@@ -382,7 +441,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     Files.createTempDirectory("oracle-mock-schema-cache"),
                     Files.createTempDirectory("oracle-mock-output"),
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [include: "MARS"])],
+                    [new SourceSpec("domains", "oracle-domains", [include: "MARS"])],
                     false,
                     false
                 )
@@ -435,7 +494,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     schemaCacheDir,
                     outputDir,
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [include: "MoonPhase"])],
+                    [new SourceSpec("domains", "oracle-domains", [include: "MoonPhase"])],
                     false,
                     true
                 )
@@ -481,7 +540,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     schemaCacheDir,
                     outputDir,
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [
+                    [new SourceSpec("domains", "oracle-domains", [
                         include: [" mars ", "moonphase"],
                         exclude: ["MARS"]
                     ])],
@@ -515,7 +574,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     Files.createTempDirectory("oracle-mock-schema-cache"),
                     Files.createTempDirectory("oracle-mock-output"),
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [include: "*"])],
+                    [new SourceSpec("domains", "oracle-domains", [include: "*"])],
                     false,
                     false
                 )
@@ -567,7 +626,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     schemaCacheDir,
                     outputDir,
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [owner: "HR", include: "*"])],
+                    [new SourceSpec("domains", "oracle-domains", [owner: "HR", include: "*"])],
                     false,
                     false
                 )
@@ -631,7 +690,7 @@ class OraclePipelineMockSpec extends Specification {
                     21,
                     schemaCacheDir,
                     outputDir,
-                    [new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", [owner: " hr ", include: "MOONPHASE"])],
+                    [new SourceSpec("domains", "oracle-domains", [owner: " hr ", include: "MOONPHASE"])],
                     false,
                     true
                 )
@@ -660,7 +719,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 Files.createTempDirectory("custom-schema-cache"),
                 Files.createTempDirectory("custom-output"),
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.CollidingSchemaDiscoveryProvider", [:])],
+                [new SourceSpec("custom", "test-colliding", [:])],
                 false,
                 true
             )
@@ -687,7 +746,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 schemaCacheDir,
                 Files.createTempDirectory("custom-output"),
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.CollidingSchemaDiscoveryProvider", [:])],
+                [new SourceSpec("custom", "test-colliding", [:])],
                 true,
                 true
             )
@@ -703,6 +762,46 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "emittedSchemaFiles", 1).getStringValue() == "sources/custom/CUSTOMER_2.schema.json"
     }
 
+    void "pipeline skips schema with sanitized member name collision when skip on error is enabled"() {
+        when:
+        def result = new JsonSchemaRecordsPipeline({ }).execute(
+            new JsonSchemaRecordsGeneratorConfig(
+                null,
+                null,
+                null,
+                "io.micronaut.jsonschema.custom.generated",
+                21,
+                Files.createTempDirectory("custom-schema-cache"),
+                Files.createTempDirectory("custom-output"),
+                [new SourceSpec("custom", "test-edge-cases", [
+                    schemaName: "SANITIZED_COLLISION",
+                    schema: '''
+                    {
+                      "type":"object",
+                      "properties":{
+                        "#bikes":{"type":"integer"},
+                        "9bikes":{"type":"integer"}
+                      },
+                      "additionalProperties": false
+                    }
+                    '''
+                ])],
+                true,
+                true
+            )
+        )
+
+        then:
+        result.generatedTypes() == 0
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "warnings", 0, "code").getStringValue() == "NAME_COLLISION"
+        jsonAt(manifest, "warnings", 0, "name").getStringValue() == "SANITIZED_COLLISION"
+        jsonAt(manifest, "warnings", 0, "message").getStringValue().contains("#bikes")
+        jsonAt(manifest, "warnings", 0, "message").getStringValue().contains("9bikes")
+        jsonAt(manifest, "skipped", 0, "code").getStringValue() == "NAME_COLLISION"
+        jsonAt(manifest, "generatedJavaFiles").size() == 0
+    }
+
     void "pipeline delegates root oneOf to existing generator behavior"() {
         when:
         Path outputDir = Files.createTempDirectory("custom-output")
@@ -715,7 +814,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 Files.createTempDirectory("custom-schema-cache"),
                 outputDir,
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                [new SourceSpec("custom", "test-edge-cases", [
                     schemaName: "POLY_ROOT",
                     schema: '{"oneOf":[{"title":"Alpha","type":"object","properties":{"a":{"type":"string"}}},{"title":"Beta","type":"object","properties":{"b":{"type":"string"}}}]}'
                 ])],
@@ -746,7 +845,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 Files.createTempDirectory("custom-schema-cache"),
                 Files.createTempDirectory("custom-output"),
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                [new SourceSpec("custom", "test-edge-cases", [
                     schemaName: "DRAFT_SEVEN",
                     schema: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","additionalProperties":false}'
                 ])],
@@ -773,7 +872,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 Files.createTempDirectory("custom-schema-cache"),
                 Files.createTempDirectory("custom-output"),
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                [new SourceSpec("custom", "test-edge-cases", [
                     schemaName: "BROKEN_ALLOF",
                     schema: '{"allOf":[{"type":"object","properties":{"value":{"type":"string"}}},{"type":"object","properties":{"value":{"type":"integer"}}}]}'
                 ])],
@@ -800,7 +899,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 Files.createTempDirectory("custom-schema-cache"),
                 Files.createTempDirectory("custom-output"),
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                [new SourceSpec("custom", "test-edge-cases", [
                     schemaName: "BROKEN_ALLOF_REF",
                     schema: '{"allOf":[{"$ref":"#/$defs/Base"},{"type":"object","properties":{"value":{"type":"integer"}}}],"$defs":{"Base":{"type":"object","properties":{"value":{"type":"string"}}}}}'
                 ])],
@@ -830,7 +929,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 Files.createTempDirectory("custom-schema-cache"),
                 outputDir,
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                [new SourceSpec("custom", "test-edge-cases", [
                     schemaName: "ROOT_REF",
                     schema: '{"$ref":"#/$defs/Base","$defs":{"Base":{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}}}'
                 ])],
@@ -855,7 +954,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 Files.createTempDirectory("custom-schema-cache"),
                 Files.createTempDirectory("custom-output"),
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                [new SourceSpec("custom", "test-edge-cases", [
                     schemaName: "UNSUPPORTED_LOCAL_REF",
                     schema: '{"$ref":"#/properties/value","properties":{"value":{"type":"string"}}}'
                 ])],
@@ -886,7 +985,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 schemaCacheDir,
                 Files.createTempDirectory("custom-output"),
-                [new SourceSpec("custom source", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                [new SourceSpec("custom source", "test-edge-cases", [
                     schemaName: schemaName,
                     schema: '{"type":"object","additionalProperties":false}'
                 ])],
@@ -916,7 +1015,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 Files.createTempDirectory("custom-schema-cache"),
                 Files.createTempDirectory("custom-output"),
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                [new SourceSpec("custom", "test-edge-cases", [
                     schemaName: "EXTERNAL_REF",
                     schema: '{"$ref":"https://example.com/schema.json"}'
                 ])],
@@ -945,7 +1044,7 @@ class OraclePipelineMockSpec extends Specification {
                 21,
                 schemaCacheDir,
                 outputDir,
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.TestSchemaDiscoveryProvider", [apiToken: "secret", include: "SAFE"])],
+                [new SourceSpec("custom", "test", [apiToken: "secret", include: "SAFE"])],
                 false,
                 true
             )
@@ -982,7 +1081,7 @@ class OraclePipelineMockSpec extends Specification {
                 11,
                 schemaCacheDir,
                 outputDir,
-                [new SourceSpec("custom", "io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider", [
+                [new SourceSpec("custom", "test-edge-cases", [
                     schemaName: "LEGACY_TYPE",
                     schema: '{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}'
                 ])],

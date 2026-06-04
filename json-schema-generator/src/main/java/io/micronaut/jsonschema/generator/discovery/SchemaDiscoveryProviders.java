@@ -15,22 +15,45 @@
  */
 package io.micronaut.jsonschema.generator.discovery;
 
+import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider;
+
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.function.Supplier;
+
+/**
+ * Resolves schema discovery providers from built-in registrations or the provider classpath.
+ */
 public final class SchemaDiscoveryProviders {
+
+    private static final List<Supplier<SchemaDiscoveryProvider>> BUILT_IN_PROVIDERS = List.of(
+        OracleDomainSchemaDiscoveryProvider::new,
+        OracleDualityViewSchemaDiscoveryProvider::new
+    );
 
     private SchemaDiscoveryProviders() {
     }
 
-    public static SchemaDiscoveryProvider resolve(String providerClassName, ClassLoader classLoader) {
-        try {
-            Class<?> providerClass = Class.forName(providerClassName, true, classLoader);
-            Class<? extends SchemaDiscoveryProvider> providerType = providerClass.asSubclass(SchemaDiscoveryProvider.class);
-            return providerType.getDeclaredConstructor().newInstance();
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Unable to locate schema discovery provider class: " + providerClassName, e);
-        } catch (ClassCastException e) {
-            throw new IllegalArgumentException("Schema discovery provider does not implement " + SchemaDiscoveryProvider.class.getName() + ": " + providerClassName, e);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException("Unable to instantiate schema discovery provider: " + providerClassName + ". Ensure it exposes an accessible no-argument constructor.", e);
+    /**
+     * Resolve a configured discovery provider.
+     *
+     * @param provider The configured provider id
+     * @param classLoader The classloader used for custom provider service loading
+     * @return The resolved provider
+     */
+    public static SchemaDiscoveryProvider resolve(String provider, ClassLoader classLoader) {
+        for (Supplier<SchemaDiscoveryProvider> providerSupplier : BUILT_IN_PROVIDERS) {
+            SchemaDiscoveryProvider candidate = providerSupplier.get();
+            if (candidate.providerId().equals(provider)) {
+                return candidate;
+            }
         }
+        for (SchemaDiscoveryProvider candidate : ServiceLoader.load(SchemaDiscoveryProvider.class, classLoader)) {
+            if (candidate.providerId().equals(provider)) {
+                return candidate;
+            }
+        }
+        throw new IllegalArgumentException("Unable to locate schema discovery provider: " + provider);
     }
 }

@@ -387,10 +387,10 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
         private String name;
 
         /**
-         * Discovery provider class name.
+         * Discovery provider id.
          */
         @Parameter(required = true)
-        private String providerClassName;
+        private String provider;
 
         /**
          * Provider-specific options.
@@ -412,10 +412,10 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
         }
 
         /**
-         * @return The discovery provider class name.
+         * @return The discovery provider id.
          */
-        public String getProviderClassName() {
-            return providerClassName;
+        public String getProvider() {
+            return provider;
         }
 
         /**
@@ -434,13 +434,13 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
 
         SourceSpec toSourceSpec() {
             Map<String, Object> resolvedOptions = toSourceMapOptions();
-            return new SourceSpec(name, providerClassName, resolvedOptions);
+            return new SourceSpec(name, provider, resolvedOptions);
         }
 
         Map<String, Object> toSourceMap() {
             Map<String, Object> source = new LinkedHashMap<>();
             source.put("name", name);
-            source.put("providerClassName", providerClassName);
+            source.put("provider", provider);
             source.put("options", options == null ? Map.of() : new LinkedHashMap<>(options));
             source.put("optionValues", copyOptionValues());
             return source;

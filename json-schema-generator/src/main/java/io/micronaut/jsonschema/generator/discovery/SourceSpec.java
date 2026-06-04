@@ -26,13 +26,13 @@ import java.util.Map;
  * A configured schema discovery source.
  *
  * @param name Stable source name used in diagnostics and cache layout
- * @param providerClassName Discovery provider class name
+ * @param provider Discovery provider id
  * @param options Provider-specific options
  * @since 2.0.0
  */
 public record SourceSpec(
     String name,
-    String providerClassName,
+    String provider,
     Map<String, Object> options
 ) {
 
@@ -40,7 +40,7 @@ public record SourceSpec(
      * Create an immutable source specification.
      *
      * @param name Stable source name used in diagnostics and cache layout
-     * @param providerClassName Discovery provider class name
+     * @param provider Discovery provider id
      * @param options Provider-specific options
      */
     public SourceSpec {

@@ -8,6 +8,11 @@ import io.micronaut.jsonschema.generator.discovery.SourceSpec
 class DirectOnlySchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 
     @Override
+    String providerId() {
+        "direct-only"
+    }
+
+    @Override
     DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) throws Exception {
         return new DiscoveryResult(List.of(), List.of(), List.of())
     }

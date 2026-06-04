@@ -8,6 +8,13 @@ import io.micronaut.jsonschema.generator.discovery.SourceSpec
 
 class CollidingSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 
+    static final String ID = "test-colliding"
+
+    @Override
+    String providerId() {
+        ID
+    }
+
     @Override
     DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) throws Exception {
         return new DiscoveryResult([

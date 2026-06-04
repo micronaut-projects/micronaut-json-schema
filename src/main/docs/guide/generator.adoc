@@ -1,3 +1,3 @@
 This section explains the processes involved for generating source code of beans from JSON schema.
 
-NOTE: In addition to generating sources from schema files, URLs, and runtime inputs, this project also includes opt-in Gradle and Maven support for pluggable schema discovery, with built-in Oracle providers for SQL domains and JSON Relational Duality Views.
+NOTE: In addition to generating sources from schema files, URLs, and runtime inputs, this project also includes opt-in Gradle and Maven support for pluggable schema discovery, with built-in Oracle providers for SQL domains and JSON Relational Duality Views. See the record generation from discovered schemas section for the overall pipeline.

@@ -1,0 +1,148 @@
+The JSON Schema records pipeline discovers JSON Schema documents at build time and generates Java source files from them.
+It is useful when schemas are not stored as project files, but are owned by another source of truth such as database metadata or another schema registry.
+
+The pipeline has four main steps:
+
+* resolve configured discovery sources
+* discover JSON Schema documents through provider implementations
+* write the discovered schemas and manifest to a cache directory
+* generate Java records or classes into the configured output directory
+
+Generation is opt-in.
+The Gradle task and Maven goal are not bound to normal compilation by default, but when they run they add the generated source directory to the current build so generated types can be compiled in the same invocation.
+
+== Source Configuration
+
+A build configures one or more discovery sources.
+Each source has a stable name, a provider id, and provider-specific options:
+
+[source,groovy]
+----
+jsonSchemaRecords {
+    targetPackage = "example.generated"
+    sources = [
+        [
+            name: "domains",
+            provider: "oracle-domains",
+            options: [
+                owner: "APP",
+                include: "CUSTOMER_JSON"
+            ]
+        ]
+    ]
+}
+----
+
+`name` is used in diagnostics, cache layout, and manifest entries.
+`provider` selects the discovery provider.
+`options` are interpreted only by the selected provider.
+
+Built-in provider ids include:
+
+[cols="2,4", options="header"]
+|===
+| Provider id
+| Description
+
+| `oracle-domains`
+| Discovers Oracle SQL domains that declare JSON validation rules.
+
+| `oracle-duality-views`
+| Discovers Oracle JSON Relational Duality Views.
+|===
+
+See the Oracle discovery guide for provider-specific JDBC settings, Oracle owner scoping, and supported Oracle options.
+
+== Provider SPI
+
+Discovery providers implement `io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider`.
+The provider exposes a stable id and returns discovered schema entries:
+
+[source,java]
+----
+public interface SchemaDiscoveryProvider {
+
+    String providerId();
+
+    DiscoveryResult discover(SchemaDiscoveryContext context,
+                             SourceSpec source) throws Exception;
+}
+----
+
+Built-in providers are resolved by their known provider ids.
+Custom providers are loaded from the plugin/provider classpath with Java `ServiceLoader`.
+For custom providers, the configured `provider` value must match `SchemaDiscoveryProvider.providerId()`.
+
+Gradle custom providers are added to the `jsonSchemaRecordsProviders` configuration.
+Maven custom providers are added as plugin dependencies.
+The provider jar must include:
+
+[source]
+----
+META-INF/services/io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider
+----
+
+That service file contains the provider implementation class name.
+
+== Generated Types
+
+The pipeline delegates Java source generation to the existing JSON Schema-to-Java generator and keeps its behavior where possible.
+
+The `languageLevel` option controls whether records can be emitted:
+
+* `languageLevel >= 16`: records are preferred when the schema shape can be represented as a valid record.
+* `languageLevel < 16`: classes are generated.
+* If a schema shape cannot be emitted as a valid record, the generator may emit a class.
+
+Generated files are written under `outputDir`.
+The configured `targetPackage` is used as the package for generated top-level types.
+
+== Cache And Manifest
+
+Discovered JSON Schema documents are written under `schemaCacheDir`.
+The same directory also contains `manifest.json`, which records the effective generation inputs and outputs.
+
+The manifest includes:
+
+* generator identity and timestamp
+* sanitized source metadata
+* effective parameters
+* discovered schema files
+* generated Java files
+* warnings and skipped inputs
+
+Secrets must not be written to the manifest.
+Built-in Oracle providers sanitize JDBC metadata before it is persisted.
+
+== Error Handling
+
+By default, generation fails when a configured source is unavailable, no inputs are discovered, a schema cannot be retrieved, or a generated Java name collision is detected.
+
+Two options control how much work continues after errors:
+
+[cols="2,4", options="header"]
+|===
+| Option
+| Behavior
+
+| `failOnMissingSource`
+| Controls source-level discovery failures such as unavailable sources or no selected inputs.
+
+| `skipOnError`
+| Allows individual discovered inputs to be skipped when retrieval or generation fails.
+|===
+
+Warnings and skipped inputs are written to `manifest.json` and logged with stable machine-readable codes.
+
+== Determinism
+
+The pipeline uses stable ordering for pipeline-owned outputs and diagnostics, including discovered input processing, schema cache entries, manifest entries, generated file planning, warnings, skipped entries, and collision diagnostics.
+
+This does not require sorting Java members, record components, JSON Schema `properties`, or `$defs` when doing so would change the existing JSON Schema-to-Java generator's emitted API.
+
+== Limitations
+
+The first version focuses on build-time source generation from configured providers.
+Remote `$ref` fetching, arbitrary JSON Pointer resolution beyond supported local references, and provider-specific credential mechanisms beyond the documented provider options are outside the first version.
+
+Provider-specific limitations are documented by each provider guide.

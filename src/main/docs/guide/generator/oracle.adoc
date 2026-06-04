@@ -7,15 +7,15 @@ The current Oracle discovery pipeline supports:
 
 This Oracle flow is available through the generic `jsonSchemaRecords` Gradle and Maven plugin integration included in this project.
 
-Built-in Oracle discovery providers are configured by class name:
+Built-in Oracle discovery providers are configured by provider id:
 
-* `io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider`
-* `io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider`
+* `oracle-domains`
+* `oracle-duality-views`
 
 Each configured source declares:
 
 * `name`
-* `providerClassName`
+* `provider`
 * provider-specific `options`
 
 == Gradle
@@ -40,7 +40,7 @@ jsonSchemaRecords {
     sources = [
         [
             name: "domains",
-            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider",
+            provider: "oracle-domains",
             options: [
                 owner: "APP",
                 include: "APP_JSON"
@@ -48,7 +48,7 @@ jsonSchemaRecords {
         ],
         [
             name: "views",
-            providerClassName: "io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider",
+            provider: "oracle-duality-views",
             options: [
                 owner: "APP",
                 include: "APP_VIEW"
@@ -87,7 +87,7 @@ jsonSchemaRecords {
     sources = [
         [
             name: "legacy",
-            providerClassName: "example.oracle.LegacySchemaDiscoveryProvider",
+            provider: "legacy-oracle",
             options: [
                 tablePattern: "LEGACY_%"
             ]
@@ -96,21 +96,20 @@ jsonSchemaRecords {
 }
 ----
 
-Custom providers are selected by `providerClassName` and loaded directly from the plugin/provider classpath.
-The provider jar must be present on `jsonSchemaRecordsProviders`, the configured class must implement `io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider`, and the implementation must expose an accessible no-argument constructor.
-Java `ServiceLoader` registration is optional and may be used by providers for their own discovery/validation, but it is not required when `providerClassName` is configured.
+Custom providers are selected by `provider`, which must match the provider id returned by the provider implementation.
+The provider jar must be present on `jsonSchemaRecordsProviders`, implement `io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider`, and register the implementation with Java `ServiceLoader` under `META-INF/services/io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider`.
 
 The built-in providers currently support these source options:
 
 [cols="2,3", options="header"]
 |===
-| Provider class
+| Provider id
 | Supported options
 
-| `io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider`
+| `oracle-domains`
 | `owner`, `include`, `exclude`
 
-| `io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider`
+| `oracle-duality-views`
 | `owner`, `include`, `exclude`
 |===
 
@@ -173,7 +172,7 @@ The Maven plugin can be configured in the build like any other mojo:
     <sources>
       <source>
         <name>domains</name>
-        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider</providerClassName>
+        <provider>oracle-domains</provider>
         <options>
           <owner>APP</owner>
           <include>APP_JSON</include>
@@ -181,7 +180,7 @@ The Maven plugin can be configured in the build like any other mojo:
       </source>
       <source>
         <name>views</name>
-        <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider</providerClassName>
+        <provider>oracle-duality-views</provider>
         <options>
           <owner>APP</owner>
           <include>APP_VIEW</include>
@@ -210,7 +209,7 @@ Custom discovery providers are loaded from the Maven plugin classpath, so add th
     <sources>
       <source>
         <name>legacy</name>
-        <providerClassName>example.oracle.LegacySchemaDiscoveryProvider</providerClassName>
+        <provider>legacy-oracle</provider>
         <options>
           <tablePattern>LEGACY_%</tablePattern>
         </options>
@@ -220,8 +219,7 @@ Custom discovery providers are loaded from the Maven plugin classpath, so add th
 </plugin>
 ----
 
-As with Gradle, the configured `providerClassName` is loaded directly from the plugin/provider classpath and must expose an accessible no-argument constructor.
-Java `ServiceLoader` registration is optional, not required.
+As with Gradle, the configured `provider` must match a `SchemaDiscoveryProvider` implementation registered through Java `ServiceLoader` on the Maven plugin classpath.
 
 === Troubleshooting Custom Providers
 

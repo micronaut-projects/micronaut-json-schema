@@ -82,8 +82,8 @@ jsonSchemaRecords {
     targetPackage = 'io.micronaut.jsonschema.oracle.generated'
     languageLevel = 17
     sources = [
-        [name: 'domains', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider', options: [owner: 'APP', include: 'APP_JSON']],
-        [name: 'views', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider', options: [owner: 'APP', include: 'APP_VIEW']]
+        [name: 'domains', provider: 'oracle-domains', options: [owner: 'APP', include: 'APP_JSON']],
+        [name: 'views', provider: 'oracle-duality-views', options: [owner: 'APP', include: 'APP_VIEW']]
     ]
     skipOnError = true
     failOnMissingSource = false
@@ -98,8 +98,8 @@ tasks.register('assertOracleExtensionMapping') {
         assert generateTask.targetPackage.get() == 'io.micronaut.jsonschema.oracle.generated'
         assert generateTask.languageLevel.get() == 17
         assert generateTask.sources.get() == [
-            [name: 'domains', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider', options: [owner: 'APP', include: 'APP_JSON']],
-            [name: 'views', providerClassName: 'io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider', options: [owner: 'APP', include: 'APP_VIEW']]
+            [name: 'domains', provider: 'oracle-domains', options: [owner: 'APP', include: 'APP_JSON']],
+            [name: 'views', provider: 'oracle-duality-views', options: [owner: 'APP', include: 'APP_VIEW']]
         ]
         assert generateTask.skipOnError.get()
         assert !generateTask.failOnMissingSource.get()
@@ -231,7 +231,7 @@ jsonSchemaRecords {
     targetPackage = 'example.generated'
     providerClasspath.from(files('provider-classes'))
     sources = [
-        [name: 'static', providerClassName: 'test.provider.StaticSchemaDiscoveryProvider']
+        [name: 'static', provider: 'static-test']
     ]
 }
 
@@ -273,6 +273,11 @@ import java.util.Map;
 
 public final class StaticSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
     @Override
+    public String providerId() {
+        return "static-test";
+    }
+
+    @Override
     public DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
         String schema = "{\\"type\\":\\"object\\",\\"properties\\":{\\"phase\\":{\\"type\\":\\"string\\"}},\\"additionalProperties\\":false}";
         return new DiscoveryResult(
@@ -284,6 +289,9 @@ public final class StaticSchemaDiscoveryProvider implements SchemaDiscoveryProvi
     }
 }
 """);
+        Path serviceFile = classesDir.resolve("META-INF/services/io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider");
+        Files.createDirectories(serviceFile.getParent());
+        Files.writeString(serviceFile, "test.provider.StaticSchemaDiscoveryProvider\n");
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         assertTrue(compiler != null, "JDK compiler is required for this test");
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {

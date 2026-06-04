@@ -41,6 +41,13 @@ import java.util.Set;
  */
 public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 
+    public static final String PROVIDER_ID = "oracle-duality-views";
+
+    @Override
+    public String providerId() {
+        return PROVIDER_ID;
+    }
+
     @Override
     public DiscoveryResult discover(SchemaDiscoveryContext context,
                                     SourceSpec source) throws Exception {

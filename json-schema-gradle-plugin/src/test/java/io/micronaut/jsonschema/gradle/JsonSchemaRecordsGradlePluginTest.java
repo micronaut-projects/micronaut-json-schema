@@ -77,8 +77,8 @@ class JsonSchemaRecordsGradlePluginTest {
         task.getSchemaCacheDir().set(tempDir.resolve("schema-cache").toFile());
         task.getOutputDir().set(tempDir.resolve("generated-sources").toFile());
         task.getSources().set(List.of(
-            Map.of("name", "domains", "providerClassName", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", "options", Map.of("owner", "APP", "include", List.of("APP_JSON", "ALT_JSON"))),
-            Map.of("name", "views", "providerClassName", "io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider", "options", Map.of("owner", "APP", "include", "APP_VIEW"))
+            Map.of("name", "domains", "provider", "oracle-domains", "options", Map.of("owner", "APP", "include", List.of("APP_JSON", "ALT_JSON"))),
+            Map.of("name", "views", "provider", "oracle-duality-views", "options", Map.of("owner", "APP", "include", "APP_VIEW"))
         ));
         task.getSkipOnError().set(true);
         task.getFailOnMissingSource().set(false);
@@ -95,8 +95,8 @@ class JsonSchemaRecordsGradlePluginTest {
         assertEquals(tempDir.resolve("schema-cache"), config.schemaCacheDir());
         assertEquals(tempDir.resolve("generated-sources"), config.outputDir());
         assertEquals(List.of(
-            new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", Map.of("owner", "APP", "include", List.of("APP_JSON", "ALT_JSON"))),
-            new SourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider", Map.of("owner", "APP", "include", "APP_VIEW"))
+            new SourceSpec("domains", "oracle-domains", Map.of("owner", "APP", "include", List.of("APP_JSON", "ALT_JSON"))),
+            new SourceSpec("views", "oracle-duality-views", Map.of("owner", "APP", "include", "APP_VIEW"))
         ), config.sources());
         assertTrue(config.skipOnError());
         assertFalse(config.failOnMissingSource());

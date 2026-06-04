@@ -7,6 +7,13 @@ import io.micronaut.jsonschema.generator.discovery.SourceSpec
 
 class TestSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 
+    static final String ID = "test"
+
+    @Override
+    String providerId() {
+        ID
+    }
+
     @Override
     DiscoveryResult discover(SchemaDiscoveryContext context,
                              SourceSpec source) throws Exception {

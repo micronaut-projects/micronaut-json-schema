@@ -70,8 +70,8 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
         mojo.sources = List.of(
-            source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", Map.of("owner", "APP", "include", List.of("APP_JSON", "ALT_JSON"))),
-            source("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider", Map.of("owner", "APP", "include", "APP_VIEW"))
+            source("domains", "oracle-domains", Map.of("owner", "APP", "include", List.of("APP_JSON", "ALT_JSON"))),
+            source("views", "oracle-duality-views", Map.of("owner", "APP", "include", "APP_VIEW"))
         );
         mojo.skipOnError = true;
         mojo.failOnMissingSource = false;
@@ -89,8 +89,8 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         assertEquals(tempDir.resolve("schema-cache"), config.schemaCacheDir());
         assertEquals(tempDir.resolve("generated-sources"), config.outputDir());
         assertEquals(List.of(
-            new SourceSpec("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", Map.of("owner", "APP", "include", List.of("APP_JSON", "ALT_JSON"))),
-            new SourceSpec("views", "io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider", Map.of("owner", "APP", "include", "APP_VIEW"))
+            new SourceSpec("domains", "oracle-domains", Map.of("owner", "APP", "include", List.of("APP_JSON", "ALT_JSON"))),
+            new SourceSpec("views", "oracle-duality-views", Map.of("owner", "APP", "include", "APP_VIEW"))
         ), config.sources());
         assertTrue(config.skipOnError());
         assertFalse(config.failOnMissingSource());
@@ -108,7 +108,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         mojo.targetPackage = "io.micronaut.jsonschema.oracle.generated";
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
-        mojo.sources = List.of(source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", Map.of("include", "APP_JSON")));
+        mojo.sources = List.of(source("domains", "oracle-domains", Map.of("include", "APP_JSON")));
         mojo.project = new MavenProject();
         mojo.failure = failure;
 
@@ -134,7 +134,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         mojo.targetPackage = "io.micronaut.jsonschema.oracle.generated";
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
-        mojo.sources = List.of(source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", Map.of("owner", "APP", "include", "APP_JSON")));
+        mojo.sources = List.of(source("domains", "oracle-domains", Map.of("owner", "APP", "include", "APP_JSON")));
         mojo.project = new MavenProject();
 
         mojo.execute();
@@ -153,7 +153,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         mojo.targetPackage = "io.micronaut.jsonschema.oracle.generated";
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
-        mojo.sources = List.of(source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", Map.of("owner", "APP", "include", "APP_JSON")));
+        mojo.sources = List.of(source("domains", "oracle-domains", Map.of("owner", "APP", "include", "APP_JSON")));
         mojo.project = new MavenProject();
 
         mojo.execute();
@@ -178,7 +178,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         setField(mojo, "targetPackage", "io.micronaut.jsonschema.oracle.generated");
         setField(mojo, "schemaCacheDir", tempDir.resolve("schema-cache").toFile());
         setField(mojo, "outputDir", tempDir.resolve("generated-sources").toFile());
-        setField(mojo, "sources", List.of(source("domains", "io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", Map.of("include", "APP_JSON"))));
+        setField(mojo, "sources", List.of(source("domains", "oracle-domains", Map.of("include", "APP_JSON"))));
 
         mojo.execute();
 
@@ -190,11 +190,11 @@ class GenerateFromJsonSchemaSourcesMojoTest {
     }
 
     private static GenerateFromJsonSchemaSourcesMojo.SourceConfiguration source(String name,
-                                                                               String providerClassName,
+                                                                               String provider,
                                                                                Map<String, ?> options) {
         GenerateFromJsonSchemaSourcesMojo.SourceConfiguration source = new GenerateFromJsonSchemaSourcesMojo.SourceConfiguration();
         setField(source, "name", name);
-        setField(source, "providerClassName", providerClassName);
+        setField(source, "provider", provider);
         setField(source, "options", new LinkedHashMap<>(options));
         return source;
     }

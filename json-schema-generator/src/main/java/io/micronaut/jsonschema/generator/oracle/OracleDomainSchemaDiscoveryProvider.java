@@ -43,6 +43,13 @@ import java.util.Set;
  */
 public final class OracleDomainSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 
+    public static final String PROVIDER_ID = "oracle-domains";
+
+    @Override
+    public String providerId() {
+        return PROVIDER_ID;
+    }
+
     @Override
     public DiscoveryResult discover(SchemaDiscoveryContext context,
                                     SourceSpec source) throws Exception {

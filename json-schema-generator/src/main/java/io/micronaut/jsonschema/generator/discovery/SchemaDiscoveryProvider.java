@@ -17,12 +17,17 @@ package io.micronaut.jsonschema.generator.discovery;
 
 /**
  * SPI for retrieving JSON Schema documents from pluggable sources.
- * Implementations are selected by the configured provider class name and must
- * expose an accessible no-argument constructor.
+ * Implementations are selected by stable provider id. Built-in providers are
+ * registered directly; custom providers are loaded through {@link java.util.ServiceLoader}.
  *
  * @since 2.0.0
  */
 public interface SchemaDiscoveryProvider {
+
+    /**
+     * @return Stable provider id used in source configuration
+     */
+    String providerId();
 
     /**
      * Discover schemas for the supplied source specification.

@@ -135,7 +135,7 @@ public record JsonSchemaRecordsGeneration(
         options.putAll(toOptionMap(safeMap.get("optionValues")));
         return new SourceSpec(
             toStringValue(safeMap.get("name")),
-            requiredStringValue("providerClassName", safeMap.get("providerClassName")),
+            requiredStringValue("provider", safeMap.get("provider")),
             options
         );
     }

@@ -44,13 +44,13 @@ class GenerateFromJsonSchemaSourcesMojoHarnessTest {
         assertEquals(21, mojo.getLanguageLevel());
         assertEquals(2, mojo.getSourceConfigurations().size());
         assertEquals("domains", mojo.getSourceConfigurations().get(0).getName());
-        assertEquals("io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider", mojo.getSourceConfigurations().get(0).getProviderClassName());
+        assertEquals("oracle-domains", mojo.getSourceConfigurations().get(0).getProvider());
         assertEquals("APP", mojo.getSourceConfigurations().get(0).getOptions().get("owner"));
         assertEquals(List.of("APP_JSON", "ALT_JSON"), mojo.getSourceConfigurations().get(0).getOptionValues().get("include"));
         SourceSpec domainSource = mojo.getSourceConfigurations().get(0).toSourceSpec();
         assertEquals(List.of("APP_JSON", "ALT_JSON"), domainSource.options().get("include"));
         assertEquals("views", mojo.getSourceConfigurations().get(1).getName());
-        assertEquals("io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider", mojo.getSourceConfigurations().get(1).getProviderClassName());
+        assertEquals("oracle-duality-views", mojo.getSourceConfigurations().get(1).getProvider());
         assertEquals("APP", mojo.getSourceConfigurations().get(1).getOptions().get("owner"));
         assertEquals("APP_VIEW", mojo.getSourceConfigurations().get(1).getOptions().get("include"));
         assertTrue(mojo.isSkipOnError());

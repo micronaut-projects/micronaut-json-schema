@@ -61,12 +61,12 @@ public record JsonSchemaRecordsManifest(
      * Source metadata with sanitized values only.
      *
      * @param sourceName Configured source name
-     * @param providerClassName Discovery provider class name
+     * @param provider Discovery provider id
      * @param metadata Sanitized metadata
      */
     public record SourceMetadata(
         String sourceName,
-        String providerClassName,
+        String provider,
         Map<String, Object> metadata
     ) {
     }
@@ -97,12 +97,12 @@ public record JsonSchemaRecordsManifest(
      * A configured source entry.
      *
      * @param name Stable source name
-     * @param providerClassName Discovery provider class name
+     * @param provider Discovery provider id
      * @param options Provider-specific options
      */
     public record ConfiguredSource(
         String name,
-        String providerClassName,
+        String provider,
         Map<String, Object> options
     ) {
     }
@@ -119,7 +119,7 @@ public record JsonSchemaRecordsManifest(
      * A discovered schema file entry.
      *
      * @param sourceName Configured source name
-     * @param providerClassName Discovery provider class name
+     * @param provider Discovery provider id
      * @param scope Discovery scope
      * @param name Input name
      * @param schemaFile Relative schema file path
@@ -127,7 +127,7 @@ public record JsonSchemaRecordsManifest(
      */
     public record SchemaFile(
         String sourceName,
-        String providerClassName,
+        String provider,
         String scope,
         String name,
         String schemaFile,

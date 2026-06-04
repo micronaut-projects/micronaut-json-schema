@@ -1,1 +1,3 @@
 io.micronaut.jsonschema.generator.TestSchemaDiscoveryProvider
+io.micronaut.jsonschema.generator.CollidingSchemaDiscoveryProvider
+io.micronaut.jsonschema.generator.EdgeCaseSchemaDiscoveryProvider

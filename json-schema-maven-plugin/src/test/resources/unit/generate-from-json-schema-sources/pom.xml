@@ -20,7 +20,7 @@
           <sources>
             <source>
               <name>domains</name>
-              <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider</providerClassName>
+              <provider>oracle-domains</provider>
               <options>
                 <owner>APP</owner>
               </options>
@@ -33,7 +33,7 @@
             </source>
             <source>
               <name>views</name>
-              <providerClassName>io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider</providerClassName>
+              <provider>oracle-duality-views</provider>
               <options>
                 <owner>APP</owner>
                 <include>APP_VIEW</include>

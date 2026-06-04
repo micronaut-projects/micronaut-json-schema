@@ -97,21 +97,21 @@ public record JsonSchemaRecordsGeneratorConfig(
             if (source == null) {
                 continue;
             }
-            String providerClassName = requireValue("providerClassName", source.providerClassName());
-            String normalizedName = normalizeName(source.name(), providerClassName, occurrences);
+            String provider = requireValue("provider", source.provider());
+            String normalizedName = normalizeName(source.name(), provider, occurrences);
             normalized.add(new SourceSpec(
                 normalizedName,
-                providerClassName,
+                provider,
                 source.options()
             ));
         }
         return List.copyOf(normalized);
     }
 
-    private static String normalizeName(String name, String providerClassName, Map<String, Integer> occurrences) {
+    private static String normalizeName(String name, String provider, Map<String, Integer> occurrences) {
         String baseName = blankToNull(name);
         if (baseName == null) {
-            baseName = providerClassName.substring(providerClassName.lastIndexOf('.') + 1);
+            baseName = provider;
         }
         String normalizedBase = baseName.trim();
         int count = occurrences.merge(normalizedBase.toLowerCase(Locale.ENGLISH), 1, Integer::sum);

@@ -795,6 +795,67 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         generateRecordProfilePropertyAndGetContent("array", '{"type": "array"}') == "List<Object> array"
     }
 
+    void "unsupported array item schema maps element to Object and records warning"() {
+        given:
+        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        context.enableJsonSchemaRecordsProfile()
+        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
+        Path outputPath = Files.createTempDirectory("json-schema-generator-output")
+
+        when:
+        File generated = generator.generate(new SourceGeneratorConfigBuilder()
+            .withInputStream(new ByteArrayInputStream('''
+            {
+              "title":"UnsupportedArrayItems",
+              "type":"object",
+              "properties":{
+                "values":{
+                  "type":"array",
+                  "items":{"oneOf":[{"type":"string"},{"type":"integer"}]}
+                }
+              },
+              "additionalProperties": false
+            }
+            '''.bytes))
+            .withOutputFolder(outputPath)
+            .withOutputPackageName("com.example.project")
+            .withOutputFileName("UnsupportedArrayItems")
+            .build())
+
+        then:
+        generated.text.contains("List<Object> values")
+        generator.warnings*.code() == ["UNSUPPORTED_KEYWORD"]
+    }
+
+    void "multi type non null union maps to Object and records warning in record profile"() {
+        given:
+        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        context.enableJsonSchemaRecordsProfile()
+        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
+        Path outputPath = Files.createTempDirectory("json-schema-generator-output")
+
+        when:
+        File generated = generator.generate(new SourceGeneratorConfigBuilder()
+            .withInputStream(new ByteArrayInputStream('''
+            {
+              "title":"UnsupportedUnion",
+              "type":"object",
+              "properties":{
+                "value":{"type":["string","integer"]}
+              },
+              "additionalProperties": false
+            }
+            '''.bytes))
+            .withOutputFolder(outputPath)
+            .withOutputPackageName("com.example.project")
+            .withOutputFileName("UnsupportedUnion")
+            .build())
+
+        then:
+        generated.text.contains("Object value")
+        generator.warnings*.code() == ["UNSUPPORTED_KEYWORD"]
+    }
+
     void "required nullable property keeps nullable value semantics"() {
         when:
         var content = generateRecordProfileTypeAndGetContent("RequiredNullable", '''
@@ -848,7 +909,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         generated.text.contains("Object multi")
         generated.text.contains("Object external")
         generated.text.contains("Object ambiguous")
-        generator.warnings*.code() == ["UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD"]
+        generator.warnings*.code() == ["UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD", "UNSUPPORTED_KEYWORD"]
     }
 
     void "unsupported local ref outside defs falls back to Object and records warning at property level"() {
@@ -898,6 +959,80 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         def exception = thrown(IllegalArgumentException)
         exception.message.contains("NAME_COLLISION")
         exception.message.contains("unknownFields")
+    }
+
+    void "sanitized Java member name collision fails generation"() {
+        when:
+        generateRecordProfileType("SanitizedCollision", '''
+        {
+          "title":"SanitizedCollision",
+          "type":"object",
+          "properties":{
+            "#bikes":{"type":"integer"},
+            "9bikes":{"type":"integer"}
+          },
+          "additionalProperties": false
+        }
+        ''')
+
+        then:
+        def exception = thrown(IllegalArgumentException)
+        exception.message.contains("NAME_COLLISION")
+        exception.message.contains("#bikes")
+        exception.message.contains("9bikes")
+        exception.message.contains("bikes")
+    }
+
+    void "record profile generates unknownFields for explicit open object without declared properties"() {
+        when:
+        var content = generateRecordProfileTypeAndGetContent("OpenObject", '''
+        {
+          "title":"OpenObject",
+          "type":"object",
+          "additionalProperties": true
+        }
+        ''')
+
+        then:
+        content.contains("HashMap<String, Object> unknownFields")
+        content.contains("@JsonAnyGetter")
+        content.contains("@JsonAnySetter")
+    }
+
+    void "record profile boxes primitive schema valued additional properties in unknownFields"() {
+        when:
+        var content = generateRecordProfileTypeAndGetContent("OpenObject", '''
+        {
+          "title":"OpenObject",
+          "type":"object",
+          "properties":{
+            "name":{"type":"string"}
+          },
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+        ''')
+
+        then:
+        content.contains("HashMap<String, Integer> unknownFields")
+        !content.contains("HashMap<String, int> unknownFields")
+    }
+
+    void "default generator keeps existing open object without declared properties behavior"() {
+        when:
+        var content = generateTypeAndGetContent("OpenObject", '''
+        {
+          "title":"OpenObject",
+          "type":"object",
+          "additionalProperties": true
+        }
+        ''')
+
+        then:
+        !content.contains("unknownFields")
+        !content.contains("@JsonAnyGetter")
+        !content.contains("@JsonAnySetter")
     }
 
 }

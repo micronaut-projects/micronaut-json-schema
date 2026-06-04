@@ -518,6 +518,8 @@ public final class SourceGenerator {
             if (shouldGenerateAdditionalProperties(jsonSchema)) {
                 addAdditionalField(jsonSchema, builder);
             }
+        } else if (context.isStrictUnsupportedKeywords() && shouldGenerateAdditionalProperties(jsonSchema)) {
+            addAdditionalField(jsonSchema, builder);
         }
     }
 
@@ -526,7 +528,7 @@ public final class SourceGenerator {
         if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
             mapType = TypeDef.OBJECT;
         } else {
-            mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
+            mapType = boxPrimitive(getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context));
         }
         TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
         if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {

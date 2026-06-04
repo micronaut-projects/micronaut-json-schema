@@ -225,7 +225,7 @@ public final class TypeAggregator {
      *  if empty, return null,
      *  if single schema, return that schema,
      *  if 2 schema but one has type "NULL", return the non-null schema
-     *  if all schemas has the same type, merge all schemas and return
+     *  if all schemas has the same type, return that common base type
      *  else return empty Object schema.
      *
      * @param schemas List of Schemas in the anyOf keyword
@@ -254,7 +254,14 @@ public final class TypeAggregator {
         }
         if (sameType) {
             var type = schemas.get(0).getType().get(0);
-            return TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
+            TypeDef typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
+            if (context.isStrictUnsupportedKeywords() && TypeDef.OBJECT.equals(typeDef)) {
+                context.warn("UNSUPPORTED_KEYWORD", "anyOf object alternatives are not supported at property level; using java.lang.Object");
+            }
+            return typeDef;
+        }
+        if (context.isStrictUnsupportedKeywords()) {
+            context.warn("UNSUPPORTED_KEYWORD", "anyOf alternatives cannot be modeled deterministically at property level; using java.lang.Object");
         }
         return TypeDef.OBJECT;
     }
