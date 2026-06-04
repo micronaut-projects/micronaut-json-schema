@@ -15,11 +15,13 @@
  */
 package io.micronaut.jsonschema.visitor;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.databind.ObjectMapper;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.Internal;
 import org.jspecify.annotations.NonNull;
 import io.micronaut.inject.ast.ClassElement;
+import io.micronaut.inject.ast.EnumConstantElement;
 import io.micronaut.inject.ast.EnumElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.TypedElement;
@@ -204,9 +206,8 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
                 schema.setUniqueItems(true);
             }
         } else if (!type.isPrimitive() && type.getRawClassElement() instanceof EnumElement enumElement) {
-            // Enum values must be camel case
             schema.addType(Type.STRING)
-                .setEnumValues(enumElement.values().stream().map(v -> (Object) v).toList());
+                .setEnumValues(enumValues(enumElement));
             context.currentOriginatingElements().add(enumElement);
         } else if (type.isAssignable(Number.class)) {
             switch (type.getName()) {
@@ -236,6 +237,22 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
                 default -> setBeanSchemaProperties(type, visitorContext, context, schema);
             }
         }
+    }
+
+    private static List<Object> enumValues(EnumElement enumElement) {
+        List<EnumConstantElement> enumConstants = enumElement.elements();
+        if (enumConstants.isEmpty()) {
+            return enumElement.values().stream().map(v -> (Object) v).toList();
+        }
+        return enumConstants.stream().map(JsonSchemaVisitor::enumValue).toList();
+    }
+
+    private static Object enumValue(EnumConstantElement enumConstant) {
+        AnnotationValue<JsonProperty> jsonProperty = enumConstant.getAnnotation(JsonProperty.class);
+        if (jsonProperty != null) {
+            return jsonProperty.stringValue().orElse("");
+        }
+        return enumConstant.getName();
     }
 
     public static void setBeanSchemaProperties(ClassElement element, VisitorContext visitorContext, JsonSchemaContext context, Schema schema) {
