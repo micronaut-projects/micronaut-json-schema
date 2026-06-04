@@ -48,6 +48,11 @@ public final class GeneratorContext {
     private final HashMap<String, LinkedList<String>> TEMP_DEFINITIONS = new HashMap<>();
     private final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
     private final List<Warning> warnings = new LinkedList<>();
+    private boolean addGeneratedJsonSchemaAnnotation;
+    private boolean boxOptionalBooleans;
+    private boolean treatAdditionalPropertiesAsField;
+    private boolean sortPropertiesByName;
+    private boolean strictUnsupportedKeywords;
     private SourceGeneratorConfig configuration;
 
     public boolean isDefinitionClass(String key) {
@@ -187,6 +192,17 @@ public final class GeneratorContext {
         warnings.clear();
     }
 
+    /**
+     * Enable generation behavior used by the JSON schema records pipeline.
+     */
+    public void enableJsonSchemaRecordsProfile() {
+        addGeneratedJsonSchemaAnnotation = true;
+        boxOptionalBooleans = true;
+        treatAdditionalPropertiesAsField = true;
+        sortPropertiesByName = true;
+        strictUnsupportedKeywords = true;
+    }
+
     private String unifyKey(String key) {
         if (!key.contains("#/definitions/")) {
             return key;
@@ -225,6 +241,41 @@ public final class GeneratorContext {
      */
     public List<Warning> getWarnings() {
         return List.copyOf(warnings);
+    }
+
+    /**
+     * @return Whether generated types should be annotated with {@code @JsonSchema}
+     */
+    public boolean isAddGeneratedJsonSchemaAnnotation() {
+        return addGeneratedJsonSchemaAnnotation;
+    }
+
+    /**
+     * @return Whether optional boolean properties should use wrapper types
+     */
+    public boolean isBoxOptionalBooleans() {
+        return boxOptionalBooleans;
+    }
+
+    /**
+     * @return Whether open content should be exposed as an additionalProperties field
+     */
+    public boolean isTreatAdditionalPropertiesAsField() {
+        return treatAdditionalPropertiesAsField;
+    }
+
+    /**
+     * @return Whether generated properties should be sorted by name
+     */
+    public boolean isSortPropertiesByName() {
+        return sortPropertiesByName;
+    }
+
+    /**
+     * @return Whether unsupported schema constructs should fall back without legacy resolution attempts
+     */
+    public boolean isStrictUnsupportedKeywords() {
+        return strictUnsupportedKeywords;
     }
 
     /**

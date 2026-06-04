@@ -6,7 +6,7 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
 
     void "oracle profile generates JsonSchema records with default type mappings"() {
         when:
-        def type = (RecordDeclaration) generateType("Product", '''
+        def type = (RecordDeclaration) generateRecordProfileType("Product", '''
         {
           "title":"Product",
           "type":"object",
@@ -25,11 +25,7 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
           },
           "required":["id","name"]
         }
-        ''', b -> b
-            .withAddGeneratedJsonSchemaAnnotation(true)
-            .withBoxOptionalBooleans(true)
-            .withTreatAdditionalPropertiesAsField(true)
-            .withSortPropertiesByName(true))
+        ''')
 
         then:
         type.annotations*.nameAsString.containsAll(["Serdeable", "JsonSchema"])
@@ -60,7 +56,7 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
 
     void "oracle profile sanitizes duality view _id property names and preserves JSON binding"() {
         when:
-        def type = (RecordDeclaration) generateType("ApartmentView", '''
+        def type = (RecordDeclaration) generateRecordProfileType("ApartmentView", '''
         {
           "title":"ApartmentView",
           "type":"object",
@@ -77,11 +73,7 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
           },
           "required":["_id","name"]
         }
-        ''', b -> b
-            .withAddGeneratedJsonSchemaAnnotation(true)
-            .withBoxOptionalBooleans(true)
-            .withTreatAdditionalPropertiesAsField(true)
-            .withSortPropertiesByName(true))
+        ''')
 
         then:
         type.parameters*.nameAsString.containsAll(["id", "name"])

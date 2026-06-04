@@ -44,10 +44,6 @@ import java.nio.file.Path;
  * @param outputFileName The name of the file where the generated source code will be written. This field is optional.
  * @param javadoc Configuration specific to Javadoc.
  * @param recordAdoptionStrategy Strategy specifying when to generate records vs classes. Defaults to preferring records.
- * @param addGeneratedJsonSchemaAnnotation Whether generated types should be annotated with {@code @JsonSchema}.
- * @param boxOptionalBooleans Whether optional boolean properties should use {@link java.lang.Boolean}.
- * @param treatAdditionalPropertiesAsField Whether open-content schemas should expose additional properties as generated fields.
- * @param sortPropertiesByName Whether properties should be emitted in sorted name order.
  * @author Elif Kurtay
  * @version 1.3
  */
@@ -60,11 +56,7 @@ public record SourceGeneratorConfig(
     String outputPackageName,
     String outputFileName,
     JavadocConfig javadoc,
-    RecordAdoptionStrategy recordAdoptionStrategy,
-    boolean addGeneratedJsonSchemaAnnotation,
-    boolean boxOptionalBooleans,
-    boolean treatAdditionalPropertiesAsField,
-    boolean sortPropertiesByName
+    RecordAdoptionStrategy recordAdoptionStrategy
 ) {
     public String getInputName() {
         if (jsonFile != null) {
@@ -90,11 +82,7 @@ public record SourceGeneratorConfig(
             .withOutputPackageName(outputPackageName)
             .withOutputFileName(outputFileName)
             .withJavadoc(javadoc)
-            .withRecordAdoptionStrategy(recordAdoptionStrategy)
-            .withAddGeneratedJsonSchemaAnnotation(addGeneratedJsonSchemaAnnotation)
-            .withBoxOptionalBooleans(boxOptionalBooleans)
-            .withTreatAdditionalPropertiesAsField(treatAdditionalPropertiesAsField)
-            .withSortPropertiesByName(sortPropertiesByName);
+            .withRecordAdoptionStrategy(recordAdoptionStrategy);
 
     }
 

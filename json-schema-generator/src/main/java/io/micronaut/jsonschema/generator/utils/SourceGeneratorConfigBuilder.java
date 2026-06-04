@@ -39,10 +39,6 @@ public class SourceGeneratorConfigBuilder {
     String outputFileName = "";
     JavadocConfig javadocConfig = new JavadocConfig();
     RecordAdoptionStrategy recordAdoptionStrategy = RecordAdoptionStrategy.PREFER_RECORD;
-    boolean addGeneratedJsonSchemaAnnotation = false;
-    boolean boxOptionalBooleans = false;
-    boolean treatAdditionalPropertiesAsField = false;
-    boolean sortPropertiesByName = false;
 
     /**
      * @return {@link SourceGeneratorConfig}
@@ -57,11 +53,7 @@ public class SourceGeneratorConfigBuilder {
             outputPackageName,
             outputFileName,
             javadocConfig,
-            recordAdoptionStrategy,
-            addGeneratedJsonSchemaAnnotation,
-            boxOptionalBooleans,
-            treatAdditionalPropertiesAsField,
-            sortPropertiesByName
+            recordAdoptionStrategy
         );
     }
 
@@ -152,50 +144,6 @@ public class SourceGeneratorConfigBuilder {
      */
     public SourceGeneratorConfigBuilder withRecordAdoptionStrategy(RecordAdoptionStrategy strategy) {
         this.recordAdoptionStrategy = strategy;
-        return this;
-    }
-
-    /**
-     * Controls whether generated types should be annotated with {@code @JsonSchema}.
-     *
-     * @param addGeneratedJsonSchemaAnnotation Whether to add the annotation
-     * @return This
-     */
-    public SourceGeneratorConfigBuilder withAddGeneratedJsonSchemaAnnotation(boolean addGeneratedJsonSchemaAnnotation) {
-        this.addGeneratedJsonSchemaAnnotation = addGeneratedJsonSchemaAnnotation;
-        return this;
-    }
-
-    /**
-     * Controls whether optional boolean properties should use {@link java.lang.Boolean}.
-     *
-     * @param boxOptionalBooleans Whether optional boolean properties should use wrapper types
-     * @return This
-     */
-    public SourceGeneratorConfigBuilder withBoxOptionalBooleans(boolean boxOptionalBooleans) {
-        this.boxOptionalBooleans = boxOptionalBooleans;
-        return this;
-    }
-
-    /**
-     * Controls whether open-content schemas should expose additional properties as generated fields.
-     *
-     * @param treatAdditionalPropertiesAsField Whether additional properties should be modelled as fields
-     * @return This
-     */
-    public SourceGeneratorConfigBuilder withTreatAdditionalPropertiesAsField(boolean treatAdditionalPropertiesAsField) {
-        this.treatAdditionalPropertiesAsField = treatAdditionalPropertiesAsField;
-        return this;
-    }
-
-    /**
-     * Controls whether properties should be emitted in sorted name order.
-     *
-     * @param sortPropertiesByName Whether properties should be sorted by name
-     * @return This
-     */
-    public SourceGeneratorConfigBuilder withSortPropertiesByName(boolean sortPropertiesByName) {
-        this.sortPropertiesByName = sortPropertiesByName;
         return this;
     }
 

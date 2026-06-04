@@ -46,6 +46,8 @@ public final class SchemaCompositionSupport {
      * @param schema The schema to normalize
      */
     public static void normalizeLocalReferences(Schema schema) {
+        // Track by instance identity because schemas can be mutable and structurally equal while
+        // still representing different nodes.
         Set<Schema> path = Collections.newSetFromMap(new IdentityHashMap<>());
         normalizeDefinitions(schema, schema, path);
         flattenLocalAllOfReferences(schema, schema, path);
@@ -69,27 +71,33 @@ public final class SchemaCompositionSupport {
                 continue;
             }
             if (branch.hasOneOf() || branch.hasAnyOf()) {
+                // Union-style branches cannot be flattened into one deterministic object shape.
                 return true;
             }
             if (branch.hasAllOf() && hasUnsupportedAllOf(branch)) {
+                // Nested allOf is acceptable only if the nested composition is also flattenable.
                 return true;
             }
             if (hasUnsupportedBranchType(branch)) {
+                // allOf flattening is limited to object-compatible branches.
                 return true;
             }
             if (branch.has$ref()) {
+                // Local refs should have been resolved before this check; unresolved refs are ambiguous here.
                 return true;
             }
             if (branch.hasProperties()) {
                 for (Map.Entry<String, Schema> property : branch.getProperties().entrySet()) {
                     Schema previous = properties.putIfAbsent(property.getKey(), property.getValue());
                     if (previous != null && !isCompatibleProperty(previous, property.getValue())) {
+                        // The same property may appear in multiple branches only when the schemas agree.
                         return true;
                     }
                 }
             }
             if (branch.getAdditionalProperties() != null) {
                 if (additionalProperties != null && !isCompatibleAdditionalProperties(additionalProperties, branch.getAdditionalProperties())) {
+                    // Contradictory open/closed object policies cannot be represented by one generated type.
                     return true;
                 }
                 additionalProperties = branch.getAdditionalProperties();
@@ -133,8 +141,12 @@ public final class SchemaCompositionSupport {
                     if (referenced != null && !path.contains(referenced)) {
                         flattenLocalAllOfReferences(referenced, documentRoot, path);
                         if (flattenRootReference(referenced, documentRoot, path)) {
+                            // Replace supported local ref branches with their resolved shape so
+                            // allOf can be checked as a single object.
                             branch.set$ref(null);
                             branch.merge(referenced);
+                            // The parent schema also receives resolved branch metadata/properties
+                            // because generation reads from the parent.
                             mergeResolvedAllOfBranch(schema, referenced);
                             hasResolvedRefBranch = true;
                         }
@@ -142,6 +154,8 @@ public final class SchemaCompositionSupport {
                     flattenLocalAllOfReferences(branch, documentRoot, path);
                 }
                 if (hasResolvedRefBranch && resolveLocalDefinition(documentRoot, schema.get$ref()) != null) {
+                    // Once all local allOf refs have been materialized, keeping the wrapper ref
+                    // would regenerate the same shape twice.
                     schema.set$ref(null);
                 }
             }
@@ -172,6 +186,8 @@ public final class SchemaCompositionSupport {
         }
         path.add(schema);
         try {
+            // A referenced definition may itself be a ref or contain allOf refs, so normalize the
+            // target before merging it here.
             flattenLocalAllOfReferences(referenced, documentRoot, path);
             if (!flattenRootReference(referenced, documentRoot, path)) {
                 return false;
@@ -181,6 +197,7 @@ public final class SchemaCompositionSupport {
             schema.set$ref(null);
             schema.merge(referenced);
             if (hasTitle) {
+                // Local schema names should keep winning over referenced titles; they drive generated type names.
                 schema.setTitle(title);
             }
             return true;
@@ -194,6 +211,8 @@ public final class SchemaCompositionSupport {
             return;
         }
         schema.get$defs().values().forEach(definition -> {
+            // Definitions are generation candidates too, so normalize their internal refs before
+            // later compatibility checks.
             flattenLocalAllOfReferences(definition, documentRoot, path);
             flattenRootReference(definition, documentRoot, path);
         });
@@ -204,6 +223,7 @@ public final class SchemaCompositionSupport {
         boolean hasTitle = schema.hasTitle();
         schema.merge(branch);
         if (hasTitle) {
+            // Merged allOf branches contribute structure, but should not rename the composed schema.
             schema.setTitle(title);
         }
     }
@@ -241,6 +261,7 @@ public final class SchemaCompositionSupport {
             .filter(type -> !Schema.Type.NULL.equals(type))
             .distinct()
             .toList();
+        // allOf can be flattened only when every typed branch still describes exactly one object shape.
         return nonNullTypes.size() > 1
             || nonNullTypes.stream().anyMatch(type -> !Schema.Type.OBJECT.equals(type));
     }
@@ -256,12 +277,14 @@ public final class SchemaCompositionSupport {
             return false;
         }
         if (first.has$ref() || second.has$ref()) {
+            // Different refs may still resolve to compatible shapes, but that requires resolver-aware equivalence.
             return Objects.equals(first.get$ref(), second.get$ref());
         }
         if (first.hasType() && second.hasType()) {
             var firstTypes = nonNullTypeSignature(first);
             var secondTypes = nonNullTypeSignature(second);
             if (firstTypes.size() > 1 || secondTypes.size() > 1) {
+                // Multi-type properties need union semantics that the record generator does not model.
                 return false;
             }
             return firstTypes.isEmpty() || secondTypes.isEmpty() || Objects.equals(firstTypes, secondTypes);
@@ -271,9 +294,11 @@ public final class SchemaCompositionSupport {
 
     private static boolean isCompatibleAdditionalProperties(Schema first, Schema second) {
         if (Schema.FALSE.equals(first) || Schema.FALSE.equals(second)) {
+            // A closed object policy must agree exactly; otherwise one branch permits fields the other rejects.
             return Schema.FALSE.equals(first) && Schema.FALSE.equals(second);
         }
         if (Schema.TRUE.equals(first) || Schema.TRUE.equals(second)) {
+            // The permissive schema does not add a constraint, so the other branch can define the effective value type.
             return true;
         }
         return isCompatibleProperty(first, second);

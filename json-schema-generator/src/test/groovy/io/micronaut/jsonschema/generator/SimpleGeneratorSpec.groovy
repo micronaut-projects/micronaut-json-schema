@@ -1,6 +1,7 @@
 package io.micronaut.jsonschema.generator
 
 
+import io.micronaut.jsonschema.generator.loaders.FileProcessor
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder
 
 import java.nio.file.Files
@@ -164,19 +165,19 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         @Serdeable
         public record Default(
             @Min(0) Integer age,
-            Default_Defaults defaults
+            Defaults defaults
         ) {
           @Serdeable
-          public record Default_Defaults(
-              Default_Defaults_Run run
+          public record Defaults(
+              Run run
           ) {
             @Serdeable
-            public record Default_Defaults_Run(
-                Default_Defaults_Run_Shell shell,
+            public record Run(
+                Shell shell,
                 @JsonProperty("working-directory") @Pattern(regexp = "^[a-zA-Z]*") String workingDirectory
             ) {
               @Serdeable
-              public enum Default_Defaults_Run_Shell {
+              public enum Shell {
 
                 BASH("bash"),
                 PWSH("pwsh"),
@@ -187,7 +188,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
                 public String value;
 
-                private Default_Defaults_Run_Shell(String value) {
+                private Shell(String value) {
                   this.value = value;
                 }
 
@@ -197,7 +198,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
                 }
 
                 @JsonCreator
-                public static Default_Defaults_Run.Default_Defaults_Run_Shell statusOf(String value) {
+                public static Run.Shell statusOf(String value) {
                   return switch (value) {
                     case "bash" -> BASH;
                     case "pwsh" -> PWSH;
@@ -367,7 +368,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "oracle profile boxes primitive additionalProperties map value types"() {
         when:
-        var content = generateTypeAndGetContent("OpenCounts", '''
+        var content = generateRecordProfileTypeAndGetContent("OpenCounts", '''
         {
           "title":"OpenCounts",
           "type":"object",
@@ -375,7 +376,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             "type": "integer"
           }
         }
-        ''', b -> b.withTreatAdditionalPropertiesAsField(true))
+        ''')
 
         then:
         content.contains("Map<String, Integer> additionalProperties")
@@ -383,7 +384,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "oracle profile maps additionalProperties schema object to typed nested value"() {
         when:
-        var content = generateTypeAndGetContent("OpenValues", '''
+        var content = generateRecordProfileTypeAndGetContent("OpenValues", '''
         {
           "title":"OpenValues",
           "type":"object",
@@ -396,10 +397,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             "additionalProperties": false
           }
         }
-        ''', b -> b
-            .withAddGeneratedJsonSchemaAnnotation(true)
-            .withTreatAdditionalPropertiesAsField(true)
-            .withSortPropertiesByName(true))
+        ''')
 
         then:
         content.contains("Map<String, OpenValues_AdditionalProperties> additionalProperties")
@@ -459,7 +457,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "allOf local ref branch flattens into generated object"() {
         when:
-        var content = generateTypeAndGetContent("Composed", '''
+        var content = generatePreparedTypeAndGetContent("Composed", '''
         {
           "title":"Composed",
           "allOf": [
@@ -491,7 +489,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "allOf definitions ref branch flattens into generated object"() {
         when:
-        var content = generateTypeAndGetContent("Composed", '''
+        var content = generatePreparedTypeAndGetContent("Composed", '''
         {
           "title":"Composed",
           "allOf": [
@@ -521,7 +519,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "root local ref generates requested top-level object"() {
         when:
-        var content = generateTypeAndGetContent("Alias", '''
+        var content = generatePreparedTypeAndGetContent("Alias", '''
         {
           "$ref": "#/$defs/Base",
           "$defs": {
@@ -547,7 +545,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
-        File generated = generator.generate(new SourceGeneratorConfigBuilder()
+        def config = new SourceGeneratorConfigBuilder()
             .withInputStream(new ByteArrayInputStream('''
         {
           "title":"DefinitionReference",
@@ -570,7 +568,10 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             .withOutputFolder(outputPath)
             .withOutputPackageName("com.example.project")
             .withOutputFileName("DefinitionReference")
-            .build())
+            .build()
+        def schema = FileProcessor.getJsonSchema(config)
+        SchemaCompositionSupport.normalizeLocalReferences(schema)
+        File generated = generator.generate(config, schema)
 
         then:
         generated.text.contains("Base base")
@@ -583,7 +584,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
-        generator.generate(new SourceGeneratorConfigBuilder()
+        def config = new SourceGeneratorConfigBuilder()
             .withInputStream(new ByteArrayInputStream('''
             {
               "title":"Container",
@@ -616,7 +617,10 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             '''.bytes))
             .withOutputFolder(outputPath)
             .withOutputPackageName("com.example.project")
-            .build())
+            .build()
+        def schema = FileProcessor.getJsonSchema(config)
+        SchemaCompositionSupport.normalizeLocalReferences(schema)
+        generator.generate(config, schema)
         String definitionContent = Files.readString(outputPath.resolve("com/example/project/Composed.java"))
 
         then:
@@ -626,7 +630,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "incompatible allOf local ref branch falls back to Object at property level"() {
         given:
-        SourceGenerator generator = new SourceGenerator("java")
+        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        context.enableJsonSchemaRecordsProfile()
+        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
@@ -711,7 +717,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testPropertyGeneration() {
         when:
-        var content = generatePropertyAndGetContent(propertyName, propertySchema)
+        var content = generateRecordProfilePropertyAndGetContent(propertyName, propertySchema)
 
         then:
         content == expectedJava
@@ -756,7 +762,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void testPropertyValidationGeneration() {
         when:
-        var content = generatePropertyAndGetContent(propertyName, propertySchema)
+        var content = generateRecordProfilePropertyAndGetContent(propertyName, propertySchema)
 
         then:
         content == expectedJava
@@ -795,12 +801,12 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "array without items maps to List of Object"() {
         expect:
-        generatePropertyAndGetContent("array", '{"type": "array"}') == "List<Object> array"
+        generateRecordProfilePropertyAndGetContent("array", '{"type": "array"}') == "List<Object> array"
     }
 
     void "required nullable property keeps nullable value semantics"() {
         when:
-        var content = generateTypeAndGetContent("RequiredNullable", '''
+        var content = generateRecordProfileTypeAndGetContent("RequiredNullable", '''
         {
           "title": "RequiredNullable",
           "type": "object",
@@ -819,7 +825,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "unsupported property-level composition falls back to Object and records warnings"() {
         given:
-        SourceGenerator generator = new SourceGenerator("java")
+        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        context.enableJsonSchemaRecordsProfile()
+        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
@@ -854,7 +862,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "unsupported local ref outside defs falls back to Object and records warning at property level"() {
         given:
-        SourceGenerator generator = new SourceGenerator("java")
+        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        context.enableJsonSchemaRecordsProfile()
+        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
@@ -882,7 +892,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "synthetic additionalProperties member collision fails generation"() {
         when:
-        generateType("OpenCollision", '''
+        generateRecordProfileType("OpenCollision", '''
         {
           "title":"OpenCollision",
           "type":"object",
@@ -891,7 +901,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
           },
           "additionalProperties": true
         }
-        ''', b -> b.withTreatAdditionalPropertiesAsField(true))
+        ''')
 
         then:
         def exception = thrown(IllegalArgumentException)

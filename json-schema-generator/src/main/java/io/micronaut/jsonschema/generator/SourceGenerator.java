@@ -48,7 +48,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -169,22 +168,30 @@ public final class SourceGenerator {
             Schema jsonSchema = getJsonSchema(config);
             assert jsonSchema != null;
             inputFileName = getInputFileName() != null ? getInputFileName() : config.getInputName();
-            prepareSchema(jsonSchema);
-            // single java object is generated
             if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
-                var outputFileName = config.outputFileName();
-                // remove extension from file name if there is
-                if (config.outputFileName().contains(".")) {
-                    outputFileName = outputFileName.substring(0, outputFileName.indexOf('.'));
-                }
-                File topLevelObject = generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
-                generateDefinitionTypes(jsonSchema, config.outputPath(), config.outputPackageName());
-                return topLevelObject;
-            } else {
-                return generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+                return generateSingleSchema(config, jsonSchema, false);
             }
+            saveDefinitions(jsonSchema);
+            return generateSingleSchema(config, jsonSchema, false);
         }
         return null;
+    }
+
+    /**
+     * Generates source code from an already prepared schema.
+     *
+     * @param config The generator configuration
+     * @param jsonSchema The schema to generate from
+     * @return The top level schema's generated File, or null when no top level type is generated
+     * @throws IOException If an I/O error occurs during source generation
+     */
+    public File generate(SourceGeneratorConfig config, Schema jsonSchema) throws IOException {
+        context.setConfiguration(config);
+        outputPath = config.outputPath();
+        outputPackageName = config.outputPackageName();
+        inputFileName = config.getInputName();
+        saveDefinitions(jsonSchema);
+        return generateSingleSchema(config, jsonSchema, true);
     }
 
     /**
@@ -193,16 +200,15 @@ public final class SourceGenerator {
      * @param config     The SourceGeneratorConfig
      */
     private void generateFolder(SourceGeneratorConfig config) throws IOException {
-        LinkedHashMap<Schema, String> schemas = new LinkedHashMap<>();
+        HashMap<Schema, String> schemas = new HashMap<>();
         Path jsonFolder =  config.inputFolder();
         // Walk through the directory to find all json files
         try (Stream<Path> paths = Files.walk(jsonFolder).filter(file -> file.toString().endsWith(".schema.json"))) {
-            paths.sorted(Comparator.naturalOrder()).forEach(path -> {
+            paths.forEach(path -> {
                 // Read content of each JSON file
                 var jsonSchema = new FileLoader(path.toFile()).load();
                 assert jsonSchema != null;
                 inputFileName = path.toString().substring(jsonFolder.toString().length() + 1);
-                SchemaCompositionSupport.normalizeLocalReferences(jsonSchema);
                 schemas.put(jsonSchema, inputFileName);
                 saveDefinitions(jsonSchema);
             });
@@ -220,9 +226,22 @@ public final class SourceGenerator {
         });
     }
 
-    private void prepareSchema(Schema jsonSchema) {
-        SchemaCompositionSupport.normalizeLocalReferences(jsonSchema);
-        saveDefinitions(jsonSchema);
+    private File generateSingleSchema(SourceGeneratorConfig config, Schema jsonSchema, boolean generateDefinitionTypesForNamedOutput) throws IOException {
+        // single java object is generated
+        if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
+            var outputFileName = config.outputFileName();
+            // remove extension from file name if there is
+            if (config.outputFileName().contains(".")) {
+                outputFileName = outputFileName.substring(0, outputFileName.indexOf('.'));
+            }
+            File topLevelObject = generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
+            if (generateDefinitionTypesForNamedOutput) {
+                generateDefinitionTypes(jsonSchema, config.outputPath(), config.outputPackageName());
+            }
+            return topLevelObject;
+        } else {
+            return generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+        }
     }
 
     private void saveDefinitions(Schema jsonSchema) {
@@ -501,7 +520,9 @@ public final class SourceGenerator {
         }
 
         if (jsonSchema.hasProperties()) {
-            validateMemberNameCollisions(jsonSchema);
+            if (context.isStrictUnsupportedKeywords()) {
+                validateMemberNameCollisions(jsonSchema);
+            }
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();
             Stream<Map.Entry<String, Schema>> propertyStream = jsonSchema.getProperties().entrySet().stream();
             if (shouldSortPropertiesByName()) {
@@ -517,7 +538,7 @@ public final class SourceGenerator {
             if (shouldGenerateAdditionalProperties(jsonSchema)) {
                 addAdditionalField(jsonSchema, builder);
             }
-        } else if (shouldGenerateAdditionalProperties(jsonSchema)) {
+        } else if (supportsAdditionalPropertiesAsField() && shouldGenerateAdditionalProperties(jsonSchema)) {
             addAdditionalField(jsonSchema, builder);
         }
     }
@@ -536,7 +557,7 @@ public final class SourceGenerator {
         if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
             mapType = TypeDef.OBJECT;
         } else {
-            mapType = boxPrimitive(getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context));
+            mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
         }
         TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
         if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
@@ -579,7 +600,7 @@ public final class SourceGenerator {
         if (propertyName.equals(discriminatorProperty)) {
             return;
         }
-        String name = getPropertyName(propertyName);
+        String name = getPropertyName(propertyName, context);
         PropertyDef.PropertyDefBuilder propertyDef = PropertyDef.builder(name)
             .addModifiers(Modifier.PUBLIC);
         if (!name.equals(propertyName)) {
@@ -636,19 +657,22 @@ public final class SourceGenerator {
     }
 
     private TypeDef getPropertyType(ObjectDefBuilder objectBuilder, Schema schema, String name) {
-        if (SchemaCompositionSupport.hasUnsupportedAllOf(schema)) {
+        if (context.isStrictUnsupportedKeywords() && SchemaCompositionSupport.hasUnsupportedAllOf(schema)) {
             context.warn("UNSUPPORTED_KEYWORD", "allOf cannot be flattened deterministically at property level; using java.lang.Object");
             return TypeDef.OBJECT;
         }
         // add type info and type validation annotations
         TypeDef propertyType = getTypeDefFromJson(schema, context);
+        if (context.isStrictUnsupportedKeywords() && hasUnsupportedPropertyShape(schema)) {
+            return TypeDef.OBJECT;
+        }
         if (schema.isEnum()) {
             propertyType = getEnumType(objectBuilder, name, schema);
-        } else if  (propertyType.equals(TypeDef.of(List.class))) {
+        } else if (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, name, schema);
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
-        } else if (supportsAdditionalPropertiesAsField() && propertyType.equals(TypeDef.OBJECT) && shouldGenerateAdditionalProperties(schema)) {
+        } else if (supportsAdditionalPropertiesAsField() && propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties() && shouldGenerateAdditionalProperties(schema)) {
             return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, getAdditionalPropertyValueType(schema, objectBuilder));
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties()) {
             if (schema.getAdditionalProperties().equals(Schema.TRUE)) {
@@ -659,6 +683,29 @@ public final class SourceGenerator {
             }
         }
         return propertyType;
+    }
+
+    private boolean hasUnsupportedPropertyShape(Schema schema) {
+        if (schema.hasOneOf() || schema.hasAnyOf()) {
+            return true;
+        }
+        if (schema.hasType() && schema.getType().stream()
+            .filter(type -> !Schema.Type.NULL.equals(type))
+            .distinct()
+            .count() > 1) {
+            return true;
+        }
+        if (schema.has$ref()) {
+            String ref = schema.get$ref();
+            if (Schema.THIS_SCHEMA_REF.equals(ref)) {
+                return false;
+            }
+            if (ref.startsWith("#")) {
+                return !context.hasDefinition(inputFileName + ref);
+            }
+            return true;
+        }
+        return false;
     }
 
     private void addDiscriminatorAnnotations(Schema jsonSchema, ObjectDefBuilder objectBuilder) {
@@ -696,10 +743,12 @@ public final class SourceGenerator {
     private TypeDef getListTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         Schema items = schema.getItems() != null ? schema.getItems() : schema.getContains();
         if (items == null) {
-            return TypeDef.parameterized(ClassTypeDef.of(List.class), TypeDef.OBJECT);
+            return context.isStrictUnsupportedKeywords()
+                ? TypeDef.parameterized(ClassTypeDef.of(List.class), TypeDef.OBJECT)
+                : TypeDef.OBJECT;
         }
 
-        if (items.hasType() && items.getType().contains(io.micronaut.jsonschema.model.Schema.Type.NULL)) {
+        if (context.isStrictUnsupportedKeywords() && items.hasType() && items.getType().contains(io.micronaut.jsonschema.model.Schema.Type.NULL)) {
             items.setNullable(true);
         }
         TypeDef propertyType = getPropertyType(objectBuilder, items, propertyName);
@@ -765,7 +814,7 @@ public final class SourceGenerator {
     }
 
     private boolean shouldAddGeneratedJsonSchemaAnnotation() {
-        return context.getConfiguration().addGeneratedJsonSchemaAnnotation();
+        return context.isAddGeneratedJsonSchemaAnnotation();
     }
 
     private void addJsonSchemaAnnotation(ObjectDefBuilder builder) {
@@ -781,15 +830,15 @@ public final class SourceGenerator {
     }
 
     private boolean supportsAdditionalPropertiesAsField() {
-        return context.getConfiguration().treatAdditionalPropertiesAsField();
+        return context.isTreatAdditionalPropertiesAsField();
     }
 
     private boolean shouldBoxOptionalBooleans() {
-        return context.getConfiguration().boxOptionalBooleans();
+        return context.isBoxOptionalBooleans();
     }
 
     private boolean shouldSortPropertiesByName() {
-        return context.getConfiguration().sortPropertiesByName();
+        return context.isSortPropertiesByName();
     }
 
     private void pushTypeName(String builderClassName) {
@@ -801,7 +850,10 @@ public final class SourceGenerator {
     }
 
     private String nestedTypeName(String propertyName) {
-        String propertyTypeName = getClassName(propertyName);
+        String propertyTypeName = capitalize(propertyName);
+        if (!context.isStrictUnsupportedKeywords()) {
+            return propertyTypeName;
+        }
         String parentTypeName = typeNameStack.peek();
         String rawName = parentTypeName == null || parentTypeName.isBlank()
             ? propertyTypeName
@@ -846,7 +898,7 @@ public final class SourceGenerator {
         Map<String, List<String>> jsonNamesByJavaName = new LinkedHashMap<>();
         if (schema.hasProperties()) {
             schema.getProperties().keySet().forEach(jsonName ->
-                jsonNamesByJavaName.computeIfAbsent(getPropertyName(jsonName), ignored -> new LinkedList<>()).add(jsonName));
+                jsonNamesByJavaName.computeIfAbsent(getPropertyName(jsonName, context), ignored -> new LinkedList<>()).add(jsonName));
         }
         if (shouldGenerateAdditionalProperties(schema)) {
             jsonNamesByJavaName.computeIfAbsent("additionalProperties", ignored -> new LinkedList<>()).add("<additionalProperties>");

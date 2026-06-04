@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.records;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema;
 import io.micronaut.jsonschema.generator.discovery.DiscoveryResult;
 import io.micronaut.jsonschema.generator.discovery.DiscoverySkipped;
@@ -255,14 +256,16 @@ public final class JsonSchemaRecordsPipeline {
             }
             DiscoveredSchemaEntry discovered = plan.discovered();
             DiscoveredSchema schema = discovered.schema();
-            SourceGenerator generator = new SourceGenerator("java");
+            GeneratorContext generatorContext = new GeneratorContext();
+            generatorContext.enableJsonSchemaRecordsProfile();
+            SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, generatorContext);
             try {
                 Schema rootSchema = loadSchema(config, plan);
                 warnIfNonDefaultDialect(rootSchema, discovered, warnings);
                 SchemaCompositionSupport.normalizeLocalReferences(rootSchema);
                 validateRootSchema(rootSchema, plan);
                 Set<String> beforeGeneration = generatedJavaFiles(config.outputDir());
-                File generatedFile = generator.generate(new SourceGeneratorConfig(
+                SourceGeneratorConfig sourceGeneratorConfig = new SourceGeneratorConfig(
                     null,
                     null,
                     config.schemaCacheDir().resolve(plan.schemaFile()).toFile(),
@@ -271,12 +274,9 @@ public final class JsonSchemaRecordsPipeline {
                     config.targetPackage(),
                     plan.topLevelTypeName(),
                     new SourceGeneratorConfig.JavadocConfig(),
-                    recordAdoptionStrategy(config.languageLevel()),
-                    true,
-                    true,
-                    true,
-                    true
-                ));
+                    recordAdoptionStrategy(config.languageLevel())
+                );
+                File generatedFile = generator.generate(sourceGeneratorConfig, rootSchema);
                 if (generatedFile != null) {
                     generated++;
                 }
@@ -586,7 +586,7 @@ public final class JsonSchemaRecordsPipeline {
 
     private Map<String, Object> sanitizeOptions(Map<String, ?> options) {
         Map<String, Object> sanitized = new LinkedHashMap<>();
-        options.forEach((key, value) -> sanitized.put(key, isSensitiveOptionKey(key) ? "<redacted>" : sanitizeOptionValue(value)));
+        options.forEach((key, val) -> sanitized.put(key, isSensitiveOptionKey(key) ? "<redacted>" : sanitizeOptionValue(val)));
         return sanitized;
     }
 
