@@ -577,7 +577,7 @@ public final class SourceGenerator {
         }
 
         TypeDef propertyType = getPropertyType(objectBuilder, schema, name);
-        if (!isRequired && propertyType instanceof TypeDef.Primitive primitive) {
+        if (context.isStrictUnsupportedKeywords() && !isRequired && propertyType instanceof TypeDef.Primitive primitive) {
             propertyType = primitive.wrapperType();
         }
         // add annotations
@@ -789,10 +789,6 @@ public final class SourceGenerator {
 
     private boolean shouldGenerateAdditionalProperties(Schema schema) {
         return schema.hasAdditionalProperties() && !Schema.FALSE.equals(schema.getAdditionalProperties());
-    }
-
-    private boolean shouldBoxOptionalBooleans() {
-        return context.isBoxOptionalBooleans();
     }
 
     private TypeDef boxPrimitive(TypeDef type) {

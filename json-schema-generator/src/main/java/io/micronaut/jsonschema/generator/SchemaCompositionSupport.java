@@ -144,15 +144,13 @@ public final class SchemaCompositionSupport {
                             // Replace supported local ref branches with their resolved shape so
                             // allOf can be checked as a single object.
                             branch.set$ref(null);
-                            branch.merge(referenced);
-                            // The parent schema also receives resolved branch metadata/properties
-                            // because generation reads from the parent.
-                            mergeResolvedAllOfBranch(schema, referenced);
+                            mergeForComposition(branch, referenced);
                             hasResolvedRefBranch = true;
                         }
                     }
                     flattenLocalAllOfReferences(branch, documentRoot, path);
                 }
+                mergeResolvedAllOfBranches(schema);
                 if (hasResolvedRefBranch && resolveLocalDefinition(documentRoot, schema.get$ref()) != null) {
                     // Once all local allOf refs have been materialized, keeping the wrapper ref
                     // would regenerate the same shape twice.
@@ -195,7 +193,7 @@ public final class SchemaCompositionSupport {
             String title = schema.getTitle();
             boolean hasTitle = schema.hasTitle();
             schema.set$ref(null);
-            schema.merge(referenced);
+            mergeForComposition(schema, referenced);
             if (hasTitle) {
                 // Local schema names should keep winning over referenced titles; they drive generated type names.
                 schema.setTitle(title);
@@ -218,14 +216,45 @@ public final class SchemaCompositionSupport {
         });
     }
 
+    private static void mergeResolvedAllOfBranches(Schema schema) {
+        for (Schema branch : List.copyOf(schema.getAllOf())) {
+            if (branch != null && !branch.has$ref()) {
+                mergeResolvedAllOfBranch(schema, branch);
+            }
+        }
+    }
+
     private static void mergeResolvedAllOfBranch(Schema schema, Schema branch) {
         String title = schema.getTitle();
         boolean hasTitle = schema.hasTitle();
-        schema.merge(branch);
+        mergeForComposition(schema, branch);
         if (hasTitle) {
             // Merged allOf branches contribute structure, but should not rename the composed schema.
             schema.setTitle(title);
         }
+    }
+
+    private static void mergeForComposition(Schema target, Schema source) {
+        Map<String, Schema> mergedProperties = mergeDuplicateProperties(target, source);
+        target.merge(source);
+        mergedProperties.forEach(target::putProperty);
+    }
+
+    private static Map<String, Schema> mergeDuplicateProperties(Schema target, Schema source) {
+        Map<String, Schema> targetProperties = target.getProperties();
+        Map<String, Schema> sourceProperties = source.getProperties();
+        if (targetProperties == null || sourceProperties == null) {
+            return Map.of();
+        }
+        Map<String, Schema> mergedProperties = new LinkedHashMap<>();
+        sourceProperties.forEach((name, sourceProperty) -> {
+            Schema targetProperty = targetProperties.get(name);
+            if (targetProperty != null) {
+                mergeForComposition(targetProperty, sourceProperty);
+                mergedProperties.put(name, targetProperty);
+            }
+        });
+        return mergedProperties;
     }
 
     private static Schema resolveLocalDefinition(Schema documentRoot, String ref) {

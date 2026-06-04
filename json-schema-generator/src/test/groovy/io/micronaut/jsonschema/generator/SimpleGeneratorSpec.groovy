@@ -116,7 +116,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         content == """
         @Serdeable
         public record Llama(
-            @Min(0) Integer age,
+            @Min(0) int age,
             Llama name,
             List<Llama> hours
         ) {
@@ -164,7 +164,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         content == """
         @Serdeable
         public record Default(
-            @Min(0) Integer age,
+            @Min(0) int age,
             Defaults defaults
         ) {
           @Serdeable
@@ -474,7 +474,37 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         ''')
 
         then:
-        content.contains("Integer id")
+        content.contains("int id")
+        content.contains("String name")
+    }
+
+    void "compatible allOf duplicate property constraints merge only during composition normalization"() {
+        when:
+        var content = generatePreparedTypeAndGetContent("Constrained", '''
+        {
+          "title":"Constrained",
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "minLength": 2 }
+              },
+              "required": ["name"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "maxLength": 8 }
+              }
+            }
+          ]
+        }
+        ''')
+
+        then:
+        content.contains("@NotNull")
+        content.contains("@Size(min = 2)")
+        content.contains("@Size(max = 8)")
         content.contains("String name")
     }
 

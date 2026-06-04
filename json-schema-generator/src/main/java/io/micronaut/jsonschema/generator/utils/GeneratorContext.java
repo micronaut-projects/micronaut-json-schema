@@ -49,7 +49,6 @@ public final class GeneratorContext {
     private final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
     private final List<Warning> warnings = new LinkedList<>();
     private boolean addGeneratedJsonSchemaAnnotation;
-    private boolean boxOptionalBooleans;
     private boolean strictUnsupportedKeywords;
     private SourceGeneratorConfig configuration;
 
@@ -195,7 +194,6 @@ public final class GeneratorContext {
      */
     public void enableJsonSchemaRecordsProfile() {
         addGeneratedJsonSchemaAnnotation = true;
-        boxOptionalBooleans = true;
         strictUnsupportedKeywords = true;
     }
 
@@ -244,13 +242,6 @@ public final class GeneratorContext {
      */
     public boolean isAddGeneratedJsonSchemaAnnotation() {
         return addGeneratedJsonSchemaAnnotation;
-    }
-
-    /**
-     * @return Whether optional boolean properties should use wrapper types
-     */
-    public boolean isBoxOptionalBooleans() {
-        return boxOptionalBooleans;
     }
 
     /**
