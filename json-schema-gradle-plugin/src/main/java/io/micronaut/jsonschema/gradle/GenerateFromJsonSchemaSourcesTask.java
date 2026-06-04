@@ -58,7 +58,6 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
      * Execute the pipeline.
      */
     @TaskAction
-    @Override
     public void execute() {
         try {
             generate();

@@ -7,8 +7,6 @@ plugins {
 
 dependencies {
     compileOnly(mn.micronaut.core.processor)
-    compileOnly(libs.micronaut.build.plugin.sourcegen.annotations)
-    annotationProcessor(libs.micronaut.build.plugin.sourcegen.generator)
 
     implementation(mnSourcegen.micronaut.sourcegen.model)
     implementation(mnSourcegen.micronaut.sourcegen.generator)
@@ -45,20 +43,4 @@ micronaut {
         clientTimeout = 300
         version = libs.versions.micronaut.testresources.get()
     }
-}
-
-configurations.named("annotationProcessor") {
-    // Isolate sourcegen 1.0.0-M1 processor dependencies from this project's newer Micronaut/SourceGen/JavaParser BOMs.
-    resolutionStrategy.force(
-            "io.micronaut:micronaut-core:5.0.0-M8",
-            "io.micronaut:micronaut-inject:5.0.0-M8",
-            "io.micronaut:micronaut-core-processor:5.0.0-M8",
-            "io.micronaut:micronaut-inject-java:5.0.0-M8",
-            "io.micronaut.sourcegen:micronaut-sourcegen-annotations:1.8.4",
-            "io.micronaut.sourcegen:micronaut-sourcegen-model:1.8.4",
-            "io.micronaut.sourcegen:micronaut-sourcegen-generator:1.8.4",
-            "io.micronaut.sourcegen:micronaut-sourcegen-generator-java:1.8.4",
-            "com.github.javaparser:javaparser-core:3.27.1",
-            "com.github.javaparser:javaparser-symbol-solver-core:3.27.1"
-    )
 }

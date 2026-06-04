@@ -17,10 +17,6 @@ package io.micronaut.jsonschema.generator.records;
 
 import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger;
 import io.micronaut.jsonschema.generator.discovery.SourceSpec;
-import io.micronaut.sourcegen.annotations.PluginTask;
-import io.micronaut.sourcegen.annotations.PluginTaskExecutable;
-import io.micronaut.sourcegen.annotations.PluginTaskParameter;
-import io.micronaut.sourcegen.annotations.PluginTaskParameter.OutputType;
 
 import java.io.File;
 import java.lang.reflect.Array;
@@ -45,36 +41,25 @@ import java.util.Map;
  * @param failOnMissingSource Whether unavailable configured sources should fail the build
  * @since 2.0.0
  */
-@PluginTask
 public record JsonSchemaRecordsGeneration(
-    @PluginTaskParameter(internal = true)
     String jdbcUrl,
 
-    @PluginTaskParameter(internal = true)
     String username,
 
-    @PluginTaskParameter(internal = true)
     String password,
 
-    @PluginTaskParameter(required = true, internal = true)
     String targetPackage,
 
-    @PluginTaskParameter(defaultValue = "21", internal = true)
     Integer languageLevel,
 
-    @PluginTaskParameter(required = true, internal = true, directory = true, output = OutputType.CUSTOM)
     File schemaCacheDir,
 
-    @PluginTaskParameter(required = true, internal = true, directory = true, output = OutputType.JAVA_SOURCES)
     File outputDir,
 
-    @PluginTaskParameter(required = true, internal = true)
     List<Map<String, Object>> sources,
 
-    @PluginTaskParameter(defaultValue = "false", internal = true)
     Boolean skipOnError,
 
-    @PluginTaskParameter(defaultValue = "true", internal = true)
     Boolean failOnMissingSource
 ) {
 
@@ -99,7 +84,6 @@ public record JsonSchemaRecordsGeneration(
         failOnMissingSource = failOnMissingSource == null || failOnMissingSource;
     }
 
-    @PluginTaskExecutable
     public void generate() {
         try {
             generate(systemLogger(), Thread.currentThread().getContextClassLoader());
