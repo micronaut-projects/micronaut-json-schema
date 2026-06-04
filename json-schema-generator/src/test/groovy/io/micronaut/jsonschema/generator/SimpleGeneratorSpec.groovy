@@ -786,6 +786,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
                 '"minContains": 2, "maxContains": 3}'                                    | "@Size(max = 3) @Size(min = 2) List<Float> array"
         'array'      | '{"type": "array", "items": {"type": "number"}, ' +
                 '"minLength": 2, "maxLength": 3}'                                        | "@Size(max = 3) @Size(min = 2) List<Float> array"
+        'array'      | '{"type": "array", "items": {"type":["string", "null"]}}'          | "List<@Nullable String> array"
         'array'      | '{"type": "array", "items": {"type":"number"},"nullable": true}'  | "@Nullable List<Float> array"
         'array'      | '{"type": "array", "items": {"type":"number"},"nullable": false}' | "@NotNull List<Float> array"
     }
