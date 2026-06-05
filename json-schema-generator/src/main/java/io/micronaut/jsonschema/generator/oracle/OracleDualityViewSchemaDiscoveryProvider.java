@@ -24,6 +24,7 @@ import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext;
 import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
 import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 import io.micronaut.jsonschema.generator.discovery.SourceUnavailableException;
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySupport.FilteredQuery;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySupport.MetadataQueryScope;
 
 import java.sql.Connection;
@@ -61,13 +62,16 @@ public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDis
         Set<String> excludes = OracleDiscoverySupport.excludeFilter(source);
         List<DiscoveredSchema> schemas = new ArrayList<>();
         int selectedInputs = 0;
-        String sql = scope.currentUserScope()
-            ? "SELECT view_name, json_schema FROM " + scope.dictionaryViewName()
-            : "SELECT view_name, json_schema FROM " + scope.dictionaryViewName() + " WHERE owner = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            if (!scope.currentUserScope()) {
-                statement.setString(1, owner.toUpperCase(java.util.Locale.ENGLISH));
-            }
+        FilteredQuery query = OracleDiscoverySupport.objectListQuery(
+            scope,
+            "view_name, json_schema",
+            "view_name",
+            owner,
+            includes,
+            excludes
+        );
+        try (PreparedStatement statement = connection.prepareStatement(query.sql())) {
+            query.bind(statement);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     String viewName = OracleDiscoverySupport.normalizeIdentifier(rs.getString(1));

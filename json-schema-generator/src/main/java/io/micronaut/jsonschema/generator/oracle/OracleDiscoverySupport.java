@@ -97,6 +97,47 @@ final class OracleDiscoverySupport {
     }
 
     /**
+     * Build an object-list query with owner and include/exclude filters pushed into SQL.
+     *
+     * @param scope The resolved dictionary query scope
+     * @param selectList The columns to select
+     * @param nameColumn The dictionary column containing the object name
+     * @param owner The normalized owner for cross-schema queries
+     * @param includes The normalized include filters
+     * @param excludes The normalized exclude filters
+     * @return The SQL query and bind parameters
+     */
+    static FilteredQuery objectListQuery(MetadataQueryScope scope,
+                                         String selectList,
+                                         String nameColumn,
+                                         String owner,
+                                         Set<String> includes,
+                                         Set<String> excludes) {
+        StringBuilder sql = new StringBuilder("SELECT ")
+            .append(selectList)
+            .append(" FROM ")
+            .append(scope.dictionaryViewName());
+        List<String> conditions = new ArrayList<>();
+        List<String> parameters = new ArrayList<>();
+        if (!scope.currentUserScope()) {
+            conditions.add("owner = ?");
+            parameters.add(normalizeIdentifier(owner));
+        }
+        if (!includes.isEmpty()) {
+            conditions.add(nameColumn + " IN (" + placeholders(includes.size()) + ")");
+            parameters.addAll(includes);
+        }
+        if (!excludes.isEmpty()) {
+            conditions.add(nameColumn + " NOT IN (" + placeholders(excludes.size()) + ")");
+            parameters.addAll(excludes);
+        }
+        if (!conditions.isEmpty()) {
+            sql.append(" WHERE ").append(String.join(" AND ", conditions));
+        }
+        return new FilteredQuery(sql.toString(), parameters);
+    }
+
+    /**
      * Normalize a built-in Oracle identifier option or discovered identifier.
      *
      * @param identifier The identifier
@@ -288,6 +329,10 @@ final class OracleDiscoverySupport {
         return excludes.contains(name);
     }
 
+    private static String placeholders(int count) {
+        return String.join(", ", java.util.Collections.nCopies(count, "?"));
+    }
+
     private static boolean matchesOwner(String owner, String sessionUser) {
         return sessionUser != null && owner.equals(normalizeIdentifier(sessionUser));
     }
@@ -382,6 +427,21 @@ final class OracleDiscoverySupport {
      * @param currentUserScope Whether the resolved dictionary access uses current-user scope
      */
     record MetadataQueryScope(String dictionaryViewName, boolean currentUserScope) {
+    }
+
+    /**
+     * SQL query with ordered bind parameters.
+     *
+     * @param sql The SQL statement
+     * @param parameters The ordered bind parameter values
+     */
+    record FilteredQuery(String sql, List<String> parameters) {
+
+        void bind(PreparedStatement statement) throws SQLException {
+            for (int i = 0; i < parameters.size(); i++) {
+                statement.setString(i + 1, parameters.get(i));
+            }
+        }
     }
 
     /**

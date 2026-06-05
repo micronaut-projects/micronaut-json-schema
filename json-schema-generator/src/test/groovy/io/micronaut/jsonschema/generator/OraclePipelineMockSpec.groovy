@@ -37,7 +37,8 @@ class OraclePipelineMockSpec extends Specification {
         List<String> logs = []
         Driver driver = driverReturning(connection)
 
-        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?)") >> domainListStatement
+        1 * domainListStatement.setString(1, "MOONPHASE")
         1 * domainListStatement.executeQuery() >> domainListResult
         2 * domainListResult.next() >>> [true, false]
         1 * domainListResult.getString(1) >> "MOONPHASE"
@@ -111,7 +112,8 @@ class OraclePipelineMockSpec extends Specification {
         ResultSet constraintResult = Mock()
         Driver driver = driverReturning(connection)
 
-        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?)") >> domainListStatement
+        1 * domainListStatement.setString(1, "MOONPHASE")
         1 * domainListStatement.executeQuery() >> domainListResult
         2 * domainListResult.next() >>> [true, false]
         1 * domainListResult.getString(1) >> "MOONPHASE"
@@ -175,8 +177,9 @@ class OraclePipelineMockSpec extends Specification {
         1 * scopeProbeStatement.setString(1, "HR")
         1 * scopeProbeStatement.executeQuery() >> scopeProbeResult
 
-        1 * connection.prepareStatement("SELECT name FROM ALL_DOMAINS WHERE owner = ?") >> domainListStatement
+        1 * connection.prepareStatement("SELECT name FROM ALL_DOMAINS WHERE owner = ? AND name IN (?)") >> domainListStatement
         1 * domainListStatement.setString(1, "HR")
+        1 * domainListStatement.setString(2, "MOONPHASE")
         1 * domainListStatement.executeQuery() >> domainListResult
         2 * domainListResult.next() >>> [true, false]
         1 * domainListResult.getString(1) >> "MOONPHASE"
@@ -233,7 +236,8 @@ class OraclePipelineMockSpec extends Specification {
         ResultSet domainListResult = Mock()
         Driver driver = driverReturning(connection)
 
-        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?)") >> domainListStatement
+        1 * domainListStatement.setString(1, "MOONPHASE")
         1 * domainListStatement.executeQuery() >> domainListResult
         2 * domainListResult.next() >>> [true, false]
         1 * domainListResult.getString(1) >> "MOONPHASE"
@@ -281,7 +285,8 @@ class OraclePipelineMockSpec extends Specification {
         Path outputDir = Files.createTempDirectory("oracle-mock-output")
         Driver driver = driverReturning(connection)
 
-        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS") >> dualityStatement
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?)") >> dualityStatement
+        1 * dualityStatement.setString(1, "APARTMENT_VIEW")
         1 * dualityStatement.executeQuery() >> dualityResult
         2 * dualityResult.next() >>> [true, false]
         1 * dualityResult.getString(1) >> "APARTMENT_VIEW"
@@ -326,7 +331,8 @@ class OraclePipelineMockSpec extends Specification {
         ResultSet dualityResult = Mock()
         Driver driver = driverReturning(connection)
 
-        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS") >> dualityStatement
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?)") >> dualityStatement
+        1 * dualityStatement.setString(1, "BROKEN_DV")
         1 * dualityStatement.executeQuery() >> dualityResult
         2 * dualityResult.next() >>> [true, false]
         1 * dualityResult.getString(1) >> "BROKEN_DV"
@@ -382,7 +388,8 @@ class OraclePipelineMockSpec extends Specification {
         1 * sessionUserResult.next() >> true
         1 * sessionUserResult.getString(1) >> "HR"
 
-        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS") >> dualityStatement
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?)") >> dualityStatement
+        1 * dualityStatement.setString(1, "PRODUCT_DV")
         1 * dualityStatement.executeQuery() >> dualityResult
         2 * dualityResult.next() >>> [true, false]
         1 * dualityResult.getString(1) >> "PRODUCT_DV"
@@ -425,10 +432,10 @@ class OraclePipelineMockSpec extends Specification {
         List<String> logs = []
         Driver driver = driverReturning(connection)
 
-        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?)") >> domainListStatement
+        1 * domainListStatement.setString(1, "MARS")
         1 * domainListStatement.executeQuery() >> domainListResult
-        2 * domainListResult.next() >>> [true, false]
-        1 * domainListResult.getString(1) >> "MOONPHASE"
+        1 * domainListResult.next() >> false
 
         when:
         def result = withRegisteredDriver(driver) {
@@ -472,7 +479,8 @@ class OraclePipelineMockSpec extends Specification {
         Path outputDir = Files.createTempDirectory("oracle-mock-output")
         Driver driver = driverReturning(connection)
 
-        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?)") >> domainListStatement
+        1 * domainListStatement.setString(1, "MOONPHASE")
         1 * domainListStatement.executeQuery() >> domainListResult
         2 * domainListResult.next() >>> [true, false]
         1 * domainListResult.getString(1) >> "MoonPhase"
@@ -518,10 +526,13 @@ class OraclePipelineMockSpec extends Specification {
         Path outputDir = Files.createTempDirectory("oracle-mock-output")
         Driver driver = driverReturning(connection)
 
-        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?, ?) AND name NOT IN (?)") >> domainListStatement
+        1 * domainListStatement.setString(1, "MARS")
+        1 * domainListStatement.setString(2, "MOONPHASE")
+        1 * domainListStatement.setString(3, "MARS")
         1 * domainListStatement.executeQuery() >> domainListResult
-        3 * domainListResult.next() >>> [true, true, false]
-        2 * domainListResult.getString(1) >>> ["MARS", "MoonPhase"]
+        2 * domainListResult.next() >>> [true, false]
+        1 * domainListResult.getString(1) >> "MoonPhase"
 
         1 * connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual") >> ddlStatement
         1 * ddlStatement.setString(1, "MOONPHASE")
@@ -668,7 +679,8 @@ class OraclePipelineMockSpec extends Specification {
         1 * sessionUserResult.next() >> true
         1 * sessionUserResult.getString(1) >> "HR"
 
-        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS") >> domainListStatement
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?)") >> domainListStatement
+        1 * domainListStatement.setString(1, "MOONPHASE")
         1 * domainListStatement.executeQuery() >> domainListResult
         2 * domainListResult.next() >>> [true, false]
         1 * domainListResult.getString(1) >> "MOONPHASE"

@@ -26,6 +26,7 @@ import io.micronaut.jsonschema.generator.discovery.SchemaRetrievalException;
 import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 import io.micronaut.jsonschema.generator.discovery.SourceUnavailableException;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySupport.DiscoveryPayload;
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySupport.FilteredQuery;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySupport.MetadataQueryScope;
 
 import java.sql.Connection;
@@ -63,13 +64,9 @@ public final class OracleDomainSchemaDiscoveryProvider implements SchemaDiscover
         Set<String> excludes = OracleDiscoverySupport.excludeFilter(source);
         List<DiscoveredSchema> schemas = new ArrayList<>();
         int selectedInputs = 0;
-        String sql = scope.currentUserScope()
-            ? "SELECT name FROM " + scope.dictionaryViewName()
-            : "SELECT name FROM " + scope.dictionaryViewName() + " WHERE owner = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            if (!scope.currentUserScope()) {
-                statement.setString(1, owner.toUpperCase(java.util.Locale.ENGLISH));
-            }
+        FilteredQuery query = OracleDiscoverySupport.objectListQuery(scope, "name", "name", owner, includes, excludes);
+        try (PreparedStatement statement = connection.prepareStatement(query.sql())) {
+            query.bind(statement);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     String domainName = OracleDiscoverySupport.normalizeIdentifier(rs.getString(1));
