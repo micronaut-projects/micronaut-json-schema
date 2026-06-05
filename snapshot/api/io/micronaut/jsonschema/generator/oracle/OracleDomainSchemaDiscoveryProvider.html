@@ -69,6 +69,8 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
 <li><a href="#providerId()" tabindex="0">providerId()</a></li>
+<li><a href="#usesJdbc()" tabindex="0">usesJdbc()</a></li>
+<li><a href="#sourceScope()" tabindex="0">sourceScope()</a></li>
 <li><a href="#discover(io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext,io.micronaut.jsonschema.generator.discovery.SourceSpec)" tabindex="0">discover(SchemaDiscoveryContext, SourceSpec)</a></li>
 </ol>
 </li>
@@ -149,6 +151,12 @@ implements <a href="../discovery/SchemaDiscoveryProvider.html" title="interface 
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#providerId()" class="member-name-link">providerId</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sourceScope()" class="member-name-link">sourceScope</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#usesJdbc()" class="member-name-link">usesJdbc</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -216,6 +224,36 @@ implements <a href="../discovery/SchemaDiscoveryProvider.html" title="interface 
 <dd><code><a href="../discovery/SchemaDiscoveryProvider.html#providerId()">providerId</a></code>&nbsp;in interface&nbsp;<code><a href="../discovery/SchemaDiscoveryProvider.html" title="interface in io.micronaut.jsonschema.generator.discovery">SchemaDiscoveryProvider</a></code></dd>
 <dt>Returns:</dt>
 <dd>Stable provider id used in source configuration</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="usesJdbc()">
+<h3>usesJdbc</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">usesJdbc</span>()</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../discovery/SchemaDiscoveryProvider.html#usesJdbc()">usesJdbc</a></code>&nbsp;in interface&nbsp;<code><a href="../discovery/SchemaDiscoveryProvider.html" title="interface in io.micronaut.jsonschema.generator.discovery">SchemaDiscoveryProvider</a></code></dd>
+<dt>Returns:</dt>
+<dd><code>true</code> when this provider uses the shared JDBC connection configured
+        for the record-generation pipeline</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="sourceScope()">
+<h3>sourceScope</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">sourceScope</span>()</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../discovery/SchemaDiscoveryProvider.html#sourceScope()">sourceScope</a></code>&nbsp;in interface&nbsp;<code><a href="../discovery/SchemaDiscoveryProvider.html" title="interface in io.micronaut.jsonschema.generator.discovery">SchemaDiscoveryProvider</a></code></dd>
+<dt>Returns:</dt>
+<dd>Source-level diagnostic scope used when discovery fails before object-level
+        diagnostics can be emitted</dd>
 </dl>
 </div>
 </section>

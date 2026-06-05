@@ -1319,9 +1319,10 @@ injection consistency.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#hasType()" class="member-name-link">hasType()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="io/micronaut/jsonschema/generator/SchemaCompositionSupport.html#hasUnsupportedAllOf(io.micronaut.jsonschema.model.Schema)" class="member-name-link">hasUnsupportedAllOf(Schema)</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SchemaCompositionSupport.html" title="class in io.micronaut.jsonschema.generator">SchemaCompositionSupport</a></dt>
+<dt><a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html#hasUnsupportedAllOf(io.micronaut.jsonschema.model.Schema)" class="member-name-link">hasUnsupportedAllOf(Schema)</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html" title="class in io.micronaut.jsonschema.generator">SchemaReferenceCompositionSupport</a></dt>
 <dd>
-<div class="block">Check whether a schema has unsupported or ambiguous <code>allOf</code> composition.</div>
+<div class="block">Check whether a schema has unsupported or ambiguous <code>allOf</code> composition after
+supported local references have been prepared.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/HealthConfiguration.html" class="type-name-link" title="class in io.micronaut.jsonschema.configuration.validator">HealthConfiguration</a> - Class in <a href="io/micronaut/jsonschema/configuration/validator/package-summary.html">io.micronaut.jsonschema.configuration.validator</a></dt>
 <dd>
@@ -1438,7 +1439,7 @@ injection consistency.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#isEnum()" class="member-name-link">isEnum()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="io/micronaut/jsonschema/generator/SchemaCompositionSupport.html#isExternalRef(java.lang.String)" class="member-name-link">isExternalRef(String)</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SchemaCompositionSupport.html" title="class in io.micronaut.jsonschema.generator">SchemaCompositionSupport</a></dt>
+<dt><a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html#isExternalRef(java.lang.String)" class="member-name-link">isExternalRef(String)</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html" title="class in io.micronaut.jsonschema.generator">SchemaReferenceCompositionSupport</a></dt>
 <dd>
 <div class="block">Check whether a reference points outside the current schema document.</div>
 </dd>
@@ -1462,7 +1463,7 @@ injection consistency.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/utils/GeneratorContext.html#isStrictUnsupportedKeywords()" class="member-name-link">isStrictUnsupportedKeywords()</a> - Method in class io.micronaut.jsonschema.generator.utils.<a href="io/micronaut/jsonschema/generator/utils/GeneratorContext.html" title="class in io.micronaut.jsonschema.generator.utils">GeneratorContext</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="io/micronaut/jsonschema/generator/SchemaCompositionSupport.html#isSupportedLocalRef(java.lang.String)" class="member-name-link">isSupportedLocalRef(String)</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SchemaCompositionSupport.html" title="class in io.micronaut.jsonschema.generator">SchemaCompositionSupport</a></dt>
+<dt><a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html#isSupportedLocalRef(java.lang.String)" class="member-name-link">isSupportedLocalRef(String)</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html" title="class in io.micronaut.jsonschema.generator">SchemaReferenceCompositionSupport</a></dt>
 <dd>
 <div class="block">Check whether a reference points to a supported local target.</div>
 </dd>
@@ -2154,9 +2155,10 @@ injection consistency.</div>
 <dd>
 <div class="block">The JSON schema validation configuration prefix.</div>
 </dd>
-<dt><a href="io/micronaut/jsonschema/generator/SchemaCompositionSupport.html#prepareLocalCompositionReferences(io.micronaut.jsonschema.model.Schema)" class="member-name-link">prepareLocalCompositionReferences(Schema)</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SchemaCompositionSupport.html" title="class in io.micronaut.jsonschema.generator">SchemaCompositionSupport</a></dt>
+<dt><a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html#prepareLocalCompositionReferences(io.micronaut.jsonschema.model.Schema)" class="member-name-link">prepareLocalCompositionReferences(Schema)</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html" title="class in io.micronaut.jsonschema.generator">SchemaReferenceCompositionSupport</a></dt>
 <dd>
-<div class="block">Prepare supported local composition references for generation.</div>
+<div class="block">Prepare a schema tree for the record-generation path by materializing supported local
+references before the schema is handed to <a href="io/micronaut/jsonschema/generator/SourceGenerator.html" title="class in io.micronaut.jsonschema.generator"><code>SourceGenerator</code></a>.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/maven/AbstractGenerateFromJsonSchemaSourcesMojo.html#project" class="member-name-link">project</a> - Variable in class io.micronaut.jsonschema.maven.<a href="io/micronaut/jsonschema/maven/AbstractGenerateFromJsonSchemaSourcesMojo.html" title="class in io.micronaut.jsonschema.maven">AbstractGenerateFromJsonSchemaSourcesMojo</a></dt>
 <dd>
@@ -2377,10 +2379,6 @@ and beans with executable entry points) and their traversed dependencies.</div>
 <dd>
 <div class="block">Returns the value of the <a href="./io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.Parameters.html#param-schemaCacheDir"><code>schemaCacheDir</code></a> record component.</div>
 </dd>
-<dt><a href="io/micronaut/jsonschema/generator/SchemaCompositionSupport.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator">SchemaCompositionSupport</a> - Class in <a href="io/micronaut/jsonschema/generator/package-summary.html">io.micronaut.jsonschema.generator</a></dt>
-<dd>
-<div class="block">Shared checks for JSON Schema composition that changes Java type shape.</div>
-</dd>
 <dt><a href="io/micronaut/jsonschema/generator/discovery/SchemaDiscoveryContext.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.discovery">SchemaDiscoveryContext</a> - Record Class in <a href="io/micronaut/jsonschema/generator/discovery/package-summary.html">io.micronaut.jsonschema.generator.discovery</a></dt>
 <dd>
 <div class="block">Execution context passed to schema discovery providers.</div>
@@ -2420,6 +2418,10 @@ and beans with executable entry points) and their traversed dependencies.</div>
 <dt><a href="io/micronaut/jsonschema/generator/loaders/SchemaLoader.html" class="type-name-link" title="interface in io.micronaut.jsonschema.generator.loaders">SchemaLoader</a> - Interface in <a href="io/micronaut/jsonschema/generator/loaders/package-summary.html">io.micronaut.jsonschema.generator.loaders</a></dt>
 <dd>
 <div class="block">Interface for loading a JSON schema from various sources.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator">SchemaReferenceCompositionSupport</a> - Class in <a href="io/micronaut/jsonschema/generator/package-summary.html">io.micronaut.jsonschema.generator</a></dt>
+<dd>
+<div class="block">Shared support for same-document JSON Schema references and composition that changes Java type shape.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/generator/discovery/SchemaRetrievalException.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.discovery">SchemaRetrievalException</a> - Exception Class in <a href="io/micronaut/jsonschema/generator/discovery/package-summary.html">io.micronaut.jsonschema.generator.discovery</a></dt>
 <dd>
@@ -2705,6 +2707,12 @@ properties related to the input and output paths; file names; and URL.</div>
 <dd>
 <div class="block">Returns the value of the <a href="./io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.Parameters.html#param-sources"><code>sources</code></a> record component.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/generator/discovery/SchemaDiscoveryProvider.html#sourceScope()" class="member-name-link">sourceScope()</a> - Method in interface io.micronaut.jsonschema.generator.discovery.<a href="io/micronaut/jsonschema/generator/discovery/SchemaDiscoveryProvider.html" title="interface in io.micronaut.jsonschema.generator.discovery">SchemaDiscoveryProvider</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/generator/oracle/OracleDomainSchemaDiscoveryProvider.html#sourceScope()" class="member-name-link">sourceScope()</a> - Method in class io.micronaut.jsonschema.generator.oracle.<a href="io/micronaut/jsonschema/generator/oracle/OracleDomainSchemaDiscoveryProvider.html" title="class in io.micronaut.jsonschema.generator.oracle">OracleDomainSchemaDiscoveryProvider</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/generator/oracle/OracleDualityViewSchemaDiscoveryProvider.html#sourceScope()" class="member-name-link">sourceScope()</a> - Method in class io.micronaut.jsonschema.generator.oracle.<a href="io/micronaut/jsonschema/generator/oracle/OracleDualityViewSchemaDiscoveryProvider.html" title="class in io.micronaut.jsonschema.generator.oracle">OracleDualityViewSchemaDiscoveryProvider</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/discovery/SourceSpec.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.discovery">SourceSpec</a> - Record Class in <a href="io/micronaut/jsonschema/generator/discovery/package-summary.html">io.micronaut.jsonschema.generator.discovery</a></dt>
 <dd>
 <div class="block">A configured schema discovery source.</div>
@@ -3011,6 +3019,12 @@ written report files.</div>
 <dd>
 <div class="block">Returns the value of the <a href="./io/micronaut/jsonschema/generator/records/JsonSchemaRecordsGeneratorConfig.html#param-username"><code>username</code></a> record component.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/generator/discovery/SchemaDiscoveryProvider.html#usesJdbc()" class="member-name-link">usesJdbc()</a> - Method in interface io.micronaut.jsonschema.generator.discovery.<a href="io/micronaut/jsonschema/generator/discovery/SchemaDiscoveryProvider.html" title="interface in io.micronaut.jsonschema.generator.discovery">SchemaDiscoveryProvider</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/generator/oracle/OracleDomainSchemaDiscoveryProvider.html#usesJdbc()" class="member-name-link">usesJdbc()</a> - Method in class io.micronaut.jsonschema.generator.oracle.<a href="io/micronaut/jsonschema/generator/oracle/OracleDomainSchemaDiscoveryProvider.html" title="class in io.micronaut.jsonschema.generator.oracle">OracleDomainSchemaDiscoveryProvider</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/generator/oracle/OracleDualityViewSchemaDiscoveryProvider.html#usesJdbc()" class="member-name-link">usesJdbc()</a> - Method in class io.micronaut.jsonschema.generator.oracle.<a href="io/micronaut/jsonschema/generator/oracle/OracleDualityViewSchemaDiscoveryProvider.html" title="class in io.micronaut.jsonschema.generator.oracle">OracleDualityViewSchemaDiscoveryProvider</a></dt>
+<dd>&nbsp;</dd>
 </dl>
 <h2 class="title" id="I:V">V</h2>
 <dl class="index">
