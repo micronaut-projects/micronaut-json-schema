@@ -123,9 +123,13 @@
         
         <div class="toc-item" style="margin-left:10px" id="toc-item-usage"><a href="#usage"><strong>5.2</strong><span>Run-time Generation Configuration</span></a></div>
         
-        <div class="toc-item" style="margin-left:10px" id="toc-item-support"><a href="#support"><strong>5.3</strong><span>Supported JSON Schema Keywords and Limitations</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-records"><a href="#records"><strong>5.3</strong><span>Record Generation From Discovered Schemas</span></a></div>
         
-        <div class="toc-item" style="margin-left:10px" id="toc-item-example"><a href="#example"><strong>5.4</strong><span>Example Output of Generation</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-oracle"><a href="#oracle"><strong>5.4</strong><span>Oracle Discovery and Plugins</span></a></div>
+        
+        <div class="toc-item" style="margin-left:10px" id="toc-item-support"><a href="#support"><strong>5.5</strong><span>Supported JSON Schema Keywords and Limitations</span></a></div>
+        
+        <div class="toc-item" style="margin-left:10px" id="toc-item-example"><a href="#example"><strong>5.6</strong><span>Example Output of Generation</span></a></div>
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-configurationValidator"><a href="#configurationValidator"><strong>6</strong><span>Validating Configuration Against Schemas</span></a></div>
         
@@ -147,7 +151,7 @@
 <h1 id="introduction"><a class="anchor" href="#introduction"></a>1 Introduction</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/introduction.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/introduction.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -167,7 +171,7 @@ JSON data consistency, validity and interoperability.</p>
 <h1 id="dependencies"><a class="anchor" href="#dependencies"></a>2 Dependencies</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/dependencies.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/dependencies.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -248,7 +252,7 @@ The Generator module can also be directly used with the Micronaut&#8217;s <a hre
 <h1 id="quickStart"><a class="anchor" href="#quickStart"></a>3 Quick Start</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/quickStart.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/quickStart.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -403,7 +407,7 @@ documentation and add <code>Serdeable</code> annotation to the bean.</td>
 <h1 id="processor"><a class="anchor" href="#processor"></a>4 Creating Schema From Beans</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/processor.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -416,7 +420,7 @@ documentation and add <code>Serdeable</code> annotation to the bean.</td>
 <h2 id="globalConfiguration"><a class="anchor" href="#globalConfiguration"></a>4.1 JSON Schema Configuration</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/globalConfiguration.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/processor/globalConfiguration.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -539,7 +543,7 @@ kapt {
 <h2 id="configuration"><a class="anchor" href="#configuration"></a>4.2 JSON Schema Annotation Members</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/configuration.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/processor/configuration.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -640,7 +644,7 @@ This will affect the file name as well as the id by which this schema can be ref
 <h2 id="serving"><a class="anchor" href="#serving"></a>4.3 Serving JSON Schemas</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/serving.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/processor/serving.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -672,7 +676,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="loading"><a class="anchor" href="#loading"></a>4.4 Loading JSON Schemas</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/loading.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/processor/loading.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -702,7 +706,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="validation"><a class="anchor" href="#validation"></a>4.5 JSON Schema Validation</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/validation.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/processor/validation.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -732,7 +736,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="sources"><a class="anchor" href="#sources"></a>4.6 Supported Information Sources</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/sources.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/sources.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -745,7 +749,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="javadoc"><a class="anchor" href="#javadoc"></a>4.6.1 JavaDoc</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/sources/javadoc.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/processor/sources/javadoc.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -759,7 +763,7 @@ descriptions and record parameter descriptions.</p>
 <h2 id="validationAnnotations"><a class="anchor" href="#validationAnnotations"></a>4.6.2 Validation Annotations</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/sources/validationAnnotations.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/processor/sources/validationAnnotations.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -915,7 +919,7 @@ Custom validators cannot be supported, as this information is implementation-spe
 <h2 id="jacksonAnnotations"><a class="anchor" href="#jacksonAnnotations"></a>4.6.3 Jackson Annotations</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/processor/sources/jacksonAnnotations.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/processor/sources/jacksonAnnotations.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1133,7 +1137,7 @@ which allows defining custom filters.
 <h1 id="generator"><a class="anchor" href="#generator"></a>5 Generating Beans from Schema</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/generator.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1149,7 +1153,7 @@ which allows defining custom filters.
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-The Generator module can also be directly used with the Micronaut&#8217;s <a href="https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/#">Gradle</a> and <a href="https://micronaut-projects.github.io/micronaut-maven-plugin/latest/">Maven</a> Plugins. Please check out their respective documentations.
+In addition to generating sources from schema files, URLs, and runtime inputs, this project also includes opt-in Gradle and Maven support for pluggable schema discovery, with built-in Oracle providers for SQL domains and JSON Relational Duality Views. See the record generation from discovered schemas section for the overall pipeline.
 </td>
 </tr>
 </table>
@@ -1158,7 +1162,7 @@ The Generator module can also be directly used with the Micronaut&#8217;s <a hre
 <h2 id="registration"><a class="anchor" href="#registration"></a>5.1 Build-time Generation Configuration</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator/registration.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/generator/registration.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1229,7 +1233,7 @@ The Generator module can also be directly used with the Micronaut&#8217;s <a hre
 <h2 id="usage"><a class="anchor" href="#usage"></a>5.2 Run-time Generation Configuration</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator/usage.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/generator/usage.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1332,10 +1336,701 @@ javaGenerator.generate(config);</code></pre>
 </table>
 </div>
 
-<h2 id="support"><a class="anchor" href="#support"></a>5.3 Supported JSON Schema Keywords and Limitations</h2>
+<h2 id="records"><a class="anchor" href="#records"></a>5.3 Record Generation From Discovered Schemas</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator/support.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/generator/records.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>The JSON Schema records pipeline discovers JSON Schema documents at build time and generates Java source files from them.
+It is useful when schemas are not stored as project files, but are owned by another source of truth such as database metadata or another schema registry.</p>
+</div>
+<div class="paragraph">
+<p>The pipeline has four main steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>resolve configured discovery sources</p>
+</li>
+<li>
+<p>discover JSON Schema documents through provider implementations</p>
+</li>
+<li>
+<p>write the discovered schemas and manifest to a cache directory</p>
+</li>
+<li>
+<p>generate Java records or classes into the configured output directory</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Generation is opt-in.
+The Gradle task and Maven goal are not bound to normal compilation by default, but when they run they add the generated source directory to the current build so generated types can be compiled in the same invocation.
+For Maven, the goal&#8217;s <code>skip</code> option defaults to <code>true</code>; configure <code>&lt;skip&gt;false&lt;/skip&gt;</code> or pass <code>-DjsonSchemaRecords.skip=false</code> when generation should run.</p>
+</div>
+<div class="sect1">
+<h2 id="_source_configuration">Source Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A build configures one or more discovery sources.
+Each source has a stable name, a provider id, and provider-specific options:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">jsonSchemaRecords {
+    targetPackage = "example.generated"
+    sources = [
+        [
+            name: "domains",
+            provider: "oracle-domains",
+            options: [
+                owner: "APP",
+                include: "CUSTOMER_JSON"
+            ]
+        ]
+    ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>name</code> is used in diagnostics, cache layout, and manifest entries.
+<code>provider</code> selects the discovery provider.
+<code>options</code> are interpreted only by the selected provider.</p>
+</div>
+<div class="paragraph">
+<p>Built-in provider ids include:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Provider id</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oracle-domains</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Discovers Oracle SQL domains that declare JSON validation rules.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oracle-duality-views</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Discovers Oracle JSON Relational Duality Views.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>See the Oracle discovery guide for provider-specific JDBC settings, Oracle owner scoping, and supported Oracle options.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_provider_spi">Provider SPI</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Discovery providers implement <code>io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider</code>.
+The provider exposes a stable id and returns discovered schema entries:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">public interface SchemaDiscoveryProvider {
+
+    String providerId();
+
+    DiscoveryResult discover(SchemaDiscoveryContext context,
+                             SourceSpec source) throws Exception;
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Built-in providers are resolved by their known provider ids.
+Custom providers are loaded from the plugin/provider classpath with Java <code>ServiceLoader</code>.
+For custom providers, the configured <code>provider</code> value must match <code>SchemaDiscoveryProvider.providerId()</code>.</p>
+</div>
+<div class="paragraph">
+<p>Gradle custom providers are added to the <code>jsonSchemaRecordsProviders</code> configuration.
+Maven custom providers are added as plugin dependencies.
+The provider jar must include:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">META-INF/services/io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That service file contains the provider implementation class name.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_generated_types">Generated Types</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The pipeline delegates Java source generation to the existing JSON Schema-to-Java generator and keeps its behavior where possible.
+The records profile applies a few additional rules where generated record/class semantics need to be stricter than the default generator.
+In particular, optional scalar properties are boxed, <code>required</code> controls property presence, and JSON Schema nullability controls value nullability.
+Property-level <code>oneOf</code> or <code>anyOf</code> with exactly one <code>null</code> branch and one concrete branch is treated as nullable-equivalent by the records profile, while broader <code>oneOf</code> and <code>anyOf</code> shapes still fall back to <code>Object</code> with diagnostics.
+At a discovered schema root, <code>oneOf</code> and <code>anyOf</code> are delegated to the existing polymorphic generation path.</p>
+</div>
+<div class="paragraph">
+<p>The <code>languageLevel</code> option controls whether records can be emitted:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>languageLevel &gt;= 16</code>: records are preferred when the schema shape can be represented as a valid record.</p>
+</li>
+<li>
+<p><code>languageLevel &lt; 16</code>: classes are generated.</p>
+</li>
+<li>
+<p>If a schema shape cannot be emitted as a valid record, the generator may emit a class.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Generated files are written under <code>outputDir</code>.
+The configured <code>targetPackage</code> is used as the package for generated top-level types.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cache_and_manifest">Cache And Manifest</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Discovered JSON Schema documents are written under <code>schemaCacheDir</code>.
+The same directory also contains <code>manifest.json</code>, which records the effective generation inputs and outputs.</p>
+</div>
+<div class="paragraph">
+<p>The manifest includes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>generator identity and timestamp</p>
+</li>
+<li>
+<p>sanitized source metadata</p>
+</li>
+<li>
+<p>effective parameters</p>
+</li>
+<li>
+<p>discovered schema files</p>
+</li>
+<li>
+<p>generated Java files</p>
+</li>
+<li>
+<p>warnings and skipped inputs</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Secrets must not be written to the manifest.
+Built-in Oracle providers sanitize JDBC metadata before it is persisted.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_error_handling">Error Handling</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By default, generation fails when a configured source is unavailable, no inputs are discovered, a schema cannot be retrieved, or a generated Java name collision is detected.</p>
+</div>
+<div class="paragraph">
+<p>Two options control how much work continues after errors:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>failOnMissingSource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Controls source-level discovery failures such as unavailable sources or no selected inputs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>skipOnError</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allows individual discovered inputs to be skipped when retrieval or generation fails.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Warnings and skipped inputs are written to <code>manifest.json</code> and logged with stable machine-readable codes.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_determinism">Determinism</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The pipeline uses stable ordering for pipeline-owned outputs and diagnostics, including discovered input processing, schema cache entries, manifest entries, generated file planning, warnings, skipped entries, and collision diagnostics.</p>
+</div>
+<div class="paragraph">
+<p>This does not require sorting Java members, record components, JSON Schema <code>properties</code>, or <code>$defs</code> when doing so would change the existing JSON Schema-to-Java generator&#8217;s emitted API.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_limitations">Limitations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The first version focuses on build-time source generation from configured providers.
+Remote <code>$ref</code> fetching, arbitrary JSON Pointer resolution beyond supported local references, and provider-specific credential mechanisms beyond the documented provider options are outside the first version.</p>
+</div>
+<div class="paragraph">
+<p>Provider-specific limitations are documented by each provider guide.</p>
+</div>
+</div>
+</div>
+
+<h2 id="oracle"><a class="anchor" href="#oracle"></a>5.4 Oracle Discovery and Plugins</h2>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/generator/oracle.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>Micronaut JSON Schema can also discover JSON Schema definitions directly from Oracle metadata and generate Java records from the discovered schemas.</p>
+</div>
+<div class="paragraph">
+<p>The current Oracle discovery pipeline supports:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Oracle SQL domains that declare JSON validation rules</p>
+</li>
+<li>
+<p>Oracle JSON Relational Duality Views</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This Oracle flow is available through the generic <code>jsonSchemaRecords</code> Gradle and Maven plugin integration included in this project.</p>
+</div>
+<div class="paragraph">
+<p>Built-in Oracle discovery providers are configured by provider id:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>oracle-domains</code></p>
+</li>
+<li>
+<p><code>oracle-duality-views</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Each configured source declares:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>name</code></p>
+</li>
+<li>
+<p><code>provider</code></p>
+</li>
+<li>
+<p>provider-specific <code>options</code></p>
+</li>
+</ul>
+</div>
+<div class="sect1">
+<h2 id="_gradle">Gradle</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Apply the plugin and configure the target package plus one or more discovery sources:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">plugins {
+    id "io.micronaut.jsonschema.records"
+}
+
+jsonSchemaRecords {
+    providers {
+        oracle {
+            jdbcUrl = project.providers.environmentVariable("DB_URL")
+            username = project.providers.environmentVariable("DB_USER")
+            password = project.providers.environmentVariable("DB_PASSWORD")
+        }
+    }
+    targetPackage = "example.oracle.generated"
+    sources = [
+        [
+            name: "domains",
+            provider: "oracle-domains",
+            options: [
+                owner: "APP",
+                include: "APP_JSON"
+            ]
+        ],
+        [
+            name: "views",
+            provider: "oracle-duality-views",
+            options: [
+                owner: "APP",
+                include: "APP_VIEW"
+            ]
+        ]
+    ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the Oracle JDBC driver is not already visible to the task, provide it through <code>jdbcClasspath</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">configurations {
+    jsonSchemaRecordsJdbc
+}
+
+dependencies {
+    jsonSchemaRecordsJdbc "com.oracle.database.jdbc:ojdbc11:&lt;version&gt;"
+}
+
+jsonSchemaRecords {
+    jdbcClasspath.from(configurations.jsonSchemaRecordsJdbc)
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Custom discovery providers can be added through the dedicated <code>jsonSchemaRecordsProviders</code> configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">dependencies {
+    jsonSchemaRecordsProviders project(":oracle-schema-providers")
+}
+
+jsonSchemaRecords {
+    sources = [
+        [
+            name: "legacy",
+            provider: "legacy-oracle",
+            options: [
+                tablePattern: "LEGACY_%"
+            ]
+        ]
+    ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Custom providers are selected by <code>provider</code>, which must match the provider id returned by the provider implementation.
+The provider jar must be present on <code>jsonSchemaRecordsProviders</code>, implement <code>io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider</code>, and register the implementation with Java <code>ServiceLoader</code> under <code>META-INF/services/io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider</code>.</p>
+</div>
+<div class="paragraph">
+<p>The built-in providers currently support these source options:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 40%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Provider id</th>
+<th class="tableblock halign-left valign-top">Supported options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oracle-domains</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>owner</code>, <code>include</code>, <code>exclude</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oracle-duality-views</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>owner</code>, <code>include</code>, <code>exclude</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>For the built-in providers, <code>owner</code>, <code>include</code>, and <code>exclude</code> are interpreted as unquoted Oracle identifiers and normalized to uppercase before dictionary filtering, session-user comparison, and discovery/cache file naming. Quoted or mixed-case Oracle identifiers are out of scope for the first version.</p>
+</div>
+<div class="paragraph">
+<p>Generated Java temporal types are based on standard JSON Schema keywords. For example, a schema property with <code>"type": "string"</code> and <code>"format": "date-time"</code> maps to <code>java.time.ZonedDateTime</code>.
+Oracle metadata fields such as <code>extendedType</code> are preserved in discovered schemas but are not interpreted as type-mapping hints by this version. If an Oracle duality view schema reports a timestamp-like value only as <code>"extendedType": "timestampTz"</code> without a standard JSON Schema <code>format</code>, the generated Java property remains <code>String</code>.</p>
+</div>
+<div class="paragraph">
+<p>When <code>owner</code> is configured, the built-in providers first try <code>ALL_</code> and <code>DBA_</code> dictionary views with an <code>OWNER</code> filter.
+If those cross-schema views are not queryable, the providers fall back to <code>USER_</code> dictionary views only when the configured <code>owner</code> matches the Oracle session user.
+That fallback emits <code>OWNER_SCOPE_FALLBACK</code>; otherwise the source is unavailable with <code>PRIVILEGE_DENIED</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="_gradle_credentials">Gradle credentials</h3>
+<div class="paragraph">
+<p>The Gradle plugin can resolve connection settings from explicit extension values, Gradle properties, or environment variables.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Value</th>
+<th class="tableblock halign-left valign-top">Supported names</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JDBC URL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>providers.oracle.jdbcUrl</code>, <code>jsonSchemaRecords.jdbcUrl</code>, <code>DB_URL</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Username</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>providers.oracle.username</code>, <code>jsonSchemaRecords.username</code>, <code>DB_USER</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Password</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>providers.oracle.password</code>, <code>jsonSchemaRecords.password</code>, <code>DB_PASSWORD</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>This lets projects keep secrets outside <code>build.gradle</code>, for example in <code>~/.gradle/gradle.properties</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">jsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1
+jsonSchemaRecords.username=app
+jsonSchemaRecords.password=secret</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The same values can be supplied for a single invocation with Gradle project properties:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./gradlew generateFromJsonSchemaSources \
+  -PjsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -PjsonSchemaRecords.username=app \
+  -PjsonSchemaRecords.password=secret</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>generateFromJsonSchemaSources</code> writes Java source files only.
+To generate and compile the discovered types in the same Gradle invocation, request both tasks:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">./gradlew generateFromJsonSchemaSources compileJava \
+  -PjsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -PjsonSchemaRecords.username=app \
+  -PjsonSchemaRecords.password=secret</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_maven">Maven</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Maven plugin can be configured in the build like any other mojo:
+The goal&#8217;s <code>skip</code> option defaults to <code>true</code>, so set <code>&lt;skip&gt;false&lt;/skip&gt;</code> in plugin configuration or pass <code>-DjsonSchemaRecords.skip=false</code> when generation should run.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;plugin&gt;
+  &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
+  &lt;artifactId&gt;micronaut-json-schema-maven-plugin&lt;/artifactId&gt;
+  &lt;executions&gt;
+    &lt;execution&gt;
+      &lt;goals&gt;
+        &lt;goal&gt;generate-from-json-schema-sources&lt;/goal&gt;
+      &lt;/goals&gt;
+    &lt;/execution&gt;
+  &lt;/executions&gt;
+  &lt;configuration&gt;
+    &lt;skip&gt;false&lt;/skip&gt;
+    &lt;providers&gt;
+      &lt;oracle&gt;
+        &lt;jdbcUrl&gt;${env.DB_URL}&lt;/jdbcUrl&gt;
+        &lt;username&gt;${env.DB_USER}&lt;/username&gt;
+        &lt;password&gt;${env.DB_PASSWORD}&lt;/password&gt;
+      &lt;/oracle&gt;
+    &lt;/providers&gt;
+    &lt;targetPackage&gt;example.oracle.generated&lt;/targetPackage&gt;
+    &lt;sources&gt;
+      &lt;source&gt;
+        &lt;name&gt;domains&lt;/name&gt;
+        &lt;provider&gt;oracle-domains&lt;/provider&gt;
+        &lt;options&gt;
+          &lt;owner&gt;APP&lt;/owner&gt;
+          &lt;include&gt;APP_JSON&lt;/include&gt;
+        &lt;/options&gt;
+      &lt;/source&gt;
+      &lt;source&gt;
+        &lt;name&gt;views&lt;/name&gt;
+        &lt;provider&gt;oracle-duality-views&lt;/provider&gt;
+        &lt;options&gt;
+          &lt;owner&gt;APP&lt;/owner&gt;
+          &lt;include&gt;APP_VIEW&lt;/include&gt;
+        &lt;/options&gt;
+      &lt;/source&gt;
+    &lt;/sources&gt;
+  &lt;/configuration&gt;
+&lt;/plugin&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Custom discovery providers are loaded from the Maven plugin classpath, so add them as plugin dependencies:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;plugin&gt;
+  &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
+  &lt;artifactId&gt;micronaut-json-schema-maven-plugin&lt;/artifactId&gt;
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;example.oracle&lt;/groupId&gt;
+      &lt;artifactId&gt;oracle-schema-providers&lt;/artifactId&gt;
+      &lt;version&gt;1.0.0&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+  &lt;configuration&gt;
+    &lt;sources&gt;
+      &lt;source&gt;
+        &lt;name&gt;legacy&lt;/name&gt;
+        &lt;provider&gt;legacy-oracle&lt;/provider&gt;
+        &lt;options&gt;
+          &lt;tablePattern&gt;LEGACY_%&lt;/tablePattern&gt;
+        &lt;/options&gt;
+      &lt;/source&gt;
+    &lt;/sources&gt;
+  &lt;/configuration&gt;
+&lt;/plugin&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As with Gradle, the configured <code>provider</code> must match a <code>SchemaDiscoveryProvider</code> implementation registered through Java <code>ServiceLoader</code> on the Maven plugin classpath.</p>
+</div>
+<div class="sect2">
+<h3 id="_troubleshooting_custom_providers">Troubleshooting Custom Providers</h3>
+<div class="paragraph">
+<p>If a custom provider is not resolved at runtime, check these points first:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The provider jar is on the plugin classpath.</p>
+</li>
+<li>
+<p>Gradle uses <code>jsonSchemaRecordsProviders</code>.</p>
+</li>
+<li>
+<p>Maven uses plugin <code>&lt;dependencies&gt;</code>, not regular project dependencies.</p>
+</li>
+<li>
+<p>The provider implementation has a public no-argument constructor.</p>
+</li>
+<li>
+<p>The provider and plugin use compatible <code>micronaut-json-schema</code> versions.</p>
+</li>
+<li>
+<p>Any transitive libraries required by the provider are also visible on the same plugin classpath.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_maven_credentials">Maven credentials</h3>
+<div class="paragraph">
+<p>The Maven plugin supports provider-family configuration, direct properties, environment variables, and Maven <code>settings.xml</code> server lookup.</p>
+</div>
+<div class="paragraph">
+<p>You can pass connection settings directly on the command line:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mvn generate-sources \
+  -DjsonSchemaRecords.skip=false \
+  -DjsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -DjsonSchemaRecords.username=app \
+  -DjsonSchemaRecords.password=secret \
+  -DjsonSchemaRecords.targetPackage=example.oracle.generated</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For better secret handling, configure a Maven server and pass only <code>serverId</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;settings&gt;
+  &lt;servers&gt;
+    &lt;server&gt;
+      &lt;id&gt;jsonschema&lt;/id&gt;
+      &lt;username&gt;app&lt;/username&gt;
+      &lt;password&gt;secret&lt;/password&gt;
+    &lt;/server&gt;
+  &lt;/servers&gt;
+&lt;/settings&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">mvn generate-sources \
+  -DjsonSchemaRecords.skip=false \
+  -DjsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -DjsonSchemaRecords.serverId=jsonschema \
+  -DjsonSchemaRecords.targetPackage=example.oracle.generated</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Credential resolution order is:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Explicit plugin configuration or <code>-DjsonSchemaRecords.username</code> / <code>-DjsonSchemaRecords.password</code></p>
+</li>
+<li>
+<p><code>providers.oracle</code></p>
+</li>
+<li>
+<p><code>serverId</code> lookup from Maven <code>settings.xml</code></p>
+</li>
+<li>
+<p><code>DB_URL</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code></p>
+</li>
+<li>
+<p>JDBC-backed providers fail if required connection settings are still missing</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+<h2 id="support"><a class="anchor" href="#support"></a>5.5 Supported JSON Schema Keywords and Limitations</h2>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/generator/support.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1666,10 +2361,10 @@ The source code generation decides which object type to use for representing the
 </tbody>
 </table>
 
-<h2 id="example"><a class="anchor" href="#example"></a>5.4 Example Output of Generation</h2>
+<h2 id="example"><a class="anchor" href="#example"></a>5.6 Example Output of Generation</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/generator/example.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/generator/example.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1883,7 +2578,7 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 <h1 id="configurationValidator"><a class="anchor" href="#configurationValidator"></a>6 Validating Configuration Against Schemas</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/configurationValidator.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/configurationValidator.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -2707,7 +3402,7 @@ Implementations are discovered using <code>ServiceLoader</code> from the same cl
 <h1 id="repository"><a class="anchor" href="#repository"></a>7 Repository</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/repository.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/repository.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -2723,7 +3418,7 @@ Implementations are discovered using <code>ServiceLoader</code> from the same cl
 <h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>8 Release History</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.0.x/src/main/docs/guide/releaseHistory.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-record-generator-poc-new/src/main/docs/guide/releaseHistory.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
