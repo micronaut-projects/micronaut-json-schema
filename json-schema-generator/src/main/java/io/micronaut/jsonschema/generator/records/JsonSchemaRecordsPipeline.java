@@ -265,6 +265,7 @@ public final class JsonSchemaRecordsPipeline {
                 Schema rootSchema = loadSchema(config, plan);
                 warnIfNonDefaultDialect(rootSchema, discovered, warnings);
                 SchemaCompositionSupport.prepareLocalCompositionReferences(rootSchema);
+                prepareRootAnyOf(rootSchema);
                 validateRootSchema(rootSchema, plan);
                 Set<String> beforeGeneration = generatedJavaFiles(config.outputDir());
                 SourceGeneratorConfig sourceGeneratorConfig = new SourceGeneratorConfig(
@@ -330,9 +331,6 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private void validateRootSchema(Schema schema, GenerationPlan plan) throws GenerationDiagnosticException {
-        if (schema.hasAnyOf()) {
-            throw new GenerationDiagnosticException("UNSUPPORTED_KEYWORD", "Root anyOf is not supported for " + plan.discovered().schema().name());
-        }
         if (schema.has$ref() && SchemaCompositionSupport.isExternalRef(schema.get$ref())) {
             throw new GenerationDiagnosticException("UNSUPPORTED_KEYWORD", "Root external $ref is not supported for " + plan.discovered().schema().name());
         }
@@ -345,6 +343,14 @@ public final class JsonSchemaRecordsPipeline {
         if (hasUnsupportedTypeUnion(schema)) {
             throw new GenerationDiagnosticException("UNSUPPORTED_KEYWORD", "Root type union with multiple non-null types is not supported for " + plan.discovered().schema().name());
         }
+    }
+
+    private void prepareRootAnyOf(Schema schema) {
+        if (!schema.hasAnyOf()) {
+            return;
+        }
+        schema.setOneOf(schema.getAnyOf());
+        schema.setAnyOf(null);
     }
 
     private boolean hasUnsupportedTypeUnion(Schema schema) {

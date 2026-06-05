@@ -798,6 +798,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'test'       | '{"type": ["integer", "null"]}'                                   | "@Nullable Integer test"
         'test'       | '{"type": ["number", "null"]}'                                    | "@Nullable Float test"
         'test'       | '{"type": ["object", "null"]}'                                    | "@Nullable Object test"
+        'test'       | '{"oneOf": [{"type": "null"}, {"type": "string", "maxLength": 20}]}' | "@Nullable @Size(max = 20) String test"
+        'test'       | '{"anyOf": [{"type": "null"}, {"type": "string", "maxLength": 20}]}' | "@Nullable @Size(max = 20) String test"
         // array annotations
         'array'      | '{"type": "array", "items": {"type": "number", "minimum": 10.0}}' | "List<@DecimalMin(\"10.0\") Float> array"
         'arrayMulti' | '{"type": "array", "items": {"type": "array", ' +
@@ -836,6 +838,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'test'       | '{"type": ["integer", "null"]}'                                   | "Integer test"
         'test'       | '{"type": ["number", "null"]}'                                    | "Float test"
         'test'       | '{"type": ["object", "null"]}'                                    | "Object test"
+        'test'       | '{"oneOf": [{"type": "null"}, {"type": "string", "maxLength": 20}]}' | "Object test"
+        'test'       | '{"anyOf": [{"type": "null"}, {"type": "string", "maxLength": 20}]}' | "Object test"
     }
 
     void "array without items maps to List of Object"() {

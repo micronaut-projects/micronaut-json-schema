@@ -846,6 +846,38 @@ class OraclePipelineMockSpec extends Specification {
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/Beta.java").toFile().text.contains("public class Beta implements PolyRoot")
     }
 
+    void "pipeline delegates root anyOf to existing polymorphic generator behavior"() {
+        when:
+        Path outputDir = Files.createTempDirectory("custom-output")
+        def result = new JsonSchemaRecordsPipeline({ }).execute(
+            new JsonSchemaRecordsGeneratorConfig(
+                null,
+                null,
+                null,
+                "io.micronaut.jsonschema.custom.generated",
+                21,
+                Files.createTempDirectory("custom-schema-cache"),
+                outputDir,
+                [new SourceSpec("custom", "test-edge-cases", [
+                    schemaName: "POLY_ROOT",
+                    schema: '{"anyOf":[{"title":"Alpha","type":"object","properties":{"a":{"type":"string"}}},{"title":"Beta","type":"object","properties":{"b":{"type":"string"}}}]}'
+                ])],
+                true,
+                true
+            )
+        )
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "warnings").size() == 0
+        jsonAt(manifest, "skipped").size() == 0
+        jsonAt(manifest, "generatedJavaFiles").size() == 3
+        outputDir.resolve("io/micronaut/jsonschema/custom/generated/PolyRoot.java").toFile().text.contains("public interface PolyRoot")
+        outputDir.resolve("io/micronaut/jsonschema/custom/generated/Alpha.java").toFile().text.contains("public class Alpha implements PolyRoot")
+        outputDir.resolve("io/micronaut/jsonschema/custom/generated/Beta.java").toFile().text.contains("public class Beta implements PolyRoot")
+    }
+
     void "pipeline warns and continues for non default schema dialect"() {
         when:
         def result = new JsonSchemaRecordsPipeline({ }).execute(

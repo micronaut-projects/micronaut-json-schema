@@ -106,7 +106,9 @@ public final class TypeAggregator {
                 return TypeDef.OBJECT;
             }
         }
-        if (schema.hasAnyOf()) {
+        if (schema.hasAnyOf() && context.isStrictUnsupportedKeywords() && normalizeNullableAnyOf(schema)) {
+            // Continue with the merged non-null branch below.
+        } else if (schema.hasAnyOf()) {
             return chooseFromAnyOf(schema.getAnyOf(), context);
         } else if (schema.isEnum()) {
             return TypeDef.OBJECT;
@@ -227,21 +229,26 @@ public final class TypeAggregator {
         if (schema.getOneOf().size() != 2) {
             return false;
         }
-        Schema nonNullSchema = null;
-        for (Schema candidate : schema.getOneOf()) {
-            if (isNullSchema(candidate)) {
-                continue;
-            }
-            if (nonNullSchema != null) {
-                return false;
-            }
-            nonNullSchema = candidate;
-        }
+        Schema nonNullSchema = nullableCompositionBranch(schema.getOneOf());
         if (nonNullSchema == null) {
             return false;
         }
         schema.merge(nonNullSchema);
         schema.setOneOf(null);
+        schema.setNullable(true);
+        return true;
+    }
+
+    private static boolean normalizeNullableAnyOf(Schema schema) {
+        if (schema.getAnyOf().size() != 2) {
+            return false;
+        }
+        Schema nonNullSchema = nullableCompositionBranch(schema.getAnyOf());
+        if (nonNullSchema == null) {
+            return false;
+        }
+        schema.merge(nonNullSchema);
+        schema.setAnyOf(null);
         schema.setNullable(true);
         return true;
     }
@@ -270,7 +277,7 @@ public final class TypeAggregator {
             return null;
         } else if (schemas.size() == 1) {
             return getTypeDefFromJson(schemas.get(0), context);
-        } else if (schemas.size() == 2) {
+        } else if (context.isStrictUnsupportedKeywords() && schemas.size() == 2) {
             Schema nonNullSchema = nullableCompositionBranch(schemas);
             if (nonNullSchema != null) {
                 nonNullSchema.setNullable(true);

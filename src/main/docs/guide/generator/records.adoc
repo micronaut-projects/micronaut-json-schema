@@ -87,6 +87,10 @@ That service file contains the provider implementation class name.
 == Generated Types
 
 The pipeline delegates Java source generation to the existing JSON Schema-to-Java generator and keeps its behavior where possible.
+The records profile applies a few additional rules where generated record/class semantics need to be stricter than the default generator.
+In particular, optional scalar properties are boxed, `required` controls property presence, and JSON Schema nullability controls value nullability.
+Property-level `oneOf` or `anyOf` with exactly one `null` branch and one concrete branch is treated as nullable-equivalent by the records profile, while broader `oneOf` and `anyOf` shapes still fall back to `Object` with diagnostics.
+At a discovered schema root, `oneOf` and `anyOf` are delegated to the existing polymorphic generation path.
 
 The `languageLevel` option controls whether records can be emitted:
 
