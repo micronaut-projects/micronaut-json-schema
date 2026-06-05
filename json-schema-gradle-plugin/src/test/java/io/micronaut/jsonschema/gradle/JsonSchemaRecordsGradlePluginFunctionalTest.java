@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -249,6 +250,41 @@ dependencies {
         assertTrue(result.getOutput().contains(":generateFromJsonSchemaSources"));
         assertTrue(result.getOutput().contains(":compileJava"));
         assertTrue(Files.exists(projectDir.resolve("build/generated/sources/jsonschema/example/generated/MoonPhase.java")));
+    }
+
+    @Test
+    void compileJavaDoesNotRunGenerationTaskByDefault(@TempDir Path projectDir) throws IOException {
+        writeSettings(projectDir);
+        Path appSource = projectDir.resolve("src/main/java/example/app/App.java");
+        Files.createDirectories(appSource.getParent());
+        Files.writeString(appSource, """
+package example.app;
+
+public class App {
+}
+""");
+        Files.writeString(projectDir.resolve("build.gradle"), """
+plugins {
+    id 'java'
+    id 'io.micronaut.jsonschema.records'
+}
+
+jsonSchemaRecords {
+    targetPackage = 'example.generated'
+    sources = [
+        [name: 'static', provider: 'missing-provider']
+    ]
+}
+""");
+
+        BuildResult result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("compileJava", "--stacktrace")
+            .withPluginClasspath()
+            .build();
+
+        assertFalse(result.getOutput().contains(":generateFromJsonSchemaSources"));
+        assertTrue(result.getOutput().contains(":compileJava"));
     }
 
     private void writeSettings(Path projectDir) throws IOException {

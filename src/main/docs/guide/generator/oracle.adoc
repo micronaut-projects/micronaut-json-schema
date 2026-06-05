@@ -146,9 +146,31 @@ jsonSchemaRecords.username=app
 jsonSchemaRecords.password=secret
 ----
 
+The same values can be supplied for a single invocation with Gradle project properties:
+
+[source,bash]
+----
+./gradlew generateFromJsonSchemaSources \
+  -PjsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -PjsonSchemaRecords.username=app \
+  -PjsonSchemaRecords.password=secret
+----
+
+`generateFromJsonSchemaSources` writes Java source files only.
+To generate and compile the discovered types in the same Gradle invocation, request both tasks:
+
+[source,bash]
+----
+./gradlew generateFromJsonSchemaSources compileJava \
+  -PjsonSchemaRecords.jdbcUrl=jdbc:oracle:thin:@localhost:1521/FREEPDB1 \
+  -PjsonSchemaRecords.username=app \
+  -PjsonSchemaRecords.password=secret
+----
+
 == Maven
 
 The Maven plugin can be configured in the build like any other mojo:
+The goal's `skip` option defaults to `true`, so set `<skip>false</skip>` in plugin configuration or pass `-DjsonSchemaRecords.skip=false` when generation should run.
 
 [source,xml]
 ----

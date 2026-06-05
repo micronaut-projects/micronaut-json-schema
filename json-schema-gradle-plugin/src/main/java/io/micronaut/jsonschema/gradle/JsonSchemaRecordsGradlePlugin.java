@@ -70,7 +70,7 @@ public final class JsonSchemaRecordsGradlePlugin implements Plugin<Project> {
 
         project.getPlugins().withType(JavaPlugin.class, ignored -> {
             SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
-            sourceSets.named("main", sourceSet -> sourceSet.getJava().srcDir(taskProvider.map(GenerateFromJsonSchemaSourcesTask::getGeneratedSourcesDirectory)));
+            sourceSets.named("main", sourceSet -> sourceSet.getJava().srcDir(extension.getOutputDir()));
             project.getTasks().named("compileJava").configure(task -> task.mustRunAfter(taskProvider));
         });
     }

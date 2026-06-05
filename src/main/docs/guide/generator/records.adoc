@@ -10,6 +10,7 @@ The pipeline has four main steps:
 
 Generation is opt-in.
 The Gradle task and Maven goal are not bound to normal compilation by default, but when they run they add the generated source directory to the current build so generated types can be compiled in the same invocation.
+For Maven, the goal's `skip` option defaults to `true`; configure `<skip>false</skip>` or pass `-DjsonSchemaRecords.skip=false` when generation should run.
 
 == Source Configuration
 

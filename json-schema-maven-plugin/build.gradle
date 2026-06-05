@@ -5,10 +5,12 @@ plugins {
 
 dependencies {
     implementation(projects.micronautJsonSchemaGenerator)
-    implementation(libs.maven.plugin.api)
-    implementation(libs.maven.core)
+    compileOnly(libs.maven.plugin.api)
+    compileOnly(libs.maven.core)
     compileOnly(libs.maven.plugin.annotations)
     testCompileOnly(libs.maven.plugin.annotations)
+    testImplementation(libs.maven.plugin.api)
+    testImplementation(libs.maven.core)
     testImplementation(libs.maven.plugin.testing.harness)
     testImplementation(mnTest.junit.jupiter.api)
     testRuntimeOnly(mnTest.junit.jupiter.engine)

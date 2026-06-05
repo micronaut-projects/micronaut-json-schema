@@ -8,9 +8,18 @@
   <mojos>
     <mojo>
       <goal>generate-from-json-schema-sources</goal>
+      <description>Discovers JSON Schemas from configured sources and generates Java records or classes.</description>
       <implementation>io.micronaut.jsonschema.maven.GenerateFromJsonSchemaSourcesMojo</implementation>
       <language>java</language>
       <phase>generate-sources</phase>
+      <instantiationStrategy>per-lookup</instantiationStrategy>
+      <executionStrategy>once-per-session</executionStrategy>
+      <requiresDirectInvocation>false</requiresDirectInvocation>
+      <requiresProject>true</requiresProject>
+      <requiresReports>false</requiresReports>
+      <aggregator>false</aggregator>
+      <requiresOnline>false</requiresOnline>
+      <inheritedByDefault>true</inheritedByDefault>
       <threadSafe>true</threadSafe>
       <parameters>
         <parameter>
@@ -82,6 +91,12 @@
           <name>settings</name>
           <type>org.apache.maven.settings.Settings</type>
           <required>false</required>
+        </parameter>
+        <parameter>
+          <name>project</name>
+          <type>org.apache.maven.project.MavenProject</type>
+          <required>true</required>
+          <readonly>true</readonly>
         </parameter>
       </parameters>
       <configuration>
