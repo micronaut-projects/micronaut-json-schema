@@ -97,10 +97,27 @@ public final class TypeAggregator {
     public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
         // check oneOf, anyOf (allOf is already merged into during mapping)
         if (schema.hasOneOf()) {
-            // inner oneOf's are treated as objects
-            return TypeDef.OBJECT;
-        } else if (schema.hasAnyOf()) {
-            return chooseFromAnyOf(schema.getAnyOf(), context);
+            if (!context.isStrictUnsupportedKeywords()) {
+                // Preserve the existing generator behavior: property-level oneOf is broad Object.
+                return TypeDef.OBJECT;
+            }
+            // The record-generation profile accepts only the common nullable composition form,
+            // oneOf: [{ "type": "null" }, { ...single non-null schema... }].
+            if (!normalizeNullableOneOf(schema)) {
+                context.warn("UNSUPPORTED_KEYWORD", "oneOf is not supported at property level; using java.lang.Object");
+                return TypeDef.OBJECT;
+            }
+        }
+        if (schema.hasAnyOf()) {
+            if (!context.isStrictUnsupportedKeywords()) {
+                // Preserve the existing generator behavior for anyOf outside the record profile.
+                return chooseFromAnyOf(schema.getAnyOf(), context);
+            }
+            // The record-generation profile first handles nullable anyOf consistently with
+            // type: ["T", "null"]; other anyOf shapes go through the existing broad chooser.
+            if (!normalizeNullableAnyOf(schema)) {
+                return chooseFromAnyOf(schema.getAnyOf(), context);
+            }
         } else if (schema.isEnum()) {
             return TypeDef.OBJECT;
         }
@@ -110,12 +127,23 @@ public final class TypeAggregator {
         if (schema.hasType() && schema.getType().size() > 1) {
             if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
                 nullable = true;
-                var typeList = schema.getType();
+                if (context.isStrictUnsupportedKeywords()) {
+                    // Record generation treats type ["T", "null"] as value nullability,
+                    // not as a Java union type.
+                    schema.setNullable(true);
+                }
+                // Preserve the old generator's in-place list mutation. In the record profile,
+                // copy first so we do not mutate a list while it may be shared by the parser/model.
+                var typeList = context.isStrictUnsupportedKeywords() ? new java.util.ArrayList<>(schema.getType()) : schema.getType();
                 typeList.remove(NULL);
                 schema.setType(typeList);
             } else {
-                System.err.println("Only one type is allowed per schema. " +
-                    "In case of multiple types, the variable is generated as a java.lang.Object.");
+                if (context.isStrictUnsupportedKeywords()) {
+                    context.warn("UNSUPPORTED_KEYWORD", "Multiple non-null JSON Schema types are not supported at property level; using java.lang.Object");
+                } else {
+                    System.err.println("Only one type is allowed per schema. " +
+                        "In case of multiple types, the variable is generated as a java.lang.Object.");
+                }
                 return TypeDef.OBJECT;
             }
         }
@@ -143,23 +171,43 @@ public final class TypeAggregator {
             }
         } else if (schema.has$ref()) {
             String ref = schema.get$ref();
+            boolean localRef = ref.indexOf("#") == 0;
             if (ref.equals(THIS_SCHEMA_REF)) {
                 return TypeDef.THIS;
-            } else if (ref.indexOf("#") == 0) {
+            } else if (localRef) {
                 ref = SourceGenerator.getInputFileName() + ref;
             }
-            var location = ref.substring(0, ref.indexOf("#"));
-            var originalFileName = SourceGenerator.getInputFileName();
-            if (!context.hasDefinition(ref) && isValidUrl(location) && !location.equals(originalFileName)) {
-                try {
-                    var generator = new SourceGenerator(SourceGenerator.getLanguage(), context);
-                    SourceGenerator.setInputFileName(location);
-                    generator.generate(
-                        context.getConfiguration().toBuilder().withInputStream(null)
-                            .withInputFolder(null).withJsonUrl(location).withJsonFile(null).build());
-                    SourceGenerator.setInputFileName(originalFileName);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+            if (context.isStrictUnsupportedKeywords()) {
+                // The record pipeline prepares supported same-document refs before generation.
+                // Anything still missing here cannot be represented precisely as a property type.
+                if (!context.hasDefinition(ref)) {
+                    context.warn("UNSUPPORTED_KEYWORD", (localRef ? "Local" : "External") + " $ref is not resolved: " + schema.get$ref());
+                    return TypeDef.OBJECT;
+                }
+            } else {
+                int fragmentIndex = ref.indexOf("#");
+                if (fragmentIndex < 0 && !context.hasDefinition(ref)) {
+                    return TypeDef.OBJECT;
+                }
+                var originalFileName = SourceGenerator.getInputFileName();
+                if (fragmentIndex > 0 && !context.hasDefinition(ref)) {
+                    var location = ref.substring(0, fragmentIndex);
+                    if (!isValidUrl(location) || location.equals(originalFileName)) {
+                        // Keep the previous fallback for unresolved local/current-file fragments.
+                        typeDef = context.getDefinitionType(ref);
+                        return typeDef;
+                    }
+                    try {
+                        // Preserve legacy behavior: non-record generation may fetch referenced URL schemas.
+                        var generator = new SourceGenerator(SourceGenerator.getLanguage(), context);
+                        SourceGenerator.setInputFileName(location);
+                        generator.generate(
+                            context.getConfiguration().toBuilder().withInputStream(null)
+                                .withInputFolder(null).withJsonUrl(location).withJsonFile(null).build());
+                        SourceGenerator.setInputFileName(originalFileName);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
             typeDef = context.getDefinitionType(ref);
@@ -193,6 +241,44 @@ public final class TypeAggregator {
         return typeDef;
     }
 
+    private static boolean normalizeNullableOneOf(Schema schema) {
+        if (schema.getOneOf().size() != 2) {
+            return false;
+        }
+        Schema nonNullSchema = nullableCompositionBranch(schema.getOneOf());
+        if (nonNullSchema == null) {
+            return false;
+        }
+        // Replace the nullable composition wrapper with its non-null branch so the normal
+        // type/annotation pipeline can produce @Nullable T instead of Object.
+        schema.merge(nonNullSchema);
+        schema.setOneOf(null);
+        schema.setNullable(true);
+        return true;
+    }
+
+    private static boolean normalizeNullableAnyOf(Schema schema) {
+        if (schema.getAnyOf().size() != 2) {
+            return false;
+        }
+        Schema nonNullSchema = nullableCompositionBranch(schema.getAnyOf());
+        if (nonNullSchema == null) {
+            return false;
+        }
+        // Replace the nullable composition wrapper with its non-null branch so the normal
+        // type/annotation pipeline can produce @Nullable T instead of Object.
+        schema.merge(nonNullSchema);
+        schema.setAnyOf(null);
+        schema.setNullable(true);
+        return true;
+    }
+
+    private static boolean isNullSchema(Schema schema) {
+        return schema.hasType()
+            && schema.getType().size() == 1
+            && Schema.Type.NULL.equals(schema.getType().get(0));
+    }
+
     /**
      * The strategy to choose from an anyOf keyword in Json Schema.
      * Needs improvement.
@@ -200,7 +286,7 @@ public final class TypeAggregator {
      *  if empty, return null,
      *  if single schema, return that schema,
      *  if 2 schema but one has type "NULL", return the non-null schema
-     *  if all schemas has the same type, merge all schemas and return
+     *  if all schemas has the same type, return that common base type
      *  else return empty Object schema.
      *
      * @param schemas List of Schemas in the anyOf keyword
@@ -211,12 +297,13 @@ public final class TypeAggregator {
             return null;
         } else if (schemas.size() == 1) {
             return getTypeDefFromJson(schemas.get(0), context);
-        } else if (schemas.size() == 2) {
-            var nullSchema = new Schema();
-            nullSchema.setType(List.of(Schema.Type.NULL));
-            if (schemas.contains(nullSchema)) {
-                schemas.remove(nullSchema);
-                return getTypeDefFromJson(schemas.get(0), context);
+        } else if (context.isStrictUnsupportedKeywords() && schemas.size() == 2) {
+            // This path catches nullable anyOf when chooseFromAnyOf is reached directly,
+            // for example from legacy-compatible branches above.
+            Schema nonNullSchema = nullableCompositionBranch(schemas);
+            if (nonNullSchema != null) {
+                nonNullSchema.setNullable(true);
+                return getTypeDefFromJson(nonNullSchema, context);
             }
         }
         boolean sameType = true;
@@ -229,9 +316,33 @@ public final class TypeAggregator {
         }
         if (sameType) {
             var type = schemas.get(0).getType().get(0);
-            return TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
+            // Same scalar alternatives can share a broad base type. Object alternatives still
+            // lose shape information, so record generation records a warning.
+            TypeDef typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
+            if (context.isStrictUnsupportedKeywords() && TypeDef.OBJECT.equals(typeDef)) {
+                context.warn("UNSUPPORTED_KEYWORD", "anyOf object alternatives are not supported at property level; using java.lang.Object");
+            }
+            return typeDef;
+        }
+        if (context.isStrictUnsupportedKeywords()) {
+            context.warn("UNSUPPORTED_KEYWORD", "anyOf alternatives cannot be modeled deterministically at property level; using java.lang.Object");
         }
         return TypeDef.OBJECT;
+    }
+
+    private static Schema nullableCompositionBranch(List<Schema> schemas) {
+        Schema nonNullSchema = null;
+        boolean nullSchemaFound = false;
+        for (Schema candidate : schemas) {
+            if (isNullSchema(candidate)) {
+                nullSchemaFound = true;
+            } else if (nonNullSchema == null) {
+                nonNullSchema = candidate;
+            } else {
+                return null;
+            }
+        }
+        return nullSchemaFound ? nonNullSchema : null;
     }
 
     public static String getConstantName(String input) {

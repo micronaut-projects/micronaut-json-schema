@@ -99,12 +99,11 @@ public class AnnotationsAggregator {
         var minAnn = isFloat ? DECIMAL_MIN_ANN : MIN_ANN;
         var maxAnn = isFloat ? DECIMAL_MAX_ANN : MAX_ANN;
 
-        if (required) {
-            annotations.add(AnnotationDef.builder(ClassTypeDef.of(NOT_NULL_ANN)).build());
-        }
         if (schema.isNullable() != null) {
             var nullableAnn = schema.isNullable() ? NULLABLE_ANN : NOT_NULL_ANN;
             annotations.add(AnnotationDef.builder(ClassTypeDef.of(nullableAnn)).build());
+        } else if (required) {
+            annotations.add(AnnotationDef.builder(ClassTypeDef.of(NOT_NULL_ANN)).build());
         }
         if (schema.getMinimum() != null) {
             var value = schema.getMinimum();

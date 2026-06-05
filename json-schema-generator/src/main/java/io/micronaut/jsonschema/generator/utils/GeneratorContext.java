@@ -47,6 +47,9 @@ public final class GeneratorContext {
     private final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private final HashMap<String, LinkedList<String>> TEMP_DEFINITIONS = new HashMap<>();
     private final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
+    private final List<Warning> warnings = new LinkedList<>();
+    private boolean addGeneratedJsonSchemaAnnotation;
+    private boolean strictUnsupportedKeywords;
     private SourceGeneratorConfig configuration;
 
     public boolean isDefinitionClass(String key) {
@@ -70,7 +73,7 @@ public final class GeneratorContext {
     }
 
     public boolean hasDefinition(String key) {
-        return DEFINITIONS.containsKey(key);
+        return DEFINITIONS.containsKey(unifyKey(key));
     }
 
     public boolean isInheriting(String className) {
@@ -118,7 +121,9 @@ public final class GeneratorContext {
         Schema items = definition.getItems() != null ? definition.getItems() : definition.getContains();
         TypeDef innerType;
         if (items == null) {
-            return TypeDef.OBJECT;
+            return TypeDef.parameterized(
+                (definition.isUniqueItems() != null && definition.isUniqueItems()) ? Set.class : List.class,
+                TypeDef.OBJECT);
         } else {
             innerType = getTypeDefFromJson(items, this);
             if (innerType instanceof TypeDef.Primitive primitive) {
@@ -181,6 +186,15 @@ public final class GeneratorContext {
         DEFINITIONS.clear();
         ONE_OF_SET.clear();
         TEMP_DEFINITIONS.clear();
+        warnings.clear();
+    }
+
+    /**
+     * Enable generation behavior used by the JSON schema records pipeline.
+     */
+    public void enableJsonSchemaRecordsProfile() {
+        addGeneratedJsonSchemaAnnotation = true;
+        strictUnsupportedKeywords = true;
     }
 
     private String unifyKey(String key) {
@@ -204,5 +218,44 @@ public final class GeneratorContext {
      */
     public SourceGeneratorConfig getConfiguration() {
         return configuration;
+    }
+
+    /**
+     * Record a non-fatal generation warning.
+     * @param code The machine-readable warning code
+     * @param message The warning message
+     */
+    public void warn(String code, String message) {
+        warnings.add(new Warning(code, message));
+    }
+
+    /**
+     * Get recorded warnings.
+     * @return The warnings
+     */
+    public List<Warning> getWarnings() {
+        return List.copyOf(warnings);
+    }
+
+    /**
+     * @return Whether generated types should be annotated with {@code @JsonSchema}
+     */
+    public boolean isAddGeneratedJsonSchemaAnnotation() {
+        return addGeneratedJsonSchemaAnnotation;
+    }
+
+    /**
+     * @return Whether unsupported schema constructs should fall back without legacy resolution attempts
+     */
+    public boolean isStrictUnsupportedKeywords() {
+        return strictUnsupportedKeywords;
+    }
+
+    /**
+     * A recorded generation warning.
+     * @param code The machine-readable warning code
+     * @param message The warning message
+     */
+    public record Warning(String code, String message) {
     }
 }

@@ -1,5 +1,8 @@
+import io.micronaut.testresources.buildtools.KnownModules
+
 plugins {
     id("io.micronaut.build.internal.json-schema-module")
+    id("io.micronaut.test-resources")
 }
 
 dependencies {
@@ -16,12 +19,28 @@ dependencies {
 
     testAnnotationProcessor(mn.micronaut.inject.java)
     testImplementation(mn.micronaut.inject)
+    testImplementation(mn.micronaut.context)
+    testImplementation(mnTestResources.testcontainers.oracle.free)
+    testImplementation(mnTestResources.micronaut.test.resources.extensions.junit.platform)
     testImplementation(mn.java.parser.core)
     testImplementation(mnValidation.micronaut.validation)
+    testRuntimeOnly(mnSql.ojdbc11)
+    testResourcesService(mnSql.ojdbc11)
 }
 
 micronautBuild {
     descriptor {
         parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-generator"
+    }
+}
+
+micronaut {
+    version libs.versions.micronaut.platform.get()
+    testResources {
+        enabled = true
+        inferClasspath = false
+        additionalModules.add(KnownModules.JDBC_ORACLE_FREE)
+        clientTimeout = 300
+        version = libs.versions.micronaut.testresources.get()
     }
 }

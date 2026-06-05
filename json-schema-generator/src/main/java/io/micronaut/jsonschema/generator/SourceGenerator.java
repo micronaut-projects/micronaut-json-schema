@@ -50,6 +50,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -166,20 +167,32 @@ public final class SourceGenerator {
             Schema jsonSchema = getJsonSchema(config);
             assert jsonSchema != null;
             inputFileName = getInputFileName() != null ? getInputFileName() : config.getInputName();
-            // single java object is generated
             if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
-                var outputFileName = config.outputFileName();
-                // remove extension from file name if there is
-                if (config.outputFileName().contains(".")) {
-                    outputFileName = outputFileName.substring(0, outputFileName.indexOf('.'));
-                }
-                return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
-            } else {
-                saveDefinitions(jsonSchema);
-                return generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+                return generateSingleSchema(config, jsonSchema, false);
             }
+            saveDefinitions(jsonSchema);
+            return generateSingleSchema(config, jsonSchema, false);
         }
         return null;
+    }
+
+    /**
+     * Generates source code from an already prepared schema.
+     *
+     * @param config The generator configuration
+     * @param jsonSchema The schema to generate from
+     * @return The top level schema's generated File, or null when no top level type is generated
+     * @throws IOException If an I/O error occurs during source generation
+     */
+    public File generate(SourceGeneratorConfig config, Schema jsonSchema) throws IOException {
+        context.setConfiguration(config);
+        outputPath = config.outputPath();
+        outputPackageName = config.outputPackageName();
+        inputFileName = config.getInputName();
+        // The record pipeline may pass a schema that was already prepared in memory.
+        // Register definitions from that schema instead of loading/parsing it again.
+        saveDefinitions(jsonSchema);
+        return generateSingleSchema(config, jsonSchema, true);
     }
 
     /**
@@ -214,6 +227,26 @@ public final class SourceGenerator {
         });
     }
 
+    private File generateSingleSchema(SourceGeneratorConfig config, Schema jsonSchema, boolean generateDefinitionTypesForNamedOutput) throws IOException {
+        // single java object is generated
+        if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
+            var outputFileName = config.outputFileName();
+            // remove extension from file name if there is
+            if (config.outputFileName().contains(".")) {
+                outputFileName = outputFileName.substring(0, outputFileName.indexOf('.'));
+            }
+            File topLevelObject = generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
+            if (generateDefinitionTypesForNamedOutput) {
+                // Prepared schemas can still reference generated definition types even when
+                // the top-level output name is supplied by the pipeline.
+                generateDefinitionTypes(jsonSchema, config.outputPath(), config.outputPackageName());
+            }
+            return topLevelObject;
+        } else {
+            return generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+        }
+    }
+
     private void saveDefinitions(Schema jsonSchema) {
         String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
         String finalSchemaName = getClassName(schemaName);
@@ -233,18 +266,18 @@ public final class SourceGenerator {
             });
         }
         if (jsonSchema.has$defs()) {
-            jsonSchema.get$defs().forEach((key, value) -> {
-                if (key.equals("//")) {
+            jsonSchema.get$defs().forEach((s, schema) -> {
+                if (s.equals("//")) {
                     if (!jsonSchema.hasDescription()) {
-                        jsonSchema.setDescription(String.valueOf(value));
+                        jsonSchema.setDescription(String.valueOf(schema));
                     } else {
-                        jsonSchema.setDescription(jsonSchema.getDescription() + "<br>" + value);
+                        jsonSchema.setDescription(jsonSchema.getDescription() + "<br>" + schema);
                     }
-                } else if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
+                } else if (schema.hasOneOf() && jsonSchema.hasDiscriminator()) {
                     // WARNING: assumes the same interface as top level schema
-                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, TypeDef.THIS, true);
+                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + s, TypeDef.THIS, true);
                 } else {
-                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, value);
+                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + s, schema);
                 }
             });
         }
@@ -258,10 +291,16 @@ public final class SourceGenerator {
 
         File topLevelObject = generateFromSchema(jsonSchema, outputPath, packageName, schemaName);
 
+        generateDefinitionTypes(jsonSchema, outputPath, packageName);
+        return topLevelObject;
+    }
+
+    private void generateDefinitionTypes(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
         // generate classes in definitions and oneOfs
         if (jsonSchema.has$defs()) {
             jsonSchema.get$defs().entrySet()
                 .stream()
+                // Only emit definitions that were registered as real Java types while resolving references.
                 .filter(definition -> !definition.getKey().equals("//") && context.isDefinitionClass(inputFileName + DEF_SCHEMA_REF_PREFIX + definition.getKey()))
                 .forEach(definition -> {
                     try {
@@ -276,7 +315,6 @@ public final class SourceGenerator {
             String className = oneOf.getKey().substring(oneOf.getKey().lastIndexOf('/') + 1);
             generateFromSchema(oneOf.getValue(), outputPath, packageName, className);
         }
-        return topLevelObject;
     }
 
     private File generateFromSchema(Schema jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
@@ -409,6 +447,7 @@ public final class SourceGenerator {
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addJsonSchemaAnnotation(objectBuilder);
 
         addFields(jsonSchema, objectBuilder);
         return objectBuilder.build();
@@ -418,6 +457,7 @@ public final class SourceGenerator {
         ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addJsonSchemaAnnotation(objectBuilder);
 
         if (context.hasDefinition(inputFileName + "/superClass")) {
             var superClass = context.getDefinitionType(inputFileName + "/superClass");
@@ -452,6 +492,7 @@ public final class SourceGenerator {
         InterfaceDef.InterfaceDefBuilder objectBuilder = InterfaceDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addJsonSchemaAnnotation(objectBuilder);
         if (jsonSchema.hasDiscriminator()) {
             // top level interface
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
@@ -468,17 +509,26 @@ public final class SourceGenerator {
         }
 
         if (jsonSchema.hasProperties()) {
+            if (context.isStrictUnsupportedKeywords()) {
+                // The record profile fails fast for generated member collisions instead of
+                // silently overwriting fields after Java-name sanitization.
+                validateMemberNameCollisions(jsonSchema);
+            }
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();
-            jsonSchema.getProperties().forEach((key, value) -> addField(
-                builder,
-                key,
-                value,
-                requiredProperties.contains(key)
-            ));
+            jsonSchema.getProperties().entrySet().forEach(entry -> addField(
+                    builder,
+                    entry.getKey(),
+                    entry.getValue(),
+                    requiredProperties.contains(entry.getKey())
+                ));
 
-            if (jsonSchema.hasAdditionalProperties() && !jsonSchema.getAdditionalProperties().equals(Schema.FALSE)) {
+            if (shouldGenerateAdditionalProperties(jsonSchema)) {
                 addAdditionalField(jsonSchema, builder);
             }
+        } else if (context.isStrictUnsupportedKeywords() && shouldGenerateAdditionalProperties(jsonSchema)) {
+            // Existing generation only adds the open-object member after declared properties.
+            // The record profile also models explicitly open objects with no declared properties.
+            addAdditionalField(jsonSchema, builder);
         }
     }
 
@@ -487,7 +537,8 @@ public final class SourceGenerator {
         if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
             mapType = TypeDef.OBJECT;
         } else {
-            mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
+            // Map value types cannot be primitive Java types.
+            mapType = boxPrimitive(getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context));
         }
         TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
         if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
@@ -538,6 +589,10 @@ public final class SourceGenerator {
         }
 
         TypeDef propertyType = getPropertyType(objectBuilder, schema, name);
+        if (context.isStrictUnsupportedKeywords() && !isRequired && propertyType instanceof TypeDef.Primitive primitive) {
+            // Optional record-profile properties represent absence, so scalar types must be boxed.
+            propertyType = primitive.wrapperType();
+        }
         // add annotations
         var annotations = AnnotationsAggregator.getAnnotations(schema, propertyType, isRequired);
         if (!annotations.isEmpty()) {
@@ -584,11 +639,22 @@ public final class SourceGenerator {
     }
 
     private TypeDef getPropertyType(ObjectDefBuilder objectBuilder, Schema schema, String name) {
+        if (context.isStrictUnsupportedKeywords() && SchemaReferenceCompositionSupport.hasUnsupportedAllOf(schema)) {
+            // At property level an ambiguous allOf is recoverable: keep generating the owner type
+            // and make this member broad rather than emitting an invalid partial shape.
+            context.warn("UNSUPPORTED_KEYWORD", "allOf cannot be flattened deterministically at property level; using java.lang.Object");
+            return TypeDef.OBJECT;
+        }
         // add type info and type validation annotations
         TypeDef propertyType = getTypeDefFromJson(schema, context);
+        if (context.isStrictUnsupportedKeywords() && hasUnsupportedPropertyShape(schema)) {
+            // The record profile reports unsupported unions/refs through warnings and uses Object
+            // for the affected property; root-level failures are handled by the pipeline.
+            return TypeDef.OBJECT;
+        }
         if (schema.isEnum()) {
             propertyType = getEnumType(objectBuilder, name, schema);
-        } else if  (propertyType.equals(TypeDef.of(List.class))) {
+        } else if (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, name, schema);
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
@@ -597,10 +663,34 @@ public final class SourceGenerator {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
             } else {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING,
-                    getPropertyType(objectBuilder, schema.getAdditionalProperties(), name + "Item"));
+                    // Map value types cannot be primitive Java types.
+                    boxPrimitive(getPropertyType(objectBuilder, schema.getAdditionalProperties(), name + "Item")));
             }
         }
         return propertyType;
+    }
+
+    private boolean hasUnsupportedPropertyShape(Schema schema) {
+        if (schema.hasOneOf()) {
+            return true;
+        }
+        if (schema.hasType() && schema.getType().stream()
+            .filter(type -> !Schema.Type.NULL.equals(type))
+            .distinct()
+            .count() > 1) {
+            return true;
+        }
+        if (schema.has$ref()) {
+            String ref = schema.get$ref();
+            if (Schema.THIS_SCHEMA_REF.equals(ref)) {
+                return false;
+            }
+            if (ref.startsWith("#")) {
+                return !context.hasDefinition(inputFileName + ref);
+            }
+            return true;
+        }
+        return false;
     }
 
     private void addDiscriminatorAnnotations(Schema jsonSchema, ObjectDefBuilder objectBuilder) {
@@ -630,7 +720,7 @@ public final class SourceGenerator {
     }
 
     private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
-        EnumDef enumDef = buildEnum(schema, capitalize(propertyName));
+        EnumDef enumDef = buildEnum(schema, getClassName(propertyName));
         objectBuilder.addInnerType(enumDef);
         return enumDef.asTypeDef();
     }
@@ -638,9 +728,17 @@ public final class SourceGenerator {
     private TypeDef getListTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         Schema items = schema.getItems() != null ? schema.getItems() : schema.getContains();
         if (items == null) {
-            return TypeDef.OBJECT;
+            // In the record profile, arrays with omitted items are still arrays of unconstrained values.
+            // Keep existing default behavior outside that profile.
+            return context.isStrictUnsupportedKeywords()
+                ? TypeDef.parameterized(ClassTypeDef.of(List.class), TypeDef.OBJECT)
+                : TypeDef.OBJECT;
         }
 
+        if (context.isStrictUnsupportedKeywords() && items.hasType() && items.getType().contains(io.micronaut.jsonschema.model.Schema.Type.NULL)) {
+            // Convert item type ["T", "null"] into the generator's existing nullable annotation path.
+            items.setNullable(true);
+        }
         TypeDef propertyType = getPropertyType(objectBuilder, items, propertyName);
         if (propertyType instanceof TypeDef.Primitive primitive) {
             propertyType = primitive.wrapperType();
@@ -654,10 +752,12 @@ public final class SourceGenerator {
     private TypeDef buildInnerType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         // inner type
         ObjectDef builder;
+        // Sanitization here matches top-level and definition class naming for record-profile nested types.
+        String nestedTypeName = getClassName(propertyName);
         if (shouldBeAClass(schema)) {
-            builder = buildClass(schema, capitalize(propertyName));
+            builder = buildClass(schema, nestedTypeName);
         } else {
-            builder = buildRecord(schema, capitalize(propertyName));
+            builder = buildRecord(schema, nestedTypeName);
         }
         objectBuilder.addInnerType(builder);
         return ClassTypeDef.of(builder.getName());
@@ -689,5 +789,55 @@ public final class SourceGenerator {
 
     public static VisitorContext.Language getLanguage() {
         return language;
+    }
+
+    /**
+     * Get recorded warnings for the latest generation run.
+     * @return The warnings
+     */
+    public List<GeneratorContext.Warning> getWarnings() {
+        return context.getWarnings();
+    }
+
+    private boolean shouldAddGeneratedJsonSchemaAnnotation() {
+        return context.isAddGeneratedJsonSchemaAnnotation();
+    }
+
+    private void addJsonSchemaAnnotation(ObjectDefBuilder builder) {
+        if (shouldAddGeneratedJsonSchemaAnnotation()) {
+            // Enabled by the record-generation profile so emitted models can be discovered as schema-backed types.
+            builder.addAnnotation(ClassTypeDef.of(io.micronaut.jsonschema.JsonSchema.class));
+        }
+    }
+
+    private boolean shouldGenerateAdditionalProperties(Schema schema) {
+        return schema.hasAdditionalProperties() && !Schema.FALSE.equals(schema.getAdditionalProperties());
+    }
+
+    private TypeDef boxPrimitive(TypeDef type) {
+        if (type instanceof TypeDef.Primitive primitive) {
+            return primitive.wrapperType();
+        }
+        return type;
+    }
+
+    private void validateMemberNameCollisions(Schema schema) {
+        Map<String, List<String>> jsonNamesByJavaName = new LinkedHashMap<>();
+        if (schema.hasProperties()) {
+            schema.getProperties().keySet().forEach(jsonName ->
+                jsonNamesByJavaName.computeIfAbsent(getPropertyName(jsonName), ignored -> new LinkedList<>()).add(jsonName));
+        }
+        if (shouldGenerateAdditionalProperties(schema)) {
+            // The open-object member is generated with a fixed name, so user properties must not
+            // sanitize to the same Java member name.
+            jsonNamesByJavaName.computeIfAbsent("unknownFields", ignored -> new LinkedList<>()).add("<additionalProperties>");
+        }
+        jsonNamesByJavaName.entrySet().stream()
+            .filter(entry -> entry.getValue().size() > 1)
+            .findFirst()
+            .ifPresent(entry -> {
+                throw new IllegalArgumentException("NAME_COLLISION: JSON properties " + entry.getValue()
+                    + " resolve to Java member name '" + entry.getKey() + "'");
+            });
     }
 }
