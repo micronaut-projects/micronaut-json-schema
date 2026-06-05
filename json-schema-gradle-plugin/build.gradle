@@ -8,6 +8,9 @@ tasks.register("generatePomFileForMavenPublication", GenerateMavenPom) {
     destination = layout.buildDirectory.file("publications/maven/pom-default.xml").get().asFile
 }
 
+// The Micronaut module convention checks a publication named "maven", while
+// java-gradle-plugin publishes the implementation artifact as "pluginMaven".
+// Reuse the real plugin POM for that check without adding a duplicate publication.
 afterEvaluate {
     publishing.publications.named("pluginMaven") {
         pom.withXml {
