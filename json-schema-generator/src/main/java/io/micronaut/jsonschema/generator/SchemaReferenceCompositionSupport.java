@@ -28,20 +28,32 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Shared checks for JSON Schema composition that changes Java type shape.
+ * Shared support for same-document JSON Schema references and composition that changes Java type shape.
  *
  * @since 2.0.0
  */
 @Internal
-public final class SchemaCompositionSupport {
+public final class SchemaReferenceCompositionSupport {
 
     private static final String DEFINITIONS_REF_PREFIX = "#/definitions/";
 
-    private SchemaCompositionSupport() {
+    private SchemaReferenceCompositionSupport() {
     }
 
     /**
-     * Prepare supported local composition references for generation.
+     * Prepare a schema tree for the record-generation path by materializing supported local
+     * references before the schema is handed to {@link SourceGenerator}.
+     *
+     * <p>This method mutates the supplied schema. It resolves same-document definition
+     * references ({@code #/$defs/...} and {@code #/definitions/...}) when they appear as root
+     * references or inside compatible {@code allOf} branches, then flattens object-compatible
+     * {@code allOf} branches into the composed schema. Definitions are prepared as well because
+     * they can be emitted as generated Java types.</p>
+     *
+     * <p>This is deliberately not a general JSON Schema resolver. It does not fetch remote
+     * references, resolve arbitrary JSON Pointers, canonicalize schemas, or sort Java members.
+     * Unsupported or ambiguous composition is left detectable by {@link #hasUnsupportedAllOf(Schema)}
+     * so the record-generation pipeline can fail, skip, or fall back according to context.</p>
      *
      * @param schema The schema to prepare
      */
@@ -55,7 +67,12 @@ public final class SchemaCompositionSupport {
     }
 
     /**
-     * Check whether a schema has unsupported or ambiguous {@code allOf} composition.
+     * Check whether a schema has unsupported or ambiguous {@code allOf} composition after
+     * supported local references have been prepared.
+     *
+     * <p>The check accepts only object-compatible branches that can be represented as one Java
+     * type. It rejects unresolved references, union-style branches, non-object typed branches,
+     * incompatible duplicate properties, and contradictory {@code additionalProperties} rules.</p>
      *
      * @param schema The schema
      * @return True when {@code allOf} cannot be flattened deterministically
@@ -109,6 +126,9 @@ public final class SchemaCompositionSupport {
     /**
      * Check whether a reference points outside the current schema document.
      *
+     * <p>External references are not resolved by this support class or by the record-generation
+     * pipeline.</p>
+     *
      * @param ref The reference value
      * @return True for external references
      */
@@ -118,6 +138,10 @@ public final class SchemaCompositionSupport {
 
     /**
      * Check whether a reference points to a supported local target.
+     *
+     * <p>The supported local targets are the current document ({@code #}) and definitions under
+     * {@code #/$defs/...} or legacy {@code #/definitions/...}. Other same-document JSON Pointers
+     * are intentionally unsupported here.</p>
      *
      * @param ref The reference value
      * @return True for supported local references

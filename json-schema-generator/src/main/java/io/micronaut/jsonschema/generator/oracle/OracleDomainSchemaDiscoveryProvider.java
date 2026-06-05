@@ -51,6 +51,16 @@ public final class OracleDomainSchemaDiscoveryProvider implements SchemaDiscover
     }
 
     @Override
+    public boolean usesJdbc() {
+        return true;
+    }
+
+    @Override
+    public String sourceScope() {
+        return OracleDiscoveryScope.DOMAIN.name();
+    }
+
+    @Override
     public DiscoveryResult discover(SchemaDiscoveryContext context,
                                     SourceSpec source) throws Exception {
         Connection connection = context.requireJdbcConnectionProvider().getConnection();

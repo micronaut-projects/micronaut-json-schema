@@ -49,6 +49,16 @@ public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDis
     }
 
     @Override
+    public boolean usesJdbc() {
+        return true;
+    }
+
+    @Override
+    public String sourceScope() {
+        return OracleDiscoveryScope.DUALITY_VIEW.name();
+    }
+
+    @Override
     public DiscoveryResult discover(SchemaDiscoveryContext context,
                                     SourceSpec source) throws Exception {
         Connection connection = context.requireJdbcConnectionProvider().getConnection();

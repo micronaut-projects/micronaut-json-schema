@@ -61,7 +61,7 @@ class AbstractGeneratorSpec extends Specification {
         var schema = FileProcessor.getJsonSchema(config)
         // This mirrors the record-generator pipeline, where schema composition and local
         // definition refs are resolved before handing the schema to SourceGenerator.
-        SchemaCompositionSupport.prepareLocalCompositionReferences(schema)
+        SchemaReferenceCompositionSupport.prepareLocalCompositionReferences(schema)
         File generated = generator.generate(config, schema)
 
         try {

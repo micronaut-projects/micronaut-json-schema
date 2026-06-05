@@ -30,6 +30,22 @@ public interface SchemaDiscoveryProvider {
     String providerId();
 
     /**
+     * @return {@code true} when this provider uses the shared JDBC connection configured
+     *         for the record-generation pipeline
+     */
+    default boolean usesJdbc() {
+        return false;
+    }
+
+    /**
+     * @return Source-level diagnostic scope used when discovery fails before object-level
+     *         diagnostics can be emitted
+     */
+    default String sourceScope() {
+        return "SOURCE";
+    }
+
+    /**
      * Discover schemas for the supplied source specification.
      *
      * @param context The discovery context

@@ -97,15 +97,25 @@ public final class TypeAggregator {
     public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
         // check oneOf, anyOf (allOf is already merged into during mapping)
         if (schema.hasOneOf()) {
-            if (!context.isStrictUnsupportedKeywords() || !normalizeNullableOneOf(schema)) {
-                if (context.isStrictUnsupportedKeywords()) {
-                    context.warn("UNSUPPORTED_KEYWORD", "oneOf is not supported at property level; using java.lang.Object");
-                }
+            if (!context.isStrictUnsupportedKeywords()) {
+                // Preserve the existing generator behavior: property-level oneOf is broad Object.
+                return TypeDef.OBJECT;
+            }
+            // The record-generation profile accepts only the common nullable composition form,
+            // oneOf: [{ "type": "null" }, { ...single non-null schema... }].
+            if (!normalizeNullableOneOf(schema)) {
+                context.warn("UNSUPPORTED_KEYWORD", "oneOf is not supported at property level; using java.lang.Object");
                 return TypeDef.OBJECT;
             }
         }
         if (schema.hasAnyOf()) {
-            if (!context.isStrictUnsupportedKeywords() || !normalizeNullableAnyOf(schema)) {
+            if (!context.isStrictUnsupportedKeywords()) {
+                // Preserve the existing generator behavior for anyOf outside the record profile.
+                return chooseFromAnyOf(schema.getAnyOf(), context);
+            }
+            // The record-generation profile first handles nullable anyOf consistently with
+            // type: ["T", "null"]; other anyOf shapes go through the existing broad chooser.
+            if (!normalizeNullableAnyOf(schema)) {
                 return chooseFromAnyOf(schema.getAnyOf(), context);
             }
         } else if (schema.isEnum()) {
@@ -118,8 +128,12 @@ public final class TypeAggregator {
             if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
                 nullable = true;
                 if (context.isStrictUnsupportedKeywords()) {
+                    // Record generation treats type ["T", "null"] as value nullability,
+                    // not as a Java union type.
                     schema.setNullable(true);
                 }
+                // Preserve the old generator's in-place list mutation. In the record profile,
+                // copy first so we do not mutate a list while it may be shared by the parser/model.
                 var typeList = context.isStrictUnsupportedKeywords() ? new java.util.ArrayList<>(schema.getType()) : schema.getType();
                 typeList.remove(NULL);
                 schema.setType(typeList);
@@ -164,6 +178,8 @@ public final class TypeAggregator {
                 ref = SourceGenerator.getInputFileName() + ref;
             }
             if (context.isStrictUnsupportedKeywords()) {
+                // The record pipeline prepares supported same-document refs before generation.
+                // Anything still missing here cannot be represented precisely as a property type.
                 if (!context.hasDefinition(ref)) {
                     context.warn("UNSUPPORTED_KEYWORD", (localRef ? "Local" : "External") + " $ref is not resolved: " + schema.get$ref());
                     return TypeDef.OBJECT;
@@ -177,10 +193,12 @@ public final class TypeAggregator {
                 if (fragmentIndex > 0 && !context.hasDefinition(ref)) {
                     var location = ref.substring(0, fragmentIndex);
                     if (!isValidUrl(location) || location.equals(originalFileName)) {
+                        // Keep the previous fallback for unresolved local/current-file fragments.
                         typeDef = context.getDefinitionType(ref);
                         return typeDef;
                     }
                     try {
+                        // Preserve legacy behavior: non-record generation may fetch referenced URL schemas.
                         var generator = new SourceGenerator(SourceGenerator.getLanguage(), context);
                         SourceGenerator.setInputFileName(location);
                         generator.generate(
@@ -231,6 +249,8 @@ public final class TypeAggregator {
         if (nonNullSchema == null) {
             return false;
         }
+        // Replace the nullable composition wrapper with its non-null branch so the normal
+        // type/annotation pipeline can produce @Nullable T instead of Object.
         schema.merge(nonNullSchema);
         schema.setOneOf(null);
         schema.setNullable(true);
@@ -245,6 +265,8 @@ public final class TypeAggregator {
         if (nonNullSchema == null) {
             return false;
         }
+        // Replace the nullable composition wrapper with its non-null branch so the normal
+        // type/annotation pipeline can produce @Nullable T instead of Object.
         schema.merge(nonNullSchema);
         schema.setAnyOf(null);
         schema.setNullable(true);
@@ -276,6 +298,8 @@ public final class TypeAggregator {
         } else if (schemas.size() == 1) {
             return getTypeDefFromJson(schemas.get(0), context);
         } else if (context.isStrictUnsupportedKeywords() && schemas.size() == 2) {
+            // This path catches nullable anyOf when chooseFromAnyOf is reached directly,
+            // for example from legacy-compatible branches above.
             Schema nonNullSchema = nullableCompositionBranch(schemas);
             if (nonNullSchema != null) {
                 nonNullSchema.setNullable(true);
@@ -292,6 +316,8 @@ public final class TypeAggregator {
         }
         if (sameType) {
             var type = schemas.get(0).getType().get(0);
+            // Same scalar alternatives can share a broad base type. Object alternatives still
+            // lose shape information, so record generation records a warning.
             TypeDef typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
             if (context.isStrictUnsupportedKeywords() && TypeDef.OBJECT.equals(typeDef)) {
                 context.warn("UNSUPPORTED_KEYWORD", "anyOf object alternatives are not supported at property level; using java.lang.Object");

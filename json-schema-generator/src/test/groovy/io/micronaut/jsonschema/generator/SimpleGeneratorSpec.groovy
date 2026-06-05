@@ -561,7 +561,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             .withOutputFileName("DefinitionReference")
             .build()
         def schema = FileProcessor.getJsonSchema(config)
-        SchemaCompositionSupport.prepareLocalCompositionReferences(schema)
+        SchemaReferenceCompositionSupport.prepareLocalCompositionReferences(schema)
         File generated = generator.generate(config, schema)
 
         then:
@@ -610,7 +610,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             .withOutputPackageName("com.example.project")
             .build()
         def schema = FileProcessor.getJsonSchema(config)
-        SchemaCompositionSupport.prepareLocalCompositionReferences(schema)
+        SchemaReferenceCompositionSupport.prepareLocalCompositionReferences(schema)
         generator.generate(config, schema)
         String definitionContent = Files.readString(outputPath.resolve("com/example/project/Composed.java"))
 

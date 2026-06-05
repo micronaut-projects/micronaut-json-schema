@@ -29,11 +29,9 @@ import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
 import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProviders;
 import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 import io.micronaut.jsonschema.generator.discovery.SourceUnavailableException;
-import io.micronaut.jsonschema.generator.SchemaCompositionSupport;
+import io.micronaut.jsonschema.generator.SchemaReferenceCompositionSupport;
 import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.loaders.FileLoader;
-import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider;
-import io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy;
@@ -116,7 +114,8 @@ public final class JsonSchemaRecordsPipeline {
             logger.info("[jsonschema-records] INFO sources=" + configuredSources.size());
             logEffectiveParameters(config);
             for (SourceSpec source : configuredSources) {
-                Map<String, String> contextSourceMetadata = sourceMetadata(source, config);
+                SchemaDiscoveryProvider provider = SchemaDiscoveryProviders.resolve(source.provider(), providerClassLoader);
+                Map<String, String> contextSourceMetadata = sourceMetadata(provider, config);
                 sourceMetadata.put(source.name(), contextSourceMetadata);
                 SchemaDiscoveryContext context = new SchemaDiscoveryContext(
                     config.skipOnError(),
@@ -127,11 +126,10 @@ public final class JsonSchemaRecordsPipeline {
                     logger,
                     jdbcConnectionProvider
                 );
-                SchemaDiscoveryProvider provider = SchemaDiscoveryProviders.resolve(source.provider(), providerClassLoader);
                 DiscoveryResult result;
                 try {
                     result = provider.discover(context, source);
-                    sourceMetadata.put(source.name(), result.sourceMetadata());
+                    sourceMetadata.put(source.name(), mergeSourceMetadata(contextSourceMetadata, result.sourceMetadata()));
                 } catch (SourceUnavailableException e) {
                     if (config.failOnMissingSource()) {
                         throw new IOException(e.getMessage(), e);
@@ -150,7 +148,7 @@ public final class JsonSchemaRecordsPipeline {
                     if (config.failOnMissingSource()) {
                         throw e;
                     }
-                    String scope = sourceLevelScope(source);
+                    String scope = provider.sourceScope();
                     warnings.add(new JsonSchemaRecordsManifest.Warning(
                         source.name(),
                         scope,
@@ -264,7 +262,7 @@ public final class JsonSchemaRecordsPipeline {
             try {
                 Schema rootSchema = loadSchema(config, plan);
                 warnIfNonDefaultDialect(rootSchema, discovered, warnings);
-                SchemaCompositionSupport.prepareLocalCompositionReferences(rootSchema);
+                SchemaReferenceCompositionSupport.prepareLocalCompositionReferences(rootSchema);
                 prepareRootAnyOf(rootSchema);
                 validateRootSchema(rootSchema, plan);
                 Set<String> beforeGeneration = generatedJavaFiles(config.outputDir());
@@ -331,13 +329,13 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private void validateRootSchema(Schema schema, GenerationPlan plan) throws GenerationDiagnosticException {
-        if (schema.has$ref() && SchemaCompositionSupport.isExternalRef(schema.get$ref())) {
+        if (schema.has$ref() && SchemaReferenceCompositionSupport.isExternalRef(schema.get$ref())) {
             throw new GenerationDiagnosticException("UNSUPPORTED_KEYWORD", "Root external $ref is not supported for " + plan.discovered().schema().name());
         }
-        if (schema.has$ref() && !SchemaCompositionSupport.isSupportedLocalRef(schema.get$ref())) {
+        if (schema.has$ref() && !SchemaReferenceCompositionSupport.isSupportedLocalRef(schema.get$ref())) {
             throw new GenerationDiagnosticException("UNSUPPORTED_KEYWORD", "Root local $ref outside $defs/definitions is not supported for " + plan.discovered().schema().name());
         }
-        if (SchemaCompositionSupport.hasUnsupportedAllOf(schema)) {
+        if (SchemaReferenceCompositionSupport.hasUnsupportedAllOf(schema)) {
             throw new GenerationDiagnosticException("UNSUPPORTED_KEYWORD", "Root allOf cannot be flattened deterministically for " + plan.discovered().schema().name());
         }
         if (hasUnsupportedTypeUnion(schema)) {
@@ -569,11 +567,23 @@ public final class JsonSchemaRecordsPipeline {
         return manifestPath;
     }
 
-    private Map<String, String> sourceMetadata(SourceSpec source, JsonSchemaRecordsGeneratorConfig config) {
-        if (isOracleProvider(source.provider())) {
+    private Map<String, String> sourceMetadata(SchemaDiscoveryProvider provider, JsonSchemaRecordsGeneratorConfig config) {
+        if (provider.usesJdbc()) {
             return Map.of("jdbcUrlSanitized", sanitizeJdbcUrl(config.jdbcUrl()));
         }
         return Map.of();
+    }
+
+    private Map<String, String> mergeSourceMetadata(Map<String, String> initialMetadata, Map<String, String> providerMetadata) {
+        if (initialMetadata.isEmpty()) {
+            return providerMetadata;
+        }
+        if (providerMetadata.isEmpty()) {
+            return initialMetadata;
+        }
+        Map<String, String> merged = new LinkedHashMap<>(initialMetadata);
+        merged.putAll(providerMetadata);
+        return merged;
     }
 
     private void logEffectiveParameters(JsonSchemaRecordsGeneratorConfig config) {
@@ -677,22 +687,6 @@ public final class JsonSchemaRecordsPipeline {
 
     private String trimCacheName(String value) {
         return value.length() <= MAX_CACHE_NAME_LENGTH ? value : value.substring(0, MAX_CACHE_NAME_LENGTH);
-    }
-
-    private String sourceLevelScope(SourceSpec source) {
-        String provider = source.provider();
-        if (OracleDomainSchemaDiscoveryProvider.PROVIDER_ID.equals(provider)) {
-            return "DOMAIN";
-        }
-        if (OracleDualityViewSchemaDiscoveryProvider.PROVIDER_ID.equals(provider)) {
-            return "DUALITY_VIEW";
-        }
-        return "SOURCE";
-    }
-
-    private static boolean isOracleProvider(String provider) {
-        return OracleDomainSchemaDiscoveryProvider.PROVIDER_ID.equals(provider)
-            || OracleDualityViewSchemaDiscoveryProvider.PROVIDER_ID.equals(provider);
     }
 
     private Path uniqueSchemaPath(Path sourceDirectory, String fileName, Set<String> usedRelativeFiles) {

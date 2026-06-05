@@ -22,6 +22,8 @@ import io.micronaut.jsonschema.generator.discovery.DiscoveryWarning;
 import io.micronaut.jsonschema.generator.discovery.SchemaRetrievalException;
 import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 import io.micronaut.jsonschema.generator.discovery.SourceUnavailableException;
+import io.micronaut.json.JsonMapper;
+import io.micronaut.json.tree.JsonNode;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -273,7 +275,7 @@ final class OracleDiscoverySupport {
      * @throws IOException If the text is not valid JSON
      */
     static void ensureValidJson(String jsonSchema) throws IOException {
-        JsonSchemaMapperFactoryHolder.OBJECT_MAPPER.readTree(jsonSchema);
+        JsonMapperHolder.JSON_MAPPER.readValue(jsonSchema, JsonNode.class);
     }
 
     /**
@@ -453,7 +455,7 @@ final class OracleDiscoverySupport {
     record DiscoveryPayload(String jsonSchema, String retrievalMode) {
     }
 
-    private static final class JsonSchemaMapperFactoryHolder {
-        private static final tools.jackson.databind.ObjectMapper OBJECT_MAPPER = io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory.createMapper();
+    private static final class JsonMapperHolder {
+        private static final JsonMapper JSON_MAPPER = JsonMapper.createDefault();
     }
 }

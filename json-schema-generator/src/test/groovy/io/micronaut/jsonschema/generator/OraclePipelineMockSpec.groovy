@@ -1110,6 +1110,36 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "discovery", "schemas").size() == 0
     }
 
+    void "pipeline records jdbc metadata for custom jdbc discovery providers"() {
+        given:
+        Path schemaCacheDir = Files.createTempDirectory("custom-schema-cache")
+        Path outputDir = Files.createTempDirectory("custom-output")
+
+        when:
+        def result = new JsonSchemaRecordsPipeline({ }).execute(
+            new JsonSchemaRecordsGeneratorConfig(
+                "jdbc:oracle:thin:test/test@localhost:1521/FREEPDB1",
+                "test",
+                "test",
+                "io.micronaut.jsonschema.custom.generated",
+                21,
+                schemaCacheDir,
+                outputDir,
+                [new SourceSpec("custom-jdbc", JdbcMetadataSchemaDiscoveryProvider.ID, [:])],
+                false,
+                true
+            )
+        )
+
+        then:
+        result.generatedTypes() == 0
+
+        and:
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "sourceMetadata", 0, "sourceName").getStringValue() == "custom-jdbc"
+        jsonAt(manifest, "sourceMetadata", 0, "metadata", "jdbcUrlSanitized").getStringValue() == "jdbc:oracle:thin:localhost:1521/FREEPDB1"
+    }
+
     void "pipeline uses language level below records to generate classes"() {
         given:
         Path schemaCacheDir = Files.createTempDirectory("custom-schema-cache")

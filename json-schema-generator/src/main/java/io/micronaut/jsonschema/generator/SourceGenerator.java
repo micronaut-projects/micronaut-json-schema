@@ -189,6 +189,8 @@ public final class SourceGenerator {
         outputPath = config.outputPath();
         outputPackageName = config.outputPackageName();
         inputFileName = config.getInputName();
+        // The record pipeline may pass a schema that was already prepared in memory.
+        // Register definitions from that schema instead of loading/parsing it again.
         saveDefinitions(jsonSchema);
         return generateSingleSchema(config, jsonSchema, true);
     }
@@ -235,6 +237,8 @@ public final class SourceGenerator {
             }
             File topLevelObject = generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
             if (generateDefinitionTypesForNamedOutput) {
+                // Prepared schemas can still reference generated definition types even when
+                // the top-level output name is supplied by the pipeline.
                 generateDefinitionTypes(jsonSchema, config.outputPath(), config.outputPackageName());
             }
             return topLevelObject;
@@ -296,6 +300,7 @@ public final class SourceGenerator {
         if (jsonSchema.has$defs()) {
             jsonSchema.get$defs().entrySet()
                 .stream()
+                // Only emit definitions that were registered as real Java types while resolving references.
                 .filter(definition -> !definition.getKey().equals("//") && context.isDefinitionClass(inputFileName + DEF_SCHEMA_REF_PREFIX + definition.getKey()))
                 .forEach(definition -> {
                     try {
@@ -505,6 +510,8 @@ public final class SourceGenerator {
 
         if (jsonSchema.hasProperties()) {
             if (context.isStrictUnsupportedKeywords()) {
+                // The record profile fails fast for generated member collisions instead of
+                // silently overwriting fields after Java-name sanitization.
                 validateMemberNameCollisions(jsonSchema);
             }
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();
@@ -519,6 +526,8 @@ public final class SourceGenerator {
                 addAdditionalField(jsonSchema, builder);
             }
         } else if (context.isStrictUnsupportedKeywords() && shouldGenerateAdditionalProperties(jsonSchema)) {
+            // Existing generation only adds the open-object member after declared properties.
+            // The record profile also models explicitly open objects with no declared properties.
             addAdditionalField(jsonSchema, builder);
         }
     }
@@ -528,6 +537,7 @@ public final class SourceGenerator {
         if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
             mapType = TypeDef.OBJECT;
         } else {
+            // Map value types cannot be primitive Java types.
             mapType = boxPrimitive(getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context));
         }
         TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
@@ -580,6 +590,7 @@ public final class SourceGenerator {
 
         TypeDef propertyType = getPropertyType(objectBuilder, schema, name);
         if (context.isStrictUnsupportedKeywords() && !isRequired && propertyType instanceof TypeDef.Primitive primitive) {
+            // Optional record-profile properties represent absence, so scalar types must be boxed.
             propertyType = primitive.wrapperType();
         }
         // add annotations
@@ -628,13 +639,17 @@ public final class SourceGenerator {
     }
 
     private TypeDef getPropertyType(ObjectDefBuilder objectBuilder, Schema schema, String name) {
-        if (context.isStrictUnsupportedKeywords() && SchemaCompositionSupport.hasUnsupportedAllOf(schema)) {
+        if (context.isStrictUnsupportedKeywords() && SchemaReferenceCompositionSupport.hasUnsupportedAllOf(schema)) {
+            // At property level an ambiguous allOf is recoverable: keep generating the owner type
+            // and make this member broad rather than emitting an invalid partial shape.
             context.warn("UNSUPPORTED_KEYWORD", "allOf cannot be flattened deterministically at property level; using java.lang.Object");
             return TypeDef.OBJECT;
         }
         // add type info and type validation annotations
         TypeDef propertyType = getTypeDefFromJson(schema, context);
         if (context.isStrictUnsupportedKeywords() && hasUnsupportedPropertyShape(schema)) {
+            // The record profile reports unsupported unions/refs through warnings and uses Object
+            // for the affected property; root-level failures are handled by the pipeline.
             return TypeDef.OBJECT;
         }
         if (schema.isEnum()) {
@@ -648,6 +663,7 @@ public final class SourceGenerator {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
             } else {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING,
+                    // Map value types cannot be primitive Java types.
                     boxPrimitive(getPropertyType(objectBuilder, schema.getAdditionalProperties(), name + "Item")));
             }
         }
@@ -712,12 +728,15 @@ public final class SourceGenerator {
     private TypeDef getListTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         Schema items = schema.getItems() != null ? schema.getItems() : schema.getContains();
         if (items == null) {
+            // In the record profile, arrays with omitted items are still arrays of unconstrained values.
+            // Keep existing default behavior outside that profile.
             return context.isStrictUnsupportedKeywords()
                 ? TypeDef.parameterized(ClassTypeDef.of(List.class), TypeDef.OBJECT)
                 : TypeDef.OBJECT;
         }
 
         if (context.isStrictUnsupportedKeywords() && items.hasType() && items.getType().contains(io.micronaut.jsonschema.model.Schema.Type.NULL)) {
+            // Convert item type ["T", "null"] into the generator's existing nullable annotation path.
             items.setNullable(true);
         }
         TypeDef propertyType = getPropertyType(objectBuilder, items, propertyName);
@@ -733,6 +752,7 @@ public final class SourceGenerator {
     private TypeDef buildInnerType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         // inner type
         ObjectDef builder;
+        // Sanitization here matches top-level and definition class naming for record-profile nested types.
         String nestedTypeName = getClassName(propertyName);
         if (shouldBeAClass(schema)) {
             builder = buildClass(schema, nestedTypeName);
@@ -785,6 +805,7 @@ public final class SourceGenerator {
 
     private void addJsonSchemaAnnotation(ObjectDefBuilder builder) {
         if (shouldAddGeneratedJsonSchemaAnnotation()) {
+            // Enabled by the record-generation profile so emitted models can be discovered as schema-backed types.
             builder.addAnnotation(ClassTypeDef.of(io.micronaut.jsonschema.JsonSchema.class));
         }
     }
@@ -807,6 +828,8 @@ public final class SourceGenerator {
                 jsonNamesByJavaName.computeIfAbsent(getPropertyName(jsonName), ignored -> new LinkedList<>()).add(jsonName));
         }
         if (shouldGenerateAdditionalProperties(schema)) {
+            // The open-object member is generated with a fixed name, so user properties must not
+            // sanitize to the same Java member name.
             jsonNamesByJavaName.computeIfAbsent("unknownFields", ignored -> new LinkedList<>()).add("<additionalProperties>");
         }
         jsonNamesByJavaName.entrySet().stream()
