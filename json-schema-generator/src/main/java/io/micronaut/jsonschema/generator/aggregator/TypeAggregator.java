@@ -97,19 +97,17 @@ public final class TypeAggregator {
     public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
         // check oneOf, anyOf (allOf is already merged into during mapping)
         if (schema.hasOneOf()) {
-            if (context.isStrictUnsupportedKeywords() && normalizeNullableOneOf(schema)) {
-                // Continue with the merged non-null branch below.
-            } else {
+            if (!context.isStrictUnsupportedKeywords() || !normalizeNullableOneOf(schema)) {
                 if (context.isStrictUnsupportedKeywords()) {
                     context.warn("UNSUPPORTED_KEYWORD", "oneOf is not supported at property level; using java.lang.Object");
                 }
                 return TypeDef.OBJECT;
             }
         }
-        if (schema.hasAnyOf() && context.isStrictUnsupportedKeywords() && normalizeNullableAnyOf(schema)) {
-            // Continue with the merged non-null branch below.
-        } else if (schema.hasAnyOf()) {
-            return chooseFromAnyOf(schema.getAnyOf(), context);
+        if (schema.hasAnyOf()) {
+            if (!context.isStrictUnsupportedKeywords() || !normalizeNullableAnyOf(schema)) {
+                return chooseFromAnyOf(schema.getAnyOf(), context);
+            }
         } else if (schema.isEnum()) {
             return TypeDef.OBJECT;
         }
