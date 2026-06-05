@@ -47,4 +47,5 @@ micronautBuild {
     descriptor {
         parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-gradle-plugin"
     }
+    binaryCompatibility.enabledAfter("2.1.0")
 }
