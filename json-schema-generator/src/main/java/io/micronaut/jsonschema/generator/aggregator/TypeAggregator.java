@@ -97,11 +97,16 @@ public final class TypeAggregator {
     public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
         // check oneOf, anyOf (allOf is already merged into during mapping)
         if (schema.hasOneOf()) {
-            if (context.isStrictUnsupportedKeywords()) {
-                context.warn("UNSUPPORTED_KEYWORD", "oneOf is not supported at property level; using java.lang.Object");
+            if (context.isStrictUnsupportedKeywords() && normalizeNullableOneOf(schema)) {
+                // Continue with the merged non-null branch below.
+            } else {
+                if (context.isStrictUnsupportedKeywords()) {
+                    context.warn("UNSUPPORTED_KEYWORD", "oneOf is not supported at property level; using java.lang.Object");
+                }
+                return TypeDef.OBJECT;
             }
-            return TypeDef.OBJECT;
-        } else if (schema.hasAnyOf()) {
+        }
+        if (schema.hasAnyOf()) {
             return chooseFromAnyOf(schema.getAnyOf(), context);
         } else if (schema.isEnum()) {
             return TypeDef.OBJECT;
@@ -218,6 +223,35 @@ public final class TypeAggregator {
         return typeDef;
     }
 
+    private static boolean normalizeNullableOneOf(Schema schema) {
+        if (schema.getOneOf().size() != 2) {
+            return false;
+        }
+        Schema nonNullSchema = null;
+        for (Schema candidate : schema.getOneOf()) {
+            if (isNullSchema(candidate)) {
+                continue;
+            }
+            if (nonNullSchema != null) {
+                return false;
+            }
+            nonNullSchema = candidate;
+        }
+        if (nonNullSchema == null) {
+            return false;
+        }
+        schema.merge(nonNullSchema);
+        schema.setOneOf(null);
+        schema.setNullable(true);
+        return true;
+    }
+
+    private static boolean isNullSchema(Schema schema) {
+        return schema.hasType()
+            && schema.getType().size() == 1
+            && Schema.Type.NULL.equals(schema.getType().get(0));
+    }
+
     /**
      * The strategy to choose from an anyOf keyword in Json Schema.
      * Needs improvement.
@@ -237,11 +271,10 @@ public final class TypeAggregator {
         } else if (schemas.size() == 1) {
             return getTypeDefFromJson(schemas.get(0), context);
         } else if (schemas.size() == 2) {
-            var nullSchema = new Schema();
-            nullSchema.setType(List.of(Schema.Type.NULL));
-            if (schemas.contains(nullSchema)) {
-                schemas.remove(nullSchema);
-                return getTypeDefFromJson(schemas.get(0), context);
+            Schema nonNullSchema = nullableCompositionBranch(schemas);
+            if (nonNullSchema != null) {
+                nonNullSchema.setNullable(true);
+                return getTypeDefFromJson(nonNullSchema, context);
             }
         }
         boolean sameType = true;
@@ -264,6 +297,21 @@ public final class TypeAggregator {
             context.warn("UNSUPPORTED_KEYWORD", "anyOf alternatives cannot be modeled deterministically at property level; using java.lang.Object");
         }
         return TypeDef.OBJECT;
+    }
+
+    private static Schema nullableCompositionBranch(List<Schema> schemas) {
+        Schema nonNullSchema = null;
+        boolean nullSchemaFound = false;
+        for (Schema candidate : schemas) {
+            if (isNullSchema(candidate)) {
+                nullSchemaFound = true;
+            } else if (nonNullSchema == null) {
+                nonNullSchema = candidate;
+            } else {
+                return null;
+            }
+        }
+        return nullSchemaFound ? nonNullSchema : null;
     }
 
     public static String getConstantName(String input) {

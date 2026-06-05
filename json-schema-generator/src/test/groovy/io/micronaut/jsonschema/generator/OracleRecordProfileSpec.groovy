@@ -78,4 +78,40 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
         !type.parameters.find { it.nameAsString == "_id" }.annotations*.nameAsString.contains("JsonProperty")
         type.members.find { it instanceof RecordDeclaration && it.nameAsString == "Id" } != null
     }
+
+    void "oracle profile maps nullable duality view oneOf scalar fields"() {
+        when:
+        def content = generateRecordProfileTypeAndGetContent("ApartmentView", '''
+        {
+          "title":"ApartmentView",
+          "type":"object",
+          "properties":{
+            "status":{
+              "oneOf":[
+                {"type":"null","extendedType":"null"},
+                {"type":"string","extendedType":"string","maxLength":20}
+              ]
+            },
+            "floorNo":{
+              "oneOf":[
+                {"type":"null","extendedType":"null"},
+                {"type":"number","extendedType":"number","sqlPrecision":10,"sqlScale":0}
+              ]
+            },
+            "createdAt":{
+              "oneOf":[
+                {"type":"null","extendedType":"null"},
+                {"type":"string","extendedType":"timestampTz","sqlPrecision":6}
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+        ''')
+
+        then:
+        content.contains("@Nullable @Size(max = 20) String status")
+        content.contains("@Nullable Float floorNo")
+        content.contains("@Nullable String createdAt")
+    }
 }
