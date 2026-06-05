@@ -3,6 +3,29 @@ plugins {
     id("io.micronaut.build.internal.json-schema-module")
 }
 
+tasks.register("generatePomFileForMavenPublication", GenerateMavenPom) {
+    pom = publishing.publications.named("pluginMaven").get().pom
+    destination = layout.buildDirectory.file("publications/maven/pom-default.xml").get().asFile
+}
+
+afterEvaluate {
+    publishing.publications.named("pluginMaven") {
+        pom.withXml {
+            def micronautVersion = file("../gradle/libs.versions.toml")
+                .readLines()
+                .find { it ==~ /micronaut = ".+"/ }
+                .replaceFirst(/micronaut = "(.+)"/, "\$1")
+            asNode().dependencies.dependency.each { dependency ->
+                if (dependency.groupId.text() == "io.micronaut" &&
+                    dependency.artifactId.text() == "micronaut-inject" &&
+                    dependency.version.isEmpty()) {
+                    dependency.appendNode("version", micronautVersion)
+                }
+            }
+        }
+    }
+}
+
 dependencies {
     implementation(projects.micronautJsonSchemaGenerator)
     testImplementation(gradleTestKit())
