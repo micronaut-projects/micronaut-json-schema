@@ -23,6 +23,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -40,6 +41,7 @@ import java.util.Properties;
  *
  * @since 2.0.0
  */
+@DisableCachingByDefault(because = "Schema discovery reads live provider metadata such as database state.")
 public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerateFromJsonSchemaSourcesTask {
 
     /**

@@ -19,6 +19,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.work.DisableCachingByDefault;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
@@ -30,6 +31,7 @@ import java.util.Map;
  *
  * @since 2.0.0
  */
+@DisableCachingByDefault(because = "Schema discovery reads live provider metadata such as database state.")
 public abstract class AbstractGenerateFromJsonSchemaSourcesTask extends DefaultTask {
 
     /**
