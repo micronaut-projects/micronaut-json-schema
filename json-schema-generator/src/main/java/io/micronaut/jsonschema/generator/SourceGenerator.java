@@ -509,7 +509,7 @@ public final class SourceGenerator {
         }
 
         if (jsonSchema.hasProperties()) {
-            if (context.isStrictUnsupportedKeywords()) {
+            if (context.isJsonSchemaRecordsProfile()) {
                 // The record profile fails fast for generated member collisions instead of
                 // silently overwriting fields after Java-name sanitization.
                 validateMemberNameCollisions(jsonSchema);
@@ -525,7 +525,7 @@ public final class SourceGenerator {
             if (shouldGenerateAdditionalProperties(jsonSchema)) {
                 addAdditionalField(jsonSchema, builder);
             }
-        } else if (context.isStrictUnsupportedKeywords() && shouldGenerateAdditionalProperties(jsonSchema)) {
+        } else if (context.isJsonSchemaRecordsProfile() && shouldGenerateAdditionalProperties(jsonSchema)) {
             // Existing generation only adds the open-object member after declared properties.
             // The record profile also models explicitly open objects with no declared properties.
             addAdditionalField(jsonSchema, builder);
@@ -589,7 +589,7 @@ public final class SourceGenerator {
         }
 
         TypeDef propertyType = getPropertyType(objectBuilder, schema, name);
-        if (context.isStrictUnsupportedKeywords() && !isRequired && propertyType instanceof TypeDef.Primitive primitive) {
+        if (context.isJsonSchemaRecordsProfile() && !isRequired && propertyType instanceof TypeDef.Primitive primitive) {
             // Optional record-profile properties represent absence, so scalar types must be boxed.
             propertyType = primitive.wrapperType();
         }
@@ -639,7 +639,7 @@ public final class SourceGenerator {
     }
 
     private TypeDef getPropertyType(ObjectDefBuilder objectBuilder, Schema schema, String name) {
-        if (context.isStrictUnsupportedKeywords() && SchemaReferenceCompositionSupport.hasUnsupportedAllOf(schema)) {
+        if (context.isJsonSchemaRecordsProfile() && SchemaReferenceCompositionSupport.hasUnsupportedAllOf(schema)) {
             // At property level an ambiguous allOf is recoverable: keep generating the owner type
             // and make this member broad rather than emitting an invalid partial shape.
             context.warn("UNSUPPORTED_KEYWORD", "allOf cannot be flattened deterministically at property level; using java.lang.Object");
@@ -647,7 +647,7 @@ public final class SourceGenerator {
         }
         // add type info and type validation annotations
         TypeDef propertyType = getTypeDefFromJson(schema, context);
-        if (context.isStrictUnsupportedKeywords() && hasUnsupportedPropertyShape(schema)) {
+        if (context.isJsonSchemaRecordsProfile() && hasUnsupportedPropertyShape(schema)) {
             // The record profile reports unsupported unions/refs through warnings and uses Object
             // for the affected property; root-level failures are handled by the pipeline.
             return TypeDef.OBJECT;
@@ -739,12 +739,12 @@ public final class SourceGenerator {
         if (items == null) {
             // In the record profile, arrays with omitted items are still arrays of unconstrained values.
             // Keep existing default behavior outside that profile.
-            return context.isStrictUnsupportedKeywords()
+            return context.isJsonSchemaRecordsProfile()
                 ? TypeDef.parameterized(ClassTypeDef.of(List.class), TypeDef.OBJECT)
                 : TypeDef.OBJECT;
         }
 
-        if (context.isStrictUnsupportedKeywords() && items.hasType() && items.getType().contains(io.micronaut.jsonschema.model.Schema.Type.NULL)) {
+        if (context.isJsonSchemaRecordsProfile() && items.hasType() && items.getType().contains(io.micronaut.jsonschema.model.Schema.Type.NULL)) {
             // Convert item type ["T", "null"] into the generator's existing nullable annotation path.
             items.setNullable(true);
         }

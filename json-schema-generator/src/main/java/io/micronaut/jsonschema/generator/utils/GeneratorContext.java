@@ -49,7 +49,7 @@ public final class GeneratorContext {
     private final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
     private final List<Warning> warnings = new LinkedList<>();
     private boolean addGeneratedJsonSchemaAnnotation;
-    private boolean strictUnsupportedKeywords;
+    private boolean jsonSchemaRecordsProfile;
     private SourceGeneratorConfig configuration;
 
     public boolean isDefinitionClass(String key) {
@@ -191,10 +191,15 @@ public final class GeneratorContext {
 
     /**
      * Enable generation behavior used by the JSON schema records pipeline.
+     *
+     * <p>The records profile keeps the default generator path intact, but opts into pipeline-specific
+     * behavior such as generated {@code @JsonSchema} annotations, stricter diagnostics for
+     * unsupported discovered-schema constructs, record-safe nullability/boxing, local-reference
+     * fallbacks, and Oracle provider metadata handling.</p>
      */
     public void enableJsonSchemaRecordsProfile() {
         addGeneratedJsonSchemaAnnotation = true;
-        strictUnsupportedKeywords = true;
+        jsonSchemaRecordsProfile = true;
     }
 
     private String unifyKey(String key) {
@@ -245,10 +250,13 @@ public final class GeneratorContext {
     }
 
     /**
-     * @return Whether unsupported schema constructs should fall back without legacy resolution attempts
+     * @return Whether record-generation profile behavior is enabled for unsupported/discovered-schema
+     * handling. This is not a general JSON Schema mode flag; it is set by
+     * {@link #enableJsonSchemaRecordsProfile()} and scopes compatibility-sensitive behavior to the
+     * records pipeline.
      */
-    public boolean isStrictUnsupportedKeywords() {
-        return strictUnsupportedKeywords;
+    public boolean isJsonSchemaRecordsProfile() {
+        return jsonSchemaRecordsProfile;
     }
 
     /**

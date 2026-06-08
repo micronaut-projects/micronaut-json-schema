@@ -99,7 +99,7 @@ public final class TypeAggregator {
     public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
         // check oneOf, anyOf (allOf is already merged into during mapping)
         if (schema.hasOneOf()) {
-            if (!context.isStrictUnsupportedKeywords()) {
+            if (!context.isJsonSchemaRecordsProfile()) {
                 // Preserve the existing generator behavior: property-level oneOf is broad Object.
                 return TypeDef.OBJECT;
             }
@@ -111,7 +111,7 @@ public final class TypeAggregator {
             }
         }
         if (schema.hasAnyOf()) {
-            if (!context.isStrictUnsupportedKeywords()) {
+            if (!context.isJsonSchemaRecordsProfile()) {
                 // Preserve the existing generator behavior for anyOf outside the record profile.
                 return chooseFromAnyOf(schema.getAnyOf(), context);
             }
@@ -129,18 +129,18 @@ public final class TypeAggregator {
         if (schema.hasType() && schema.getType().size() > 1) {
             if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
                 nullable = true;
-                if (context.isStrictUnsupportedKeywords()) {
+                if (context.isJsonSchemaRecordsProfile()) {
                     // Record generation treats type ["T", "null"] as value nullability,
                     // not as a Java union type.
                     schema.setNullable(true);
                 }
                 // Preserve the old generator's in-place list mutation. In the record profile,
                 // copy first so we do not mutate a list while it may be shared by the parser/model.
-                var typeList = context.isStrictUnsupportedKeywords() ? new java.util.ArrayList<>(schema.getType()) : schema.getType();
+                var typeList = context.isJsonSchemaRecordsProfile() ? new java.util.ArrayList<>(schema.getType()) : schema.getType();
                 typeList.remove(NULL);
                 schema.setType(typeList);
             } else {
-                if (context.isStrictUnsupportedKeywords()) {
+                if (context.isJsonSchemaRecordsProfile()) {
                     context.warn("UNSUPPORTED_KEYWORD", "Multiple non-null JSON Schema types are not supported at property level; using java.lang.Object");
                 } else {
                     System.err.println("Only one type is allowed per schema. " +
@@ -152,7 +152,7 @@ public final class TypeAggregator {
         var type = schema.hasType() ? schema.getType().get(0) : Schema.Type.OBJECT;
         TypeDef typeDef;
         TypeDef oracleExtendedTypeDef = null;
-        if (context.isStrictUnsupportedKeywords() && schema.getFormat() == null) {
+        if (context.isJsonSchemaRecordsProfile() && schema.getFormat() == null) {
             oracleExtendedTypeDef = getOracleExtendedTypeDef(schema, type, nullable);
         }
         if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
@@ -185,7 +185,7 @@ public final class TypeAggregator {
             } else if (localRef) {
                 ref = SourceGenerator.getInputFileName() + ref;
             }
-            if (context.isStrictUnsupportedKeywords()) {
+            if (context.isJsonSchemaRecordsProfile()) {
                 // The record pipeline prepares supported same-document refs before generation.
                 // Anything still missing here cannot be represented precisely as a property type.
                 if (!context.hasDefinition(ref)) {
@@ -352,7 +352,7 @@ public final class TypeAggregator {
             return null;
         } else if (schemas.size() == 1) {
             return getTypeDefFromJson(schemas.get(0), context);
-        } else if (context.isStrictUnsupportedKeywords() && schemas.size() == 2) {
+        } else if (context.isJsonSchemaRecordsProfile() && schemas.size() == 2) {
             // This path catches nullable anyOf when chooseFromAnyOf is reached directly,
             // for example from legacy-compatible branches above.
             Schema nonNullSchema = nullableCompositionBranch(schemas);
@@ -374,12 +374,12 @@ public final class TypeAggregator {
             // Same scalar alternatives can share a broad base type. Object alternatives still
             // lose shape information, so record generation records a warning.
             TypeDef typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
-            if (context.isStrictUnsupportedKeywords() && TypeDef.OBJECT.equals(typeDef)) {
+            if (context.isJsonSchemaRecordsProfile() && TypeDef.OBJECT.equals(typeDef)) {
                 context.warn("UNSUPPORTED_KEYWORD", "anyOf object alternatives are not supported at property level; using java.lang.Object");
             }
             return typeDef;
         }
-        if (context.isStrictUnsupportedKeywords()) {
+        if (context.isJsonSchemaRecordsProfile()) {
             context.warn("UNSUPPORTED_KEYWORD", "anyOf alternatives cannot be modeled deterministically at property level; using java.lang.Object");
         }
         return TypeDef.OBJECT;
