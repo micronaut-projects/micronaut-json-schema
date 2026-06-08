@@ -128,12 +128,16 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
         if (getJdbcClasspath().isEmpty()) {
             return;
         }
+        // Avoid leaking driver registrations across multiple task executions in the Gradle daemon.
+        java.util.Enumeration<Driver> existingDrivers = DriverManager.getDrivers();
+        while (existingDrivers.hasMoreElements()) {
+            Driver existing = existingDrivers.nextElement();
+            if (existing instanceof DriverShim) {
+                DriverManager.deregisterDriver(existing);
+            }
+        }
         try {
             ClassLoader classLoader = createClassLoader(getJdbcClasspath(), getClass().getClassLoader());
-            Enumeration<URL> resources = classLoader.getResources("META-INF/services/java.sql.Driver");
-            while (resources.hasMoreElements()) {
-                resources.nextElement();
-            }
             for (Driver driver : java.util.ServiceLoader.load(Driver.class, classLoader)) {
                 DriverManager.registerDriver(new DriverShim(driver));
             }
