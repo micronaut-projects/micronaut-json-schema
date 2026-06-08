@@ -83,9 +83,9 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
     @Override
     public void visitClass(ClassElement element, VisitorContext visitorContext) {
         if (element.hasAnnotation(JsonSchema.class)) {
-            JsonSchemaContext newContext = JsonSchemaContext.createDefault(visitorContext.getOptions());
-            JsonSchemaContext context = visitorContext.get(JSON_SCHEMA_CONTEXT_PROPERTY, JsonSchemaContext.class, newContext);
-            if (context == newContext) {
+            JsonSchemaContext context = visitorContext.get(JSON_SCHEMA_CONTEXT_PROPERTY, JsonSchemaContext.class).orElse(null);
+            if (context == null) {
+                context = JsonSchemaContext.createDefault(visitorContext.getOptions());
                 visitorContext.put(JSON_SCHEMA_CONTEXT_PROPERTY, context);
             }
             context.currentOriginatingElements().clear();
