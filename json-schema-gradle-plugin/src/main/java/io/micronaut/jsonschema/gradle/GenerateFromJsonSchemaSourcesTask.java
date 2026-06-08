@@ -32,7 +32,6 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 
@@ -75,7 +74,7 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
      */
     public void generate() throws Exception {
         registerJdbcDrivers();
-        ClassLoader providerClassLoader = createClassLoader(getProviderClasspath(), getClass().getClassLoader());
+        ClassLoader parentClassLoader = getClass().getClassLoader();
         JsonSchemaRecordsLogger logger = new JsonSchemaRecordsLogger() {
             @Override
             public void info(String message) {
@@ -99,7 +98,13 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
             getSkipOnError().getOrElse(false),
             getFailOnMissingSource().getOrElse(true)
         );
-        executePipeline(logger, generation.toGeneratorConfig(), providerClassLoader);
+        if (getProviderClasspath().isEmpty()) {
+            executePipeline(logger, generation.toGeneratorConfig(), parentClassLoader);
+        } else {
+            try (URLClassLoader providerClassLoader = createClassLoader(getProviderClasspath(), parentClassLoader)) {
+                executePipeline(logger, generation.toGeneratorConfig(), providerClassLoader);
+            }
+        }
     }
 
     /**
@@ -136,8 +141,7 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
                 DriverManager.deregisterDriver(existing);
             }
         }
-        try {
-            ClassLoader classLoader = createClassLoader(getJdbcClasspath(), getClass().getClassLoader());
+        try (URLClassLoader classLoader = createClassLoader(getJdbcClasspath(), getClass().getClassLoader())) {
             for (Driver driver : java.util.ServiceLoader.load(Driver.class, classLoader)) {
                 DriverManager.registerDriver(new DriverShim(driver));
             }
@@ -146,10 +150,7 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
         }
     }
 
-    private ClassLoader createClassLoader(ConfigurableFileCollection files, ClassLoader parent) {
-        if (files.isEmpty()) {
-            return parent;
-        }
+    private URLClassLoader createClassLoader(ConfigurableFileCollection files, ClassLoader parent) {
         URL[] urls = files.getFiles().stream()
             .map(file -> {
                 try {

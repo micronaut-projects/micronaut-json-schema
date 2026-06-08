@@ -14,10 +14,11 @@ tasks.register("generatePomFileForMavenPublication", GenerateMavenPom) {
 afterEvaluate {
     publishing.publications.named("pluginMaven") {
         pom.withXml {
-            def micronautVersion = file("../gradle/libs.versions.toml")
-                .readLines()
-                .find { it ==~ /micronaut = ".+"/ }
-                .replaceFirst(/micronaut = "(.+)"/, "\$1")
+            def micronautVersion = project.extensions.getByType(org.gradle.api.artifacts.VersionCatalogsExtension)
+                .named("libs")
+                .findVersion("micronaut")
+                .get()
+                .requiredVersion
             asNode().dependencies.dependency.each { dependency ->
                 if (dependency.groupId.text() == "io.micronaut" &&
                     dependency.artifactId.text() == "micronaut-inject" &&
