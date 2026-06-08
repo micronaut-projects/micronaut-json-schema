@@ -96,4 +96,29 @@ class SchemaSerializationSpec extends Specification {
         'false'      | Schema.FALSE
     }
 
+    void "test nullable required setter"() {
+        given:
+        Schema schema = new Schema().addRequired("foo")
+
+        when:
+        schema.setRequired(null)
+
+        then:
+        !schema.hasRequired()
+        schema.required == null
+    }
+
+    void "test nullable allOf and put defs helper"() {
+        given:
+        Schema schema = new Schema()
+
+        when:
+        schema.setAllOf(null)
+        schema.put$def("a", Schema.number())
+
+        then:
+        !schema.hasAllOf()
+        schema.get$defs().get("a").type == [Schema.Type.NUMBER]
+    }
+
 }

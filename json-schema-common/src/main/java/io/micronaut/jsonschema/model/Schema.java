@@ -457,8 +457,10 @@ public final class Schema {
     }
 
     public Schema setRequired(@Nullable List<String> required) {
-        if (this.required != null && !this.required.isEmpty()) {
-            this.required.addAll(Objects.requireNonNull(required));
+        if (required == null) {
+            this.required = null;
+        } else if (this.required != null && !this.required.isEmpty()) {
+            this.required.addAll(required);
         } else {
             this.required = required;
         }
@@ -520,7 +522,9 @@ public final class Schema {
 
     public Schema setAllOf(@Nullable List<Schema> allOf) {
         this.allOf = allOf;
-        mergeAllOf();
+        if (allOf != null) {
+            mergeAllOf();
+        }
         return this;
     }
 
@@ -538,7 +542,9 @@ public final class Schema {
 
     public void mergeAllOf() {
         var thisAllOff = this.allOf;
-        Objects.requireNonNull(thisAllOff).forEach(this::merge);
+        if (thisAllOff != null) {
+            thisAllOff.forEach(this::merge);
+        }
     }
 
     @Nullable
@@ -618,7 +624,10 @@ public final class Schema {
 
     @SuppressWarnings({"MethodName", "ParameterName"})
     public Schema put$def(String key, Schema $def) {
-        Objects.requireNonNull($defs).put(key, $def);
+        if ($defs == null) {
+            $defs = new HashMap<>();
+        }
+        $defs.put(key, $def);
         return this;
     }
 
