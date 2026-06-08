@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.annotation.JsonSerialize;
 import io.micronaut.core.annotation.Internal;
 
@@ -28,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A JSON schema.
@@ -52,57 +54,57 @@ public final class Schema {
     public static final String ONE_OF_SCHEMA_REF_PREFIX = "#/oneOf/";
 
     @JsonProperty("$schema")
-    private String $schema;
+    private @Nullable String $schema;
     @JsonProperty("$id")
-    private String $id;
+    private @Nullable String $id;
     @JsonProperty("$ref")
-    private String $ref;
+    private @Nullable String $ref;
 
-    private SchemaDiscriminator discriminator;
+    private @Nullable SchemaDiscriminator discriminator;
 
     @JsonProperty("$defs")
     @JsonAlias("definitions")
-    private Map<String, Schema> $defs;
+    private @Nullable Map<String, Schema> $defs;
 
-    private String title;
-    private String description;
+    private @Nullable String title;
+    private @Nullable String description;
 
     /**
      * The supported types of the schema.
      */
     @JsonSerialize(using = TypeListSerializer.class)
-    private List<Type> type;
+    private @Nullable List<Type> type;
 
-    private String format;
+    private @Nullable String format;
     @JsonProperty("const")
-    private Object constValue;
+    private @Nullable Object constValue;
     @JsonProperty("enum")
-    private List<Object> enumValues;
-    private Schema items;
-    private Map<String, Schema> properties;
+    private @Nullable List<Object> enumValues;
+    private @Nullable Schema items;
+    private @Nullable Map<String, Schema> properties;
 
     @JsonProperty("defaultValue")
     @JsonAlias("default")
-    private Object defaultValue;
-    private Boolean nullable;
-    private Boolean deprecated;
-    private Boolean readOnly;
-    private Boolean writeOnly;
-    private List<Object> examples;
+    private @Nullable Object defaultValue;
+    private @Nullable Boolean nullable;
+    private @Nullable Boolean deprecated;
+    private @Nullable Boolean readOnly;
+    private @Nullable Boolean writeOnly;
+    private @Nullable List<Object> examples;
 
-    private Object multipleOf;
-    private Object maximum;
-    private Object minimum;
-    private Object exclusiveMaximum;
-    private Object exclusiveMinimum;
+    private @Nullable Object multipleOf;
+    private @Nullable Object maximum;
+    private @Nullable Object minimum;
+    private @Nullable Object exclusiveMaximum;
+    private @Nullable Object exclusiveMinimum;
 
-    private Integer maxLength;
-    private Integer minLength;
-    private String pattern;
+    private @Nullable Integer maxLength;
+    private @Nullable Integer minLength;
+    private @Nullable String pattern;
 
-    private Integer maxItems;
-    private Integer minItems;
-    private Boolean uniqueItems;
+    private @Nullable Integer maxItems;
+    private @Nullable Integer minItems;
+    private @Nullable Boolean uniqueItems;
 
     /**
      * The "contains" keyword ensures that at least one element in an array is valid
@@ -111,25 +113,26 @@ public final class Schema {
      *
      * @see <a href="https://json-schema.org/understanding-json-schema/reference/array#contains/">JSON Schema</a> for more details.
      */
-    private Schema contains;
-    private Integer maxContains;
-    private Integer minContains;
+    private @Nullable Schema contains;
+    private @Nullable Integer maxContains;
+    private @Nullable Integer minContains;
 
-    private List<String> required;
+    private @Nullable List<String> required;
 
-    private Schema additionalProperties;
+    private @Nullable Schema additionalProperties;
 
-    private List<Schema> oneOf;
-    private List<Schema> allOf;
-    private List<Schema> anyOf;
+    private @Nullable List<Schema> oneOf;
+    private @Nullable List<Schema> allOf;
+    private @Nullable List<Schema> anyOf;
 
-    private Schema not;
+    private @Nullable Schema not;
 
+    @Nullable
     public String getTitle() {
         return title;
     }
 
-    public Schema setTitle(String title) {
+    public Schema setTitle(@Nullable String title) {
         this.title = title;
         return this;
     }
@@ -138,11 +141,12 @@ public final class Schema {
         return title != null;
     }
 
+    @Nullable
     public String getDescription() {
         return description;
     }
 
-    public Schema setDescription(String description) {
+    public Schema setDescription(@Nullable String description) {
         this.description = description;
         return this;
     }
@@ -151,11 +155,12 @@ public final class Schema {
         return description != null;
     }
 
+    @Nullable
     public List<Type> getType() {
         return type;
     }
 
-    public Schema setType(List<Type> type) {
+    public Schema setType(@Nullable List<Type> type) {
         this.type = type;
         return this;
     }
@@ -172,20 +177,22 @@ public final class Schema {
         return type != null && !type.isEmpty();
     }
 
+    @Nullable
     public String getFormat() {
         return format;
     }
 
-    public Schema setFormat(String format) {
+    public Schema setFormat(@Nullable String format) {
         this.format = format;
         return this;
     }
 
+    @Nullable
     public Object getConstValue() {
         return constValue;
     }
 
-    public Schema setConstValue(Object constValue) {
+    public Schema setConstValue(@Nullable Object constValue) {
         this.constValue = constValue;
         return this;
     }
@@ -194,11 +201,12 @@ public final class Schema {
         return constValue != null;
     }
 
+    @Nullable
     public List<Object> getEnumValues() {
         return enumValues;
     }
 
-    public Schema setEnumValues(List<Object> enumValues) {
+    public Schema setEnumValues(@Nullable List<Object> enumValues) {
         this.enumValues = enumValues;
         return this;
     }
@@ -207,20 +215,22 @@ public final class Schema {
         return enumValues != null;
     }
 
+    @Nullable
     public Schema getItems() {
         return items;
     }
 
-    public Schema setItems(Schema items) {
+    public Schema setItems(@Nullable Schema items) {
         this.items = items;
         return this;
     }
 
+    @Nullable
     public Map<String, Schema> getProperties() {
         return properties;
     }
 
-    public Schema setProperties(Map<String, Schema> properties) {
+    public Schema setProperties(@Nullable Map<String, Schema> properties) {
         this.properties = properties;
         return this;
     }
@@ -237,11 +247,12 @@ public final class Schema {
         return properties != null;
     }
 
+    @Nullable
     public Object getDefaultValue() {
         return defaultValue;
     }
 
-    public Schema setDefaultValue(Object defaultValue) {
+    public Schema setDefaultValue(@Nullable Object defaultValue) {
         this.defaultValue = defaultValue;
         return this;
     }
@@ -250,6 +261,7 @@ public final class Schema {
         return defaultValue != null;
     }
 
+    @Nullable
     public Boolean isNullable() {
         return nullable;
     }
@@ -259,6 +271,7 @@ public final class Schema {
         return this;
     }
 
+    @Nullable
     public Boolean isDeprecated() {
         return deprecated;
     }
@@ -268,6 +281,7 @@ public final class Schema {
         return this;
     }
 
+    @Nullable
     public Boolean isReadOnly() {
         return readOnly;
     }
@@ -277,6 +291,7 @@ public final class Schema {
         return this;
     }
 
+    @Nullable
     public Boolean isWriteOnly() {
         return writeOnly;
     }
@@ -286,105 +301,117 @@ public final class Schema {
         return this;
     }
 
+    @Nullable
     public List<Object> getExamples() {
         return examples;
     }
 
-    public Schema setExamples(List<Object> examples) {
+    public Schema setExamples(@Nullable List<Object> examples) {
         this.examples = examples;
         return this;
     }
 
+    @Nullable
     public Object getMultipleOf() {
         return multipleOf;
     }
 
-    public Schema setMultipleOf(Object multipleOf) {
+    public Schema setMultipleOf(@Nullable Object multipleOf) {
         this.multipleOf = multipleOf;
         return this;
     }
 
+    @Nullable
     public Object getMaximum() {
         return maximum;
     }
 
-    public Schema setMaximum(Object maximum) {
+    public Schema setMaximum(@Nullable Object maximum) {
         this.maximum = maximum;
         return this;
     }
 
+    @Nullable
     public Object getMinimum() {
         return minimum;
     }
 
-    public Schema setMinimum(Object minimum) {
+    public Schema setMinimum(@Nullable Object minimum) {
         this.minimum = minimum;
         return this;
     }
 
+    @Nullable
     public Object getExclusiveMaximum() {
         return exclusiveMaximum;
     }
 
-    public Schema setExclusiveMaximum(Object exclusiveMaximum) {
+    public Schema setExclusiveMaximum(@Nullable Object exclusiveMaximum) {
         this.exclusiveMaximum = exclusiveMaximum;
         return this;
     }
 
+    @Nullable
     public Object getExclusiveMinimum() {
         return exclusiveMinimum;
     }
 
-    public Schema setExclusiveMinimum(Object exclusiveMinimum) {
+    public Schema setExclusiveMinimum(@Nullable Object exclusiveMinimum) {
         this.exclusiveMinimum = exclusiveMinimum;
         return this;
     }
 
+    @Nullable
     public Integer getMaxLength() {
         return maxLength;
     }
 
-    public Schema setMaxLength(Integer maxLength) {
+    public Schema setMaxLength(@Nullable Integer maxLength) {
         this.maxLength = maxLength;
         return this;
     }
 
+    @Nullable
     public Integer getMinLength() {
         return minLength;
     }
 
-    public Schema setMinLength(Integer minLength) {
+    public Schema setMinLength(@Nullable Integer minLength) {
         this.minLength = minLength;
         return this;
     }
 
+    @Nullable
     public String getPattern() {
         return pattern;
     }
 
-    public Schema setPattern(String pattern) {
+    public Schema setPattern(@Nullable String pattern) {
         this.pattern = pattern;
         return this;
     }
 
+    @Nullable
     public Integer getMaxItems() {
         return maxItems;
     }
 
-    public Schema setMaxItems(Integer maxItems) {
+    public Schema setMaxItems(@Nullable Integer maxItems) {
         this.maxItems = maxItems;
         return this;
     }
 
+    @Nullable
     public Integer getMinItems() {
         return minItems;
     }
 
-    public Schema setMinItems(Integer minItems) {
+    public Schema setMinItems(@Nullable Integer minItems) {
         this.minItems = minItems;
         return this;
     }
 
+    @Nullable
     public Boolean isUniqueItems() {
         return uniqueItems;
     }
@@ -394,40 +421,44 @@ public final class Schema {
         return this;
     }
 
+    @Nullable
     public Integer getMaxContains() {
         return maxContains;
     }
 
-    public Schema setMaxContains(Integer maxContains) {
+    public Schema setMaxContains(@Nullable Integer maxContains) {
         this.maxContains = maxContains;
         return this;
     }
 
+    @Nullable
     public Integer getMinContains() {
         return minContains;
     }
 
-    public Schema setMinContains(Integer minContains) {
+    public Schema setMinContains(@Nullable Integer minContains) {
         this.minContains = minContains;
         return this;
     }
 
+    @Nullable
     public Schema getContains() {
         return contains;
     }
 
-    public Schema setContains(Schema contains) {
+    public Schema setContains(@Nullable Schema contains) {
         this.contains = contains;
         return this;
     }
 
+    @Nullable
     public List<String> getRequired() {
         return required;
     }
 
-    public Schema setRequired(List<String> required) {
+    public Schema setRequired(@Nullable List<String> required) {
         if (this.required != null && !this.required.isEmpty()) {
-            this.required.addAll(required);
+            this.required.addAll(Objects.requireNonNull(required));
         } else {
             this.required = required;
         }
@@ -446,11 +477,12 @@ public final class Schema {
         return required != null && !required.isEmpty();
     }
 
+    @Nullable
     public Schema getAdditionalProperties() {
         return additionalProperties;
     }
 
-    public Schema setAdditionalProperties(Schema additionalProperties) {
+    public Schema setAdditionalProperties(@Nullable Schema additionalProperties) {
         this.additionalProperties = additionalProperties;
         return this;
     }
@@ -459,11 +491,12 @@ public final class Schema {
         return additionalProperties != null && !additionalProperties.equals(FALSE);
     }
 
+    @Nullable
     public List<Schema> getOneOf() {
         return oneOf;
     }
 
-    public Schema setOneOf(List<Schema> oneOf) {
+    public Schema setOneOf(@Nullable List<Schema> oneOf) {
         this.oneOf = oneOf;
         return this;
     }
@@ -480,11 +513,12 @@ public final class Schema {
         return oneOf != null;
     }
 
+    @Nullable
     public List<Schema> getAllOf() {
         return allOf;
     }
 
-    public Schema setAllOf(List<Schema> allOf) {
+    public Schema setAllOf(@Nullable List<Schema> allOf) {
         this.allOf = allOf;
         mergeAllOf();
         return this;
@@ -504,14 +538,15 @@ public final class Schema {
 
     public void mergeAllOf() {
         var thisAllOff = this.allOf;
-        thisAllOff.forEach(this::merge);
+        Objects.requireNonNull(thisAllOff).forEach(this::merge);
     }
 
+    @Nullable
     public List<Schema> getAnyOf() {
         return anyOf;
     }
 
-    public Schema setAnyOf(List<Schema> anyOf) {
+    public Schema setAnyOf(@Nullable List<Schema> anyOf) {
         this.anyOf = anyOf;
         return this;
     }
@@ -529,34 +564,37 @@ public final class Schema {
     }
 
     @SuppressWarnings("MethodName")
+    @Nullable
     public String get$schema() {
         return $schema;
     }
 
     @SuppressWarnings({"MethodName", "ParameterName"})
-    public Schema set$schema(String $schema) {
+    public Schema set$schema(@Nullable String $schema) {
         this.$schema = $schema;
         return this;
     }
 
     @SuppressWarnings("MethodName")
+    @Nullable
     public String get$id() {
         return $id;
     }
 
     @SuppressWarnings({"MethodName", "ParameterName"})
-    public Schema set$id(String $id) {
+    public Schema set$id(@Nullable String $id) {
         this.$id = $id;
         return this;
     }
 
     @SuppressWarnings("MethodName")
+    @Nullable
     public String get$ref() {
         return $ref;
     }
 
     @SuppressWarnings({"MethodName", "ParameterName"})
-    public Schema set$ref(String $ref) {
+    public Schema set$ref(@Nullable String $ref) {
         this.$ref = $ref;
         return this;
     }
@@ -567,19 +605,20 @@ public final class Schema {
     }
 
     @SuppressWarnings("MethodName")
+    @Nullable
     public Map<String, Schema> get$defs() {
         return $defs;
     }
 
     @SuppressWarnings({"MethodName", "ParameterName"})
-    public Schema set$defs(Map<String, Schema> $defs) {
+    public Schema set$defs(@Nullable Map<String, Schema> $defs) {
         this.$defs = $defs;
         return this;
     }
 
     @SuppressWarnings({"MethodName", "ParameterName"})
     public Schema put$def(String key, Schema $def) {
-        $defs.put(key, $def);
+        Objects.requireNonNull($defs).put(key, $def);
         return this;
     }
 
@@ -588,11 +627,12 @@ public final class Schema {
         return $defs != null;
     }
 
+    @Nullable
     public SchemaDiscriminator getDiscriminator() {
         return discriminator;
     }
 
-    public void setDiscriminator(SchemaDiscriminator discriminator) {
+    public void setDiscriminator(@Nullable SchemaDiscriminator discriminator) {
         this.discriminator = discriminator;
     }
 
@@ -628,11 +668,12 @@ public final class Schema {
         return new Schema().set$ref(id);
     }
 
+    @Nullable
     public Schema getNot() {
         return not;
     }
 
-    public Schema setNot(Schema not) {
+    public Schema setNot(@Nullable Schema not) {
         this.not = not;
         return this;
     }
@@ -652,7 +693,7 @@ public final class Schema {
      * @param other the schema to merge with the current schema
      * @return the current schema with merged properties
      */
-    public Schema merge(Schema other) {
+    public Schema merge(@Nullable Schema other) {
         if (other == null) {
             return this;
         }

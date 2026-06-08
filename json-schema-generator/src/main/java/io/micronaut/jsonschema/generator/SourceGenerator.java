@@ -39,6 +39,7 @@ import io.micronaut.sourcegen.model.RecordDef;
 import io.micronaut.sourcegen.model.StatementDef;
 import io.micronaut.sourcegen.model.TypeDef;
 import io.micronaut.sourcegen.model.VariableDef;
+import org.jspecify.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -53,6 +54,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -87,10 +89,10 @@ import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
 @Internal
 public final class SourceGenerator {
 
-    private static String inputFileName = null;
-    private static VisitorContext.Language language;
-    private static Path outputPath;
-    private static String outputPackageName;
+    private static @Nullable String inputFileName = null;
+    private static VisitorContext.@Nullable Language language;
+    private static @Nullable Path outputPath;
+    private static @Nullable String outputPackageName;
 
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
     private final io.micronaut.sourcegen.generator.SourceGenerator sourceGenerator;
@@ -129,10 +131,8 @@ public final class SourceGenerator {
      *                          The exception message will indicate the language for which no generator was found.
      */
     public SourceGenerator(VisitorContext.Language language, GeneratorContext context) {
-        sourceGenerator = SourceGenerators.findByLanguage(language).orElse(null);
-        if (sourceGenerator == null) {
-            throw new RuntimeException("No source generator found for language " + language);
-        }
+        sourceGenerator = SourceGenerators.findByLanguage(language)
+            .orElseThrow(() -> new RuntimeException("No source generator found for language " + language));
         SourceGenerator.language = language;
         this.context = context;
     }
@@ -156,16 +156,19 @@ public final class SourceGenerator {
      * @return The top level schema's generated File when a single input is given, null otherwise.
      * @throws IOException If an I/O error occurs during file or directory creation, or if an error occurs while reading or writing files.
      */
+    @Nullable
     public File generate(SourceGeneratorConfig config) throws IOException {
         context.setConfiguration(config);
-        outputPath = config.outputPath();
+        Path configOutputPath = Objects.requireNonNull(config.outputPath(), "Source generator outputPath is required");
+        outputPath = configOutputPath;
         outputPackageName = config.outputPackageName();
         if (config.inputFolder() != null) {
             generateFolder(config);
         } else {
             Schema jsonSchema = getJsonSchema(config);
             assert jsonSchema != null;
-            inputFileName = getInputFileName() != null ? getInputFileName() : config.getInputName();
+            String currentInputFileName = getInputFileName();
+            inputFileName = currentInputFileName != null ? currentInputFileName : config.getInputName();
             // single java object is generated
             if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
                 var outputFileName = config.outputFileName();
@@ -173,10 +176,10 @@ public final class SourceGenerator {
                 if (config.outputFileName().contains(".")) {
                     outputFileName = outputFileName.substring(0, outputFileName.indexOf('.'));
                 }
-                return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
+                return generateFromSchema(jsonSchema, configOutputPath, config.outputPackageName(), outputFileName);
             } else {
                 saveDefinitions(jsonSchema);
-                return generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+                return generateDefinitions(jsonSchema, configOutputPath, config.outputPackageName());
             }
         }
         return null;
@@ -189,7 +192,7 @@ public final class SourceGenerator {
      */
     private void generateFolder(SourceGeneratorConfig config) throws IOException {
         HashMap<Schema, String> schemas = new HashMap<>();
-        Path jsonFolder =  config.inputFolder();
+        Path jsonFolder =  Objects.requireNonNull(config.inputFolder());
         // Walk through the directory to find all json files
         try (Stream<Path> paths = Files.walk(jsonFolder).filter(file -> file.toString().endsWith(".schema.json"))) {
             paths.forEach(path -> {
@@ -204,10 +207,11 @@ public final class SourceGenerator {
             throw new FileSystemException(jsonFolder.toString());
         }
 
+        Path configOutputPath = Objects.requireNonNull(config.outputPath(), "Source generator outputPath is required");
         schemas.forEach((jsonSchema, fileName) -> {
             try {
                 inputFileName = fileName;
-                generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+                generateDefinitions(jsonSchema, configOutputPath, config.outputPackageName());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -215,16 +219,19 @@ public final class SourceGenerator {
     }
 
     private void saveDefinitions(Schema jsonSchema) {
-        String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
+        String currentInputFileName = Objects.requireNonNull(inputFileName);
+        String title = jsonSchema.getTitle();
+        String schemaName = title != null ? title : currentInputFileName.substring(0, currentInputFileName.indexOf('.'));
         String finalSchemaName = getClassName(schemaName);
 
         // save all definition and oneOf types
-        if (jsonSchema.hasOneOf()) {
-            jsonSchema.getOneOf().forEach(oneOf -> {
+        List<Schema> oneOfs = jsonSchema.getOneOf();
+        if (oneOfs != null) {
+            oneOfs.forEach(oneOf -> {
                 if (oneOf.has$ref()) {
-                    String ref = oneOf.get$ref();
+                    String ref = Objects.requireNonNull(oneOf.get$ref());
                     if (ref.indexOf("#") == 0) {
-                        ref = inputFileName + ref;
+                        ref = currentInputFileName + ref;
                     }
                     context.addOneOf(ref);
                 } else {
@@ -232,37 +239,43 @@ public final class SourceGenerator {
                 }
             });
         }
-        if (jsonSchema.has$defs()) {
-            jsonSchema.get$defs().forEach((key, value) -> {
+        Map<String, Schema> defs = jsonSchema.get$defs();
+        if (defs != null) {
+            defs.forEach((key, value) -> {
                 if (key.equals("//")) {
                     if (!jsonSchema.hasDescription()) {
                         jsonSchema.setDescription(String.valueOf(value));
                     } else {
-                        jsonSchema.setDescription(jsonSchema.getDescription() + "<br>" + value);
+                        String description = Objects.requireNonNull(jsonSchema.getDescription());
+                        jsonSchema.setDescription(description + "<br>" + value);
                     }
                 } else if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
                     // WARNING: assumes the same interface as top level schema
-                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, TypeDef.THIS, true);
+                    context.addDefinition(currentInputFileName + DEF_SCHEMA_REF_PREFIX + key, TypeDef.THIS, true);
                 } else {
-                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, value);
+                    context.addDefinition(currentInputFileName + DEF_SCHEMA_REF_PREFIX + key, value);
                 }
             });
         }
-        context.addDefinition(inputFileName + "#/" + finalSchemaName, jsonSchema);
+        context.addDefinition(currentInputFileName + "#/" + finalSchemaName, jsonSchema);
     }
 
+    @Nullable
     private File generateDefinitions(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
         // generate top level schema
-        String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
+        String currentInputFileName = Objects.requireNonNull(inputFileName);
+        String title = jsonSchema.getTitle();
+        String schemaName = title != null ? title : currentInputFileName.substring(0, currentInputFileName.indexOf('.'));
         schemaName = getClassName(schemaName);
 
         File topLevelObject = generateFromSchema(jsonSchema, outputPath, packageName, schemaName);
 
         // generate classes in definitions and oneOfs
-        if (jsonSchema.has$defs()) {
-            jsonSchema.get$defs().entrySet()
+        Map<String, Schema> defs = jsonSchema.get$defs();
+        if (defs != null) {
+            defs.entrySet()
                 .stream()
-                .filter(definition -> !definition.getKey().equals("//") && context.isDefinitionClass(inputFileName + DEF_SCHEMA_REF_PREFIX + definition.getKey()))
+                .filter(definition -> !definition.getKey().equals("//") && context.isDefinitionClass(currentInputFileName + DEF_SCHEMA_REF_PREFIX + definition.getKey()))
                 .forEach(definition -> {
                     try {
                         var className = getClassName(definition.getKey());
@@ -279,6 +292,7 @@ public final class SourceGenerator {
         return topLevelObject;
     }
 
+    @Nullable
     private File generateFromSchema(Schema jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
         try {
             String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName));
@@ -338,7 +352,8 @@ public final class SourceGenerator {
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
         LinkedHashMap<String, Object> enumValues = new LinkedHashMap<>();
         int counter = 0; // for naming same const's
-        for (Object anEnum : jsonSchema.getEnumValues()) {
+        List<Object> schemaEnumValues = Objects.requireNonNull(jsonSchema.getEnumValues());
+        for (Object anEnum : schemaEnumValues) {
             String enumConst = anEnum.toString();
             String constName;
             if (isOnlyLetters(enumConst)) {
@@ -370,16 +385,17 @@ public final class SourceGenerator {
             // check for default value
             ExpressionDef defaultValue;
             if (jsonSchema.hasDefaultValue() && enumValues.containsValue(jsonSchema.getDefaultValue())) {
-                defaultValue = cases.get(ExpressionDef.constant(jsonSchema.getDefaultValue()));
+                defaultValue = Objects.requireNonNull(cases.get(ExpressionDef.constant(jsonSchema.getDefaultValue())));
             } else {
                 defaultValue = ExpressionDef.nullValue();
             }
             // get enum value TypeDef
-            Schema.Type valueType = jsonSchema.hasType() ? jsonSchema.getType().get(0) : Schema.Type.STRING;
+            List<Schema.Type> schemaTypes = jsonSchema.getType();
+            Schema.Type valueType = schemaTypes != null && !schemaTypes.isEmpty() ? schemaTypes.get(0) : Schema.Type.STRING;
             if (valueType.equals(Schema.Type.NULL)) {
                 valueType = Schema.Type.STRING;
             }
-            TypeDef valueTypeDef = TYPE_MAP_NULLABLE.get(valueType.toString().toLowerCase(Locale.ENGLISH));
+            TypeDef valueTypeDef = Objects.requireNonNull(TYPE_MAP_NULLABLE.get(valueType.toString().toLowerCase(Locale.ENGLISH)));
             // add constructor field and methods
             enumBuilder.addField(FieldDef.builder("value")
                     .ofType(valueTypeDef)
@@ -435,13 +451,14 @@ public final class SourceGenerator {
         if (!discriminatorProperty.isBlank()) {
             objectBuilder.addAnnotation(getJsonTypeInfoAnn(discriminatorProperty));
 
-            Map<String, Schema> properties = jsonSchema.getProperties();
+            Map<String, Schema> properties = Objects.requireNonNull(jsonSchema.getProperties());
             if (properties.containsKey(discriminatorProperty)) {
+                Object discriminatorValue = Objects.requireNonNull(properties.get(discriminatorProperty)).getConstValue();
                 objectBuilder.addField(
                     FieldDef.builder(discriminatorProperty)
                         .ofType(TypeDef.STRING)
                         .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                        .initializer(ExpressionDef.constant(properties.get(discriminatorProperty).getConstValue()))
+                        .initializer(ExpressionDef.constant(discriminatorValue))
                         .build());
             }
         }
@@ -463,20 +480,23 @@ public final class SourceGenerator {
     }
 
     private void addFields(Schema jsonSchema, ObjectDefBuilder builder) {
-        if (jsonSchema.hasDescription()) {
-            builder.addJavadoc(getJavadoc(jsonSchema.getDescription()));
+        String description = jsonSchema.getDescription();
+        if (description != null) {
+            builder.addJavadoc(getJavadoc(description));
         }
 
-        if (jsonSchema.hasProperties()) {
+        Map<String, Schema> properties = jsonSchema.getProperties();
+        if (properties != null) {
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();
-            jsonSchema.getProperties().forEach((key, value) -> addField(
+            properties.forEach((key, value) -> addField(
                 builder,
                 key,
                 value,
                 requiredProperties.contains(key)
             ));
 
-            if (jsonSchema.hasAdditionalProperties() && !jsonSchema.getAdditionalProperties().equals(Schema.FALSE)) {
+            Schema additionalProperties = jsonSchema.getAdditionalProperties();
+            if (additionalProperties != null && !additionalProperties.equals(Schema.FALSE)) {
                 addAdditionalField(jsonSchema, builder);
             }
         }
@@ -484,10 +504,11 @@ public final class SourceGenerator {
 
     private void addAdditionalField(Schema jsonSchema, ObjectDefBuilder builder) {
         TypeDef mapType;
-        if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
+        Schema additionalProperties = Objects.requireNonNull(jsonSchema.getAdditionalProperties());
+        if (additionalProperties.equals(Schema.TRUE)) {
             mapType = TypeDef.OBJECT;
         } else {
-            mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
+            mapType = getTypeDefFromJson(additionalProperties, context);
         }
         TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
         if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
@@ -547,7 +568,10 @@ public final class SourceGenerator {
 
         // add javadoc
         if (schema.hasDescription()) {
-            propertyDef.addJavadoc(getJavadoc(schema.getDescription()));
+            String description = schema.getDescription();
+            if (description != null) {
+                propertyDef.addJavadoc(getJavadoc(description));
+            }
         }
 
         PropertyDef property = propertyDef.build();
@@ -593,11 +617,12 @@ public final class SourceGenerator {
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties()) {
-            if (schema.getAdditionalProperties().equals(Schema.TRUE)) {
+            Schema additionalProperties = Objects.requireNonNull(schema.getAdditionalProperties());
+            if (additionalProperties.equals(Schema.TRUE)) {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
             } else {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING,
-                    getPropertyType(objectBuilder, schema.getAdditionalProperties(), name + "Item"));
+                    getPropertyType(objectBuilder, additionalProperties, name + "Item"));
             }
         }
         return propertyType;
@@ -607,7 +632,7 @@ public final class SourceGenerator {
         if (!jsonSchema.hasDiscriminator()) {
             return;
         }
-        var discriminator = jsonSchema.getDiscriminator();
+        var discriminator = Objects.requireNonNull(jsonSchema.getDiscriminator());
         discriminatorProperty = discriminator.propertyName();
         objectBuilder.addAnnotation(getJsonSubTypesAnn(discriminator.mapping(), context));
     }
@@ -667,27 +692,30 @@ public final class SourceGenerator {
         if (context.getConfiguration().recordAdoptionStrategy() == RecordAdoptionStrategy.ALWAYS_CLASS) {
             return true;
         }
-        boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
+        boolean hasOverLimitParameters = schema.hasProperties() && Objects.requireNonNull(schema.getProperties()).size() > 255;
         return hasOverLimitParameters || schema.hasAdditionalProperties() || schema.hasConstValue();
     }
 
+    @Nullable
     public static String getInputFileName() {
         return inputFileName;
     }
 
-    public static void setInputFileName(String inputFileName) {
+    public static void setInputFileName(@Nullable String inputFileName) {
         SourceGenerator.inputFileName = inputFileName;
     }
 
+    @Nullable
     public static Path getOutputPath() {
         return outputPath;
     }
 
+    @Nullable
     public static String getOutputPackageName() {
         return outputPackageName;
     }
 
     public static VisitorContext.Language getLanguage() {
-        return language;
+        return Objects.requireNonNull(language);
     }
 }

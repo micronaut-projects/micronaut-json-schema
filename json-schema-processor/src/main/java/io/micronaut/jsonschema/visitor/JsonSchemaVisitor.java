@@ -46,6 +46,7 @@ import java.time.temporal.TemporalAmount;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -82,9 +83,9 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
     @Override
     public void visitClass(ClassElement element, VisitorContext visitorContext) {
         if (element.hasAnnotation(JsonSchema.class)) {
-            JsonSchemaContext context = visitorContext.get(JSON_SCHEMA_CONTEXT_PROPERTY, JsonSchemaContext.class, null);
-            if (context == null) {
-                context = JsonSchemaContext.createDefault(visitorContext.getOptions());
+            JsonSchemaContext newContext = JsonSchemaContext.createDefault(visitorContext.getOptions());
+            JsonSchemaContext context = visitorContext.get(JSON_SCHEMA_CONTEXT_PROPERTY, JsonSchemaContext.class, newContext);
+            if (context == newContext) {
                 visitorContext.put(JSON_SCHEMA_CONTEXT_PROPERTY, context);
             }
             context.currentOriginatingElements().clear();
@@ -143,15 +144,17 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
     public static Schema createSchema(TypedElement element, VisitorContext visitorContext, JsonSchemaContext context) {
         if (!(element instanceof ClassElement) && element.hasAnnotation(JsonSchema.class)) {
             // The annotation is on a property
-            String ref = createSchemaId(element, element.getAnnotation(JsonSchema.class), visitorContext, context);
+            AnnotationValue<JsonSchema> schemaAnn = Objects.requireNonNull(element.getAnnotation(JsonSchema.class));
+            String ref = createSchemaId(element, schemaAnn, visitorContext, context);
             return Schema.reference(ref);
         } else if (element.getGenericType().hasAnnotation(JsonSchema.class)) {
             // The annotation is on the type
             String ref;
             if (context.createdSchemasByType().containsKey(element.getGenericType().getName())) {
-                ref = context.createdSchemasByType().get(element.getGenericType().getName()).get$id();
+                ref = Objects.requireNonNull(context.createdSchemasByType().get(element.getGenericType().getName()).get$id());
             } else {
-                ref = createSchemaId(element, element.getGenericType().getAnnotation(JsonSchema.class), visitorContext, context);
+                AnnotationValue<JsonSchema> schemaAnn = Objects.requireNonNull(element.getGenericType().getAnnotation(JsonSchema.class));
+                ref = createSchemaId(element, schemaAnn, visitorContext, context);
             }
             context.currentOriginatingElements().add(element.getGenericType());
             return Schema.reference(ref);
@@ -194,14 +197,15 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
             // By default, it is a base 64 encoded string
             schema.addType(Type.STRING);
         } else if (type.isAssignable(Map.class)) {
-            ClassElement valueType = type.getTypeArguments().get("V");
+            ClassElement valueType = Objects.requireNonNull(type.getTypeArguments().get("V"));
             if (valueType.getName().equals("java.lang.Object")) {
                 schema.addType(Type.OBJECT);
             } else {
                 schema.addType(Type.OBJECT).setAdditionalProperties(createSchema(valueType, visitorContext, context));
             }
         } else if (type.isAssignable(Collection.class)) {
-            schema.addType(Type.ARRAY).setItems(createSchema(type.getTypeArguments().get("E"), visitorContext, context));
+            ClassElement itemType = Objects.requireNonNull(type.getTypeArguments().get("E"));
+            schema.addType(Type.ARRAY).setItems(createSchema(itemType, visitorContext, context));
             if (type.isAssignable(Set.class)) {
                 schema.setUniqueItems(true);
             }
@@ -289,7 +293,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
     }
 
     private static String getFileName(Schema schema, JsonSchemaContext context) {
-        String id = schema.get$id();
+        String id = Objects.requireNonNull(schema.get$id());
         if (context.baseUrl() != null && id.startsWith(context.baseUrl())) {
             id = id.substring(context.baseUrl().length());
         } else if (id.contains(":" + SLASH + SLASH)) {

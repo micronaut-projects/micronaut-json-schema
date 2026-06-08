@@ -36,6 +36,7 @@ final class ValueCoercer {
     }
 
     @SuppressWarnings("java:S3776")
+    @Nullable
     static Object coerce(
         SchemaContext ctx,
         ConfigurationSchemaProperty schema,

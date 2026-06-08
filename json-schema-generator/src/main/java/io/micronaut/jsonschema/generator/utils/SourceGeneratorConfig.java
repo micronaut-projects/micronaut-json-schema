@@ -15,6 +15,8 @@
  */
 package io.micronaut.jsonschema.generator.utils;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -48,10 +50,10 @@ import java.nio.file.Path;
  * @version 1.3
  */
 public record SourceGeneratorConfig(
-    InputStream inputStream,
-    String jsonUrl,
-    File jsonFile,
-    Path inputFolder,
+    @Nullable InputStream inputStream,
+    @Nullable String jsonUrl,
+    @Nullable File jsonFile,
+    @Nullable Path inputFolder,
     Path outputPath,
     String outputPackageName,
     String outputFileName,
