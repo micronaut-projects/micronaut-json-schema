@@ -14,11 +14,7 @@ tasks.register("generatePomFileForMavenPublication", GenerateMavenPom) {
 afterEvaluate {
     publishing.publications.named("pluginMaven") {
         pom.withXml {
-            def micronautVersion = project.extensions.getByType(org.gradle.api.artifacts.VersionCatalogsExtension)
-                .named("libs")
-                .findVersion("micronaut")
-                .get()
-                .requiredVersion
+            def micronautVersion = libs.versions.micronaut.asProvider().get()
             asNode().dependencies.dependency.each { dependency ->
                 if (dependency.groupId.text() == "io.micronaut" &&
                     dependency.artifactId.text() == "micronaut-inject" &&
