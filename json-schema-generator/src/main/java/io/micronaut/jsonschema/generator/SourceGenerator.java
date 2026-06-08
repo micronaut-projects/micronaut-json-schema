@@ -672,22 +672,31 @@ public final class SourceGenerator {
 
     private boolean hasUnsupportedPropertyShape(Schema schema) {
         if (schema.hasOneOf()) {
+            // oneOf can express polymorphic validation, but the record profile cannot choose a
+            // single property type here without losing the "exactly one branch" semantics.
             return true;
         }
         if (schema.hasType() && schema.getType().stream()
             .filter(type -> !Schema.Type.NULL.equals(type))
             .distinct()
             .count() > 1) {
+            // A union like ["string", "null"] is handled as nullable string elsewhere. Multiple
+            // non-null types, for example ["string", "integer"], have no precise Java member type.
             return true;
         }
         if (schema.has$ref()) {
             String ref = schema.get$ref();
             if (Schema.THIS_SCHEMA_REF.equals(ref)) {
+                // Recursive self-reference maps to the generated enclosing type.
                 return false;
             }
             if (ref.startsWith("#")) {
+                // Supported same-document refs are registered in GeneratorContext before property
+                // generation. If a local ref is still unknown here, keep the owner type valid by
+                // falling back to Object for this property.
                 return !context.hasDefinition(inputFileName + ref);
             }
+            // The record pipeline does not fetch remote schemas during generation.
             return true;
         }
         return false;

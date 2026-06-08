@@ -740,8 +740,10 @@ class OraclePipelineMockSpec extends Specification {
         then:
         IOException exception = thrown()
         exception.message.contains("NAME_COLLISION")
+        exception.message.contains("after name sanitization")
         exception.message.contains("CUSTOMER")
         exception.message.contains("customer")
+        exception.message.contains("Customer")
     }
 
     void "pipeline skips colliding schemas and keeps cache filenames unique when skip on error is enabled"() {
@@ -846,7 +848,7 @@ class OraclePipelineMockSpec extends Specification {
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/Beta.java").toFile().text.contains("public class Beta implements PolyRoot")
     }
 
-    void "pipeline delegates root anyOf to existing polymorphic generator behavior"() {
+    void "pipeline maps root anyOf object alternatives to existing oneOf polymorphic generator behavior"() {
         when:
         Path outputDir = Files.createTempDirectory("custom-output")
         def result = new JsonSchemaRecordsPipeline({ }).execute(

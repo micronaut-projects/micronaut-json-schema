@@ -103,7 +103,16 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
                 {"type":"null","extendedType":"null"},
                 {"type":"string","extendedType":"timestampTz","sqlPrecision":6}
               ]
-            }
+            },
+            "updatedAt":{"type":"string","extendedType":"timestamp","sqlPrecision":6},
+            "businessDate":{"type":"string","extendedType":"date"},
+            "elapsed":{"type":"string","extendedType":"dsInterval"},
+            "billingPeriod":{"type":"string","extendedType":"ymInterval"},
+            "ratio":{"type":"number","extendedType":"double"},
+            "sample":{"type":"number","extendedType":"float"},
+            "payload":{"type":"string","extendedType":"binary"},
+            "arrayExtendedAt":{"type":["string","null"],"extendedType":["null","timestampTz"]},
+            "formattedTimestamp":{"type":"string","format":"date-time","extendedType":"timestamp"}
           },
           "additionalProperties": false
         }
@@ -112,6 +121,15 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
         then:
         content.contains("@Nullable @Size(max = 20) String status")
         content.contains("@Nullable Float floorNo")
-        content.contains("@Nullable String createdAt")
+        content.contains("@Nullable ZonedDateTime createdAt")
+        content.contains("LocalDateTime updatedAt")
+        content.contains("LocalDateTime businessDate")
+        content.contains("Duration elapsed")
+        content.contains("Period billingPeriod")
+        content.contains("Double ratio")
+        content.contains("Float sample")
+        content.contains("byte[] payload")
+        content.contains("@Nullable ZonedDateTime arrayExtendedAt")
+        content.contains("ZonedDateTime formattedTimestamp")
     }
 }

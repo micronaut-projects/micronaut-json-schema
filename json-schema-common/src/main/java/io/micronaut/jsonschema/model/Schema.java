@@ -74,6 +74,9 @@ public final class Schema {
     private List<Type> type;
 
     private String format;
+    private Object extendedType;
+    private Integer sqlPrecision;
+    private Integer sqlScale;
     @JsonProperty("const")
     private Object constValue;
     @JsonProperty("enum")
@@ -178,6 +181,37 @@ public final class Schema {
 
     public Schema setFormat(String format) {
         this.format = format;
+        return this;
+    }
+
+    public Object getExtendedType() {
+        return extendedType;
+    }
+
+    public Schema setExtendedType(Object extendedType) {
+        this.extendedType = extendedType;
+        return this;
+    }
+
+    public boolean hasExtendedType() {
+        return extendedType != null;
+    }
+
+    public Integer getSqlPrecision() {
+        return sqlPrecision;
+    }
+
+    public Schema setSqlPrecision(Integer sqlPrecision) {
+        this.sqlPrecision = sqlPrecision;
+        return this;
+    }
+
+    public Integer getSqlScale() {
+        return sqlScale;
+    }
+
+    public Schema setSqlScale(Integer sqlScale) {
+        this.sqlScale = sqlScale;
         return this;
     }
 
@@ -710,6 +744,15 @@ public final class Schema {
         // Merge format
         if (other.format != null) {
             this.format = other.format;
+        }
+        if (other.extendedType != null) {
+            this.extendedType = other.extendedType;
+        }
+        if (other.sqlPrecision != null) {
+            this.sqlPrecision = other.sqlPrecision;
+        }
+        if (other.sqlScale != null) {
+            this.sqlScale = other.sqlScale;
         }
 
         // Merge constValue

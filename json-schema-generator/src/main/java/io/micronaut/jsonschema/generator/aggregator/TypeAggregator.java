@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -149,6 +151,10 @@ public final class TypeAggregator {
         }
         var type = schema.hasType() ? schema.getType().get(0) : Schema.Type.OBJECT;
         TypeDef typeDef;
+        TypeDef oracleExtendedTypeDef = null;
+        if (context.isStrictUnsupportedKeywords() && schema.getFormat() == null) {
+            oracleExtendedTypeDef = getOracleExtendedTypeDef(schema, type, nullable);
+        }
         if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
             var format = schema.getFormat();
             typeDef = switch (format) {
@@ -163,6 +169,8 @@ public final class TypeAggregator {
                 // missing: web hostname, uri-reference, uri-template, regex
                 default -> TypeDef.STRING;
             };
+        } else if (oracleExtendedTypeDef != null) {
+            typeDef = oracleExtendedTypeDef;
         } else if (type.equals(Schema.Type.NUMBER) && schema.getPattern() != null) {
             if (schema.getPattern().contains(".")) {
                 typeDef = nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT;
@@ -239,6 +247,53 @@ public final class TypeAggregator {
             throw new IllegalArgumentException("Unsupported type: " + type);
         }
         return typeDef;
+    }
+
+    private static TypeDef getOracleExtendedTypeDef(Schema schema, Schema.Type type, boolean nullable) {
+        if (!schema.hasExtendedType()) {
+            return null;
+        }
+        String extendedType = firstExtendedType(schema);
+        if (extendedType == null || "null".equalsIgnoreCase(extendedType)) {
+            return null;
+        }
+        return switch (extendedType.toLowerCase(Locale.ENGLISH)) {
+            case "date", "timestamp" -> isStringLike(type) ? ClassTypeDef.of(LocalDateTime.class) : null;
+            case "timestamptz" -> isStringLike(type) ? ClassTypeDef.of(ZonedDateTime.class) : null;
+            case "dsinterval" -> isStringLike(type) ? ClassTypeDef.of(Duration.class) : null;
+            case "yminterval" -> isStringLike(type) ? ClassTypeDef.of(Period.class) : null;
+            case "binary" -> isStringLike(type) ? TypeDef.array(TypeDef.Primitive.BYTE) : null;
+            case "double" -> isNumberLike(type) ? nullable ? ClassTypeDef.of(Double.class) : TypeDef.Primitive.DOUBLE : null;
+            case "float" -> isNumberLike(type) ? nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT : null;
+            default -> null;
+        };
+    }
+
+    private static String firstExtendedType(Schema schema) {
+        Object extendedType = schema.getExtendedType();
+        if (extendedType instanceof String value) {
+            return value;
+        }
+        if (extendedType instanceof List<?> values) {
+            List<String> nonNullValues = values.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .filter(val -> !"null".equalsIgnoreCase(val))
+                .distinct()
+                .toList();
+            if (nonNullValues.size() == 1) {
+                return nonNullValues.get(0);
+            }
+        }
+        return null;
+    }
+
+    private static boolean isStringLike(Schema.Type type) {
+        return Schema.Type.STRING.equals(type) || Schema.Type.OBJECT.equals(type);
+    }
+
+    private static boolean isNumberLike(Schema.Type type) {
+        return Schema.Type.NUMBER.equals(type) || Schema.Type.INTEGER.equals(type) || Schema.Type.OBJECT.equals(type);
     }
 
     private static boolean normalizeNullableOneOf(Schema schema) {

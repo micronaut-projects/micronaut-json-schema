@@ -92,6 +92,8 @@ The records profile applies a few additional rules where generated record/class 
 In particular, optional scalar properties are boxed, `required` controls property presence, and JSON Schema nullability controls value nullability.
 Property-level `oneOf` or `anyOf` with exactly one `null` branch and one concrete branch is treated as nullable-equivalent by the records profile, while broader `oneOf` and `anyOf` shapes still fall back to `Object` with diagnostics.
 At a discovered schema root, `oneOf` and `anyOf` are delegated to the existing polymorphic generation path.
+Nested enum type names are derived using the generated type-name sanitizer.
+For ordinary property names this matches the default generator, but unusual property names that are legal Java members and awkward Java type names can produce a cleaner nested enum type name than the default generator.
 
 The `languageLevel` option controls whether records can be emitted:
 

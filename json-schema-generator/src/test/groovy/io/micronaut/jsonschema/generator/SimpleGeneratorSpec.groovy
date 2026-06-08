@@ -840,6 +840,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'test'       | '{"type": ["object", "null"]}'                                    | "Object test"
         'test'       | '{"oneOf": [{"type": "null"}, {"type": "string", "maxLength": 20}]}' | "Object test"
         'test'       | '{"anyOf": [{"type": "null"}, {"type": "string", "maxLength": 20}]}' | "Object test"
+        'test'       | '{"type": "string", "extendedType": "timestampTz"}'                | "String test"
     }
 
     void "array without items maps to List of Object"() {

@@ -347,6 +347,9 @@ public final class JsonSchemaRecordsPipeline {
         if (!schema.hasAnyOf()) {
             return;
         }
+        // SourceGenerator's polymorphic top-level generation is implemented for oneOf. For a
+        // discovered root anyOf with object alternatives, reuse that path as a Java type model;
+        // property-level anyOf remains handled by TypeAggregator and is not converted here.
         schema.setOneOf(schema.getAnyOf());
         schema.setAnyOf(null);
     }
@@ -467,7 +470,9 @@ public final class JsonSchemaRecordsPipeline {
             return Set.of();
         }
 
-        String message = "NAME_COLLISION: " + String.join("; ", collisionMessages);
+        String message = "NAME_COLLISION: discovered schemas resolve to the same generated Java type or source file "
+            + "after name sanitization. " + String.join("; ", collisionMessages)
+            + ". Use distinct schema names or generate colliding sources into different target packages/output directories.";
         if (!config.skipOnError()) {
             throw new IOException(message);
         }

@@ -115,8 +115,35 @@ The built-in providers currently support these source options:
 
 For the built-in providers, `owner`, `include`, and `exclude` are interpreted as unquoted Oracle identifiers and normalized to uppercase before dictionary filtering, session-user comparison, and discovery/cache file naming. Quoted or mixed-case Oracle identifiers are out of scope for the first version.
 
-Generated Java temporal types are based on standard JSON Schema keywords. For example, a schema property with `"type": "string"` and `"format": "date-time"` maps to `java.time.ZonedDateTime`.
-Oracle metadata fields such as `extendedType` are preserved in discovered schemas but are not interpreted as type-mapping hints by this version. If an Oracle duality view schema reports a timestamp-like value only as `"extendedType": "timestampTz"` without a standard JSON Schema `format`, the generated Java property remains `String`.
+Generated Java temporal types are based on standard JSON Schema keywords first. For example, a schema property with `"type": "string"` and `"format": "date-time"` maps to `java.time.ZonedDateTime`.
+When a discovered Oracle schema has no standard `format`, the records profile also uses Oracle `extendedType` metadata as a type-mapping hint:
+
+[cols="2,3", options="header"]
+|===
+| Oracle `extendedType`
+| Java type
+
+| `date`, `timestamp`
+| `java.time.LocalDateTime`
+
+| `timestampTz`
+| `java.time.ZonedDateTime`
+
+| `dsInterval`
+| `java.time.Duration`
+
+| `ymInterval`
+| `java.time.Period`
+
+| `double`
+| `double` / `java.lang.Double`
+
+| `float`
+| `float` / `java.lang.Float`
+
+| `binary`
+| `byte[]`
+|===
 
 When `owner` is configured, the built-in providers first try `ALL_` and `DBA_` dictionary views with an `OWNER` filter.
 If those cross-schema views are not queryable, the providers fall back to `USER_` dictionary views only when the configured `owner` matches the Oracle session user.
