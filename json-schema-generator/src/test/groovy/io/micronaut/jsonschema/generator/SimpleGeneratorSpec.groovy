@@ -848,6 +848,65 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         generateRecordProfilePropertyAndGetContent("array", '{"type": "array"}') == "List<Object> array"
     }
 
+    void "default definition array without items keeps legacy Object fallback"() {
+        given:
+        SourceGenerator generator = new SourceGenerator("java")
+        Path outputPath = Files.createTempDirectory("json-schema-generator-output")
+
+        when:
+        File generated = generator.generate(new SourceGeneratorConfigBuilder()
+            .withInputStream(new ByteArrayInputStream('''
+        {
+          "title": "DefinitionArray",
+          "type": "object",
+          "properties": {
+            "values": { "$ref": "#/$defs/Values" }
+          },
+          "$defs": {
+            "Values": { "type": "array" }
+          }
+        }
+        '''.bytes))
+            .withOutputFolder(outputPath)
+            .withOutputPackageName("com.example.project")
+            .build())
+
+        then:
+        var content = generated.text
+        content.contains("Object values")
+        !content.contains("List<Object> values")
+    }
+
+    void "record profile definition array without items maps to List of Object"() {
+        given:
+        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        context.enableJsonSchemaRecordsProfile()
+        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
+        Path outputPath = Files.createTempDirectory("json-schema-generator-output")
+
+        when:
+        File generated = generator.generate(new SourceGeneratorConfigBuilder()
+            .withInputStream(new ByteArrayInputStream('''
+        {
+          "title": "DefinitionArray",
+          "type": "object",
+          "properties": {
+            "values": { "$ref": "#/$defs/Values" }
+          },
+          "$defs": {
+            "Values": { "type": "array" }
+          }
+        }
+        '''.bytes))
+            .withOutputFolder(outputPath)
+            .withOutputPackageName("com.example.project")
+            .build())
+
+        then:
+        var content = generated.text
+        content.contains("List<Object> values")
+    }
+
     void "unsupported array item schema maps element to Object and records warning"() {
         given:
         def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()

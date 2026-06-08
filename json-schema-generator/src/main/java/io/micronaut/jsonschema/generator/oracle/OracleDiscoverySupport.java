@@ -47,6 +47,17 @@ import java.util.regex.Pattern;
 final class OracleDiscoverySupport {
 
     private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)VALIDATE\\s+USING\\s+'((?:''|[^'])*)'");
+    private static final Set<String> ALLOWED_DICTIONARY_VIEWS = Set.of(
+        "USER_DOMAINS",
+        "ALL_DOMAINS",
+        "DBA_DOMAINS",
+        "USER_DOMAIN_CONSTRAINTS",
+        "ALL_DOMAIN_CONSTRAINTS",
+        "DBA_DOMAIN_CONSTRAINTS",
+        "USER_JSON_DUALITY_VIEWS",
+        "ALL_JSON_DUALITY_VIEWS",
+        "DBA_JSON_DUALITY_VIEWS"
+    );
 
     private OracleDiscoverySupport() {
     }
@@ -356,7 +367,8 @@ final class OracleDiscoverySupport {
     }
 
     private static boolean isQueryable(Connection connection, String viewName, String owner) {
-        String sql = "SELECT 1 FROM " + viewName + " WHERE owner = ? FETCH FIRST 1 ROWS ONLY";
+        String safeViewName = validatedDictionaryViewName(viewName);
+        String sql = "SELECT 1 FROM " + safeViewName + " WHERE owner = ? FETCH FIRST 1 ROWS ONLY";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, owner.toUpperCase(Locale.ENGLISH));
             statement.executeQuery();
@@ -367,9 +379,10 @@ final class OracleDiscoverySupport {
     }
 
     private static boolean isConstraintViewQueryable(Connection connection, String viewName, String owner) {
+        String safeViewName = validatedDictionaryViewName(viewName);
         String sql = owner == null || owner.isBlank()
-            ? "SELECT 1 FROM " + viewName + " FETCH FIRST 1 ROWS ONLY"
-            : "SELECT 1 FROM " + viewName + " WHERE domain_owner = ? FETCH FIRST 1 ROWS ONLY";
+            ? "SELECT 1 FROM " + safeViewName + " FETCH FIRST 1 ROWS ONLY"
+            : "SELECT 1 FROM " + safeViewName + " WHERE domain_owner = ? FETCH FIRST 1 ROWS ONLY";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (owner != null && !owner.isBlank()) {
                 statement.setString(1, owner.toUpperCase(Locale.ENGLISH));
@@ -397,9 +410,10 @@ final class OracleDiscoverySupport {
     }
 
     private static String readDomainConstraint(Connection connection, String constraintView, MetadataQueryScope scope, String domainName, String owner) throws SQLException {
+        String safeConstraintView = validatedDictionaryViewName(constraintView);
         String sql = scope.currentUserScope()
-            ? "SELECT search_condition FROM " + constraintView + " WHERE domain_name = ?"
-            : "SELECT search_condition FROM " + constraintView + " WHERE domain_owner = ? AND domain_name = ?";
+            ? "SELECT search_condition FROM " + safeConstraintView + " WHERE domain_name = ?"
+            : "SELECT search_condition FROM " + safeConstraintView + " WHERE domain_owner = ? AND domain_name = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (scope.currentUserScope()) {
                 statement.setString(1, domainName);
@@ -411,6 +425,13 @@ final class OracleDiscoverySupport {
                 return rs.next() ? rs.getString(1) : null;
             }
         }
+    }
+
+    private static String validatedDictionaryViewName(String viewName) {
+        if (!ALLOWED_DICTIONARY_VIEWS.contains(viewName)) {
+            throw new IllegalArgumentException("Unsupported Oracle dictionary view: " + viewName);
+        }
+        return viewName;
     }
 
     private static String extractJsonLiteral(String text) throws IOException {
@@ -429,6 +450,9 @@ final class OracleDiscoverySupport {
      * @param currentUserScope Whether the resolved dictionary access uses current-user scope
      */
     record MetadataQueryScope(String dictionaryViewName, boolean currentUserScope) {
+        MetadataQueryScope {
+            dictionaryViewName = validatedDictionaryViewName(dictionaryViewName);
+        }
     }
 
     /**

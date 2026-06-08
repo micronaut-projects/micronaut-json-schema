@@ -121,6 +121,9 @@ public final class GeneratorContext {
         Schema items = definition.getItems() != null ? definition.getItems() : definition.getContains();
         TypeDef innerType;
         if (items == null) {
+            if (!jsonSchemaRecordsProfile) {
+                return TypeDef.OBJECT;
+            }
             return TypeDef.parameterized(
                 (definition.isUniqueItems() != null && definition.isUniqueItems()) ? Set.class : List.class,
                 TypeDef.OBJECT);
