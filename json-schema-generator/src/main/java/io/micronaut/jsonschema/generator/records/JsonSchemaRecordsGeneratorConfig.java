@@ -38,7 +38,7 @@ import java.util.Map;
  * @param sources Configured discovery sources
  * @param skipOnError Whether to skip individual failures
  * @param failOnMissingSource Whether unavailable configured sources should fail the build
- * @since 2.0.0
+ * @since 2.1.0
  */
 @Internal
 public record JsonSchemaRecordsGeneratorConfig(

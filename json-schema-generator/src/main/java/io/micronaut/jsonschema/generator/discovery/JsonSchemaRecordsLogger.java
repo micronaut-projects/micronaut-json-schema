@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.generator.discovery;
 /**
  * Logging abstraction used by the schema records pipeline.
  *
- * @since 2.0.0
+ * @since 2.1.0
  */
 @FunctionalInterface
 public interface JsonSchemaRecordsLogger {

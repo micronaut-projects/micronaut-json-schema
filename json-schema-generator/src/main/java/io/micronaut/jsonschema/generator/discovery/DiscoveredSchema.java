@@ -22,7 +22,7 @@ package io.micronaut.jsonschema.generator.discovery;
  * @param name Input object name
  * @param schemaJson The discovered JSON Schema text
  * @param retrievalMode Retrieval mode used to obtain the schema
- * @since 2.0.0
+ * @since 2.1.0
  */
 public record DiscoveredSchema(
     String scope,

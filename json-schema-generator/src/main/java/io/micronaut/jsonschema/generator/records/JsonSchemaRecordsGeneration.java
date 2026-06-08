@@ -39,7 +39,7 @@ import java.util.Map;
  * @param sources Configured schema discovery sources
  * @param skipOnError Whether per-object discovery and generation failures should be skipped
  * @param failOnMissingSource Whether unavailable configured sources should fail the build
- * @since 2.0.0
+ * @since 2.1.0
  */
 public record JsonSchemaRecordsGeneration(
     String jdbcUrl,

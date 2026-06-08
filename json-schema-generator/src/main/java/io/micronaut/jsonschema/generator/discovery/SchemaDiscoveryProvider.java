@@ -20,7 +20,7 @@ package io.micronaut.jsonschema.generator.discovery;
  * Implementations are selected by stable provider id. Built-in providers are
  * registered directly; custom providers are loaded through {@link java.util.ServiceLoader}.
  *
- * @since 2.0.0
+ * @since 2.1.0
  */
 public interface SchemaDiscoveryProvider {
 

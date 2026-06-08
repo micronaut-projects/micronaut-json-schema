@@ -28,7 +28,7 @@ import java.util.Map;
 /**
  * Gradle extension backing jsonSchemaRecords discovery and record generation.
  *
- * @since 2.0.0
+ * @since 2.1.0
  */
 public abstract class JsonSchemaRecordsExtension {
 

@@ -24,7 +24,7 @@ package io.micronaut.jsonschema.generator.discovery;
  * @param code Skip code
  * @param reason Skip reason
  * @param retrievalMode Retrieval mode associated with the skipped input
- * @since 2.0.0
+ * @since 2.1.0
  */
 public record DiscoverySkipped(
     String scope,

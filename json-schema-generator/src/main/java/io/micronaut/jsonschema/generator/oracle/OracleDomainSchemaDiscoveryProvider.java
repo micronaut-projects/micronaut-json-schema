@@ -39,7 +39,7 @@ import java.util.Set;
 /**
  * Discovery provider for Oracle SQL domains with JSON validation metadata.
  *
- * @since 2.0.0
+ * @since 2.1.0
  */
 public final class OracleDomainSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 

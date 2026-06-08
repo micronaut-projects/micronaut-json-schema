@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Shared Gradle task properties for JSON Schema discovery and Java record generation.
  *
- * @since 2.0.0
+ * @since 2.1.0
  */
 @DisableCachingByDefault(because = "Schema discovery reads live provider metadata such as database state.")
 public abstract class AbstractGenerateFromJsonSchemaSourcesTask extends DefaultTask {

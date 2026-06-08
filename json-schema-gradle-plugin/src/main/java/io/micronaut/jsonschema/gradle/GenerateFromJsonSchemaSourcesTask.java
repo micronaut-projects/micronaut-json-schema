@@ -39,7 +39,7 @@ import java.util.Properties;
 /**
  * Opt-in task that discovers JSON Schemas from configured sources and generates Java records.
  *
- * @since 2.0.0
+ * @since 2.1.0
  */
 @DisableCachingByDefault(because = "Schema discovery reads live provider metadata such as database state.")
 public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerateFromJsonSchemaSourcesTask {

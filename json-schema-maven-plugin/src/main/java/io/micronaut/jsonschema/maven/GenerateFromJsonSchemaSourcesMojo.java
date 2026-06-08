@@ -37,7 +37,7 @@ import java.util.Map;
 /**
  * Maven goal that discovers JSON Schemas and generates Java records.
  *
- * @since 2.0.0
+ * @since 2.1.0
  */
 @Mojo(name = "generate-from-json-schema-sources", defaultPhase = LifecyclePhase.GENERATE_SOURCES, threadSafe = true)
 public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonSchemaSourcesMojo {

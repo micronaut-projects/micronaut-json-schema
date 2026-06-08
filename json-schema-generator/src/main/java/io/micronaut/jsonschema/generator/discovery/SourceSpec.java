@@ -28,7 +28,7 @@ import java.util.Map;
  * @param name Stable source name used in diagnostics and cache layout
  * @param provider Discovery provider id
  * @param options Provider-specific options
- * @since 2.0.0
+ * @since 2.1.0
  */
 public record SourceSpec(
     String name,

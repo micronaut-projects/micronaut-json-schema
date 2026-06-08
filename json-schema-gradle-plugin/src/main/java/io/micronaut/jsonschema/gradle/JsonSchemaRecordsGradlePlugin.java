@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * Gradle plugin that adds opt-in schema discovery and generation support.
  *
- * @since 2.0.0
+ * @since 2.1.0
  */
 public final class JsonSchemaRecordsGradlePlugin implements Plugin<Project> {
 

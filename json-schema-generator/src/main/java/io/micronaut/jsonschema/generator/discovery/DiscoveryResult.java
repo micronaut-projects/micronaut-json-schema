@@ -25,7 +25,7 @@ import java.util.Map;
  * @param warnings Non-fatal warnings emitted by discovery
  * @param skipped Skipped inputs recorded when {@code skipOnError=true}
  * @param sourceMetadata Sanitized source metadata returned by the provider
- * @since 2.0.0
+ * @since 2.1.0
  */
 public record DiscoveryResult(
     List<DiscoveredSchema> schemas,
