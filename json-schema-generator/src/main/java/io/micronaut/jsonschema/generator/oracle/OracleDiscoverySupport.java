@@ -46,6 +46,7 @@ import java.util.regex.Pattern;
 @Internal
 final class OracleDiscoverySupport {
 
+    private static final String SELECT_ONE_FROM = "SELECT 1 FROM ";
     private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)VALIDATE\\s+USING\\s+'((?:''|[^'])*)'");
     private static final Set<String> ALLOWED_DICTIONARY_VIEWS = Set.of(
         "USER_DOMAINS",
@@ -368,7 +369,7 @@ final class OracleDiscoverySupport {
 
     private static boolean isQueryable(Connection connection, String viewName, String owner) {
         String safeViewName = validatedDictionaryViewName(viewName);
-        String sql = "SELECT 1 FROM " + safeViewName + " WHERE owner = ? FETCH FIRST 1 ROWS ONLY";
+        String sql = SELECT_ONE_FROM + safeViewName + " WHERE owner = ? FETCH FIRST 1 ROWS ONLY";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, owner.toUpperCase(Locale.ENGLISH));
             statement.executeQuery();
@@ -381,8 +382,8 @@ final class OracleDiscoverySupport {
     private static boolean isConstraintViewQueryable(Connection connection, String viewName, String owner) {
         String safeViewName = validatedDictionaryViewName(viewName);
         String sql = owner == null || owner.isBlank()
-            ? "SELECT 1 FROM " + safeViewName + " FETCH FIRST 1 ROWS ONLY"
-            : "SELECT 1 FROM " + safeViewName + " WHERE domain_owner = ? FETCH FIRST 1 ROWS ONLY";
+            ? SELECT_ONE_FROM + safeViewName + " FETCH FIRST 1 ROWS ONLY"
+            : SELECT_ONE_FROM + safeViewName + " WHERE domain_owner = ? FETCH FIRST 1 ROWS ONLY";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (owner != null && !owner.isBlank()) {
                 statement.setString(1, owner.toUpperCase(Locale.ENGLISH));

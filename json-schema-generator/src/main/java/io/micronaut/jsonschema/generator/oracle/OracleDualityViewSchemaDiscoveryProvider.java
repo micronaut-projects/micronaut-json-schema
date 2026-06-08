@@ -42,6 +42,7 @@ import java.util.Set;
 public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 
     public static final String PROVIDER_ID = "oracle-duality-views";
+    private static final String DUALITY_DB_PROVIDED = "DUALITY_DB_PROVIDED";
 
     @Override
     public String providerId() {
@@ -92,18 +93,18 @@ public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDis
                     String jsonSchema = rs.getString(2);
                     if (jsonSchema == null || jsonSchema.isBlank()) {
                         if (skipOnError) {
-                            skipped.add(new DiscoverySkipped(OracleDiscoveryScope.DUALITY_VIEW.name(), viewName, DiscoveryStep.SCHEMA_RETRIEVAL, "MISSING_JSON_SCHEMA", "JSON_SCHEMA is null or empty", "DUALITY_DB_PROVIDED"));
+                            skipped.add(new DiscoverySkipped(OracleDiscoveryScope.DUALITY_VIEW.name(), viewName, DiscoveryStep.SCHEMA_RETRIEVAL, "MISSING_JSON_SCHEMA", "JSON_SCHEMA is null or empty", DUALITY_DB_PROVIDED));
                             continue;
                         }
                         throw new java.io.IOException("JSON_SCHEMA is null or empty");
                     }
                     try {
                         OracleDiscoverySupport.ensureValidJson(jsonSchema);
-                        schemas.add(new DiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW.name(), viewName, jsonSchema, "DUALITY_DB_PROVIDED"));
-                        context.logger().info("[jsonschema-records] INFO source=" + source.name() + " scope=" + OracleDiscoveryScope.DUALITY_VIEW.name() + " name=" + viewName + " retrievalMode=DUALITY_DB_PROVIDED");
+                        schemas.add(new DiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW.name(), viewName, jsonSchema, DUALITY_DB_PROVIDED));
+                        context.logger().info("[jsonschema-records] INFO source=" + source.name() + " scope=" + OracleDiscoveryScope.DUALITY_VIEW.name() + " name=" + viewName + " retrievalMode=" + DUALITY_DB_PROVIDED);
                     } catch (Exception e) {
                         if (skipOnError) {
-                            skipped.add(new DiscoverySkipped(OracleDiscoveryScope.DUALITY_VIEW.name(), viewName, DiscoveryStep.SCHEMA_RETRIEVAL, "MALFORMED_JSON", e.getMessage(), "DUALITY_DB_PROVIDED"));
+                            skipped.add(new DiscoverySkipped(OracleDiscoveryScope.DUALITY_VIEW.name(), viewName, DiscoveryStep.SCHEMA_RETRIEVAL, "MALFORMED_JSON", e.getMessage(), DUALITY_DB_PROVIDED));
                             continue;
                         }
                         throw e;

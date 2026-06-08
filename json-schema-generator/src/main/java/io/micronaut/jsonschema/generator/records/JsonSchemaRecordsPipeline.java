@@ -67,6 +67,7 @@ public final class JsonSchemaRecordsPipeline {
 
     private static final String GENERATOR_NAME = "json-schema-record-generator";
     private static final String DRAFT_2020_12_SCHEMA = "https://json-schema.org/draft/2020-12/schema";
+    private static final String NAME_COLLISION = "NAME_COLLISION";
     private static final int MAX_CACHE_NAME_LENGTH = 128;
     private final ObjectMapper objectMapper = JsonSchemaMapperFactory.createMapper();
     private final JsonSchemaRecordsLogger logger;
@@ -429,8 +430,8 @@ public final class JsonSchemaRecordsPipeline {
             }
             String message = current.getMessage();
             if (message != null) {
-                if (message.contains("NAME_COLLISION")) {
-                    return "NAME_COLLISION";
+                if (message.contains(NAME_COLLISION)) {
+                    return NAME_COLLISION;
                 }
                 if (message.contains("UNSUPPORTED_KEYWORD")) {
                     return "UNSUPPORTED_KEYWORD";
@@ -470,7 +471,7 @@ public final class JsonSchemaRecordsPipeline {
             return Set.of();
         }
 
-        String message = "NAME_COLLISION: discovered schemas resolve to the same generated Java type or source file "
+        String message = NAME_COLLISION + ": discovered schemas resolve to the same generated Java type or source file "
             + "after name sanitization. " + String.join("; ", collisionMessages)
             + ". Use distinct schema names or generate colliding sources into different target packages/output directories.";
         if (!config.skipOnError()) {
@@ -485,7 +486,7 @@ public final class JsonSchemaRecordsPipeline {
                 schema.scope(),
                 schema.name(),
                 DiscoveryStep.GENERATION,
-                "NAME_COLLISION",
+                NAME_COLLISION,
                 message
             ));
             skipped.add(new JsonSchemaRecordsManifest.Skipped(
@@ -493,11 +494,11 @@ public final class JsonSchemaRecordsPipeline {
                 schema.scope(),
                 schema.name(),
                 DiscoveryStep.GENERATION,
-                "NAME_COLLISION",
+                NAME_COLLISION,
                 message,
                 schema.retrievalMode()
             ));
-            logger.warn(formatWarning(discovered.source().name(), schema.scope(), schema.name(), DiscoveryStep.GENERATION, "NAME_COLLISION", message));
+            logger.warn(formatWarning(discovered.source().name(), schema.scope(), schema.name(), DiscoveryStep.GENERATION, NAME_COLLISION, message));
         }
         return collidingPlans;
     }
@@ -677,17 +678,30 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private String sanitizeNamePart(String value, boolean uppercase) {
-        String sanitized = value == null ? "" : value.trim();
-        sanitized = uppercase ? sanitized.toUpperCase(Locale.ENGLISH) : sanitized.toLowerCase(Locale.ENGLISH);
-        sanitized = sanitized.replaceAll("[^a-zA-Z0-9]+", "_").replaceAll("_+", "_");
-        sanitized = sanitized.replaceAll("^_+", "").replaceAll("_+$", "");
-        if (sanitized.isBlank()) {
-            sanitized = "schema";
+        String input = value == null ? "" : value.trim();
+        input = uppercase ? input.toUpperCase(Locale.ENGLISH) : input.toLowerCase(Locale.ENGLISH);
+
+        StringBuilder sanitized = new StringBuilder(input.length());
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (isAsciiAlphaNumeric(c)) {
+                sanitized.append(c);
+            } else if (!sanitized.isEmpty() && sanitized.charAt(sanitized.length() - 1) != '_') {
+                sanitized.append('_');
+            }
         }
-        if (uppercase) {
-            sanitized = sanitized.toUpperCase(Locale.ENGLISH);
+        int length = sanitized.length();
+        if (length > 0 && sanitized.charAt(length - 1) == '_') {
+            sanitized.setLength(length - 1);
         }
-        return trimCacheName(sanitized);
+        if (sanitized.isEmpty()) {
+            sanitized.append("schema");
+        }
+        return trimCacheName(sanitized.toString());
+    }
+
+    private boolean isAsciiAlphaNumeric(char c) {
+        return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9';
     }
 
     private String trimCacheName(String value) {

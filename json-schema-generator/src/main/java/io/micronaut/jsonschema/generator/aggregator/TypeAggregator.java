@@ -67,6 +67,8 @@ public final class TypeAggregator {
         "null", TypeDef.OBJECT
     );
 
+    private static final String UNSUPPORTED_KEYWORD = "UNSUPPORTED_KEYWORD";
+
     static {
         TYPE_MAP = new HashMap<>();
         TYPE_MAP.putAll(TYPE_MAP_NULLABLE);
@@ -106,7 +108,7 @@ public final class TypeAggregator {
             // The record-generation profile accepts only the common nullable composition form,
             // oneOf: [{ "type": "null" }, { ...single non-null schema... }].
             if (!normalizeNullableOneOf(schema)) {
-                context.warn("UNSUPPORTED_KEYWORD", "oneOf is not supported at property level; using java.lang.Object");
+                context.warn(UNSUPPORTED_KEYWORD, "oneOf is not supported at property level; using java.lang.Object");
                 return TypeDef.OBJECT;
             }
         }
@@ -141,7 +143,7 @@ public final class TypeAggregator {
                 schema.setType(typeList);
             } else {
                 if (context.isJsonSchemaRecordsProfile()) {
-                    context.warn("UNSUPPORTED_KEYWORD", "Multiple non-null JSON Schema types are not supported at property level; using java.lang.Object");
+                    context.warn(UNSUPPORTED_KEYWORD, "Multiple non-null JSON Schema types are not supported at property level; using java.lang.Object");
                 } else {
                     System.err.println("Only one type is allowed per schema. " +
                         "In case of multiple types, the variable is generated as a java.lang.Object.");
@@ -189,7 +191,7 @@ public final class TypeAggregator {
                 // The record pipeline prepares supported same-document refs before generation.
                 // Anything still missing here cannot be represented precisely as a property type.
                 if (!context.hasDefinition(ref)) {
-                    context.warn("UNSUPPORTED_KEYWORD", (localRef ? "Local" : "External") + " $ref is not resolved: " + schema.get$ref());
+                    context.warn(UNSUPPORTED_KEYWORD, (localRef ? "Local" : "External") + " $ref is not resolved: " + schema.get$ref());
                     return TypeDef.OBJECT;
                 }
             } else {
@@ -375,12 +377,12 @@ public final class TypeAggregator {
             // lose shape information, so record generation records a warning.
             TypeDef typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
             if (context.isJsonSchemaRecordsProfile() && TypeDef.OBJECT.equals(typeDef)) {
-                context.warn("UNSUPPORTED_KEYWORD", "anyOf object alternatives are not supported at property level; using java.lang.Object");
+                context.warn(UNSUPPORTED_KEYWORD, "anyOf object alternatives are not supported at property level; using java.lang.Object");
             }
             return typeDef;
         }
         if (context.isJsonSchemaRecordsProfile()) {
-            context.warn("UNSUPPORTED_KEYWORD", "anyOf alternatives cannot be modeled deterministically at property level; using java.lang.Object");
+            context.warn(UNSUPPORTED_KEYWORD, "anyOf alternatives cannot be modeled deterministically at property level; using java.lang.Object");
         }
         return TypeDef.OBJECT;
     }

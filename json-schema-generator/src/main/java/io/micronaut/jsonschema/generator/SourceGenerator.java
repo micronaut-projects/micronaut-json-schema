@@ -88,6 +88,8 @@ import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
 @Internal
 public final class SourceGenerator {
 
+    private static final String UNKNOWN_FIELDS_PROPERTY = "unknownFields";
+
     private static String inputFileName = null;
     private static VisitorContext.Language language;
     private static Path outputPath;
@@ -159,14 +161,13 @@ public final class SourceGenerator {
      */
     public File generate(SourceGeneratorConfig config) throws IOException {
         context.setConfiguration(config);
-        outputPath = config.outputPath();
-        outputPackageName = config.outputPackageName();
+        setGenerationState(config);
         if (config.inputFolder() != null) {
             generateFolder(config);
         } else {
             Schema jsonSchema = getJsonSchema(config);
             assert jsonSchema != null;
-            inputFileName = getInputFileName() != null ? getInputFileName() : config.getInputName();
+            setInputFileName(getInputFileName() != null ? getInputFileName() : config.getInputName());
             if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
                 return generateSingleSchema(config, jsonSchema, false);
             }
@@ -186,9 +187,8 @@ public final class SourceGenerator {
      */
     public File generate(SourceGeneratorConfig config, Schema jsonSchema) throws IOException {
         context.setConfiguration(config);
-        outputPath = config.outputPath();
-        outputPackageName = config.outputPackageName();
-        inputFileName = config.getInputName();
+        setGenerationState(config);
+        setInputFileName(config.getInputName());
         // The record pipeline may pass a schema that was already prepared in memory.
         // Register definitions from that schema instead of loading/parsing it again.
         saveDefinitions(jsonSchema);
@@ -209,8 +209,9 @@ public final class SourceGenerator {
                 // Read content of each JSON file
                 var jsonSchema = new FileLoader(path.toFile()).load();
                 assert jsonSchema != null;
-                inputFileName = path.toString().substring(jsonFolder.toString().length() + 1);
-                schemas.put(jsonSchema, inputFileName);
+                String fileName = path.toString().substring(jsonFolder.toString().length() + 1);
+                setInputFileName(fileName);
+                schemas.put(jsonSchema, fileName);
                 saveDefinitions(jsonSchema);
             });
         } catch (IOException e) {
@@ -219,7 +220,7 @@ public final class SourceGenerator {
 
         schemas.forEach((jsonSchema, fileName) -> {
             try {
-                inputFileName = fileName;
+                setInputFileName(fileName);
                 generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -542,11 +543,11 @@ public final class SourceGenerator {
         }
         TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
         if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
-            classDefBuilder.addField(FieldDef.builder("unknownFields")
+            classDefBuilder.addField(FieldDef.builder(UNKNOWN_FIELDS_PROPERTY)
                 .ofType(type)
                 .build());
         } else {
-            builder.addProperty(PropertyDef.builder("unknownFields")
+            builder.addProperty(PropertyDef.builder(UNKNOWN_FIELDS_PROPERTY)
                 .ofType(type)
                 .build());
         }
@@ -556,9 +557,9 @@ public final class SourceGenerator {
                 .addAnnotation(ClassTypeDef.of(JSON_ANY_GETTER_ANN))
                 .build((aThis, parameters) -> {
                     if (builder instanceof ClassDef.ClassDefBuilder) {
-                        return aThis.field("unknownFields", type).returning();
+                        return aThis.field(UNKNOWN_FIELDS_PROPERTY, type).returning();
                     }
-                    return new VariableDef.Local("unknownFields", type).returning();
+                    return new VariableDef.Local(UNKNOWN_FIELDS_PROPERTY, type).returning();
                 }));
         builder.addMethod(MethodDef.builder("setUnknownFields")
                 .addModifiers(Modifier.PUBLIC)
@@ -568,8 +569,8 @@ public final class SourceGenerator {
                 .addParameter("value", mapType)
                 .build((aThis, parameters) -> {
                     var unknownField = (builder instanceof ClassDef.ClassDefBuilder) ?
-                        aThis.field("unknownFields", type) :
-                        new VariableDef.Local("unknownFields", type);
+                        aThis.field(UNKNOWN_FIELDS_PROPERTY, type) :
+                        new VariableDef.Local(UNKNOWN_FIELDS_PROPERTY, type);
 
                     return StatementDef.multi(
                         unknownField.ifNull(unknownField.assign(ClassTypeDef.of(HashMap.class).instantiate())),
@@ -780,6 +781,11 @@ public final class SourceGenerator {
         return hasOverLimitParameters || schema.hasAdditionalProperties() || schema.hasConstValue();
     }
 
+    private static void setGenerationState(SourceGeneratorConfig config) {
+        outputPath = config.outputPath();
+        outputPackageName = config.outputPackageName();
+    }
+
     public static String getInputFileName() {
         return inputFileName;
     }
@@ -839,7 +845,7 @@ public final class SourceGenerator {
         if (shouldGenerateAdditionalProperties(schema)) {
             // The open-object member is generated with a fixed name, so user properties must not
             // sanitize to the same Java member name.
-            jsonNamesByJavaName.computeIfAbsent("unknownFields", ignored -> new LinkedList<>()).add("<additionalProperties>");
+            jsonNamesByJavaName.computeIfAbsent(UNKNOWN_FIELDS_PROPERTY, ignored -> new LinkedList<>()).add("<additionalProperties>");
         }
         jsonNamesByJavaName.entrySet().stream()
             .filter(entry -> entry.getValue().size() > 1)
