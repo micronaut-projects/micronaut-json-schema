@@ -173,14 +173,6 @@ public final class JsonSchemaRecordsPipeline {
                     logger.warn(formatWarning(source.name(), warning.scope(), warning.name(), warning.step(), warning.code(), warning.message()));
                 }
                 for (DiscoverySkipped skippedEntry : result.skipped()) {
-                    warnings.add(new JsonSchemaRecordsManifest.Warning(
-                        source.name(),
-                        skippedEntry.scope(),
-                        skippedEntry.name(),
-                        skippedEntry.step(),
-                        skippedEntry.code(),
-                        skippedEntry.reason()
-                    ));
                     skipped.add(new JsonSchemaRecordsManifest.Skipped(
                         source.name(),
                         skippedEntry.scope(),

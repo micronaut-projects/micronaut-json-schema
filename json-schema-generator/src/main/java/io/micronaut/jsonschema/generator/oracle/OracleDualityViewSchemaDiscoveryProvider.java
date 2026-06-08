@@ -96,7 +96,7 @@ public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDis
                             skipped.add(new DiscoverySkipped(OracleDiscoveryScope.DUALITY_VIEW.name(), viewName, DiscoveryStep.SCHEMA_RETRIEVAL, "MISSING_JSON_SCHEMA", "JSON_SCHEMA is null or empty", DUALITY_DB_PROVIDED));
                             continue;
                         }
-                        throw new java.io.IOException("JSON_SCHEMA is null or empty");
+                        throw new java.io.IOException("JSON_SCHEMA is null or empty for duality view " + viewName);
                     }
                     try {
                         OracleDiscoverySupport.ensureValidJson(jsonSchema);

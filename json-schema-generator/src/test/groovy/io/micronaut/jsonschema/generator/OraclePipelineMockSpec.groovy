@@ -271,7 +271,6 @@ class OraclePipelineMockSpec extends Specification {
         result.generatedTypes() == 0
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "warnings", 0, "code").getStringValue() == "GET_DDL_FAILED"
-        jsonAt(manifest, "warnings", 1, "code").getStringValue() == "DICTIONARY_VIEW_UNAVAILABLE"
         jsonAt(manifest, "skipped", 0, "code").getStringValue() == "DICTIONARY_VIEW_UNAVAILABLE"
         jsonAt(manifest, "skipped", 0, "retrievalMode").isNull()
     }
@@ -361,7 +360,6 @@ class OraclePipelineMockSpec extends Specification {
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "skipped", 0, "code").getStringValue() == "MALFORMED_JSON"
         jsonAt(manifest, "skipped", 0, "retrievalMode").getStringValue() == "DUALITY_DB_PROVIDED"
-        jsonAt(manifest, "warnings", 0, "code").getStringValue() == "MALFORMED_JSON"
     }
 
     void "pipeline falls back to user duality view scope when owner matches session user and cross schema views are unavailable"() {
