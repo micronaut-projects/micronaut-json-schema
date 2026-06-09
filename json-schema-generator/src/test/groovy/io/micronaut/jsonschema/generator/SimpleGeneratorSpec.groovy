@@ -479,6 +479,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'array'               | '{"type": "array", "items": {"type": "number"}}'                      | "List<Float> array"
         // support contains
         'contain'             | '{"type": "array", "contains": {"type": "number"}}'                   | "List<Float> contain"
+        // empty anyOf falls back to object
+        'test'                | '{"anyOf": []}'                                                       | "Object test"
         // booleans
         'predicate'           | '{"type": "boolean"}'                                                 | 'boolean predicate'
         // enums
@@ -505,6 +507,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'test'       | '{"type": "number", "maximum": 10}'                               | "@DecimalMax(\"10\") float test"
         'test'       | '{"type": "number", "exclusiveMaximum": 10.0}'                    | "@DecimalMax(\"9.999\") float test"
         'test'       | '{"type": "number", "exclusiveMinimum": 10.0}'                    | "@DecimalMin(\"10.001\") float test"
+        'test'       | '{"type": "integer", "exclusiveMaximum": 10}'                     | "@Max(9) int test"
+        'test'       | '{"type": "integer", "exclusiveMinimum": 10}'                     | "@Min(11) int test"
         'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*$"}'                  | "@Min(1) int test"
         'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*.?[0-9]+$"}'          | "@DecimalMin(\"0.001\") float test"
         'test'       | '{"type": "number", "pattern": "^[0]|([1-9][0-9]*)$"}'            | "@Min(0) int test"

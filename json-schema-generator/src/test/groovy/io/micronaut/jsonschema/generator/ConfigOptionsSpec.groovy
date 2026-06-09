@@ -65,4 +65,13 @@ class ConfigOptionsSpec extends AbstractGeneratorSpec {
         """.stripIndent().trim()
     }
 
+    void testOutputPathIsRequired() {
+        when:
+        new SourceGeneratorConfigBuilder().build()
+
+        then:
+        def e = thrown(NullPointerException)
+        e.message == "Source generator outputPath is required"
+    }
+
 }
