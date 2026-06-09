@@ -1,6 +1,7 @@
 package io.micronaut.jsonschema.generator
 
 
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder
 
 import java.nio.file.Path
@@ -119,6 +120,34 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             List<Llama> hours
         ) {
         }""".stripIndent().trim()
+    }
+
+    void testDiscriminatorWithoutProperties() {
+        when:
+        var content = generateTypeAndGetContent("Animal", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/animal.schema.json",
+          "title":"Animal",
+          "type":"object",
+          "discriminator": {
+            "propertyName": "kind",
+            "mapping": {}
+          }
+        }
+        ''', b -> b.withRecordAdoptionStrategy(SourceGeneratorConfig.RecordAdoptionStrategy.ALWAYS_CLASS))
+
+        then:
+        content == """
+        @Serdeable
+        @JsonSubTypes
+        @JsonTypeInfo(
+            use = JsonTypeInfo.Id.NAME,
+            property = "kind"
+        )
+        public class Animal {
+        }
+        """.stripIndent().trim()
     }
 
     void testRecordGenerationWithInnerRecord() {

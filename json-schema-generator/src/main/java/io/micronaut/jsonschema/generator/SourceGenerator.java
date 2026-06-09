@@ -451,9 +451,10 @@ public final class SourceGenerator {
         if (!discriminatorProperty.isBlank()) {
             objectBuilder.addAnnotation(getJsonTypeInfoAnn(discriminatorProperty));
 
-            Map<String, Schema> properties = Objects.requireNonNull(jsonSchema.getProperties());
-            if (properties.containsKey(discriminatorProperty)) {
-                Object discriminatorValue = Objects.requireNonNull(properties.get(discriminatorProperty)).getConstValue();
+            Map<String, Schema> properties = jsonSchema.getProperties();
+            Schema discriminatorPropertySchema = properties != null ? properties.get(discriminatorProperty) : null;
+            if (discriminatorPropertySchema != null) {
+                Object discriminatorValue = discriminatorPropertySchema.getConstValue();
                 objectBuilder.addField(
                     FieldDef.builder(discriminatorProperty)
                         .ofType(TypeDef.STRING)
