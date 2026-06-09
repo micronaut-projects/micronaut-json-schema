@@ -32,6 +32,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -73,7 +74,6 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
      * @throws Exception If execution fails
      */
     public void generate() throws Exception {
-        registerJdbcDrivers();
         ClassLoader parentClassLoader = getClass().getClassLoader();
         JsonSchemaRecordsLogger logger = new JsonSchemaRecordsLogger() {
             @Override
@@ -98,11 +98,15 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
             getSkipOnError().getOrElse(false),
             getFailOnMissingSource().getOrElse(true)
         );
-        if (getProviderClasspath().isEmpty()) {
-            executePipeline(logger, generation.toGeneratorConfig(), parentClassLoader);
-        } else {
-            try (URLClassLoader providerClassLoader = createClassLoader(getProviderClasspath(), parentClassLoader)) {
-                executePipeline(logger, generation.toGeneratorConfig(), providerClassLoader);
+        // JDBC drivers may lazily load helper classes/resources after DriverManager registration.
+        // Keep the driver classloader open for the whole pipeline execution, then deregister and close it.
+        try (JdbcDriverRegistration ignored = registerJdbcDrivers()) {
+            if (getProviderClasspath().isEmpty()) {
+                executePipeline(logger, generation.toGeneratorConfig(), parentClassLoader);
+            } else {
+                try (URLClassLoader providerClassLoader = createClassLoader(getProviderClasspath(), parentClassLoader)) {
+                    executePipeline(logger, generation.toGeneratorConfig(), providerClassLoader);
+                }
             }
         }
     }
@@ -129,9 +133,9 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
         new JsonSchemaRecordsPipeline(logger, providerClassLoader).execute(config);
     }
 
-    private void registerJdbcDrivers() throws SQLException {
+    private JdbcDriverRegistration registerJdbcDrivers() throws SQLException {
         if (getJdbcClasspath().isEmpty()) {
-            return;
+            return new JdbcDriverRegistration(null, List.of());
         }
         // Avoid leaking driver registrations across multiple task executions in the Gradle daemon.
         java.util.Enumeration<Driver> existingDrivers = DriverManager.getDrivers();
@@ -141,12 +145,50 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
                 DriverManager.deregisterDriver(existing);
             }
         }
-        try (URLClassLoader classLoader = createClassLoader(getJdbcClasspath(), getClass().getClassLoader())) {
+        URLClassLoader classLoader = createClassLoader(getJdbcClasspath(), getClass().getClassLoader());
+        List<Driver> registeredDrivers = new ArrayList<>();
+        try {
             for (Driver driver : java.util.ServiceLoader.load(Driver.class, classLoader)) {
-                DriverManager.registerDriver(new DriverShim(driver));
+                Driver shim = new DriverShim(driver);
+                DriverManager.registerDriver(shim);
+                registeredDrivers.add(shim);
             }
+            return new JdbcDriverRegistration(classLoader, registeredDrivers);
         } catch (Exception e) {
+            try {
+                closeJdbcRegistration(classLoader, registeredDrivers);
+            } catch (Exception closeException) {
+                e.addSuppressed(closeException);
+            }
             throw new IllegalStateException("Failed to load JDBC drivers from jdbcClasspath", e);
+        }
+    }
+
+    private void closeJdbcRegistration(URLClassLoader classLoader, List<Driver> registeredDrivers) throws SQLException {
+        SQLException deregisterFailure = null;
+        for (Driver driver : registeredDrivers) {
+            try {
+                DriverManager.deregisterDriver(driver);
+            } catch (SQLException e) {
+                if (deregisterFailure == null) {
+                    deregisterFailure = e;
+                } else {
+                    deregisterFailure.addSuppressed(e);
+                }
+            }
+        }
+        try {
+            if (classLoader != null) {
+                classLoader.close();
+            }
+        } catch (java.io.IOException e) {
+            if (deregisterFailure == null) {
+                throw new IllegalStateException("Failed to close JDBC driver classloader", e);
+            }
+            deregisterFailure.addSuppressed(e);
+        }
+        if (deregisterFailure != null) {
+            throw deregisterFailure;
         }
     }
 
@@ -161,6 +203,21 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
             })
             .toArray(URL[]::new);
         return new URLClassLoader(urls, parent);
+    }
+
+    private final class JdbcDriverRegistration implements AutoCloseable {
+        private final URLClassLoader classLoader;
+        private final List<Driver> registeredDrivers;
+
+        private JdbcDriverRegistration(URLClassLoader classLoader, List<Driver> registeredDrivers) {
+            this.classLoader = classLoader;
+            this.registeredDrivers = registeredDrivers;
+        }
+
+        @Override
+        public void close() throws SQLException {
+            closeJdbcRegistration(classLoader, registeredDrivers);
+        }
     }
 
     private record DriverShim(Driver delegate) implements Driver {
