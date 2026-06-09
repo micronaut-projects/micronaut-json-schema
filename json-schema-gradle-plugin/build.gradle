@@ -3,7 +3,7 @@ plugins {
     id("io.micronaut.build.internal.json-schema-module")
 }
 
-tasks.register("generatePomFileForMavenPublication", GenerateMavenPom) {
+tasks.register("generatePomFileForMavenPublication", org.gradle.api.publish.maven.tasks.GenerateMavenPom) {
     pom = publishing.publications.named("pluginMaven").get().pom
     destination = layout.buildDirectory.file("publications/maven/pom-default.xml").get().asFile
 }
