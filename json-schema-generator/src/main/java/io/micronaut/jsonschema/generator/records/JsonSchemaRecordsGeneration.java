@@ -77,7 +77,16 @@ public record JsonSchemaRecordsGeneration(
      * @param skipOnError Whether per-object discovery and generation failures should be skipped
      * @param failOnMissingSource Whether unavailable configured sources should fail the build
      */
-    public JsonSchemaRecordsGeneration {
+public JsonSchemaRecordsGeneration {
+        if (targetPackage == null || targetPackage.isBlank()) {
+            throw new IllegalArgumentException("jsonSchemaRecords targetPackage must be set.");
+        }
+        if (schemaCacheDir == null) {
+            throw new IllegalArgumentException("jsonSchemaRecords schemaCacheDir must be set.");
+        }
+        if (outputDir == null) {
+            throw new IllegalArgumentException("jsonSchemaRecords outputDir must be set.");
+        }
         languageLevel = languageLevel == null ? 21 : languageLevel;
         sources = sources == null ? List.of() : Collections.unmodifiableList(new ArrayList<>(sources));
         skipOnError = skipOnError != null && skipOnError;
