@@ -157,11 +157,11 @@ The Gradle plugin can resolve connection settings from explicit extension values
 |===
 | Value | Supported names
 | JDBC URL
-| `providers.oracle.jdbcUrl`, `jsonSchemaRecords.jdbcUrl`, `DB_URL`
+| `providers.oracle.jdbcUrl`, `jsonSchemaRecords.jdbcUrl`, `DB_URL`, `JSON_SCHEMA_RECORDS_JDBC_URL`
 | Username
-| `providers.oracle.username`, `jsonSchemaRecords.username`, `DB_USER`
+| `providers.oracle.username`, `jsonSchemaRecords.username`, `DB_USER`, `JSON_SCHEMA_RECORDS_USERNAME`
 | Password
-| `providers.oracle.password`, `jsonSchemaRecords.password`, `DB_PASSWORD`
+| `providers.oracle.password`, `jsonSchemaRecords.password`, `DB_PASSWORD`, `JSON_SCHEMA_RECORDS_PASSWORD`
 |===
 
 This lets projects keep secrets outside `build.gradle`, for example in `~/.gradle/gradle.properties`:
