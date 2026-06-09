@@ -848,6 +848,11 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         generateRecordProfilePropertyAndGetContent("array", '{"type": "array"}') == "List<Object> array"
     }
 
+    void "array without items maps unique items to Set of Object"() {
+        expect:
+        generateRecordProfilePropertyAndGetContent("array", '{"type": "array", "uniqueItems": true}') == "Set<Object> array"
+    }
+
     void "default definition array without items keeps legacy Object fallback"() {
         given:
         SourceGenerator generator = new SourceGenerator("java")

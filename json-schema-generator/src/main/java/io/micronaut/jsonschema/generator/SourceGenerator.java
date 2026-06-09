@@ -741,7 +741,9 @@ public final class SourceGenerator {
             // In the record profile, arrays with omitted items are still arrays of unconstrained values.
             // Keep existing default behavior outside that profile.
             return context.isJsonSchemaRecordsProfile()
-                ? TypeDef.parameterized(ClassTypeDef.of(List.class), TypeDef.OBJECT)
+                ? TypeDef.parameterized(
+                    ClassTypeDef.of(schema.isUniqueItems() != null && schema.isUniqueItems() ? Set.class : List.class),
+                    TypeDef.OBJECT)
                 : TypeDef.OBJECT;
         }
 
