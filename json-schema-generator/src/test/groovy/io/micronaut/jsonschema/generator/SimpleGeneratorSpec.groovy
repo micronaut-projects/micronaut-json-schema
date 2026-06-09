@@ -481,6 +481,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'contain'             | '{"type": "array", "contains": {"type": "number"}}'                   | "List<Float> contain"
         // empty anyOf falls back to object
         'test'                | '{"anyOf": []}'                                                       | "Object test"
+        // anyOf with null and one concrete type uses the concrete type
+        'test'                | '{"anyOf": [{"type": "null"}, {"type": "string"}]}'                  | "String test"
         // booleans
         'predicate'           | '{"type": "boolean"}'                                                 | 'boolean predicate'
         // enums

@@ -219,11 +219,12 @@ public final class TypeAggregator {
         } else if (schemas.size() == 1) {
             return getTypeDefFromJson(schemas.get(0), context);
         } else if (schemas.size() == 2) {
-            var nullSchema = new Schema();
-            nullSchema.setType(List.of(Schema.Type.NULL));
-            if (schemas.contains(nullSchema)) {
-                schemas.remove(nullSchema);
-                return getTypeDefFromJson(schemas.get(0), context);
+            Schema first = schemas.get(0);
+            Schema second = schemas.get(1);
+            if (isNullSchema(first)) {
+                return getTypeDefFromJson(second, context);
+            } else if (isNullSchema(second)) {
+                return getTypeDefFromJson(first, context);
             }
         }
         boolean sameType = true;
@@ -242,6 +243,11 @@ public final class TypeAggregator {
             return TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
         }
         return TypeDef.OBJECT;
+    }
+
+    private static boolean isNullSchema(Schema schema) {
+        List<Schema.Type> types = schema.getType();
+        return types != null && types.size() == 1 && types.contains(NULL);
     }
 
     public static String getConstantName(String input) {
