@@ -123,21 +123,21 @@ public class AnnotationsAggregator {
                 .build());
         }
         Object exclusiveMinimum = schema.getExclusiveMinimum();
-        if (exclusiveMinimum != null) {
+        if (exclusiveMinimum instanceof Number exclusiveMinimumNumber) {
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(minAnn))
                 .addMember("value", isFloat ?
-                    "" + (((double) exclusiveMinimum) + EXCLUSIVE_DELTA_DOUBLE) :
-                    ((int) exclusiveMinimum) + EXCLUSIVE_DELTA_INT)
+                    "" + (exclusiveMinimumNumber.doubleValue() + EXCLUSIVE_DELTA_DOUBLE) :
+                    exclusiveMinimumNumber.intValue() + EXCLUSIVE_DELTA_INT)
                 .build());
         }
         Object exclusiveMaximum = schema.getExclusiveMaximum();
-        if (exclusiveMaximum != null) {
+        if (exclusiveMaximum instanceof Number exclusiveMaximumNumber) {
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(maxAnn))
                 .addMember("value", isFloat ?
-                    "" + (((double) exclusiveMaximum) - EXCLUSIVE_DELTA_DOUBLE) :
-                    ((int) exclusiveMaximum) - EXCLUSIVE_DELTA_INT)
+                    "" + (exclusiveMaximumNumber.doubleValue() - EXCLUSIVE_DELTA_DOUBLE) :
+                    exclusiveMaximumNumber.intValue() - EXCLUSIVE_DELTA_INT)
                 .build());
         }
         if (schema.getMaxLength() != null || schema.getMaxItems() != null || schema.getMaxContains() != null) {
