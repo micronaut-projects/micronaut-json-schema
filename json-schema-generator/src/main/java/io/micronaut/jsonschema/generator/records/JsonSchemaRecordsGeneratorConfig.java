@@ -174,7 +174,10 @@ public record JsonSchemaRecordsGeneratorConfig(
     }
 
     private static String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value;
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private static String normalizeLanguage(String configuredLanguage) {

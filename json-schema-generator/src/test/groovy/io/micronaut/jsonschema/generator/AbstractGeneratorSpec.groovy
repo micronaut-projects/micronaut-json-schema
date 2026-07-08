@@ -15,6 +15,7 @@ import spock.lang.Specification
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Comparator
 import java.util.function.Consumer
 
 class AbstractGeneratorSpec extends Specification {
@@ -23,23 +24,17 @@ class AbstractGeneratorSpec extends Specification {
         SourceGenerator generator = new SourceGenerator("java")
 
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
-        String packageName = "com.example.project"; // Example package name
-
-        var builder = new SourceGeneratorConfigBuilder()
-                .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
-                .withOutputFolder(outputPath)
-                .withOutputFileName(className)
-                .withOutputPackageName(packageName)
-        consumer.accept(builder)
-        File generated = generator.generate(builder.build());
-
         try {
-            ParserConfiguration configuration = new ParserConfiguration()
-            configuration.languageLevel = ParserConfiguration.LanguageLevel.JAVA_17
-            ParseResult<CompilationUnit> parsed = new JavaParser(configuration).parse(generated.text)
-            return parsed.getResult().get().getType(0)
-        } catch (Exception e) {
-            throw new Exception("Failed to parse file and get record. The contents are: '\n" + generated.text + "\n'", e)
+            String packageName = "com.example.project"; // Example package name
+            var builder = new SourceGeneratorConfigBuilder()
+                    .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
+                    .withOutputFolder(outputPath)
+                    .withOutputFileName(className)
+                    .withOutputPackageName(packageName)
+            consumer.accept(builder)
+            return parseGeneratedType(generator.generate(builder.build()))
+        } finally {
+            deleteRecursively(outputPath)
         }
     }
 
@@ -49,21 +44,46 @@ class AbstractGeneratorSpec extends Specification {
         SourceGenerator generator = new SourceGenerator("java")
 
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
-        String packageName = "com.example.project"; // Example package name
+        try {
+            String packageName = "com.example.project"; // Example package name
+            var builder = new SourceGeneratorConfigBuilder()
+                .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
+                .withOutputFolder(outputPath)
+                .withOutputFileName(className)
+                .withOutputPackageName(packageName)
+            consumer.accept(builder)
+            SourceGeneratorConfig config = builder.build()
+            var schema = FileProcessor.getJsonSchema(config)
+            // This mirrors the record-generator pipeline, where schema composition and local
+            // definition refs are resolved before handing the schema to SourceGenerator.
+            SchemaReferenceCompositionSupport.prepareLocalCompositionReferences(schema)
+            return parseGeneratedType(generator.generate(config, schema))
+        } finally {
+            deleteRecursively(outputPath)
+        }
+    }
 
-        var builder = new SourceGeneratorConfigBuilder()
-            .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
-            .withOutputFolder(outputPath)
-            .withOutputFileName(className)
-            .withOutputPackageName(packageName)
-        consumer.accept(builder)
-        SourceGeneratorConfig config = builder.build()
-        var schema = FileProcessor.getJsonSchema(config)
-        // This mirrors the record-generator pipeline, where schema composition and local
-        // definition refs are resolved before handing the schema to SourceGenerator.
-        SchemaReferenceCompositionSupport.prepareLocalCompositionReferences(schema)
-        File generated = generator.generate(config, schema)
+    TypeDeclaration generateRecordProfileType(String className, String jsonSchema) {
+        GeneratorContext context = new GeneratorContext()
+        context.enableJsonSchemaRecordsProfile()
+        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, context)
 
+        Path outputPath = Files.createTempDirectory("json-schema-generator-output")
+        try {
+            String packageName = "com.example.project"; // Example package name
+            var config = new SourceGeneratorConfigBuilder()
+                .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
+                .withOutputFolder(outputPath)
+                .withOutputFileName(className)
+                .withOutputPackageName(packageName)
+                .build()
+            return parseGeneratedType(generator.generate(config))
+        } finally {
+            deleteRecursively(outputPath)
+        }
+    }
+
+    private static TypeDeclaration parseGeneratedType(File generated) {
         try {
             ParserConfiguration configuration = new ParserConfiguration()
             configuration.languageLevel = ParserConfiguration.LanguageLevel.JAVA_17
@@ -74,29 +94,9 @@ class AbstractGeneratorSpec extends Specification {
         }
     }
 
-    TypeDeclaration generateRecordProfileType(String className, String jsonSchema) {
-        GeneratorContext context = new GeneratorContext()
-        context.enableJsonSchemaRecordsProfile()
-        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, context)
-
-        Path outputPath = Files.createTempDirectory("json-schema-generator-output")
-        String packageName = "com.example.project"; // Example package name
-
-        var config = new SourceGeneratorConfigBuilder()
-            .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
-            .withOutputFolder(outputPath)
-            .withOutputFileName(className)
-            .withOutputPackageName(packageName)
-            .build()
-        File generated = generator.generate(config)
-
-        try {
-            ParserConfiguration configuration = new ParserConfiguration()
-            configuration.languageLevel = ParserConfiguration.LanguageLevel.JAVA_17
-            ParseResult<CompilationUnit> parsed = new JavaParser(configuration).parse(generated.text)
-            return parsed.getResult().get().getType(0)
-        } catch (Exception e) {
-            throw new Exception("Failed to parse file and get record. The contents are: '\n" + generated.text + "\n'", e)
+    private static void deleteRecursively(Path directory) {
+        try (var paths = Files.walk(directory)) {
+            paths.sorted(Comparator.reverseOrder()).forEach { Files.deleteIfExists(it) }
         }
     }
 

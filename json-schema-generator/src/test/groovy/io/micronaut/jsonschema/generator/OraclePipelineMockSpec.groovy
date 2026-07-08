@@ -23,6 +23,25 @@ class OraclePipelineMockSpec extends Specification {
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.createDefault()
 
+    void "pipeline configuration trims source names and provider ids"() {
+        when:
+        def config = new JsonSchemaRecordsGeneratorConfig(
+            null,
+            null,
+            null,
+            "io.micronaut.jsonschema.generated",
+            21,
+            Path.of("schema-cache"),
+            Path.of("generated-sources"),
+            [new SourceSpec("  custom-source  ", "  test-edge-cases  ", [:])],
+            false,
+            true
+        )
+
+        then:
+        config.sources() == [new SourceSpec("custom-source", "test-edge-cases", [:])]
+    }
+
     void "pipeline generates Kotlin data classes"() {
         given:
         Path schemaCacheDir = Files.createTempDirectory("kotlin-pipeline-schema-cache")

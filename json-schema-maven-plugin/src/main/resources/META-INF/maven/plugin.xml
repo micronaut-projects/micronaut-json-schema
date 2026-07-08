@@ -1,6 +1,6 @@
 <plugin>
   <name>Micronaut JSON Schema Records Maven Plugin</name>
-  <description>Generates Java records from JSON Schemas.</description>
+  <description>Generates Java or Kotlin types from JSON Schemas.</description>
   <groupId>io.micronaut.jsonschema</groupId>
   <artifactId>micronaut-json-schema-maven-plugin</artifactId>
   <version>${project.version}</version>
@@ -8,7 +8,7 @@
   <mojos>
     <mojo>
       <goal>generate-from-json-schema-sources</goal>
-      <description>Discovers JSON Schemas from configured sources and generates Java records or classes.</description>
+      <description>Discovers JSON Schemas from configured sources and generates Java records/classes or Kotlin data classes.</description>
       <implementation>io.micronaut.jsonschema.maven.GenerateFromJsonSchemaSourcesMojo</implementation>
       <language>java</language>
       <phase>generate-sources</phase>
@@ -50,7 +50,12 @@
         <parameter>
           <name>targetPackage</name>
           <type>java.lang.String</type>
-          <required>true</required>
+          <required>false</required>
+        </parameter>
+        <parameter>
+          <name>language</name>
+          <type>java.lang.String</type>
+          <required>false</required>
         </parameter>
         <parameter>
           <name>languageLevel</name>
@@ -105,6 +110,7 @@
         <password implementation="java.lang.String">${jsonSchemaRecords.password}</password>
         <serverId implementation="java.lang.String">${jsonSchemaRecords.serverId}</serverId>
         <targetPackage implementation="java.lang.String">${jsonSchemaRecords.targetPackage}</targetPackage>
+        <language implementation="java.lang.String" default-value="JAVA">${jsonSchemaRecords.language}</language>
         <languageLevel implementation="int" default-value="21">${jsonSchemaRecords.languageLevel}</languageLevel>
         <schemaCacheDir implementation="java.io.File" default-value="${project.build.directory}/jsonschema-cache" />
         <outputDir implementation="java.io.File" default-value="${project.build.directory}/generated-sources/jsonschema" />
