@@ -33,7 +33,7 @@ import java.util.Map;
  * @param warnings Warnings emitted during discovery or generation
  * @param skipped Skipped objects when {@code skipOnError=true}
  * @param emittedSchemaFiles Relative schema file paths
- * @param generatedJavaFiles Relative generated Java source file paths
+ * @param generatedSourceFiles Relative generated source file paths
  * @since 2.1.0
  */
 @Internal
@@ -46,7 +46,7 @@ public record JsonSchemaRecordsManifest(
     List<Warning> warnings,
     List<Skipped> skipped,
     List<String> emittedSchemaFiles,
-    List<String> generatedJavaFiles
+    List<String> generatedSourceFiles
 ) {
     /**
      * Generator metadata.
@@ -75,6 +75,7 @@ public record JsonSchemaRecordsManifest(
      * Effective pipeline parameters.
      *
      * @param targetPackage Target package
+     * @param language Generated source language
      * @param languageLevel Java language level used for generation
      * @param schemaCacheDir Schema cache directory
      * @param outputDir Output directory
@@ -84,6 +85,7 @@ public record JsonSchemaRecordsManifest(
      */
     public record Parameters(
         String targetPackage,
+        String language,
         int languageLevel,
         String schemaCacheDir,
         String outputDir,

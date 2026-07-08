@@ -23,6 +23,46 @@ class OraclePipelineMockSpec extends Specification {
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.createDefault()
 
+    void "pipeline generates Kotlin data classes"() {
+        given:
+        Path schemaCacheDir = Files.createTempDirectory("kotlin-pipeline-schema-cache")
+        Path outputDir = Files.createTempDirectory("kotlin-pipeline-output")
+
+        when:
+        def result = new JsonSchemaRecordsPipeline({ }).execute(
+            new JsonSchemaRecordsGeneratorConfig(
+                null,
+                null,
+                null,
+                "io.micronaut.jsonschema.kotlin.generated",
+                21,
+                schemaCacheDir,
+                outputDir,
+                [new SourceSpec("kotlin", "test-edge-cases", [
+                    schemaName: "KotlinPayload",
+                    schema: '''{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}'''
+                ])],
+                false,
+                true,
+                "KOTLIN"
+            )
+        )
+
+        then:
+        result.generatedTypes() == 1
+
+        and:
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "parameters", "language").getStringValue() == "KOTLIN"
+        jsonAt(manifest, "generatedSourceFiles", 0).getStringValue() == "io/micronaut/jsonschema/kotlin/generated/Kotlinpayload.kt"
+
+        and:
+        String source = Files.readString(outputDir.resolve("io/micronaut/jsonschema/kotlin/generated/Kotlinpayload.kt"))
+        source.contains("data class Kotlinpayload")
+        source.contains("val name:")
+        source.contains("String")
+    }
+
     void "pipeline falls back to domain constraints when get ddl is unavailable"() {
         given:
         Connection connection = Mock()
@@ -84,7 +124,7 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "discovery", "schemas", 0, "sourceName").getStringValue() == "domains"
         jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "MOONPHASE"
         jsonAt(manifest, "discovery", "schemas", 0, "retrievalMode").getStringValue() == "DOMAIN_CONSTRAINTS"
-        jsonAt(manifest, "generatedJavaFiles", 0).getStringValue() == "io/micronaut/jsonschema/oracle/generated/Moonphase.java"
+        jsonAt(manifest, "generatedSourceFiles", 0).getStringValue() == "io/micronaut/jsonschema/oracle/generated/Moonphase.java"
         jsonAt(manifest, "warnings", 0, "sourceName").getStringValue() == "domains"
         jsonAt(manifest, "warnings", 0, "code").getStringValue() == "GET_DDL_FAILED"
 
@@ -811,7 +851,7 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "warnings", 0, "message").getStringValue().contains("#bikes")
         jsonAt(manifest, "warnings", 0, "message").getStringValue().contains("9bikes")
         jsonAt(manifest, "skipped", 0, "code").getStringValue() == "NAME_COLLISION"
-        jsonAt(manifest, "generatedJavaFiles").size() == 0
+        jsonAt(manifest, "generatedSourceFiles").size() == 0
     }
 
     void "pipeline delegates root oneOf to existing generator behavior"() {
@@ -840,7 +880,7 @@ class OraclePipelineMockSpec extends Specification {
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "warnings").size() == 0
         jsonAt(manifest, "skipped").size() == 0
-        jsonAt(manifest, "generatedJavaFiles").size() == 3
+        jsonAt(manifest, "generatedSourceFiles").size() == 3
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/PolyRoot.java").toFile().text.contains("public interface PolyRoot")
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/Alpha.java").toFile().text.contains("public class Alpha implements PolyRoot")
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/Beta.java").toFile().text.contains("public class Beta implements PolyRoot")
@@ -872,7 +912,7 @@ class OraclePipelineMockSpec extends Specification {
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "warnings").size() == 0
         jsonAt(manifest, "skipped").size() == 0
-        jsonAt(manifest, "generatedJavaFiles").size() == 3
+        jsonAt(manifest, "generatedSourceFiles").size() == 3
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/PolyRoot.java").toFile().text.contains("public interface PolyRoot")
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/Alpha.java").toFile().text.contains("public class Alpha implements PolyRoot")
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/Beta.java").toFile().text.contains("public class Beta implements PolyRoot")
@@ -1172,7 +1212,7 @@ class OraclePipelineMockSpec extends Specification {
         and:
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "parameters", "languageLevel").getIntValue() == 11
-        jsonAt(manifest, "generatedJavaFiles", 0).getStringValue() == "io/micronaut/jsonschema/custom/generated/LegacyType.java"
+        jsonAt(manifest, "generatedSourceFiles", 0).getStringValue() == "io/micronaut/jsonschema/custom/generated/LegacyType.java"
     }
 
     private Driver driverReturning(Connection connection) {

@@ -74,12 +74,17 @@ public abstract class JsonSchemaRecordsExtension {
     }
 
     /**
-     * @return The target package for generated Java sources.
+     * @return The target package for generated sources.
      */
     public abstract Property<String> getTargetPackage();
 
     /**
-     * @return Java language level used for generation.
+     * @return The generated source language.
+     */
+    public abstract Property<String> getLanguage();
+
+    /**
+     * @return Java language level used for Java generation.
      */
     public abstract Property<Integer> getLanguageLevel();
 

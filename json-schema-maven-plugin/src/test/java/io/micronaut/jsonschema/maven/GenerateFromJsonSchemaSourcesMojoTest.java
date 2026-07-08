@@ -66,6 +66,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         mojo.username = "app";
         mojo.password = "secret";
         mojo.targetPackage = "io.micronaut.jsonschema.oracle.generated";
+        mojo.language = "KOTLIN";
         mojo.languageLevel = 17;
         mojo.schemaCacheDir = tempDir.resolve("schema-cache").toFile();
         mojo.outputDir = tempDir.resolve("generated-sources").toFile();
@@ -85,6 +86,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         assertEquals("app", config.username());
         assertEquals("secret", config.password());
         assertEquals("io.micronaut.jsonschema.oracle.generated", config.targetPackage());
+        assertEquals("KOTLIN", config.language());
         assertEquals(17, config.languageLevel());
         assertEquals(tempDir.resolve("schema-cache"), config.schemaCacheDir());
         assertEquals(tempDir.resolve("generated-sources"), config.outputDir());
@@ -229,6 +231,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         private String username;
         private String password;
         private String targetPackage;
+        private String language = "JAVA";
         private int languageLevel = 21;
         private File schemaCacheDir;
         private File outputDir;
@@ -258,6 +261,11 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         @Override
         protected String getTargetPackage() {
             return targetPackage;
+        }
+
+        @Override
+        protected String getLanguage() {
+            return language;
         }
 
         @Override

@@ -41,6 +41,7 @@ class GenerateFromJsonSchemaSourcesMojoHarnessTest {
         assertEquals("app", mojo.getUsername());
         assertEquals("secret", mojo.getPassword());
         assertEquals("io.micronaut.jsonschema.oracle.generated", mojo.getTargetPackage());
+        assertEquals("JAVA", mojo.getLanguage());
         assertEquals(21, mojo.getLanguageLevel());
         assertEquals(2, mojo.getSourceConfigurations().size());
         assertEquals("domains", mojo.getSourceConfigurations().get(0).getName());

@@ -27,18 +27,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Shared build-plugin task definition for JSON Schema discovery and Java record generation.
+ * Shared build-plugin task definition for JSON Schema discovery and source generation.
  *
  * @param jdbcUrl JDBC URL
  * @param username Database username
  * @param password Database password
- * @param targetPackage Target package for generated Java sources
- * @param languageLevel Java language level used for generated sources
+ * @param targetPackage Target package for generated sources
+ * @param languageLevel Java language level used for generated Java sources
  * @param schemaCacheDir Directory where discovered schemas are cached
- * @param outputDir Directory where Java sources are generated
+ * @param outputDir Directory where sources are generated
  * @param sources Configured schema discovery sources
  * @param skipOnError Whether per-object discovery and generation failures should be skipped
  * @param failOnMissingSource Whether unavailable configured sources should fail the build
+ * @param language Generated source language
  * @since 2.1.0
  */
 public record JsonSchemaRecordsGeneration(
@@ -60,8 +61,38 @@ public record JsonSchemaRecordsGeneration(
 
     Boolean skipOnError,
 
-    Boolean failOnMissingSource
+    Boolean failOnMissingSource,
+
+    String language
 ) {
+
+    /**
+     * Create a Java generation task definition.
+     *
+     * @param jdbcUrl JDBC URL
+     * @param username Database username
+     * @param password Database password
+     * @param targetPackage Target package for generated sources
+     * @param languageLevel Java language level used for generated Java sources
+     * @param schemaCacheDir Directory where discovered schemas are cached
+     * @param outputDir Directory where sources are generated
+     * @param sources Configured schema discovery sources
+     * @param skipOnError Whether per-object discovery and generation failures should be skipped
+     * @param failOnMissingSource Whether unavailable configured sources should fail the build
+     */
+    public JsonSchemaRecordsGeneration(String jdbcUrl,
+                                       String username,
+                                       String password,
+                                       String targetPackage,
+                                       Integer languageLevel,
+                                       File schemaCacheDir,
+                                       File outputDir,
+                                       List<Map<String, Object>> sources,
+                                       Boolean skipOnError,
+                                       Boolean failOnMissingSource) {
+        this(jdbcUrl, username, password, targetPackage, languageLevel, schemaCacheDir, outputDir, sources,
+            skipOnError, failOnMissingSource, "JAVA");
+    }
 
     /**
      * Create a normalized generation task definition.
@@ -69,15 +100,16 @@ public record JsonSchemaRecordsGeneration(
      * @param jdbcUrl JDBC URL
      * @param username Database username
      * @param password Database password
-     * @param targetPackage Target package for generated Java sources
-     * @param languageLevel Java language level used for generated sources
+     * @param targetPackage Target package for generated sources
+     * @param languageLevel Java language level used for generated Java sources
      * @param schemaCacheDir Directory where discovered schemas are cached
-     * @param outputDir Directory where Java sources are generated
+     * @param outputDir Directory where sources are generated
      * @param sources Configured schema discovery sources
      * @param skipOnError Whether per-object discovery and generation failures should be skipped
      * @param failOnMissingSource Whether unavailable configured sources should fail the build
+     * @param language Generated source language
      */
-public JsonSchemaRecordsGeneration {
+    public JsonSchemaRecordsGeneration {
         if (targetPackage == null || targetPackage.isBlank()) {
             throw new IllegalArgumentException("jsonSchemaRecords targetPackage must be set.");
         }
@@ -91,6 +123,7 @@ public JsonSchemaRecordsGeneration {
         sources = sources == null ? List.of() : Collections.unmodifiableList(new ArrayList<>(sources));
         skipOnError = skipOnError != null && skipOnError;
         failOnMissingSource = failOnMissingSource == null || failOnMissingSource;
+        language = language == null ? "JAVA" : language;
     }
 
     public void generate() {
@@ -128,7 +161,8 @@ public JsonSchemaRecordsGeneration {
             outputDir.toPath(),
             toSourceSpecs(sources),
             skipOnError,
-            failOnMissingSource
+            failOnMissingSource,
+            language
         );
     }
 

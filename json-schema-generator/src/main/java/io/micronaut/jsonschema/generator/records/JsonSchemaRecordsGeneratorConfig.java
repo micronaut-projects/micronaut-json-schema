@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.generator.records;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.generator.discovery.SourceSpec;
 
 import java.nio.file.Path;
@@ -26,18 +27,19 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Configuration for schema discovery and Java record generation.
+ * Configuration for schema discovery and source generation.
  *
  * @param jdbcUrl The JDBC URL
  * @param username The database username
  * @param password The database password
- * @param targetPackage Target Java package
- * @param languageLevel Java language level used for generation
+ * @param targetPackage Target package
+ * @param languageLevel Java language level used for Java generation
  * @param schemaCacheDir Discovery output directory
  * @param outputDir Generated source directory
  * @param sources Configured discovery sources
  * @param skipOnError Whether to skip individual failures
  * @param failOnMissingSource Whether unavailable configured sources should fail the build
+ * @param language Generated source language
  * @since 2.1.0
  */
 @Internal
@@ -51,8 +53,37 @@ public record JsonSchemaRecordsGeneratorConfig(
     Path outputDir,
     List<SourceSpec> sources,
     boolean skipOnError,
-    boolean failOnMissingSource
+    boolean failOnMissingSource,
+    String language
 ) {
+
+    /**
+     * Create a Java generation configuration.
+     *
+     * @param jdbcUrl The JDBC URL
+     * @param username The database username
+     * @param password The database password
+     * @param targetPackage Target package
+     * @param languageLevel Java language level used for Java generation
+     * @param schemaCacheDir Discovery output directory
+     * @param outputDir Generated source directory
+     * @param sources Configured discovery sources
+     * @param skipOnError Whether to skip individual failures
+     * @param failOnMissingSource Whether unavailable configured sources should fail the build
+     */
+    public JsonSchemaRecordsGeneratorConfig(String jdbcUrl,
+                                            String username,
+                                            String password,
+                                            String targetPackage,
+                                            int languageLevel,
+                                            Path schemaCacheDir,
+                                            Path outputDir,
+                                            List<SourceSpec> sources,
+                                            boolean skipOnError,
+                                            boolean failOnMissingSource) {
+        this(jdbcUrl, username, password, targetPackage, languageLevel, schemaCacheDir, outputDir, sources,
+            skipOnError, failOnMissingSource, "JAVA");
+    }
 
     /**
      * Create a normalized generator configuration.
@@ -60,19 +91,35 @@ public record JsonSchemaRecordsGeneratorConfig(
      * @param jdbcUrl The JDBC URL
      * @param username The database username
      * @param password The database password
-     * @param targetPackage Target Java package
-     * @param languageLevel Java language level used for generation
+     * @param targetPackage Target package
+     * @param languageLevel Java language level used for Java generation
      * @param schemaCacheDir Discovery output directory
      * @param outputDir Generated source directory
      * @param sources Configured discovery sources
      * @param skipOnError Whether to skip individual failures
      * @param failOnMissingSource Whether unavailable configured sources should fail the build
+     * @param language Generated source language
      */
     public JsonSchemaRecordsGeneratorConfig {
         if (languageLevel <= 0) {
             throw new IllegalArgumentException("jsonSchemaRecords languageLevel must be a positive integer.");
         }
+        language = normalizeLanguage(language);
         sources = normalizeSources(sources);
+    }
+
+    /**
+     * @return The SourceGen language used for generation
+     */
+    public VisitorContext.Language sourceLanguage() {
+        return VisitorContext.Language.valueOf(language);
+    }
+
+    /**
+     * @return Generated source file extension without a leading dot
+     */
+    public String sourceFileExtension() {
+        return "KOTLIN".equals(language) ? "kt" : "java";
     }
 
     /**
@@ -128,5 +175,13 @@ public record JsonSchemaRecordsGeneratorConfig(
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    private static String normalizeLanguage(String configuredLanguage) {
+        String normalized = configuredLanguage == null ? "JAVA" : configuredLanguage.trim().toUpperCase(Locale.ENGLISH);
+        if (!"JAVA".equals(normalized) && !"KOTLIN".equals(normalized)) {
+            throw new IllegalArgumentException("jsonSchemaRecords language must be JAVA or KOTLIN.");
+        }
+        return normalized;
     }
 }

@@ -117,7 +117,7 @@ class OraclePipelineIntegrationSpec extends Specification {
         jsonAt(manifest, "discovery", "schemas", 1, "name").getStringValue() == viewName
         jsonAt(manifest, "discovery", "schemas", 1, "retrievalMode").getStringValue() == "DUALITY_DB_PROVIDED"
         jsonAt(manifest, "emittedSchemaFiles").size() == 2
-        jsonAt(manifest, "generatedJavaFiles").size() == 2
+        jsonAt(manifest, "generatedSourceFiles").size() == 2
 
         and:
         def generatedFiles = Files.walk(outputDir)

@@ -27,7 +27,7 @@ import org.gradle.api.tasks.OutputDirectory;
 import java.util.Map;
 
 /**
- * Shared Gradle task properties for JSON Schema discovery and Java record generation.
+ * Shared Gradle task properties for JSON Schema discovery and source generation.
  *
  * @since 2.1.0
  */
@@ -56,13 +56,20 @@ public abstract class AbstractGenerateFromJsonSchemaSourcesTask extends DefaultT
     public abstract Property<String> getPassword();
 
     /**
-     * @return Target package for generated Java sources
+     * @return Target package for generated sources
      */
     @Input
     public abstract Property<String> getTargetPackage();
 
     /**
-     * @return Java language level used for generated sources
+     * @return Generated source language
+     */
+    @Input
+    @Optional
+    public abstract Property<String> getLanguage();
+
+    /**
+     * @return Java language level used for generated Java sources
      */
     @Input
     @Optional
@@ -75,7 +82,7 @@ public abstract class AbstractGenerateFromJsonSchemaSourcesTask extends DefaultT
     public abstract DirectoryProperty getSchemaCacheDir();
 
     /**
-     * @return Directory where Java sources are generated
+     * @return Directory where sources are generated
      */
     @OutputDirectory
     public abstract DirectoryProperty getOutputDir();

@@ -20,6 +20,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.tasks.SourceSetContainer;
 
 import java.util.List;
@@ -45,6 +46,7 @@ public final class JsonSchemaRecordsGradlePlugin implements Plugin<Project> {
         extension.getJdbcUrl().convention(gradlePropertyOrEnv(project, "jsonSchemaRecords.jdbcUrl", "DB_URL", "JSON_SCHEMA_RECORDS_JDBC_URL"));
         extension.getUsername().convention(gradlePropertyOrEnv(project, "jsonSchemaRecords.username", "DB_USER", "JSON_SCHEMA_RECORDS_USERNAME"));
         extension.getPassword().convention(gradlePropertyOrEnv(project, "jsonSchemaRecords.password", "DB_PASSWORD", "JSON_SCHEMA_RECORDS_PASSWORD"));
+        extension.getLanguage().convention("JAVA");
         extension.getLanguageLevel().convention(21);
         extension.getSchemaCacheDir().convention(project.getLayout().getBuildDirectory().dir("jsonschema-cache"));
         extension.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("generated/sources/jsonschema"));
@@ -58,6 +60,7 @@ public final class JsonSchemaRecordsGradlePlugin implements Plugin<Project> {
             task.getUsername().convention(extension.getProviders().getOracle().getUsername().orElse(extension.getUsername()));
             task.getPassword().convention(extension.getProviders().getOracle().getPassword().orElse(extension.getPassword()));
             task.getTargetPackage().convention(extension.getTargetPackage());
+            task.getLanguage().convention(extension.getLanguage());
             task.getLanguageLevel().convention(extension.getLanguageLevel());
             task.getSchemaCacheDir().convention(extension.getSchemaCacheDir());
             task.getOutputDir().convention(extension.getOutputDir());
@@ -72,6 +75,16 @@ public final class JsonSchemaRecordsGradlePlugin implements Plugin<Project> {
             SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
             sourceSets.named("main", sourceSet -> sourceSet.getJava().srcDir(extension.getOutputDir()));
             project.getTasks().named("compileJava").configure(task -> task.mustRunAfter(taskProvider));
+            project.getPluginManager().withPlugin("org.jetbrains.kotlin.jvm", unused -> {
+                sourceSets.named("main", sourceSet -> {
+                    Object sourceSetExtension = sourceSet.getExtensions().findByName("kotlin");
+                    if (sourceSetExtension instanceof SourceDirectorySet kotlinSources) {
+                        kotlinSources.srcDir(extension.getOutputDir());
+                    }
+                });
+                project.getTasks().matching(task -> task.getName().equals("compileKotlin"))
+                    .configureEach(task -> task.mustRunAfter(taskProvider));
+            });
         });
     }
 

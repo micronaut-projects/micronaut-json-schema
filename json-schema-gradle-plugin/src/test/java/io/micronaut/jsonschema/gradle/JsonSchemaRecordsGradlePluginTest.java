@@ -54,6 +54,7 @@ class JsonSchemaRecordsGradlePluginTest {
         assertNotNull(extension);
         assertEquals(projectDir.resolve("build/jsonschema-cache"), task.getSchemaCacheDir().get().getAsFile().toPath());
         assertEquals(projectDir.resolve("build/generated/sources/jsonschema"), task.getOutputDir().get().getAsFile().toPath());
+        assertEquals("JAVA", task.getLanguage().get());
         assertEquals(21, task.getLanguageLevel().get());
         assertFalse(task.getSkipOnError().get());
         assertTrue(task.getFailOnMissingSource().get());
@@ -73,6 +74,7 @@ class JsonSchemaRecordsGradlePluginTest {
         task.getUsername().set("app");
         task.getPassword().set("secret");
         task.getTargetPackage().set("io.micronaut.jsonschema.oracle.generated");
+        task.getLanguage().set("KOTLIN");
         task.getLanguageLevel().set(17);
         task.getSchemaCacheDir().set(tempDir.resolve("schema-cache").toFile());
         task.getOutputDir().set(tempDir.resolve("generated-sources").toFile());
@@ -91,6 +93,7 @@ class JsonSchemaRecordsGradlePluginTest {
         assertEquals("app", config.username());
         assertEquals("secret", config.password());
         assertEquals("io.micronaut.jsonschema.oracle.generated", config.targetPackage());
+        assertEquals("KOTLIN", config.language());
         assertEquals(17, config.languageLevel());
         assertEquals(tempDir.resolve("schema-cache"), config.schemaCacheDir());
         assertEquals(tempDir.resolve("generated-sources"), config.outputDir());

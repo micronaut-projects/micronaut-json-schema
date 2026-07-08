@@ -58,7 +58,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Schema discovery and Java record generation pipeline.
+ * Schema discovery and source generation pipeline.
  *
  * @since 2.1.0
  */
@@ -226,9 +226,9 @@ public final class JsonSchemaRecordsPipeline {
             ));
         }
 
-        List<String> generatedJavaFiles = new ArrayList<>();
-        int generatedTypes = generateSources(config, byRelativeFile, warnings, skipped, generatedJavaFiles);
-        Path manifestPath = writeManifest(config, sourceMetadata, warnings, skipped, schemaEntries, emittedFiles, generatedJavaFiles);
+        List<String> generatedSourceFiles = new ArrayList<>();
+        int generatedTypes = generateSources(config, byRelativeFile, warnings, skipped, generatedSourceFiles);
+        Path manifestPath = writeManifest(config, sourceMetadata, warnings, skipped, schemaEntries, emittedFiles, generatedSourceFiles);
         logger.info("[jsonschema-records] INFO generatedTypes=" + generatedTypes + " outputDir=" + config.outputDir());
         return new Result(manifestPath, generatedTypes);
     }
@@ -237,7 +237,7 @@ public final class JsonSchemaRecordsPipeline {
                                 Map<String, DiscoveredSchemaEntry> discoveredSchemas,
                                 List<JsonSchemaRecordsManifest.Warning> warnings,
                                 List<JsonSchemaRecordsManifest.Skipped> skipped,
-                                List<String> generatedJavaFiles) throws IOException {
+                                List<String> generatedSourceFiles) throws IOException {
         int generated = 0;
         List<GenerationPlan> generationPlans = discoveredSchemas.entrySet().stream()
             .map(entry -> planGeneration(config, entry.getKey(), entry.getValue()))
@@ -251,14 +251,14 @@ public final class JsonSchemaRecordsPipeline {
             DiscoveredSchema schema = discovered.schema();
             GeneratorContext generatorContext = new GeneratorContext();
             generatorContext.enableJsonSchemaRecordsProfile();
-            SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, generatorContext);
+            SourceGenerator generator = new SourceGenerator(config.sourceLanguage(), generatorContext);
             try {
                 Schema rootSchema = loadSchema(config, plan);
                 warnIfNonDefaultDialect(rootSchema, discovered, warnings);
                 SchemaReferenceCompositionSupport.prepareLocalCompositionReferences(rootSchema);
                 prepareRootAnyOf(rootSchema);
                 validateRootSchema(rootSchema, plan);
-                Set<String> beforeGeneration = generatedJavaFiles(config.outputDir());
+                Set<String> beforeGeneration = generatedSourceFiles(config.outputDir(), config.sourceFileExtension());
                 SourceGeneratorConfig sourceGeneratorConfig = new SourceGeneratorConfig(
                     null,
                     null,
@@ -268,13 +268,13 @@ public final class JsonSchemaRecordsPipeline {
                     config.targetPackage(),
                     plan.topLevelTypeName(),
                     new SourceGeneratorConfig.JavadocConfig(),
-                    recordAdoptionStrategy(config.languageLevel())
+                    recordAdoptionStrategy(config)
                 );
                 File generatedFile = generator.generate(sourceGeneratorConfig, rootSchema);
                 if (generatedFile != null) {
                     generated++;
                 }
-                addGeneratedJavaFiles(config.outputDir(), beforeGeneration, generatedJavaFiles, plan.outputFile());
+                addGeneratedSourceFiles(config.outputDir(), config.sourceFileExtension(), beforeGeneration, generatedSourceFiles, plan.outputFile());
                 for (GeneratorContext.Warning warning : generator.getWarnings()) {
                     warnings.add(new JsonSchemaRecordsManifest.Warning(discovered.source().name(), schema.scope(), schema.name(), DiscoveryStep.GENERATION, warning.code(), warning.message()));
                     logger.warn(formatWarning(discovered.source().name(), schema.scope(), schema.name(), DiscoveryStep.GENERATION, warning.code(), warning.message()));
@@ -380,36 +380,40 @@ public final class JsonSchemaRecordsPipeline {
         return DRAFT_2020_12_SCHEMA.equals(normalized);
     }
 
-    private Set<String> generatedJavaFiles(Path outputDir) throws IOException {
+    private Set<String> generatedSourceFiles(Path outputDir, String sourceFileExtension) throws IOException {
         if (!Files.exists(outputDir)) {
             return Set.of();
         }
         try (var paths = Files.walk(outputDir)) {
             return paths
                 .filter(Files::isRegularFile)
-                .filter(path -> path.getFileName().toString().endsWith(".java"))
-                .map(path -> relativeJavaFile(outputDir, path))
+                .filter(path -> path.getFileName().toString().endsWith("." + sourceFileExtension))
+                .map(path -> relativeSourceFile(outputDir, path))
                 .sorted()
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         }
     }
 
-    private void addGeneratedJavaFiles(Path outputDir, Set<String> beforeGeneration, List<String> generatedJavaFiles, Path plannedOutputFile) throws IOException {
-        LinkedHashSet<String> newFiles = new LinkedHashSet<>(generatedJavaFiles(outputDir));
+    private void addGeneratedSourceFiles(Path outputDir,
+                                         String sourceFileExtension,
+                                         Set<String> beforeGeneration,
+                                         List<String> generatedSourceFiles,
+                                         Path plannedOutputFile) throws IOException {
+        LinkedHashSet<String> newFiles = new LinkedHashSet<>(generatedSourceFiles(outputDir, sourceFileExtension));
         newFiles.removeAll(beforeGeneration);
         if (Files.exists(plannedOutputFile)) {
-            newFiles.add(relativeJavaFile(outputDir, plannedOutputFile));
+            newFiles.add(relativeSourceFile(outputDir, plannedOutputFile));
         }
         for (String newFile : newFiles) {
-            if (!generatedJavaFiles.contains(newFile)) {
-                generatedJavaFiles.add(newFile);
+            if (!generatedSourceFiles.contains(newFile)) {
+                generatedSourceFiles.add(newFile);
             }
         }
     }
 
-    private String relativeJavaFile(Path outputDir, Path javaFile) {
+    private String relativeSourceFile(Path outputDir, Path sourceFile) {
         return outputDir.toAbsolutePath().normalize()
-            .relativize(javaFile.toAbsolutePath().normalize())
+            .relativize(sourceFile.toAbsolutePath().normalize())
             .toString()
             .replace('\\', '/');
     }
@@ -439,7 +443,7 @@ public final class JsonSchemaRecordsPipeline {
         String fqcn = config.targetPackage() + "." + topLevelTypeName;
         Path outputFile = config.outputDir()
             .resolve(config.targetPackage().replace('.', '/'))
-            .resolve(topLevelTypeName + ".java")
+            .resolve(topLevelTypeName + "." + config.sourceFileExtension())
             .normalize();
         return new GenerationPlan(schemaFile, discovered, topLevelTypeName, fqcn, outputFile);
     }
@@ -527,7 +531,7 @@ public final class JsonSchemaRecordsPipeline {
                                List<JsonSchemaRecordsManifest.Skipped> skipped,
                                List<JsonSchemaRecordsManifest.SchemaFile> schemaEntries,
                                List<String> emittedFiles,
-                               List<String> generatedJavaFiles) throws IOException {
+                               List<String> generatedSourceFiles) throws IOException {
         JsonSchemaRecordsManifest manifest = new JsonSchemaRecordsManifest(
             new JsonSchemaRecordsManifest.Generator(GENERATOR_NAME, Optional.ofNullable(getClass().getPackage().getImplementationVersion()).orElse("dev")),
             Instant.now().toString(),
@@ -540,6 +544,7 @@ public final class JsonSchemaRecordsPipeline {
                 .toList(),
             new JsonSchemaRecordsManifest.Parameters(
                 config.targetPackage(),
+                config.language(),
                 config.languageLevel(),
                 config.schemaCacheDir().toString(),
                 config.outputDir().toString(),
@@ -557,7 +562,7 @@ public final class JsonSchemaRecordsPipeline {
             warnings,
             skipped,
             emittedFiles,
-            generatedJavaFiles
+            generatedSourceFiles
         );
         Path manifestPath = config.schemaCacheDir().resolve("manifest.json");
         Files.createDirectories(manifestPath.getParent());
@@ -585,7 +590,8 @@ public final class JsonSchemaRecordsPipeline {
     }
 
     private void logEffectiveParameters(JsonSchemaRecordsGeneratorConfig config) {
-        logger.info("[jsonschema-records] INFO languageLevel=" + config.languageLevel()
+        logger.info("[jsonschema-records] INFO language=" + config.language()
+            + " languageLevel=" + config.languageLevel()
             + " schemaCacheDir=" + config.schemaCacheDir()
             + " outputDir=" + config.outputDir()
             + " skipOnError=" + config.skipOnError()
@@ -639,8 +645,11 @@ public final class JsonSchemaRecordsPipeline {
             || normalized.endsWith("key");
     }
 
-    private RecordAdoptionStrategy recordAdoptionStrategy(int languageLevel) {
-        return languageLevel >= 16 ? RecordAdoptionStrategy.PREFER_RECORD : RecordAdoptionStrategy.ALWAYS_CLASS;
+    private RecordAdoptionStrategy recordAdoptionStrategy(JsonSchemaRecordsGeneratorConfig config) {
+        if (config.sourceLanguage() == VisitorContext.Language.KOTLIN) {
+            return RecordAdoptionStrategy.PREFER_RECORD;
+        }
+        return config.languageLevel() >= 16 ? RecordAdoptionStrategy.PREFER_RECORD : RecordAdoptionStrategy.ALWAYS_CLASS;
     }
 
     private void writeCanonicalJson(Path outputPath, String jsonSchema) throws IOException {

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Shared Maven mojo state for JSON Schema discovery and Java record generation.
+ * Shared Maven mojo state for JSON Schema discovery and source generation.
  *
  * @since 2.1.0
  */
@@ -52,12 +52,17 @@ public abstract class AbstractGenerateFromJsonSchemaSourcesMojo extends Abstract
     protected abstract String getPassword();
 
     /**
-     * @return Target package for generated Java sources
+     * @return Target package for generated sources
      */
     protected abstract String getTargetPackage();
 
     /**
-     * @return Java language level used for generated sources
+     * @return Generated source language
+     */
+    protected abstract String getLanguage();
+
+    /**
+     * @return Java language level used for generated Java sources
      */
     protected abstract Integer getLanguageLevel();
 
@@ -67,7 +72,7 @@ public abstract class AbstractGenerateFromJsonSchemaSourcesMojo extends Abstract
     protected abstract File getSchemaCacheDir();
 
     /**
-     * @return Directory where Java sources are generated
+     * @return Directory where sources are generated
      */
     protected abstract File getOutputDir();
 

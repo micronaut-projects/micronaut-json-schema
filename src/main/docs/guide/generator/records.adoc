@@ -1,4 +1,4 @@
-The JSON Schema records pipeline discovers JSON Schema documents at build time and generates Java source files from them.
+The JSON Schema records pipeline discovers JSON Schema documents at build time and generates Java or Kotlin source files from them.
 It is useful when schemas are not stored as project files, but are owned by another source of truth such as database metadata or another schema registry.
 
 The pipeline has four main steps:
@@ -6,10 +6,11 @@ The pipeline has four main steps:
 * resolve configured discovery sources
 * discover JSON Schema documents through provider implementations
 * write the discovered schemas and manifest to a cache directory
-* generate Java records or classes into the configured output directory
+* generate Java records/classes or Kotlin data classes into the configured output directory
 
 Generation is opt-in.
 The Gradle task and Maven goal are not bound to normal compilation by default, but when they run they add the generated source directory to the current build so generated types can be compiled in the same invocation.
+When Gradle's `org.jetbrains.kotlin.jvm` plugin is applied and `language = "KOTLIN"`, the generated directory is also registered with the main Kotlin source set.
 For Maven, the goal's `skip` option defaults to `true`; configure `<skip>false</skip>` or pass `-DjsonSchemaRecords.skip=false` when generation should run.
 
 == Source Configuration
@@ -21,6 +22,7 @@ Each source has a stable name, a provider id, and provider-specific options:
 ----
 jsonSchemaRecords {
     targetPackage = "example.generated"
+    language = "JAVA"
     sources = [
         [
             name: "domains",
@@ -87,7 +89,7 @@ That service file contains the provider implementation class name.
 
 == Generated Types
 
-The pipeline delegates Java source generation to the existing JSON Schema-to-Java generator and keeps its behavior where possible.
+The pipeline delegates source generation to the existing JSON Schema generator and keeps its behavior where possible.
 The records profile applies a few additional rules where generated record/class semantics need to be stricter than the default generator.
 In particular, optional scalar properties are boxed, `required` controls property presence, and JSON Schema nullability controls value nullability.
 Property-level `oneOf` or `anyOf` with exactly one `null` branch and one concrete branch is treated as nullable-equivalent by the records profile, while broader `oneOf` and `anyOf` shapes still fall back to `Object` with diagnostics.
@@ -95,11 +97,15 @@ At a discovered schema root, `oneOf` and `anyOf` are delegated to the existing p
 Nested enum type names are derived using the generated type-name sanitizer.
 For ordinary property names this matches the default generator, but unusual property names that are legal Java members and awkward Java type names can produce a cleaner nested enum type name than the default generator.
 
-The `languageLevel` option controls whether records can be emitted:
+`language` selects the generated source language. Supported values are `JAVA` (the default) and `KOTLIN`.
+
+For Java, the `languageLevel` option controls whether records can be emitted:
 
 * `languageLevel >= 16`: records are preferred when the schema shape can be represented as a valid record.
 * `languageLevel < 16`: classes are generated.
 * If a schema shape cannot be emitted as a valid record, the generator may emit a class.
+
+For Kotlin, record-capable schemas are emitted as Kotlin `data class` declarations. `languageLevel` does not affect Kotlin output; configure the Kotlin compiler's language version in the consuming build when required.
 
 Generated files are written under `outputDir`.
 The configured `targetPackage` is used as the package for generated top-level types.

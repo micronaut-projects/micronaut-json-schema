@@ -253,6 +253,46 @@ dependencies {
     }
 
     @Test
+    void compileKotlinSeesGeneratedSourcesWhenGenerationTaskIsInSameGraph(@TempDir Path projectDir) throws Exception {
+        writeSettings(projectDir);
+        compileStaticProvider(projectDir);
+        Files.writeString(projectDir.resolve("build.gradle"), """
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '2.3.21'
+    id 'io.micronaut.jsonschema.records'
+}
+
+repositories {
+    mavenCentral()
+}
+
+jsonSchemaRecords {
+    language = 'KOTLIN'
+    targetPackage = 'example.generated'
+    providerClasspath.from(files('provider-classes'))
+    sources = [
+        [name: 'static', provider: 'static-test']
+    ]
+}
+
+dependencies {
+    compileOnly files(%s)
+}
+""".formatted(compileOnlyFilesForGeneratedAnnotations()));
+
+        BuildResult result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("compileKotlin", "generateFromJsonSchemaSources", "--stacktrace")
+            .withPluginClasspath()
+            .build();
+
+        assertTrue(result.getOutput().contains(":generateFromJsonSchemaSources"));
+        assertTrue(result.getOutput().contains(":compileKotlin"));
+        assertTrue(Files.exists(projectDir.resolve("build/generated/sources/jsonschema/example/generated/MoonPhase.kt")));
+        assertTrue(Files.exists(projectDir.resolve("build/classes/kotlin/main/example/generated/MoonPhase.class")));
+    }
+
+    @Test
     void compileJavaDoesNotRunGenerationTaskByDefault(@TempDir Path projectDir) throws IOException {
         writeSettings(projectDir);
         Path appSource = projectDir.resolve("src/main/java/example/app/App.java");

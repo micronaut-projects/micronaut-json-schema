@@ -79,6 +79,12 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
     private String targetPackage;
 
     /**
+     * Generated source language.
+     */
+    @Parameter(property = "jsonSchemaRecords.language", defaultValue = "JAVA")
+    private String language = "JAVA";
+
+    /**
      * Java language level used for generation.
      */
     @Parameter(property = "jsonSchemaRecords.languageLevel", defaultValue = "21")
@@ -161,7 +167,8 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
                 getOutputDir(),
                 getSources(),
                 getSkipOnError(),
-                getFailOnMissingSource()
+                getFailOnMissingSource(),
+                getLanguage()
             ).toGeneratorConfig());
             getProject().addCompileSourceRoot(getOutputDir().getAbsolutePath());
         } catch (MojoExecutionException e) {
@@ -240,6 +247,14 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
     @Override
     protected String getTargetPackage() {
         return targetPackage;
+    }
+
+    /**
+     * @return Generated source language.
+     */
+    @Override
+    protected String getLanguage() {
+        return language;
     }
 
     /**
