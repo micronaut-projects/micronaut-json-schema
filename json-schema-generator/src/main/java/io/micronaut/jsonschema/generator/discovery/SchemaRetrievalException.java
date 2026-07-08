@@ -27,16 +27,27 @@ public final class SchemaRetrievalException extends IOException {
     private final String code;
     private final String retrievalMode;
 
+    /**
+     * @param code Stable diagnostic code for the retrieval failure
+     * @param message Human-readable failure description
+     * @param retrievalMode Retrieval mechanism that failed, or {@code null} when none was selected
+     */
     public SchemaRetrievalException(String code, String message, String retrievalMode) {
         super(message);
         this.code = code;
         this.retrievalMode = retrievalMode;
     }
 
+    /**
+     * @return Stable diagnostic code for the retrieval failure
+     */
     public String code() {
         return code;
     }
 
+    /**
+     * @return Retrieval mechanism that failed, or {@code null} when none was selected
+     */
     public String retrievalMode() {
         return retrievalMode;
     }

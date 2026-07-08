@@ -184,32 +184,58 @@ public final class Schema {
         return this;
     }
 
+    /**
+     * @return Provider-specific type metadata, or {@code null} when none was supplied
+     */
     public Object getExtendedType() {
         return extendedType;
     }
 
+    /**
+     * Set provider-specific type metadata used for source-specific Java type mapping.
+     *
+     * @param extendedType The provider-specific type metadata
+     * @return This schema
+     */
     public Schema setExtendedType(Object extendedType) {
         this.extendedType = extendedType;
         return this;
     }
 
+    /**
+     * @return Whether provider-specific type metadata is available
+     */
     public boolean hasExtendedType() {
         return extendedType != null;
     }
 
+    /**
+     * @return The provider-reported SQL precision, or {@code null} when not applicable
+     */
     public Integer getSqlPrecision() {
         return sqlPrecision;
     }
 
+    /**
+     * @param sqlPrecision The provider-reported SQL precision
+     * @return This schema
+     */
     public Schema setSqlPrecision(Integer sqlPrecision) {
         this.sqlPrecision = sqlPrecision;
         return this;
     }
 
+    /**
+     * @return The provider-reported SQL scale, or {@code null} when not applicable
+     */
     public Integer getSqlScale() {
         return sqlScale;
     }
 
+    /**
+     * @param sqlScale The provider-reported SQL scale
+     * @return This schema
+     */
     public Schema setSqlScale(Integer sqlScale) {
         this.sqlScale = sqlScale;
         return this;

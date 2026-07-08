@@ -27,6 +27,13 @@ public final class SourceUnavailableException extends Exception {
     private final DiscoveryStep step;
     private final String code;
 
+    /**
+     * @param scope Discovery scope in which the source is unavailable
+     * @param name Source object name, or {@code null} when the failure applies to the whole source
+     * @param step Discovery step that detected the unavailable source
+     * @param code Stable diagnostic code for the failure
+     * @param message Human-readable failure description
+     */
     public SourceUnavailableException(String scope, String name, DiscoveryStep step, String code, String message) {
         super(message);
         this.scope = scope;
@@ -35,18 +42,30 @@ public final class SourceUnavailableException extends Exception {
         this.code = code;
     }
 
+    /**
+     * @return Discovery scope in which the source is unavailable
+     */
     public String scope() {
         return scope;
     }
 
+    /**
+     * @return Source object name, or {@code null} when the failure applies to the whole source
+     */
     public String name() {
         return name;
     }
 
+    /**
+     * @return Discovery step that detected the unavailable source
+     */
     public DiscoveryStep step() {
         return step;
     }
 
+    /**
+     * @return Stable diagnostic code for the failure
+     */
     public String code() {
         return code;
     }
