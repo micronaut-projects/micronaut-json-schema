@@ -25,13 +25,25 @@ import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.DriverPropertyInfo;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -105,19 +117,139 @@ class JsonSchemaRecordsGradlePluginTest {
         assertFalse(config.failOnMissingSource());
     }
 
+    @Test
+    void generateRegistersAndDeregistersJdbcDrivers(@TempDir Path tempDir) throws Exception {
+        Path driverClasspath = tempDir.resolve("driver-classpath");
+        Path serviceFile = driverClasspath.resolve("META-INF/services/java.sql.Driver");
+        Files.createDirectories(serviceFile.getParent());
+        Files.writeString(serviceFile, TestJdbcDriver.class.getName() + "\n");
+        Project project = ProjectBuilder.builder().withProjectDir(tempDir.toFile()).build();
+        RecordingGenerateFromJsonSchemaSourcesTask task = project.getTasks().create(
+            "recordingGenerateWithJdbcDriver",
+            RecordingGenerateFromJsonSchemaSourcesTask.class
+        );
+        configureRequiredProperties(task, tempDir);
+        task.getJdbcClasspath().from(driverClasspath.toFile());
+        task.inspectJdbcDriver = true;
+
+        task.generate();
+
+        assertTrue(task.jdbcDriverWasAvailable);
+        assertThrows(SQLException.class, () -> DriverManager.getDriver("jdbc:test-driver:example"));
+    }
+
+    @Test
+    void generateAllowsCredentialsToBeOmitted(@TempDir Path tempDir) throws Exception {
+        Project project = ProjectBuilder.builder().withProjectDir(tempDir.toFile()).build();
+        RecordingGenerateFromJsonSchemaSourcesTask task = project.getTasks().create(
+            "recordingGenerateWithoutCredentials",
+            RecordingGenerateFromJsonSchemaSourcesTask.class
+        );
+        configureRequiredProperties(task, tempDir);
+
+        task.generate();
+
+        JsonSchemaRecordsGeneratorConfig config = task.getCapturedConfig();
+        assertNotNull(config);
+        assertNull(config.jdbcUrl());
+        assertNull(config.username());
+        assertNull(config.password());
+    }
+
+    @Test
+    void executeWrapsPipelineFailure(@TempDir Path tempDir) {
+        Project project = ProjectBuilder.builder().withProjectDir(tempDir.toFile()).build();
+        RecordingGenerateFromJsonSchemaSourcesTask task = project.getTasks().create(
+            "failingGenerateFromJsonSchemaSources",
+            RecordingGenerateFromJsonSchemaSourcesTask.class
+        );
+        configureRequiredProperties(task, tempDir);
+        Exception failure = new IOException("boom");
+        task.pipelineFailure = failure;
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, task::execute);
+
+        assertEquals("jsonSchemaRecords generation failed", exception.getMessage());
+        assertSame(failure, exception.getCause());
+    }
+
+    private static void configureRequiredProperties(GenerateFromJsonSchemaSourcesTask task, Path tempDir) {
+        task.getTargetPackage().set("example.generated");
+        task.getSchemaCacheDir().set(tempDir.resolve("schema-cache").toFile());
+        task.getOutputDir().set(tempDir.resolve("generated-sources").toFile());
+    }
+
     /**
      * Task variant that captures the resolved generator config without touching Oracle.
      */
     public abstract static class RecordingGenerateFromJsonSchemaSourcesTask extends GenerateFromJsonSchemaSourcesTask {
         private JsonSchemaRecordsGeneratorConfig capturedConfig;
+        private Exception pipelineFailure;
+        private boolean inspectJdbcDriver;
+        private boolean jdbcDriverWasAvailable;
 
         @Override
-        void executePipeline(JsonSchemaRecordsLogger logger, JsonSchemaRecordsGeneratorConfig config, ClassLoader providerClassLoader) {
+        void executePipeline(JsonSchemaRecordsLogger logger,
+                             JsonSchemaRecordsGeneratorConfig config,
+                             ClassLoader providerClassLoader) throws Exception {
+            if (pipelineFailure != null) {
+                throw pipelineFailure;
+            }
             this.capturedConfig = config;
+            if (inspectJdbcDriver) {
+                Driver driver = DriverManager.getDriver("jdbc:test-driver:example");
+                jdbcDriverWasAvailable = driver.acceptsURL("jdbc:test-driver:example")
+                    && driver.connect("jdbc:test-driver:example", new Properties()) == null
+                    && driver.getPropertyInfo("jdbc:test-driver:example", new Properties()).length == 0
+                    && driver.getMajorVersion() == 1
+                    && driver.getMinorVersion() == 2
+                    && driver.jdbcCompliant()
+                    && driver.getParentLogger() == Logger.getGlobal();
+            }
         }
 
         JsonSchemaRecordsGeneratorConfig getCapturedConfig() {
             return capturedConfig;
+        }
+    }
+
+    /**
+     * JDBC driver exposed through a temporary service descriptor to exercise Gradle's JDBC classpath support.
+     */
+    public static final class TestJdbcDriver implements Driver {
+        @Override
+        public Connection connect(String url, Properties info) {
+            return null;
+        }
+
+        @Override
+        public boolean acceptsURL(String url) {
+            return url.startsWith("jdbc:test-driver:");
+        }
+
+        @Override
+        public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
+            return new DriverPropertyInfo[0];
+        }
+
+        @Override
+        public int getMajorVersion() {
+            return 1;
+        }
+
+        @Override
+        public int getMinorVersion() {
+            return 2;
+        }
+
+        @Override
+        public boolean jdbcCompliant() {
+            return true;
+        }
+
+        @Override
+        public Logger getParentLogger() {
+            return Logger.getGlobal();
         }
     }
 }
