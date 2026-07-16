@@ -2157,24 +2157,8 @@ endpoints:
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">[micronaut]
-  [micronaut.jsonschema]
-    [micronaut.jsonschema.configuration]
-      [micronaut.jsonschema.configuration.validator]
-        [micronaut.jsonschema.configuration.validator.dependency-injection]
-          enabled=true
-          validation-strategy="reachable"
-        [micronaut.jsonschema.configuration.validator.injecterrors]
-          [micronaut.jsonschema.configuration.validator.injecterrors.endpoint]
-            enabled=true
-[endpoints]
-  [endpoints.all]
-    sensitive=false
-  [endpoints.injecterrors]
-    sensitive=false
-  [endpoints.health]
-    [endpoints.health.injecterrors]
-      enabled=true</code></pre>
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">micronaut = {jsonschema = {configuration = {validator = {dependency-injection = {enabled = true, validation-strategy = "reachable"}, injecterrors = {endpoint = {enabled = true}}}}}}
+endpoints = {all = {sensitive = false}, injecterrors = {sensitive = false}, health = {injecterrors = {enabled = true}}}</code></pre>
 </div>
 </div>
 <div class="listingblock multi-language-sample">
@@ -2461,12 +2445,7 @@ endpoints.configurationerrors.enabled=true</code></pre>
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">[endpoints]
-  [endpoints.all]
-    sensitive=false
-  [endpoints.configurationerrors]
-    sensitive=false
-    enabled=true</code></pre>
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">endpoints = {all = {sensitive = false}, configurationerrors = {sensitive = false, enabled = true}}</code></pre>
 </div>
 </div>
 <div class="listingblock multi-language-sample">
