@@ -1,0 +1,17 @@
+io.micronaut.jsonschema
+io.micronaut.jsonschema.configuration.validator
+io.micronaut.jsonschema.configuration.validator.cli
+io.micronaut.jsonschema.configuration.validator.model
+io.micronaut.jsonschema.configuration.validator.report
+io.micronaut.jsonschema.generator
+io.micronaut.jsonschema.generator.aggregator
+io.micronaut.jsonschema.generator.loaders
+io.micronaut.jsonschema.generator.utils
+io.micronaut.jsonschema.info
+io.micronaut.jsonschema.model
+io.micronaut.jsonschema.serialization
+io.micronaut.jsonschema.utils
+io.micronaut.jsonschema.validation
+io.micronaut.jsonschema.visitor
+io.micronaut.jsonschema.visitor.aggregator
+io.micronaut.jsonschema.visitor.context
