@@ -16,10 +16,10 @@
 # a managed version (a version which alias starts with "managed-"
 
 [versions]
-micronaut-validation = "5.0.0"
 micronaut = "5.1.6"
 micronaut-serde = "3.1.0"
 micronaut-sourcegen = "2.1.0"
+micronaut-validation = "5.1.0"
 managed-json-schema-validator = "3.0.6"
 micronaut-toml = "3.0.0-M2"
 micronaut-sql = "7.0.1-M2"
