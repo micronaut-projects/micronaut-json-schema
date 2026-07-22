@@ -2,7 +2,6 @@ package io.micronaut.jsonschema.visitor
 
 import io.micronaut.jsonschema.model.Schema
 
-
 class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
     void "schema with jackson property annotations"() {
@@ -30,6 +29,43 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['name'].type == [Schema.Type.STRING]
         schema.properties['age'] == null
         schema.properties['weight (kg)'].type == [Schema.Type.NUMBER]
+    }
+
+    void "schema with JsonProperty annotations on enum constants"() {
+        given:
+        def schema = buildJsonSchema('test.Product', 'product', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema
+        public record Product(
+                PriceType priceType,
+                MixedType mixedType
+        ) {
+        }
+
+        enum PriceType {
+            @JsonProperty("M")
+            meter,
+            @JsonProperty("K")
+            kilo
+        }
+
+        enum MixedType {
+            @JsonProperty("custom")
+            CUSTOM,
+            DEFAULT
+        }
+""")
+
+        expect:
+        schema.title == "Product"
+        schema.properties['priceType'].type == [Schema.Type.STRING]
+        schema.properties['priceType'].enumValues == ["M", "K"]
+        schema.properties['mixedType'].type == [Schema.Type.STRING]
+        schema.properties['mixedType'].enumValues == ["custom", "DEFAULT"]
     }
 
     void "schema with subtypes"() {
