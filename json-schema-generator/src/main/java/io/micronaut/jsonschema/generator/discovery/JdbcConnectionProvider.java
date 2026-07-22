@@ -21,7 +21,7 @@ import java.sql.SQLException;
 /**
  * Lazily supplies a JDBC connection to discovery providers that need one.
  *
- * @since 2.1.0
+ * @since 2.2.0
  */
 public interface JdbcConnectionProvider {
 

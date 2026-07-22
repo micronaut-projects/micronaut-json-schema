@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.generator.oracle;
 /**
  * Discovery object scope used in Oracle diagnostics.
  *
- * @since 2.1.0
+ * @since 2.2.0
  */
 public enum OracleDiscoveryScope {
     /**

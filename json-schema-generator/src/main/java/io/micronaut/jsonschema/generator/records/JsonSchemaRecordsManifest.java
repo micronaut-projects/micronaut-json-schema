@@ -34,7 +34,7 @@ import java.util.Map;
  * @param skipped Skipped objects when {@code skipOnError=true}
  * @param emittedSchemaFiles Relative schema file paths
  * @param generatedSourceFiles Relative generated source file paths
- * @since 2.1.0
+ * @since 2.2.0
  */
 @Internal
 public record JsonSchemaRecordsManifest(

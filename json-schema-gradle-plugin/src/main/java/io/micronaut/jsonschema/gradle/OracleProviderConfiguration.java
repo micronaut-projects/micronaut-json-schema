@@ -20,7 +20,7 @@ import org.gradle.api.provider.Property;
 /**
  * Oracle provider-family configuration.
  *
- * @since 2.1.0
+ * @since 2.2.0
  */
 public abstract class OracleProviderConfiguration {
 

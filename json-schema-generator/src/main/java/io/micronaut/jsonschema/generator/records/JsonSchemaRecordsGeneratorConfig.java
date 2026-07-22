@@ -40,7 +40,7 @@ import java.util.Map;
  * @param skipOnError Whether to skip individual failures
  * @param failOnMissingSource Whether unavailable configured sources should fail the build
  * @param language Generated source language
- * @since 2.1.0
+ * @since 2.2.0
  */
 @Internal
 public record JsonSchemaRecordsGeneratorConfig(

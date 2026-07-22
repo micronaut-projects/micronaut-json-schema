@@ -29,7 +29,7 @@ import java.util.Optional;
  * @param sourceMetadata Sanitized provider source metadata available to the provider
  * @param logger Logger for diagnostics
  * @param jdbcConnectionProvider JDBC connection provider for JDBC-backed discovery providers
- * @since 2.1.0
+ * @since 2.2.0
  */
 public record SchemaDiscoveryContext(
     boolean skipOnError,

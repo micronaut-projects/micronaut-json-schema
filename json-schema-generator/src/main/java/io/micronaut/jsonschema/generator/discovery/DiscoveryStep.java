@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.generator.discovery;
 /**
  * Pipeline step used in Oracle diagnostics.
  *
- * @since 2.1.0
+ * @since 2.2.0
  */
 public enum DiscoveryStep {
     /**

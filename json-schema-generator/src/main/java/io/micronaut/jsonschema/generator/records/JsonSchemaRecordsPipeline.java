@@ -60,7 +60,7 @@ import java.util.Set;
 /**
  * Schema discovery and source generation pipeline.
  *
- * @since 2.1.0
+ * @since 2.2.0
  */
 @Internal
 public final class JsonSchemaRecordsPipeline {

@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 /**
  * Shared support for same-document JSON Schema references and composition that changes Java type shape.
  *
- * @since 2.1.0
+ * @since 2.2.0
  */
 @Internal
 public final class SchemaReferenceCompositionSupport {

@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Shared Maven mojo state for JSON Schema discovery and source generation.
  *
- * @since 2.1.0
+ * @since 2.2.0
  */
 public abstract class AbstractGenerateFromJsonSchemaSourcesMojo extends AbstractMojo {
 

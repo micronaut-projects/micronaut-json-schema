@@ -20,7 +20,7 @@ import java.io.IOException;
 /**
  * Input-level schema retrieval failure with a stable diagnostic code.
  *
- * @since 2.1.0
+ * @since 2.2.0
  */
 public final class SchemaRetrievalException extends IOException {
 

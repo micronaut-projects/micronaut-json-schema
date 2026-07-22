@@ -23,7 +23,7 @@ package io.micronaut.jsonschema.generator.discovery;
  * @param step Pipeline step
  * @param code Warning code
  * @param message Warning message
- * @since 2.1.0
+ * @since 2.2.0
  */
 public record DiscoveryWarning(
     String scope,

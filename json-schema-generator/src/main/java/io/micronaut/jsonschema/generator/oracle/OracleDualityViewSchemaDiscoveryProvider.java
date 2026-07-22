@@ -37,7 +37,7 @@ import java.util.Set;
 /**
  * Discovery provider for Oracle JSON relational duality views.
  *
- * @since 2.1.0
+ * @since 2.2.0
  */
 public final class OracleDualityViewSchemaDiscoveryProvider implements SchemaDiscoveryProvider {
 
