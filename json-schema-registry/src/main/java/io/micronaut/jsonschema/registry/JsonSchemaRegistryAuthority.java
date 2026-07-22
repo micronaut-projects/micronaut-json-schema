@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.registry;
 /**
  * Authority used to resolve candidate JSON Schema documents.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public enum JsonSchemaRegistryAuthority {
     /**

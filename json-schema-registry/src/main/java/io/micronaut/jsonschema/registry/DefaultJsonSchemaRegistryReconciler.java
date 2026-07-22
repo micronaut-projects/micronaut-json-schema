@@ -54,7 +54,7 @@ import java.util.Optional;
 /**
  * Default registry reconciler.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Singleton
 public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegistryReconciler {

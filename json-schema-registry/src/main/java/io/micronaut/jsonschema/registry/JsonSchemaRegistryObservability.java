@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Observability hook for registry reconciliation.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public interface JsonSchemaRegistryObservability {
 

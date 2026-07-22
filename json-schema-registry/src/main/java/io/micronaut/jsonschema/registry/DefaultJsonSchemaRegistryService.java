@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Default programmatic registry reconciliation service.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Singleton
 public final class DefaultJsonSchemaRegistryService implements JsonSchemaRegistryService {

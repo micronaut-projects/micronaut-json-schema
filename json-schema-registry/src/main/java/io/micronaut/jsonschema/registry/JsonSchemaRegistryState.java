@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 /**
  * Last known registry reconciliation state.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Singleton
 public final class JsonSchemaRegistryState {

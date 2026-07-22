@@ -33,7 +33,7 @@ import java.util.Map;
  * @param driftMode Oracle drift mode
  * @param dryRun Whether writes should be previewed only
  * @param operationRecorder Operation recorder
- * @since 2.0.0
+ * @since 2.2.0
  */
 public record OracleMaterializationRequest(
     JsonSchemaCandidate candidate,

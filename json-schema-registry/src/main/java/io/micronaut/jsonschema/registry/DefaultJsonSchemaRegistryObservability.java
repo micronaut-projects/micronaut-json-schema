@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 /**
  * Default registry reconciliation observability.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Singleton
 public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaRegistryObservability {

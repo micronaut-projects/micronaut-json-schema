@@ -24,7 +24,7 @@ import java.io.IOException;
 /**
  * Jackson-backed schema normalizer.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Singleton
 public final class DefaultJsonSchemaNormalizer implements JsonSchemaNormalizer {

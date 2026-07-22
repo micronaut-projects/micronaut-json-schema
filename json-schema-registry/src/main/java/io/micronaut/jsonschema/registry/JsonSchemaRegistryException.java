@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.registry;
 /**
  * Exception thrown when registry reconciliation fails.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public class JsonSchemaRegistryException extends RuntimeException {
 

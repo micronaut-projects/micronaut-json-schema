@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
 /**
  * Built-in Oracle JSON domain materializer.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Singleton
 public final class OracleDomainMaterializer implements OracleSchemaMaterializer {

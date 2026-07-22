@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
 /**
  * Oracle JSON relational duality view materializer.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Singleton
 public final class OracleDualityJsonViewMaterializer implements OracleSchemaMaterializer {

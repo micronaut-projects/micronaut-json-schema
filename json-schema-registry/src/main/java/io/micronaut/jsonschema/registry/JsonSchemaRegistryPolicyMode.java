@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.registry;
 /**
  * Target reconciliation policy.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public enum JsonSchemaRegistryPolicyMode {
     /**

@@ -25,7 +25,7 @@ import io.micronaut.core.annotation.Nullable;
  * @param status Outcome status
  * @param failure Whether this outcome represents a reconciliation failure
  * @param message Optional diagnostic message
- * @since 2.0.0
+ * @since 2.2.0
  */
 public record JsonSchemaRegistryOutcome(
     LogicalSchema logicalSchema,

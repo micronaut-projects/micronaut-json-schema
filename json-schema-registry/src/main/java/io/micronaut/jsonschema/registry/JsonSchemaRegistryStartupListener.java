@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Runs registry reconciliation on application startup.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Singleton
 @Requires(property = JsonSchemaRegistryConfiguration.PREFIX + ".enabled", value = "true")

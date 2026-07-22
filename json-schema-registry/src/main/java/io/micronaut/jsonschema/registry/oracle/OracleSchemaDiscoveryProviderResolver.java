@@ -27,7 +27,7 @@ import java.util.ServiceLoader;
 /**
  * Resolves Oracle authority discovery providers from Micronaut beans or {@link ServiceLoader}.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Singleton
 public final class OracleSchemaDiscoveryProviderResolver {

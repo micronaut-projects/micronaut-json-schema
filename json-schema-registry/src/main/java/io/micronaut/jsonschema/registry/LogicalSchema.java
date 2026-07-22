@@ -23,7 +23,7 @@ import io.micronaut.core.annotation.Nullable;
  * @param logicalFqcn Stable logical fully qualified schema name
  * @param subject Schema Registry subject name
  * @param oracleArtifactName Oracle artifact name when an Oracle authority provider or materializer participates
- * @since 2.0.0
+ * @since 2.2.0
  */
 public record LogicalSchema(
     String logicalFqcn,

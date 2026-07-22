@@ -27,7 +27,7 @@ import org.reactivestreams.Publisher;
 /**
  * Readiness indicator backed by the last registry reconciliation state.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 @Readiness
 @Singleton

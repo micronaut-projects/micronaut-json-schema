@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Performs registry reconciliation.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public interface JsonSchemaRegistryReconciler {
 

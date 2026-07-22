@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.registry;
 /**
  * Per-thread reconciliation run diagnostics.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 final class JsonSchemaRegistryRunContext implements AutoCloseable {
     private static final ThreadLocal<String> RUN_ID = new ThreadLocal<>();

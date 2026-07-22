@@ -38,7 +38,7 @@ import java.util.Locale;
 /**
  * Oracle JSON relational duality view discovery provider.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public final class OracleDualityJsonViewDiscoveryProvider implements OracleSchemaDiscoveryProvider {
     private static final ObjectMapper OBJECT_MAPPER = JsonSchemaMapperFactory.createMapper();

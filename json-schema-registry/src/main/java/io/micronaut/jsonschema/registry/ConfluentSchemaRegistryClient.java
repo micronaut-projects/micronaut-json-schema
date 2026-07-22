@@ -37,7 +37,7 @@ import java.util.Optional;
 /**
  * Minimal Confluent Schema Registry JSON Schema client for runtime registry reconciliation.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 final class ConfluentSchemaRegistryClient implements AutoCloseable {
     private static final String JSON_CONTENT_TYPE = "application/vnd.schemaregistry.v1+json";

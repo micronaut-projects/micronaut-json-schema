@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.registry;
 /**
  * Registry failure handling strategy.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public enum JsonSchemaRegistryFailFastStrategy {
     /**

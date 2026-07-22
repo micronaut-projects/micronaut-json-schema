@@ -21,7 +21,7 @@ package io.micronaut.jsonschema.registry;
  * @param logicalSchema The logical schema identity
  * @param schemaJson Candidate JSON Schema text
  * @param authoritySource Source description used in diagnostics
- * @since 2.0.0
+ * @since 2.2.0
  */
 public record JsonSchemaCandidate(
     LogicalSchema logicalSchema,

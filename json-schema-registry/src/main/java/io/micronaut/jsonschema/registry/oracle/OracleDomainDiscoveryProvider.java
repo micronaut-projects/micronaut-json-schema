@@ -42,7 +42,7 @@ import java.util.regex.Pattern;
 /**
  * Built-in Oracle JSON domain discovery provider.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public final class OracleDomainDiscoveryProvider implements OracleSchemaDiscoveryProvider {
     private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)VALIDATE\\s+USING\\s+'((?:''|[^'])*)'");

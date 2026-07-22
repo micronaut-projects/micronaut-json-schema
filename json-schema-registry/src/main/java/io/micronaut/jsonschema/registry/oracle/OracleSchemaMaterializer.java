@@ -23,7 +23,7 @@ import java.util.Optional;
 /**
  * Oracle materializer extension point.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public interface OracleSchemaMaterializer {
 

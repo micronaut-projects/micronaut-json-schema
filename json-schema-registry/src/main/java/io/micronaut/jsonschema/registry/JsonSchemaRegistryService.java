@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Programmatic JSON Schema Registry reconciliation API.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public interface JsonSchemaRegistryService {
 

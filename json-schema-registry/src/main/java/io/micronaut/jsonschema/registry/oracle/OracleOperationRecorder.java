@@ -18,7 +18,7 @@ package io.micronaut.jsonschema.registry.oracle;
 /**
  * Records timed Oracle materialization operations.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public interface OracleOperationRecorder {
     /**
