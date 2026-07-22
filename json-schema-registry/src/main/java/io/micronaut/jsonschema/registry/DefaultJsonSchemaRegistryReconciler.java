@@ -95,7 +95,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         return switch (configuration.getAuthority()) {
             case ORACLE -> reconcileOracleAuthority();
             case APPLICATION -> reconcileApplicationAuthority();
-            case SR -> reconcileSrAuthority();
+            case CSR -> reconcileCsrAuthority();
         };
     }
 
@@ -105,7 +105,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         if (candidates.isEmpty()) {
             LOG.info("No application JSON Schema authority objects discovered");
         }
-        outcomes.addAll(reconcileSrTarget(candidates));
+        outcomes.addAll(reconcileCsrTarget(candidates));
         outcomes.addAll(reconcileOracleTarget(candidates));
         return outcomes;
     }
@@ -153,32 +153,32 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         return candidates;
     }
 
-    private List<JsonSchemaRegistryOutcome> reconcileSrAuthority() {
-        if (!configuration.getSr().isEnabled()) {
+    private List<JsonSchemaRegistryOutcome> reconcileCsrAuthority() {
+        if (!configuration.getCsr().isEnabled()) {
             return List.of(JsonSchemaRegistryOutcome.failure(
-                new LogicalSchema("sr", null, null),
-                "sr.authority",
+                new LogicalSchema("csr", null, null),
+                "csr.authority",
                 JsonSchemaRegistryOutcomeStatus.MISSING_AUTHORITY,
-                "json-schema.registry.authority=sr requires json-schema.registry.sr.enabled=true"
+                "micronaut.jsonschema.registry.authority=csr requires micronaut.jsonschema.registry.csr.enabled=true"
             ));
         }
         List<JsonSchemaRegistryOutcome> outcomes = new ArrayList<>();
         List<JsonSchemaCandidate> candidates = new ArrayList<>();
-        JsonSchemaRegistryConfiguration.SrConfiguration sr = configuration.getSr();
-        try (ConfluentSchemaRegistryClient srClient = new ConfluentSchemaRegistryClient(sr, meterRegistry())) {
-            List<String> subjects = sr.getSubjects().isEmpty()
-                ? srClient.subjects(configuration.getNaming().getSubjectPrefix())
-                : sr.getSubjects();
+        JsonSchemaRegistryConfiguration.CsrConfiguration csr = configuration.getCsr();
+        try (ConfluentSchemaRegistryClient csrClient = new ConfluentSchemaRegistryClient(csr, meterRegistry())) {
+            List<String> subjects = csr.getSubjects().isEmpty()
+                ? csrClient.subjects(configuration.getNaming().getSubjectPrefix())
+                : csr.getSubjects();
             if (subjects.isEmpty()) {
                 LOG.info("No Schema Registry authority subjects discovered");
             }
             for (String subject : subjects) {
-                Optional<String> latest = srClient.latestSchema(subject);
+                Optional<String> latest = csrClient.latestSchema(subject);
                 LogicalSchema logicalSchema = logicalSchemaFromSubject(subject);
                 if (latest.isEmpty()) {
                     outcomes.add(JsonSchemaRegistryOutcome.failure(
                         logicalSchema,
-                        "sr.authority",
+                        "csr.authority",
                         JsonSchemaRegistryOutcomeStatus.MISSING_AUTHORITY,
                         "No latest Schema Registry schema found for subject " + subject
                     ));
@@ -188,11 +188,11 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                     normalizer.normalize(latest.get());
                     outcomes.add(JsonSchemaRegistryOutcome.ok(
                         logicalSchema,
-                        "sr.authority",
+                        "csr.authority",
                         JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                         "Read Schema Registry authority schema from " + subject
                     ));
-                    if (requiresExplicitSrPairing(subject)) {
+                    if (requiresExplicitCsrPairing(subject)) {
                         outcomes.add(JsonSchemaRegistryOutcome.failure(
                             logicalSchema,
                             "oracle",
@@ -203,11 +203,11 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                         ));
                         continue;
                     }
-                    candidates.add(new JsonSchemaCandidate(logicalSchema, latest.get(), "sr:" + subject));
+                    candidates.add(new JsonSchemaCandidate(logicalSchema, latest.get(), "csr:" + subject));
                 } catch (Exception e) {
                     outcomes.add(JsonSchemaRegistryOutcome.failure(
                         logicalSchema,
-                        "sr.authority",
+                        "csr.authority",
                         JsonSchemaRegistryOutcomeStatus.UNREADABLE_AUTHORITY,
                         e.getMessage()
                     ));
@@ -215,8 +215,8 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             }
         } catch (Exception e) {
             outcomes.add(JsonSchemaRegistryOutcome.failure(
-                new LogicalSchema("sr", null, null),
-                "sr.authority",
+                new LogicalSchema("csr", null, null),
+                "csr.authority",
                 JsonSchemaRegistryOutcomeStatus.FAILED,
                 e.getMessage()
             ));
@@ -231,7 +231,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                 new LogicalSchema("oracle", null, null),
                 "oracle.authority",
                 JsonSchemaRegistryOutcomeStatus.MISSING_AUTHORITY,
-                "json-schema.registry.authority=oracle requires json-schema.registry.oracle.enabled=true"
+                "micronaut.jsonschema.registry.authority=oracle requires micronaut.jsonschema.registry.oracle.enabled=true"
             ));
         }
         List<JsonSchemaRegistryOutcome> outcomes = new ArrayList<>();
@@ -248,8 +248,8 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                     JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                     "Read Oracle authority schema from " + candidate.authoritySource()
                 ));
-                if (configuration.getSr().isEnabled()) {
-                    outcomes.addAll(reconcileSrTarget(List.of(candidate)));
+                if (configuration.getCsr().isEnabled()) {
+                    outcomes.addAll(reconcileCsrTarget(List.of(candidate)));
                 }
             }
         } catch (Exception e) {
@@ -391,47 +391,47 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         return outcomes;
     }
 
-    private List<JsonSchemaRegistryOutcome> reconcileSrTarget(List<JsonSchemaCandidate> candidates) {
-        if (!configuration.getSr().isEnabled()) {
+    private List<JsonSchemaRegistryOutcome> reconcileCsrTarget(List<JsonSchemaCandidate> candidates) {
+        if (!configuration.getCsr().isEnabled()) {
             return List.of();
         }
         List<JsonSchemaRegistryOutcome> outcomes = new ArrayList<>();
-        JsonSchemaRegistryConfiguration.SrConfiguration sr = configuration.getSr();
-        try (ConfluentSchemaRegistryClient srClient = new ConfluentSchemaRegistryClient(sr, meterRegistry())) {
+        JsonSchemaRegistryConfiguration.CsrConfiguration csr = configuration.getCsr();
+        try (ConfluentSchemaRegistryClient csrClient = new ConfluentSchemaRegistryClient(csr, meterRegistry())) {
             for (JsonSchemaCandidate candidate : candidates) {
-                String subject = resolveSrSubject(candidate);
+                String subject = resolveCsrSubject(candidate);
                 if (subject == null || subject.isBlank()) {
                     outcomes.add(JsonSchemaRegistryOutcome.failure(
                         candidate.logicalSchema(),
-                        "sr",
+                        "csr",
                         JsonSchemaRegistryOutcomeStatus.FAILED,
-                        "missing_mapping: Unable to derive Schema Registry subject; configure json-schema.registry.mappings for this logical schema"
+                        "missing_mapping: Unable to derive Schema Registry subject; configure micronaut.jsonschema.registry.mappings for this logical schema"
                     ));
                     continue;
                 }
                 try {
-                    Optional<String> latest = srClient.latestSchema(subject);
+                    Optional<String> latest = csrClient.latestSchema(subject);
                     if (latest.isEmpty()) {
-                        if (sr.getPolicy().getMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
+                        if (csr.getPolicy().getMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
                             outcomes.add(JsonSchemaRegistryOutcome.ok(
                                 candidate.logicalSchema(),
-                                "sr",
+                                "csr",
                                 JsonSchemaRegistryOutcomeStatus.MISSING_TARGET,
                                 "Schema Registry subject is missing: " + subject
                             ));
                         } else if (configuration.isDryRun()) {
                             outcomes.add(JsonSchemaRegistryOutcome.ok(
                                 candidate.logicalSchema(),
-                                "sr",
+                                "csr",
                                 JsonSchemaRegistryOutcomeStatus.CREATED,
                                 "[DRY-RUN] would register Schema Registry subject " + subject
                             ));
                         } else {
-                            ensureSchemaRegistryWritable(srClient, subject);
-                            srClient.register(subject, candidate.schemaJson());
+                            ensureSchemaRegistryWritable(csrClient, subject);
+                            csrClient.register(subject, candidate.schemaJson());
                             outcomes.add(JsonSchemaRegistryOutcome.ok(
                                 candidate.logicalSchema(),
-                                "sr",
+                                "csr",
                                 JsonSchemaRegistryOutcomeStatus.CREATED,
                                 "Registered Schema Registry subject " + subject
                             ));
@@ -441,40 +441,40 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                     if (normalizer.equivalent(latest.get(), candidate.schemaJson())) {
                         outcomes.add(JsonSchemaRegistryOutcome.ok(
                             candidate.logicalSchema(),
-                            "sr",
+                            "csr",
                             JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                             "Schema Registry subject is equivalent: " + subject
                         ));
-                    } else if (sr.getPolicy().getMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
+                    } else if (csr.getPolicy().getMode() == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY) {
                         outcomes.add(JsonSchemaRegistryOutcome.ok(
                             candidate.logicalSchema(),
-                            "sr",
+                            "csr",
                             JsonSchemaRegistryOutcomeStatus.DRIFT,
                             "Schema Registry subject drift detected: " + subject
                         ));
                     } else if (configuration.isDryRun()) {
                         outcomes.add(JsonSchemaRegistryOutcome.ok(
                             candidate.logicalSchema(),
-                            "sr",
+                            "csr",
                             JsonSchemaRegistryOutcomeStatus.CREATED,
                             "[DRY-RUN] would register new Schema Registry version for " + subject
                         ));
                     } else {
-                        ensureSchemaRegistryWritable(srClient, subject);
-                        Optional<String> compatibility = srClient.compatibility(subject, candidate.schemaJson());
+                        ensureSchemaRegistryWritable(csrClient, subject);
+                        Optional<String> compatibility = csrClient.compatibility(subject, candidate.schemaJson());
                         if (compatibility.isPresent() && !"true".equalsIgnoreCase(compatibility.get())) {
                             outcomes.add(JsonSchemaRegistryOutcome.failure(
                                 candidate.logicalSchema(),
-                                "sr",
+                                "csr",
                                 JsonSchemaRegistryOutcomeStatus.FAILED,
                                 "Schema Registry compatibility check failed for subject " + subject
                             ));
                             continue;
                         }
-                        srClient.register(subject, candidate.schemaJson());
+                        csrClient.register(subject, candidate.schemaJson());
                         outcomes.add(JsonSchemaRegistryOutcome.ok(
                             candidate.logicalSchema(),
-                            "sr",
+                            "csr",
                             JsonSchemaRegistryOutcomeStatus.CREATED,
                             "Registered new Schema Registry version for " + subject
                         ));
@@ -482,7 +482,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                 } catch (Exception e) {
                     outcomes.add(JsonSchemaRegistryOutcome.failure(
                         candidate.logicalSchema(),
-                        "sr",
+                        "csr",
                         JsonSchemaRegistryOutcomeStatus.FAILED,
                         e.getMessage()
                     ));
@@ -490,8 +490,8 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             }
         } catch (Exception e) {
             outcomes.add(JsonSchemaRegistryOutcome.failure(
-                new LogicalSchema("sr", null, null),
-                "sr",
+                new LogicalSchema("csr", null, null),
+                "csr",
                 JsonSchemaRegistryOutcomeStatus.FAILED,
                 e.getMessage()
             ));
@@ -499,8 +499,8 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         return outcomes;
     }
 
-    private static void ensureSchemaRegistryWritable(ConfluentSchemaRegistryClient srClient, String subject) throws Exception {
-        Optional<String> mode = srClient.mode(subject);
+    private static void ensureSchemaRegistryWritable(ConfluentSchemaRegistryClient csrClient, String subject) throws Exception {
+        Optional<String> mode = csrClient.mode(subject);
         if (mode.isPresent() && !"READWRITE".equalsIgnoreCase(mode.get())) {
             throw new JsonSchemaRegistryException("Schema Registry is not writable for subject " + subject + ": " + mode.get());
         }
@@ -585,7 +585,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             : Optional.empty();
     }
 
-    private boolean requiresExplicitSrPairing(String subject) {
+    private boolean requiresExplicitCsrPairing(String subject) {
         String prefix = configuration.getNaming().getSubjectPrefix();
         return configuration.getOracle().isEnabled()
             && !prefix.isBlank()
@@ -593,7 +593,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             && !configuration.mappingsBySubject().containsKey(subject);
     }
 
-    private String resolveSrSubject(JsonSchemaCandidate candidate) {
+    private String resolveCsrSubject(JsonSchemaCandidate candidate) {
         String subject = candidate.logicalSchema().subject();
         if (subject != null && !subject.isBlank()) {
             return subject;

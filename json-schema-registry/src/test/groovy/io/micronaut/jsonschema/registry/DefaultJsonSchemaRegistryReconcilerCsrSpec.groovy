@@ -35,7 +35,7 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 
-final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
+final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
 
     private HttpServer server
     private final List<String> registrations = []
@@ -44,7 +44,7 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         server?.stop(0)
     }
 
-    void "SR authority validates latest schema when Oracle target is disabled"() {
+    void "CSR authority validates latest schema when Oracle target is disabled"() {
         given:
         startServer([
                 "/subjects/com.acme.Order/versions/latest": response(200, '{"schema":"{\\"type\\":\\"object\\"}"}')
@@ -52,12 +52,12 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "sr",
-                "json-schema.registry.sr.enabled"     : "true",
-                "json-schema.registry.sr.url"         : serverUrl(),
-                "json-schema.registry.sr.subjects[0]" : "com.acme.Order",
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "csr",
+                "micronaut.jsonschema.registry.csr.enabled"     : "true",
+                "micronaut.jsonschema.registry.csr.url"         : serverUrl(),
+                "micronaut.jsonschema.registry.csr.subjects[0]" : "com.acme.Order",
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
@@ -65,10 +65,10 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         then:
         outcomes.size() == 1
         outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
-        outcomes[0].target() == "sr.authority"
+        outcomes[0].target() == "csr.authority"
     }
 
-    void "SR authority discovers subjects by prefix"() {
+    void "CSR authority discovers subjects by prefix"() {
         given:
         startServer([
                 "/subjects"                                : response(200, '["com.acme.Order","other.Ignore"]'),
@@ -77,12 +77,12 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"               : "true",
-                "json-schema.registry.authority"             : "sr",
-                "json-schema.registry.sr.enabled"            : "true",
-                "json-schema.registry.sr.url"                : serverUrl(),
-                "json-schema.registry.naming.subject.prefix" : "com.acme.",
-                "json-schema.registry.oracle.enabled"        : "false"
+                "micronaut.jsonschema.registry.enabled"               : "true",
+                "micronaut.jsonschema.registry.authority"             : "csr",
+                "micronaut.jsonschema.registry.csr.enabled"            : "true",
+                "micronaut.jsonschema.registry.csr.url"                : serverUrl(),
+                "micronaut.jsonschema.registry.naming.subject.prefix" : "com.acme.",
+                "micronaut.jsonschema.registry.oracle.enabled"        : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
@@ -94,7 +94,7 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
     }
 
-    void "application authority registers missing SR subject"() {
+    void "application authority registers missing CSR subject"() {
         given:
         startServer([
                 "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest": response(404, "{}")
@@ -102,11 +102,11 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "application",
-                "json-schema.registry.sr.enabled"     : "true",
-                "json-schema.registry.sr.url"         : serverUrl(),
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "application",
+                "micronaut.jsonschema.registry.csr.enabled"     : "true",
+                "micronaut.jsonschema.registry.csr.url"         : serverUrl(),
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
@@ -118,7 +118,7 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         registrations[0].contains('"schemaType":"JSON"')
     }
 
-    void "application authority dry run does not register missing SR subject"() {
+    void "application authority dry run does not register missing CSR subject"() {
         given:
         startServer([
                 "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest": response(404, "{}")
@@ -126,26 +126,26 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "application",
-                "json-schema.registry.dry-run"        : "true",
-                "json-schema.registry.sr.enabled"     : "true",
-                "json-schema.registry.sr.url"         : serverUrl(),
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "application",
+                "micronaut.jsonschema.registry.dry-run"        : "true",
+                "micronaut.jsonschema.registry.csr.enabled"     : "true",
+                "micronaut.jsonschema.registry.csr.url"         : serverUrl(),
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
 
         then:
         outcomes.any {
-            it.target() == "sr" &&
+            it.target() == "csr" &&
                     it.status() == JsonSchemaRegistryOutcomeStatus.CREATED &&
                     it.message().contains("[DRY-RUN]")
         }
         registrations.isEmpty()
     }
 
-    void "application authority reports missing SR subject in observe only"() {
+    void "application authority reports missing CSR subject in observe only"() {
         given:
         startServer([
                 "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest": response(404, "{}")
@@ -153,22 +153,22 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "application",
-                "json-schema.registry.sr.enabled"     : "true",
-                "json-schema.registry.sr.url"         : serverUrl(),
-                "json-schema.registry.sr.policy.mode" : "observe_only",
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "application",
+                "micronaut.jsonschema.registry.csr.enabled"     : "true",
+                "micronaut.jsonschema.registry.csr.url"         : serverUrl(),
+                "micronaut.jsonschema.registry.csr.policy.mode" : "observe_only",
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
 
         then:
-        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.MISSING_TARGET }
+        outcomes.any { it.target() == "csr" && it.status() == JsonSchemaRegistryOutcomeStatus.MISSING_TARGET }
         registrations.isEmpty()
     }
 
-    void "application authority registers new SR version when subject drifts"() {
+    void "application authority registers new CSR version when subject drifts"() {
         given:
         startServer([
                 "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest":
@@ -177,22 +177,22 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "application",
-                "json-schema.registry.sr.enabled"     : "true",
-                "json-schema.registry.sr.url"         : serverUrl(),
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "application",
+                "micronaut.jsonschema.registry.csr.enabled"     : "true",
+                "micronaut.jsonschema.registry.csr.url"         : serverUrl(),
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
 
         then:
-        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
+        outcomes.any { it.target() == "csr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
         registrations.size() == 1
         registrations[0].contains('"schemaType":"JSON"')
     }
 
-    void "application authority reports SR drift in observe only"() {
+    void "application authority reports CSR drift in observe only"() {
         given:
         startServer([
                 "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest":
@@ -201,22 +201,22 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "application",
-                "json-schema.registry.sr.enabled"     : "true",
-                "json-schema.registry.sr.url"         : serverUrl(),
-                "json-schema.registry.sr.policy.mode" : "observe_only",
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "application",
+                "micronaut.jsonschema.registry.csr.enabled"     : "true",
+                "micronaut.jsonschema.registry.csr.url"         : serverUrl(),
+                "micronaut.jsonschema.registry.csr.policy.mode" : "observe_only",
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
 
         then:
-        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.DRIFT }
+        outcomes.any { it.target() == "csr" && it.status() == JsonSchemaRegistryOutcomeStatus.DRIFT }
         registrations.isEmpty()
     }
 
-    void "SR target reports compatibility rejection as failed"() {
+    void "CSR target reports compatibility rejection as failed"() {
         given:
         startServer([
                 "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest":
@@ -227,22 +227,22 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "application",
-                "json-schema.registry.sr.enabled"     : "true",
-                "json-schema.registry.sr.url"         : serverUrl(),
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "application",
+                "micronaut.jsonschema.registry.csr.enabled"     : "true",
+                "micronaut.jsonschema.registry.csr.url"         : serverUrl(),
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
 
         then:
-        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.FAILED && it.failure() }
-        !outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY }
+        outcomes.any { it.target() == "csr" && it.status() == JsonSchemaRegistryOutcomeStatus.FAILED && it.failure() }
+        !outcomes.any { it.target() == "csr" && it.status() == JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY }
         registrations.isEmpty()
     }
 
-    void "SR target honors global non writable mode fallback"() {
+    void "CSR target honors global non writable mode fallback"() {
         given:
         startServer([
                 "/subjects/io.micronaut.jsonschema.registry.ApplicationAuthorityExample/versions/latest": response(404, "{}"),
@@ -251,21 +251,21 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "application",
-                "json-schema.registry.sr.enabled"     : "true",
-                "json-schema.registry.sr.url"         : serverUrl(),
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "application",
+                "micronaut.jsonschema.registry.csr.enabled"     : "true",
+                "micronaut.jsonschema.registry.csr.url"         : serverUrl(),
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
 
         then:
-        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.FAILED && it.message().contains("READONLY") }
+        outcomes.any { it.target() == "csr" && it.status() == JsonSchemaRegistryOutcomeStatus.FAILED && it.message().contains("READONLY") }
         registrations.isEmpty()
     }
 
-    void "SR authority requires explicit mapping for non prefixed subjects when Oracle target is enabled"() {
+    void "CSR authority requires explicit mapping for non prefixed subjects when Oracle target is enabled"() {
         given:
         startServer([
                 "/subjects/legacy.Order/versions/latest": response(200, '{"schema":"{\\"type\\":\\"object\\"}"}')
@@ -273,13 +273,13 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"               : "true",
-                "json-schema.registry.authority"             : "sr",
-                "json-schema.registry.sr.enabled"            : "true",
-                "json-schema.registry.sr.url"                : serverUrl(),
-                "json-schema.registry.sr.subjects[0]"        : "legacy.Order",
-                "json-schema.registry.naming.subject.prefix" : "com.acme.",
-                "json-schema.registry.oracle.enabled"        : "true"
+                "micronaut.jsonschema.registry.enabled"               : "true",
+                "micronaut.jsonschema.registry.authority"             : "csr",
+                "micronaut.jsonschema.registry.csr.enabled"            : "true",
+                "micronaut.jsonschema.registry.csr.url"                : serverUrl(),
+                "micronaut.jsonschema.registry.csr.subjects[0]"        : "legacy.Order",
+                "micronaut.jsonschema.registry.naming.subject.prefix" : "com.acme.",
+                "micronaut.jsonschema.registry.oracle.enabled"        : "true"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
@@ -293,25 +293,25 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         }
     }
 
-    void "Oracle domain authority mapping registers missing SR subject"() {
+    void "Oracle domain authority mapping registers missing CSR subject"() {
         given:
         startServer([
-                "/subjects/sr.com.acme.Order/versions/latest": response(404, "{}")
+                "/subjects/csr.com.acme.Order/versions/latest": response(404, "{}")
         ])
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "spec.name"                                                        : "sr-domain-discovery-provider",
-                "json-schema.registry.enabled"                                      : "true",
-                "json-schema.registry.authority"                                    : "oracle",
-                "json-schema.registry.naming.subject.prefix"                        : "sr.",
-                "json-schema.registry.oracle.enabled"                               : "true",
-                "json-schema.registry.oracle.authority.providers[0].name"           : "domains",
-                "json-schema.registry.oracle.authority.providers[0].providerClassName": SrDomainDiscoveryProvider.name,
-                "json-schema.registry.mappings[0].subject"                         : "sr.com.acme.Order",
-                "json-schema.registry.mappings[0].domain"                          : "APP_COM_ACME_ORDER",
-                "json-schema.registry.sr.enabled"                                   : "true",
-                "json-schema.registry.sr.url"                                       : serverUrl()
+                "spec.name"                                                        : "csr-domain-discovery-provider",
+                "micronaut.jsonschema.registry.enabled"                                      : "true",
+                "micronaut.jsonschema.registry.authority"                                    : "oracle",
+                "micronaut.jsonschema.registry.naming.subject.prefix"                        : "csr.",
+                "micronaut.jsonschema.registry.oracle.enabled"                               : "true",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].name"           : "domains",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": CsrDomainDiscoveryProvider.name,
+                "micronaut.jsonschema.registry.mappings[0].subject"                         : "csr.com.acme.Order",
+                "micronaut.jsonschema.registry.mappings[0].domain"                          : "APP_COM_ACME_ORDER",
+                "micronaut.jsonschema.registry.csr.enabled"                                   : "true",
+                "micronaut.jsonschema.registry.csr.url"                                       : serverUrl()
         ]) { ApplicationContext context ->
             DataSource dataSource = Stub()
             dataSource.getConnection() >> null
@@ -321,12 +321,12 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         then:
         outcomes.any { it.target() == "oracle.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
-        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
+        outcomes.any { it.target() == "csr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
         registrations.size() == 1
         registrations[0].contains('"schemaType":"JSON"')
     }
 
-    void "SR authority reconciles built-in Oracle domain target"() {
+    void "CSR authority reconciles built-in Oracle domain target"() {
         given:
         startServer([
                 "/subjects/com.acme.Order/versions/latest": response(200, '{"schema":"{\\"type\\":\\"object\\"}"}')
@@ -334,14 +334,14 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"               : "true",
-                "json-schema.registry.authority"             : "sr",
-                "json-schema.registry.sr.enabled"            : "true",
-                "json-schema.registry.sr.url"                : serverUrl(),
-                "json-schema.registry.sr.subjects[0]"        : "com.acme.Order",
-                "json-schema.registry.oracle.enabled"        : "true",
-                "json-schema.registry.oracle.policy.mode"    : "observe_only",
-                "json-schema.registry.naming.domain.prefix"  : "APP_"
+                "micronaut.jsonschema.registry.enabled"               : "true",
+                "micronaut.jsonschema.registry.authority"             : "csr",
+                "micronaut.jsonschema.registry.csr.enabled"            : "true",
+                "micronaut.jsonschema.registry.csr.url"                : serverUrl(),
+                "micronaut.jsonschema.registry.csr.subjects[0]"        : "com.acme.Order",
+                "micronaut.jsonschema.registry.oracle.enabled"        : "true",
+                "micronaut.jsonschema.registry.oracle.policy.mode"    : "observe_only",
+                "micronaut.jsonschema.registry.naming.domain.prefix"  : "APP_"
         ]) { ApplicationContext context ->
             DataSource dataSource = Mock()
             Connection connection = Mock()
@@ -356,7 +356,7 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         }
 
         then:
-        outcomes.any { it.target() == "sr.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
+        outcomes.any { it.target() == "csr.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
         outcomes.any {
             it.target() == "oracle.domain" &&
                     it.status() == JsonSchemaRegistryOutcomeStatus.MISSING_TARGET &&
@@ -365,23 +365,23 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         }
     }
 
-    void "built-in Oracle domain authority provider registers missing SR subject"() {
+    void "built-in Oracle domain authority provider registers missing CSR subject"() {
         given:
         startServer([
-                "/subjects/sr.com.acme.Order/versions/latest": response(404, "{}")
+                "/subjects/csr.com.acme.Order/versions/latest": response(404, "{}")
         ])
 
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"                       : "true",
-                "json-schema.registry.authority"                     : "oracle",
-                "json-schema.registry.naming.subject.prefix"         : "sr.",
-                "json-schema.registry.oracle.enabled"                : "true",
-                "json-schema.registry.oracle.domains[0]"             : "APP_COM_ACME_ORDER",
-                "json-schema.registry.mappings[0].subject"          : "sr.com.acme.Order",
-                "json-schema.registry.mappings[0].domain"           : "APP_COM_ACME_ORDER",
-                "json-schema.registry.sr.enabled"                   : "true",
-                "json-schema.registry.sr.url"                       : serverUrl()
+                "micronaut.jsonschema.registry.enabled"                       : "true",
+                "micronaut.jsonschema.registry.authority"                     : "oracle",
+                "micronaut.jsonschema.registry.naming.subject.prefix"         : "csr.",
+                "micronaut.jsonschema.registry.oracle.enabled"                : "true",
+                "micronaut.jsonschema.registry.oracle.domains[0]"             : "APP_COM_ACME_ORDER",
+                "micronaut.jsonschema.registry.mappings[0].subject"          : "csr.com.acme.Order",
+                "micronaut.jsonschema.registry.mappings[0].domain"           : "APP_COM_ACME_ORDER",
+                "micronaut.jsonschema.registry.csr.enabled"                   : "true",
+                "micronaut.jsonschema.registry.csr.url"                       : serverUrl()
         ]) { ApplicationContext context ->
             DataSource dataSource = Mock()
             Connection connection = Mock()
@@ -400,9 +400,9 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
         outcomes.any {
             it.target() == "oracle.authority" &&
                     it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT &&
-                    it.logicalSchema().subject() == "sr.com.acme.Order"
+                    it.logicalSchema().subject() == "csr.com.acme.Order"
         }
-        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
+        outcomes.any { it.target() == "csr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
         registrations.size() == 1
         registrations[0].contains('"schemaType":"JSON"')
     }
@@ -410,10 +410,10 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
     void "application authority validates generated schema when targets are disabled"() {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "application",
-                "json-schema.registry.sr.enabled"     : "false",
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "application",
+                "micronaut.jsonschema.registry.csr.enabled"     : "false",
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
@@ -479,8 +479,8 @@ final class DefaultJsonSchemaRegistryReconcilerSrSpec extends Specification {
     }
 
     @Singleton
-    @Requires(property = "spec.name", value = "sr-domain-discovery-provider")
-    static final class SrDomainDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+    @Requires(property = "spec.name", value = "csr-domain-discovery-provider")
+    static final class CsrDomainDiscoveryProvider implements OracleSchemaDiscoveryProvider {
         @Override
         OracleDiscoveryResult discover(Connection connection,
                                        OracleSourceSpec source,

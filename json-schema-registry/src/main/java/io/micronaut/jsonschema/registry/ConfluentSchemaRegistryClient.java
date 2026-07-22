@@ -46,19 +46,19 @@ final class ConfluentSchemaRegistryClient implements AutoCloseable {
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
-    private final JsonSchemaRegistryConfiguration.SrConfiguration configuration;
+    private final JsonSchemaRegistryConfiguration.CsrConfiguration configuration;
     private final String basePath;
     private final Optional<MeterRegistry> meterRegistry;
 
     ConfluentSchemaRegistryClient(String baseUrl) {
-        this(srConfiguration(baseUrl));
+        this(csrConfiguration(baseUrl));
     }
 
-    ConfluentSchemaRegistryClient(JsonSchemaRegistryConfiguration.SrConfiguration configuration) {
+    ConfluentSchemaRegistryClient(JsonSchemaRegistryConfiguration.CsrConfiguration configuration) {
         this(configuration, Optional.empty());
     }
 
-    ConfluentSchemaRegistryClient(JsonSchemaRegistryConfiguration.SrConfiguration configuration, Optional<MeterRegistry> meterRegistry) {
+    ConfluentSchemaRegistryClient(JsonSchemaRegistryConfiguration.CsrConfiguration configuration, Optional<MeterRegistry> meterRegistry) {
         this.configuration = configuration;
         this.objectMapper = JsonSchemaMapperFactory.createMapper();
         this.meterRegistry = meterRegistry;
@@ -222,7 +222,7 @@ final class ConfluentSchemaRegistryClient implements AutoCloseable {
     private static Timer operationTimer(MeterRegistry meterRegistry, String operation, boolean failure) {
         return Timer.builder("json.schema.registry.operation.duration")
             .description("JSON Schema Registry target operation duration")
-            .tag("target", "sr")
+            .tag("target", "csr")
             .tag("operation", operation)
             .tag("failure", Boolean.toString(failure))
             .register(meterRegistry);
@@ -279,8 +279,8 @@ final class ConfluentSchemaRegistryClient implements AutoCloseable {
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
-    private static JsonSchemaRegistryConfiguration.SrConfiguration srConfiguration(String baseUrl) {
-        JsonSchemaRegistryConfiguration.SrConfiguration configuration = new JsonSchemaRegistryConfiguration.SrConfiguration();
+    private static JsonSchemaRegistryConfiguration.CsrConfiguration csrConfiguration(String baseUrl) {
+        JsonSchemaRegistryConfiguration.CsrConfiguration configuration = new JsonSchemaRegistryConfiguration.CsrConfiguration();
         configuration.setUrl(baseUrl);
         return configuration;
     }

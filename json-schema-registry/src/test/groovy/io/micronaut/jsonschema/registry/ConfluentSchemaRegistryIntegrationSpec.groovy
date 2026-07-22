@@ -71,18 +71,18 @@ final class ConfluentSchemaRegistryIntegrationSpec extends Specification {
     void "application authority registers JSON Schema in Confluent Schema Registry"() {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
-                "json-schema.registry.enabled"        : "true",
-                "json-schema.registry.authority"      : "application",
-                "json-schema.registry.sr.enabled"     : "true",
-                "json-schema.registry.sr.url"         : schemaRegistryUrl(),
-                "json-schema.registry.oracle.enabled" : "false"
+                "micronaut.jsonschema.registry.enabled"        : "true",
+                "micronaut.jsonschema.registry.authority"      : "application",
+                "micronaut.jsonschema.registry.csr.enabled"     : "true",
+                "micronaut.jsonschema.registry.csr.url"         : schemaRegistryUrl(),
+                "micronaut.jsonschema.registry.oracle.enabled" : "false"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryService).resync()
         }
 
         then:
         outcomes.any { it.target() == "application.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
-        outcomes.any { it.target() == "sr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
+        outcomes.any { it.target() == "csr" && it.status() == JsonSchemaRegistryOutcomeStatus.CREATED }
 
         and:
         new ConfluentSchemaRegistryClient(schemaRegistryUrl()).latestSchema(ApplicationAuthorityExample.name).present

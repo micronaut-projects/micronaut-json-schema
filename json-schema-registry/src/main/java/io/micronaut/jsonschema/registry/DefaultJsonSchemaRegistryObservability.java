@@ -138,7 +138,7 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
 
     private static String mode(JsonSchemaRegistryConfiguration configuration, String target) {
         return switch (targetTag(target)) {
-            case "sr" -> tagValue(configuration.getSr().getPolicy().getMode());
+            case "csr" -> tagValue(configuration.getCsr().getPolicy().getMode());
             case "oracle" -> tagValue(configuration.getOracle().getPolicy().getMode());
             default -> "authority";
         };
@@ -148,8 +148,8 @@ public final class DefaultJsonSchemaRegistryObservability implements JsonSchemaR
         if (target == null || target.isBlank()) {
             return "registry";
         }
-        if (target.startsWith("sr")) {
-            return "sr";
+        if (target.startsWith("csr")) {
+            return "csr";
         }
         if (target.startsWith("oracle")) {
             return "oracle";

@@ -55,13 +55,13 @@ final class OracleDualityViewAuthorityIntegrationSpec extends Specification {
         try {
             context = ApplicationContext.run([
                     "datasources.default.dialect"                                      : "oracle",
-                    "json-schema.registry.enabled"                                     : "true",
-                    "json-schema.registry.authority"                                   : "oracle",
-                    "json-schema.registry.oracle.enabled"                              : "true",
-                    "json-schema.registry.oracle.authority.providers[0].name"          : "duality-views",
-                    "json-schema.registry.oracle.authority.providers[0].providerClassName": DUALITY_PROVIDER,
-                    "json-schema.registry.oracle.authority.providers[0].options.include": viewName,
-                    "json-schema.registry.sr.enabled"                                  : "false"
+                    "micronaut.jsonschema.registry.enabled"                                     : "true",
+                    "micronaut.jsonschema.registry.authority"                                   : "oracle",
+                    "micronaut.jsonschema.registry.oracle.enabled"                              : "true",
+                    "micronaut.jsonschema.registry.oracle.authority.providers[0].name"          : "duality-views",
+                    "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": DUALITY_PROVIDER,
+                    "micronaut.jsonschema.registry.oracle.authority.providers[0].options.include": viewName,
+                    "micronaut.jsonschema.registry.csr.enabled"                                  : "false"
             ])
             jdbcUrl = context.getRequiredProperty("datasources.default.url", String)
             username = context.getRequiredProperty("datasources.default.username", String)

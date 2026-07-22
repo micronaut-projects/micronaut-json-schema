@@ -5,7 +5,7 @@ The Micronaut JSON Schema Registry module reconciles JSON Schemas between one au
 The registry supports three authority modes:
 
 * `application`: discover application classes annotated with api:jsonschema.JsonSchema[] and resolve their generated JSON Schemas
-* `sr`: read the latest JSON Schema from Confluent Schema Registry subjects
+* `csr`: read the latest JSON Schema from Confluent Schema Registry subjects
 * `oracle`: read JSON Schemas from configured Oracle authority discovery providers
 
 The non-authoritative systems are reconciled as targets. Schema Registry can register missing or changed subjects. Oracle materializers can create missing configured artifacts and report drift for existing artifacts.
@@ -20,17 +20,18 @@ Application authority mode also requires the normal JSON Schema annotation proce
 
 == Enabling the Registry
 
-The registry is disabled by default. Enable it with `json-schema.registry.enabled`:
+The registry is disabled by default. Enable it with `micronaut.jsonschema.registry.enabled`:
 
 [configuration]
 ----
-json-schema:
-  registry:
-    enabled: true
-    authority: application
+micronaut:
+  jsonschema:
+    registry:
+      enabled: true
+      authority: application
 ----
 
-When enabled, the registry runs once on startup. Startup failure handling is controlled by `json-schema.registry.fail-fast-strategy`:
+When enabled, the registry runs once on startup. Startup failure handling is controlled by `micronaut.jsonschema.registry.fail-fast-strategy`:
 
 * `readiness_gate`: record the failure and keep readiness down until a later successful run
 * `startup_abort`: fail application startup when startup reconciliation fails
@@ -44,23 +45,24 @@ Application authority discovers api:jsonschema.JsonSchema[] types and resolves t
 
 [configuration]
 ----
-json-schema:
-  registry:
-    enabled: true
-    authority: application
-    sr:
+micronaut:
+  jsonschema:
+    registry:
       enabled: true
-      url: http://localhost:8081
-    oracle:
-      enabled: true
-      datasource: default
+      authority: application
+      csr:
+        enabled: true
+        url: http://localhost:8081
+      oracle:
+        enabled: true
+        datasource: default
 ----
 
-Schema Registry authority uses configured subjects when `json-schema.registry.sr.subjects` is set. Otherwise, it discovers subjects from `GET /subjects` and keeps subjects that start with `json-schema.registry.naming.subject.prefix`.
+Schema Registry authority uses configured subjects when `micronaut.jsonschema.registry.csr.subjects` is set. Otherwise, it discovers subjects from `GET /subjects` and keeps subjects that start with `micronaut.jsonschema.registry.naming.subject.prefix`.
 
 When Schema Registry is used, the registry uses these Confluent Schema Registry API calls:
 
-* subject enumeration: `GET /subjects`, filtered client-side by `json-schema.registry.naming.subject.prefix`
+* subject enumeration: `GET /subjects`, filtered client-side by `micronaut.jsonschema.registry.naming.subject.prefix`
 * authority or target latest schema lookup: `GET /subjects/{subject}/versions/latest`
 * target mode check before writes: `GET /mode/{subject}`, falling back to `GET /mode` when the subject mode is not set
 * compatibility check before registering a changed target schema: `POST /compatibility/subjects/{subject}/versions/latest`
@@ -70,65 +72,67 @@ HTTP 5xx and HTTP 429 responses are retried with a bounded retry policy. Other H
 
 [configuration]
 ----
-json-schema:
-  registry:
-    enabled: true
-    authority: sr
-    sr:
+micronaut:
+  jsonschema:
+    registry:
       enabled: true
-      url: http://localhost:8081
-      subjects:
-        - com.acme.Order
+      authority: csr
+      csr:
+        enabled: true
+        url: http://localhost:8081
+        subjects:
+          - com.acme.Order
 ----
 
 Oracle authority uses configured Oracle authority discovery providers. If none are configured, the built-in JSON Domain discovery provider is used.
 
 [configuration]
 ----
-json-schema:
-  registry:
-    enabled: true
-    authority: oracle
-    oracle:
+micronaut:
+  jsonschema:
+    registry:
       enabled: true
-      datasource: default
-      domains:
-        - APP_COM_ACME_ORDER
+      authority: oracle
+      oracle:
+        enabled: true
+        datasource: default
+        domains:
+          - APP_COM_ACME_ORDER
 ----
 
 == Schema Registry Target
 
-Schema Registry is enabled with `json-schema.registry.sr.enabled=true`.
+Schema Registry is enabled with `micronaut.jsonschema.registry.csr.enabled=true`.
 
 When Schema Registry is a target:
 
 * `manage` registers a missing subject or a new version when the latest schema differs
 * `observe_only` reads the latest subject and reports `missing_target`, `equivalent`, or `drift`
 
-Schema Registry writes are skipped when `json-schema.registry.dry-run=true`; outcomes are labelled with `[DRY-RUN]`.
+Schema Registry writes are skipped when `micronaut.jsonschema.registry.dry-run=true`; outcomes are labelled with `[DRY-RUN]`.
 
 The registry can authenticate to Schema Registry using:
 
-* `json-schema.registry.sr.username` and `json-schema.registry.sr.password`
-* `json-schema.registry.sr.bearer-token`
-* `json-schema.registry.sr.headers.*`
+* `micronaut.jsonschema.registry.csr.username` and `micronaut.jsonschema.registry.csr.password`
+* `micronaut.jsonschema.registry.csr.bearer-token`
+* `micronaut.jsonschema.registry.csr.headers.*`
 
 Bearer authentication takes precedence over basic authentication when both are configured.
 
 == Oracle Authority and Materialization
 
-Oracle integration requires `json-schema.registry.oracle.enabled=true` and a `javax.sql.DataSource` bean. The datasource bean name is selected with `json-schema.registry.oracle.datasource`; the default is `default`.
+Oracle integration requires `micronaut.jsonschema.registry.oracle.enabled=true` and a `javax.sql.DataSource` bean. The datasource bean name is selected with `micronaut.jsonschema.registry.oracle.datasource`; the default is `default`.
 
 Oracle integration has two roles:
 
 * authority discovery providers read existing Oracle-backed JSON Schemas when `authority=oracle`
 * materializers reconcile a candidate schema to Oracle artifacts when Oracle is a target
 
-If `json-schema.registry.oracle.authority.providers` is not configured, the built-in domain authority provider is used. If the provider list is configured, the configured list replaces the default list.
+If `micronaut.jsonschema.registry.oracle.authority.providers` is not configured, the built-in domain authority provider is used. If the provider list is configured, the configured list replaces the default list.
 
-If `json-schema.registry.oracle.materializers` is not configured, the built-in JSON Domain materializer is used. If the materializer list is configured, the configured list replaces the default list.
+If `micronaut.jsonschema.registry.oracle.materializers` is not configured, the built-in JSON Domain materializer is used. If the materializer list is configured, the configured list replaces the default list.
 
-The built-in domain provider supports explicit selection through `json-schema.registry.oracle.domains`. When no explicit domain list is configured, it applies `json-schema.registry.naming.domain.prefix` as a prefix filter.
+The built-in domain provider supports explicit selection through `micronaut.jsonschema.registry.oracle.domains`. When no explicit domain list is configured, it applies `micronaut.jsonschema.registry.naming.domain.prefix` as a prefix filter.
 
 The built-in domain authority provider enumerates domains with:
 
@@ -138,7 +142,7 @@ SELECT name FROM user_domains WHERE name LIKE ? ORDER BY name
 SELECT name FROM all_domains WHERE owner = ? AND name LIKE ? ORDER BY name
 ----
 
-When `json-schema.registry.oracle.domains` is set, those configured names are used as the selected set and uppercased before lookup. When no explicit domain list is set, the prefix filter is `json-schema.registry.naming.domain.prefix` uppercased plus `%`.
+When `micronaut.jsonschema.registry.oracle.domains` is set, those configured names are used as the selected set and uppercased before lookup. When no explicit domain list is set, the prefix filter is `micronaut.jsonschema.registry.naming.domain.prefix` uppercased plus `%`.
 
 For each selected domain, schema extraction uses this order:
 
@@ -147,9 +151,9 @@ For each selected domain, schema extraction uses this order:
 
 The provider extracts the JSON text from a single-quoted `VALIDATE USING` clause, unescapes doubled single quotes, parses the text as JSON, and logs whether `get_ddl` or `search_condition` was used.
 
-The built-in domain materializer computes domain names from logical schema names by prepending `json-schema.registry.naming.domain.prefix`, replacing `.` with `_`, and uppercasing the result. If the computed identifier is longer than 128 UTF-8 bytes, it is truncated and suffixed with `_` plus the first 8 uppercase hex characters of the SHA-256 hash of the full computed name.
+The built-in domain materializer computes domain names from logical schema names by prepending `micronaut.jsonschema.registry.naming.domain.prefix`, replacing `.` with `_`, and uppercasing the result. If the computed identifier is longer than 128 UTF-8 bytes, it is truncated and suffixed with `_` plus the first 8 uppercase hex characters of the SHA-256 hash of the full computed name.
 
-In Oracle authority mode, built-in domain names are paired to Schema Registry subjects through `json-schema.registry.mappings` when the domain name cannot be reversed deterministically. Names that include `_`, truncation, hash suffixing, or case-sensitive Java-style package names require an explicit mapping.
+In Oracle authority mode, built-in domain names are paired to Schema Registry subjects through `micronaut.jsonschema.registry.mappings` when the domain name cannot be reversed deterministically. Names that include `_`, truncation, hash suffixing, or case-sensitive Java-style package names require an explicit mapping.
 
 The built-in duality-view discovery provider enumerates owner-scoped views with:
 
@@ -196,20 +200,21 @@ Custom provider configuration is passed through `providerClassName`, optional `o
 
 [configuration]
 ----
-json-schema:
-  registry:
-    enabled: true
-    authority: oracle
-    oracle:
+micronaut:
+  jsonschema:
+    registry:
       enabled: true
-      authority:
-        providers:
-          - name: duality-views
-            providerClassName: example.oracle.OrderDualityViewDiscoveryProvider
-            options:
-              logicalFqcn: com.acme.Order
-              subject: com.acme.Order
-              viewName: ORDER_DV
+      authority: oracle
+      oracle:
+        enabled: true
+        authority:
+          providers:
+            - name: duality-views
+              providerClassName: example.oracle.OrderDualityViewDiscoveryProvider
+              options:
+                logicalFqcn: com.acme.Order
+                subject: com.acme.Order
+                viewName: ORDER_DV
 ----
 
 Materializers implement api:jsonschema.registry.oracle.OracleSchemaMaterializer[] and are resolved as Micronaut beans or `ServiceLoader` providers matched by `providerClassName`.
@@ -230,22 +235,23 @@ Oracle materializers are create-missing only in this version:
 
 Existing Oracle artifacts are not altered, replaced, dropped, or migrated.
 
-`json-schema.registry.oracle.drift.mode` controls whether drift is treated as a reconciliation failure:
+`micronaut.jsonschema.registry.oracle.drift.mode` controls whether drift is treated as a reconciliation failure:
 
 * `report`: report drift without marking the outcome as a failure
 * `fail`: report drift and mark the outcome as a failure
 
 == Mapping
 
-The registry derives names from configured naming rules where possible. Explicit `json-schema.registry.mappings` entries are available as a built-in domain pairing shortcut:
+The registry derives names from configured naming rules where possible. Explicit `micronaut.jsonschema.registry.mappings` entries are available as a built-in domain pairing shortcut:
 
 [configuration]
 ----
-json-schema:
-  registry:
-    mappings:
-      - subject: com.acme.Order
-        domain: APP_COM_ACME_ORDER
+micronaut:
+  jsonschema:
+    registry:
+      mappings:
+        - subject: com.acme.Order
+          domain: APP_COM_ACME_ORDER
 ----
 
 Mappings are used to override or disambiguate subject/domain pairing. They are not a generic mapping format for every Oracle artifact kind. Non-domain providers and materializers should define their mapping options under their own `options`.

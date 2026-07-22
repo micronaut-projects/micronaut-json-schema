@@ -59,23 +59,23 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
     void "binds registry configuration"() {
         when:
         JsonSchemaRegistryConfiguration configuration = withContext([
-                "json-schema.registry.enabled"                                      : "false",
-                "json-schema.registry.authority"                                    : "oracle",
-                "json-schema.registry.fail-fast-strategy"                           : "startup_abort",
-                "json-schema.registry.oracle.policy.mode"                           : "observe_only",
-                "json-schema.registry.oracle.drift.mode"                            : "fail",
-                "json-schema.registry.oracle.datasource"                            : "orders",
-                "json-schema.registry.oracle.domains[0]"                            : "APP_COM_ACME_ORDER",
-                "json-schema.registry.oracle.authority.providers[0].name"           : "duality-views",
-                "json-schema.registry.oracle.authority.providers[0].providerClassName": "example.DualityProvider",
-                "json-schema.registry.oracle.authority.providers[0].owner"          : "HR",
-                "json-schema.registry.oracle.authority.providers[0].options.include": "ORDER_DV",
-                "json-schema.registry.oracle.materializers[0].name"                 : "duality-materializer",
-                "json-schema.registry.oracle.materializers[0].providerClassName"    : "example.DualityMaterializer",
-                "json-schema.registry.oracle.materializers[0].owner"                : "HR",
-                "json-schema.registry.oracle.materializers[0].options.viewName"     : "ORDER_DV",
-                "json-schema.registry.mappings[0].subject"                         : "com.acme.Order",
-                "json-schema.registry.mappings[0].domain"                          : "APP_COM_ACME_ORDER"
+                "micronaut.jsonschema.registry.enabled"                                      : "false",
+                "micronaut.jsonschema.registry.authority"                                    : "oracle",
+                "micronaut.jsonschema.registry.fail-fast-strategy"                           : "startup_abort",
+                "micronaut.jsonschema.registry.oracle.policy.mode"                           : "observe_only",
+                "micronaut.jsonschema.registry.oracle.drift.mode"                            : "fail",
+                "micronaut.jsonschema.registry.oracle.datasource"                            : "orders",
+                "micronaut.jsonschema.registry.oracle.domains[0]"                            : "APP_COM_ACME_ORDER",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].name"           : "duality-views",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": "example.DualityProvider",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].owner"          : "HR",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.include": "ORDER_DV",
+                "micronaut.jsonschema.registry.oracle.materializers[0].name"                 : "duality-materializer",
+                "micronaut.jsonschema.registry.oracle.materializers[0].providerClassName"    : "example.DualityMaterializer",
+                "micronaut.jsonschema.registry.oracle.materializers[0].owner"                : "HR",
+                "micronaut.jsonschema.registry.oracle.materializers[0].options.viewName"     : "ORDER_DV",
+                "micronaut.jsonschema.registry.mappings[0].subject"                         : "com.acme.Order",
+                "micronaut.jsonschema.registry.mappings[0].domain"                          : "APP_COM_ACME_ORDER"
         ]) { ApplicationContext context ->
             context.getBean(JsonSchemaRegistryConfiguration)
         }
@@ -217,15 +217,15 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
                 "spec.name"                                                        : "option-discovery-provider",
-                "json-schema.registry.enabled"                                      : "true",
-                "json-schema.registry.authority"                                    : "oracle",
-                "json-schema.registry.oracle.enabled"                               : "true",
-                "json-schema.registry.oracle.authority.providers[0].name"           : "duality-views",
-                "json-schema.registry.oracle.authority.providers[0].providerClassName": OptionDiscoveryProvider.name,
-                "json-schema.registry.oracle.authority.providers[0].options.logicalFqcn": "com.acme.OrderView",
-                "json-schema.registry.oracle.authority.providers[0].options.subject": "orders-value",
-                "json-schema.registry.oracle.authority.providers[0].options.viewName": "ORDER_DV",
-                "json-schema.registry.sr.enabled"                                   : "false"
+                "micronaut.jsonschema.registry.enabled"                                      : "true",
+                "micronaut.jsonschema.registry.authority"                                    : "oracle",
+                "micronaut.jsonschema.registry.oracle.enabled"                               : "true",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].name"           : "duality-views",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": OptionDiscoveryProvider.name,
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.logicalFqcn": "com.acme.OrderView",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.subject": "orders-value",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.viewName": "ORDER_DV",
+                "micronaut.jsonschema.registry.csr.enabled"                                   : "false"
         ]) { ApplicationContext context ->
             context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
@@ -243,16 +243,16 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
                 "spec.name"                                                        : "domain-discovery-provider",
-                "json-schema.registry.enabled"                                      : "true",
-                "json-schema.registry.authority"                                    : "oracle",
-                "json-schema.registry.naming.subject.prefix"                        : "sr.",
-                "json-schema.registry.oracle.enabled"                               : "true",
-                "json-schema.registry.oracle.authority.providers[0].name"           : "domains",
-                "json-schema.registry.oracle.authority.providers[0].providerClassName": DomainDiscoveryProvider.name,
-                "json-schema.registry.oracle.authority.providers[0].options.domain" : "APP_COM_ACME_ORDER",
-                "json-schema.registry.mappings[0].subject"                         : "sr.com.acme.Order",
-                "json-schema.registry.mappings[0].domain"                          : "APP_COM_ACME_ORDER",
-                "json-schema.registry.sr.enabled"                                   : "false"
+                "micronaut.jsonschema.registry.enabled"                                      : "true",
+                "micronaut.jsonschema.registry.authority"                                    : "oracle",
+                "micronaut.jsonschema.registry.naming.subject.prefix"                        : "csr.",
+                "micronaut.jsonschema.registry.oracle.enabled"                               : "true",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].name"           : "domains",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": DomainDiscoveryProvider.name,
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.domain" : "APP_COM_ACME_ORDER",
+                "micronaut.jsonschema.registry.mappings[0].subject"                         : "csr.com.acme.Order",
+                "micronaut.jsonschema.registry.mappings[0].domain"                          : "APP_COM_ACME_ORDER",
+                "micronaut.jsonschema.registry.csr.enabled"                                   : "false"
         ]) { ApplicationContext context ->
             context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
@@ -262,24 +262,24 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         outcomes.size() == 1
         outcomes[0].target() == "oracle.authority"
         outcomes[0].logicalSchema().logicalFqcn() == "com.acme.Order"
-        outcomes[0].logicalSchema().subject() == "sr.com.acme.Order"
+        outcomes[0].logicalSchema().subject() == "csr.com.acme.Order"
         outcomes[0].logicalSchema().oracleArtifactName() == "APP_COM_ACME_ORDER"
     }
 
-    void "Oracle domain authority reports missing mapping for lossy domain to SR pairing"() {
+    void "Oracle domain authority reports missing mapping for lossy domain to CSR pairing"() {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
                 "spec.name"                                                        : "domain-discovery-provider",
-                "json-schema.registry.enabled"                                      : "true",
-                "json-schema.registry.authority"                                    : "oracle",
-                "json-schema.registry.naming.subject.prefix"                        : "sr.",
-                "json-schema.registry.naming.domain.prefix"                         : "APP_",
-                "json-schema.registry.oracle.enabled"                               : "true",
-                "json-schema.registry.oracle.authority.providers[0].name"           : "domains",
-                "json-schema.registry.oracle.authority.providers[0].providerClassName": DomainDiscoveryProvider.name,
-                "json-schema.registry.oracle.authority.providers[0].options.domain" : "APP_COM_ACME_ORDER",
-                "json-schema.registry.sr.enabled"                                   : "true",
-                "json-schema.registry.sr.url"                                       : "http://localhost:8081"
+                "micronaut.jsonschema.registry.enabled"                                      : "true",
+                "micronaut.jsonschema.registry.authority"                                    : "oracle",
+                "micronaut.jsonschema.registry.naming.subject.prefix"                        : "csr.",
+                "micronaut.jsonschema.registry.naming.domain.prefix"                         : "APP_",
+                "micronaut.jsonschema.registry.oracle.enabled"                               : "true",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].name"           : "domains",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": DomainDiscoveryProvider.name,
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.domain" : "APP_COM_ACME_ORDER",
+                "micronaut.jsonschema.registry.csr.enabled"                                   : "true",
+                "micronaut.jsonschema.registry.csr.url"                                       : "http://localhost:8081"
         ]) { ApplicationContext context ->
             context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
@@ -287,7 +287,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
 
         then:
         outcomes.any {
-            it.target() == "sr" &&
+            it.target() == "csr" &&
                     it.status() == JsonSchemaRegistryOutcomeStatus.FAILED &&
                     it.message().contains("missing_mapping")
         }
@@ -316,10 +316,10 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
                 "spec.name"                                                   : "bean-materializer",
-                "json-schema.registry.oracle.enabled"                         : "true",
-                "json-schema.registry.oracle.materializers[0].name"           : "duality-views",
-                "json-schema.registry.oracle.materializers[0].providerClassName": BeanMaterializer.name,
-                "json-schema.registry.oracle.materializers[0].options.viewName": "ORDER_DV"
+                "micronaut.jsonschema.registry.oracle.enabled"                         : "true",
+                "micronaut.jsonschema.registry.oracle.materializers[0].name"           : "duality-views",
+                "micronaut.jsonschema.registry.oracle.materializers[0].providerClassName": BeanMaterializer.name,
+                "micronaut.jsonschema.registry.oracle.materializers[0].options.viewName": "ORDER_DV"
         ]) { ApplicationContext context ->
             context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
             context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
@@ -336,9 +336,9 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
                 "spec.name"                                                   : "bean-materializer",
-                "json-schema.registry.oracle.enabled"                         : "true",
-                "json-schema.registry.oracle.materializers[0].name"           : "duality-views",
-                "json-schema.registry.oracle.materializers[0].providerClassName": BeanMaterializer.name
+                "micronaut.jsonschema.registry.oracle.enabled"                         : "true",
+                "micronaut.jsonschema.registry.oracle.materializers[0].name"           : "duality-views",
+                "micronaut.jsonschema.registry.oracle.materializers[0].providerClassName": BeanMaterializer.name
         ]) { ApplicationContext context ->
             context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
             context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
@@ -358,10 +358,10 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         when:
         withContext([
                 "spec.name"                                                   : "bean-materializer",
-                "json-schema.registry.oracle.enabled"                         : "true",
-                "json-schema.registry.oracle.materializers[0].name"           : "duality-views",
-                "json-schema.registry.oracle.materializers[0].providerClassName": BeanMaterializer.name,
-                "json-schema.registry.oracle.materializers[0].options.viewName": "ORDER_DV"
+                "micronaut.jsonschema.registry.oracle.enabled"                         : "true",
+                "micronaut.jsonschema.registry.oracle.materializers[0].name"           : "duality-views",
+                "micronaut.jsonschema.registry.oracle.materializers[0].providerClassName": BeanMaterializer.name,
+                "micronaut.jsonschema.registry.oracle.materializers[0].options.viewName": "ORDER_DV"
         ]) { ApplicationContext context ->
             context.registerSingleton(MeterRegistry, meterRegistry)
             context.registerSingleton(DataSource, new NullDataSource(), Qualifiers.byName("default"), false)
@@ -428,15 +428,15 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry()
         withContext([:]) { ApplicationContext context ->
             context.registerSingleton(MeterRegistry, meterRegistry)
-            JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration(authority: JsonSchemaRegistryAuthority.SR)
-            configuration.sr.policy.mode = JsonSchemaRegistryPolicyMode.OBSERVE_ONLY
+            JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration(authority: JsonSchemaRegistryAuthority.CSR)
+            configuration.csr.policy.mode = JsonSchemaRegistryPolicyMode.OBSERVE_ONLY
             DefaultJsonSchemaRegistryObservability observability = new DefaultJsonSchemaRegistryObservability(context)
             observability.record(
                     configuration,
                     Duration.ofMillis(25),
                     [JsonSchemaRegistryOutcome.ok(
                             new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                            "sr.authority",
+                            "csr.authority",
                             JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                             "ok"
                     )]
@@ -445,22 +445,22 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
 
         then:
         meterRegistry.get("json.schema.registry.outcomes")
-                .tag("target", "sr")
-                .tag("authority", "sr")
+                .tag("target", "csr")
+                .tag("authority", "csr")
                 .tag("mode", "observe_only")
                 .tag("result", "equivalent")
                 .tag("failure", "false")
                 .counter()
                 .count() == 1.0d
         meterRegistry.get("json.schema.registry.reconcile.duration")
-                .tag("authority", "sr")
+                .tag("authority", "csr")
                 .tag("dry_run", "false")
                 .tag("failure", "false")
                 .timer()
                 .count() == 1
         meterRegistry.get("json.schema.registry.discovered")
-                .tag("authority", "sr")
-                .tag("source", "sr")
+                .tag("authority", "csr")
+                .tag("source", "csr")
                 .counter()
                 .count() == 1.0d
     }
@@ -471,7 +471,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         HealthStatus failed
         HealthStatus recovered
         JsonSchemaRegistryFailFastStrategy strategy
-        withContext(["json-schema.registry.enabled": "true"]) { ApplicationContext context ->
+        withContext(["micronaut.jsonschema.registry.enabled": "true"]) { ApplicationContext context ->
             JsonSchemaRegistryConfiguration configuration = context.getBean(JsonSchemaRegistryConfiguration)
             JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState)
             JsonSchemaRegistryReadinessIndicator indicator = context.getBean(JsonSchemaRegistryReadinessIndicator)
@@ -479,14 +479,14 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
             initial = healthResult(indicator).status
             state.completed(Duration.ofMillis(10), [JsonSchemaRegistryOutcome.failure(
                     new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                    "sr",
+                    "csr",
                     JsonSchemaRegistryOutcomeStatus.FAILED,
                     "failure"
             )])
             failed = healthResult(indicator).status
             state.completed(Duration.ofMillis(10), [JsonSchemaRegistryOutcome.ok(
                     new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                    "sr",
+                    "csr",
                     JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                     "ok"
             )])
@@ -504,14 +504,14 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
     void "readiness indicator stays up when failure strategy is none"() {
         expect:
         withContext([
-                "json-schema.registry.enabled"            : "true",
-                "json-schema.registry.fail-fast-strategy" : "none"
+                "micronaut.jsonschema.registry.enabled"            : "true",
+                "micronaut.jsonschema.registry.fail-fast-strategy" : "none"
         ]) { ApplicationContext context ->
             JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState)
             JsonSchemaRegistryReadinessIndicator indicator = context.getBean(JsonSchemaRegistryReadinessIndicator)
             state.completed(Duration.ofMillis(10), [JsonSchemaRegistryOutcome.failure(
                     new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                    "sr",
+                    "csr",
                     JsonSchemaRegistryOutcomeStatus.FAILED,
                     "failure"
             )])
@@ -522,14 +522,14 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
     void "readiness indicator stays up when failure strategy is startup abort after startup"() {
         expect:
         withContext([
-                "json-schema.registry.enabled"            : "true",
-                "json-schema.registry.fail-fast-strategy" : "startup_abort"
+                "micronaut.jsonschema.registry.enabled"            : "true",
+                "micronaut.jsonschema.registry.fail-fast-strategy" : "startup_abort"
         ]) { ApplicationContext context ->
             JsonSchemaRegistryState state = context.getBean(JsonSchemaRegistryState)
             JsonSchemaRegistryReadinessIndicator indicator = context.getBean(JsonSchemaRegistryReadinessIndicator)
             state.completed(Duration.ofMillis(10), [JsonSchemaRegistryOutcome.failure(
                     new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                    "sr",
+                    "csr",
                     JsonSchemaRegistryOutcomeStatus.FAILED,
                     "failure"
             )])
@@ -544,7 +544,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                 configuration,
                 () -> [JsonSchemaRegistryOutcome.failure(
                         new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                        "sr",
+                        "csr",
                         JsonSchemaRegistryOutcomeStatus.FAILED,
                         "failure"
                 )]
@@ -699,7 +699,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         List<JsonSchemaRegistryOutcome> reconcile() {
             [JsonSchemaRegistryOutcome.ok(
                     new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                    "sr",
+                    "csr",
                     JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                     "ok"
             )]
@@ -734,7 +734,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
             }
             [JsonSchemaRegistryOutcome.ok(
                     new LogicalSchema("com.acme.Order", "com.acme.Order", null),
-                    "sr",
+                    "csr",
                     JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
                     "ok"
             )]

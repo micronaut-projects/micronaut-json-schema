@@ -38,7 +38,7 @@ public final class JsonSchemaRegistryConfiguration {
     /**
      * Configuration prefix.
      */
-    public static final String PREFIX = "json-schema.registry";
+    public static final String PREFIX = "micronaut.jsonschema.registry";
 
     private boolean enabled;
     private JsonSchemaRegistryAuthority authority = JsonSchemaRegistryAuthority.APPLICATION;
@@ -46,7 +46,7 @@ public final class JsonSchemaRegistryConfiguration {
     private JsonSchemaRegistryFailFastStrategy failFastStrategy = JsonSchemaRegistryFailFastStrategy.READINESS_GATE;
     private List<Mapping> mappings = List.of();
     private NamingConfiguration naming = new NamingConfiguration();
-    private SrConfiguration sr = new SrConfiguration();
+    private CsrConfiguration csr = new CsrConfiguration();
     private OracleConfiguration oracle = new OracleConfiguration();
 
     /**
@@ -131,14 +131,14 @@ public final class JsonSchemaRegistryConfiguration {
         stringProperty(environment, PREFIX + ".naming.subject.prefix").ifPresent(naming::setSubjectPrefix);
         stringProperty(environment, PREFIX + ".naming.domain.prefix").ifPresent(naming::setDomainPrefix);
 
-        environment.getProperty(PREFIX + ".sr.enabled", Boolean.class).ifPresent(sr::setEnabled);
-        stringProperty(environment, PREFIX + ".sr.url").ifPresent(sr::setUrl);
-        environment.getProperty(PREFIX + ".sr.subjects", Argument.listOf(String.class)).ifPresent(sr::setSubjects);
-        stringProperty(environment, PREFIX + ".sr.username").ifPresent(sr::setUsername);
-        stringProperty(environment, PREFIX + ".sr.password").ifPresent(sr::setPassword);
-        stringProperty(environment, PREFIX + ".sr.bearer-token").ifPresent(sr::setBearerToken);
-        environment.getProperty(PREFIX + ".sr.headers", Argument.mapOf(String.class, String.class)).ifPresent(sr::setHeaders);
-        environment.getProperty(PREFIX + ".sr.policy.mode", JsonSchemaRegistryPolicyMode.class).ifPresent(sr.getPolicy()::setMode);
+        environment.getProperty(PREFIX + ".csr.enabled", Boolean.class).ifPresent(csr::setEnabled);
+        stringProperty(environment, PREFIX + ".csr.url").ifPresent(csr::setUrl);
+        environment.getProperty(PREFIX + ".csr.subjects", Argument.listOf(String.class)).ifPresent(csr::setSubjects);
+        stringProperty(environment, PREFIX + ".csr.username").ifPresent(csr::setUsername);
+        stringProperty(environment, PREFIX + ".csr.password").ifPresent(csr::setPassword);
+        stringProperty(environment, PREFIX + ".csr.bearer-token").ifPresent(csr::setBearerToken);
+        environment.getProperty(PREFIX + ".csr.headers", Argument.mapOf(String.class, String.class)).ifPresent(csr::setHeaders);
+        environment.getProperty(PREFIX + ".csr.policy.mode", JsonSchemaRegistryPolicyMode.class).ifPresent(csr.getPolicy()::setMode);
 
         environment.getProperty(PREFIX + ".oracle.enabled", Boolean.class).ifPresent(oracle::setEnabled);
         stringProperty(environment, PREFIX + ".oracle.datasource").ifPresent(oracle::setDatasource);
@@ -172,15 +172,15 @@ public final class JsonSchemaRegistryConfiguration {
     /**
      * @return Schema Registry configuration
      */
-    public SrConfiguration getSr() {
-        return sr;
+    public CsrConfiguration getCsr() {
+        return csr;
     }
 
     /**
-     * @param sr Schema Registry configuration
+     * @param csr Schema Registry configuration
      */
-    public void setSr(@Nullable SrConfiguration sr) {
-        this.sr = sr == null ? new SrConfiguration() : sr;
+    public void setCsr(@Nullable CsrConfiguration csr) {
+        this.csr = csr == null ? new CsrConfiguration() : csr;
     }
 
     /**
@@ -345,7 +345,7 @@ public final class JsonSchemaRegistryConfiguration {
      * Schema Registry target configuration.
      */
     @Introspected
-    public static final class SrConfiguration {
+    public static final class CsrConfiguration {
         private boolean enabled;
         private String url = "http://localhost:8081";
         private List<String> subjects = List.of();

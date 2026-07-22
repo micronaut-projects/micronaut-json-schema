@@ -28,7 +28,7 @@ public enum JsonSchemaRegistryAuthority {
     /**
      * Confluent Schema Registry is authoritative.
      */
-    SR,
+    CSR,
     /**
      * Oracle metadata is authoritative.
      */
