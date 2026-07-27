@@ -26,6 +26,7 @@ import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * An aggregator for adding information from the validation annotations.
@@ -77,7 +78,7 @@ public class ValidationInfoAggregator implements SchemaInfoAggregator {
             schema.setType(List.of(Schema.Type.NULL));
         }
 
-        if (schema.getType().contains(Schema.Type.BOOLEAN)) {
+        if (Objects.requireNonNull(schema.getType()).contains(Schema.Type.BOOLEAN)) {
             if (element.hasAnnotation(ASSERT_FALSE_ANN + LIST_SUFFIX)) {
                 schema.setConstValue(false);
             } else if (element.hasAnnotation(ASSERT_TRUE_ANN + LIST_SUFFIX)) {

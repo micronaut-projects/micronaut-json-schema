@@ -99,21 +99,21 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
         String property,
         ConfigurationError.Type type,
         String message,
-        String originLocation,
-        String rawPropertyName,
-        Object rawValue,
+        @Nullable String originLocation,
+        @Nullable String rawPropertyName,
+        @Nullable Object rawValue,
         int lineNumber
     ) {
     }
 
     @Serdeable
     private record JsonDependencyInjectionError(
-        String injectionPoint,
+        @Nullable String injectionPoint,
         String bean,
         String details,
         List<String> failingPath,
-        String snippet,
-        String snippetLanguage
+        @Nullable String snippet,
+        @Nullable String snippetLanguage
     ) {
     }
 }

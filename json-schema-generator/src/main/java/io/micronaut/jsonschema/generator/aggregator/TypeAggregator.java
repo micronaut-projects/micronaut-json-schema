@@ -22,6 +22,7 @@ import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
+import org.jspecify.annotations.Nullable;
 
 import javax.lang.model.SourceVersion;
 import io.micronaut.jsonschema.model.Schema;
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
@@ -100,17 +102,19 @@ public final class TypeAggregator {
             // inner oneOf's are treated as objects
             return TypeDef.OBJECT;
         } else if (schema.hasAnyOf()) {
-            return chooseFromAnyOf(schema.getAnyOf(), context);
+            TypeDef typeDef = chooseFromAnyOf(Objects.requireNonNull(schema.getAnyOf()), context);
+            return typeDef != null ? typeDef : TypeDef.OBJECT;
         } else if (schema.isEnum()) {
             return TypeDef.OBJECT;
         }
 
         // check for "type"
         boolean nullable = false;
-        if (schema.hasType() && schema.getType().size() > 1) {
-            if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
+        List<Schema.Type> schemaTypes = schema.getType();
+        if (schemaTypes != null && schemaTypes.size() > 1) {
+            if (schemaTypes.size() == 2 && schemaTypes.contains(NULL)) {
                 nullable = true;
-                var typeList = schema.getType();
+                var typeList = schemaTypes;
                 typeList.remove(NULL);
                 schema.setType(typeList);
             } else {
@@ -119,10 +123,11 @@ public final class TypeAggregator {
                 return TypeDef.OBJECT;
             }
         }
-        var type = schema.hasType() ? schema.getType().get(0) : Schema.Type.OBJECT;
+        schemaTypes = schema.getType();
+        var type = schemaTypes != null && !schemaTypes.isEmpty() ? schemaTypes.get(0) : Schema.Type.OBJECT;
         TypeDef typeDef;
-        if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
-            var format = schema.getFormat();
+        String format = schema.getFormat();
+        if (type.equals(Schema.Type.STRING) && format != null) {
             typeDef = switch (format) {
                 case "date" -> ClassTypeDef.of(LocalDate.class);
                 case "date-time", "time" -> ClassTypeDef.of(ZonedDateTime.class);
@@ -136,13 +141,14 @@ public final class TypeAggregator {
                 default -> TypeDef.STRING;
             };
         } else if (type.equals(Schema.Type.NUMBER) && schema.getPattern() != null) {
-            if (schema.getPattern().contains(".")) {
+            String pattern = Objects.requireNonNull(schema.getPattern());
+            if (pattern.contains(".")) {
                 typeDef = nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT;
             } else {
                 typeDef = nullable ? TypeDef.Primitive.INT_WRAPPER : TypeDef.Primitive.INT;
             }
         } else if (schema.has$ref()) {
-            String ref = schema.get$ref();
+            String ref = Objects.requireNonNull(schema.get$ref());
             if (ref.equals(THIS_SCHEMA_REF)) {
                 return TypeDef.THIS;
             } else if (ref.indexOf("#") == 0) {
@@ -206,32 +212,42 @@ public final class TypeAggregator {
      * @param schemas List of Schemas in the anyOf keyword
      * @return chosen Schema
      */
+    @Nullable
     private static TypeDef chooseFromAnyOf(List<Schema> schemas, GeneratorContext context) {
         if (schemas.isEmpty()) {
             return null;
         } else if (schemas.size() == 1) {
             return getTypeDefFromJson(schemas.get(0), context);
         } else if (schemas.size() == 2) {
-            var nullSchema = new Schema();
-            nullSchema.setType(List.of(Schema.Type.NULL));
-            if (schemas.contains(nullSchema)) {
-                schemas.remove(nullSchema);
-                return getTypeDefFromJson(schemas.get(0), context);
+            Schema first = schemas.get(0);
+            Schema second = schemas.get(1);
+            if (isNullSchema(first)) {
+                return getTypeDefFromJson(second, context);
+            } else if (isNullSchema(second)) {
+                return getTypeDefFromJson(first, context);
             }
         }
         boolean sameType = true;
         for (var i = 0; i < schemas.size() - 1; i++) {
-            if (schemas.get(i).hasType() && !schemas.get(i).getType().equals(schemas.get(i + 1).getType())) {
+            List<Schema.Type> currentTypes = schemas.get(i).getType();
+            List<Schema.Type> nextTypes = schemas.get(i + 1).getType();
+            if (currentTypes != null && !currentTypes.equals(nextTypes)) {
                 sameType = false;
-            } else if (!schemas.get(i).hasType() || !schemas.get(i + 1).hasType()) {
+            } else if (currentTypes == null || nextTypes == null) {
                 sameType = false;
             }
         }
         if (sameType) {
-            var type = schemas.get(0).getType().get(0);
+            List<Schema.Type> schemaTypes = Objects.requireNonNull(schemas.get(0).getType());
+            var type = schemaTypes.get(0);
             return TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
         }
         return TypeDef.OBJECT;
+    }
+
+    private static boolean isNullSchema(Schema schema) {
+        List<Schema.Type> types = schema.getType();
+        return types != null && types.size() == 1 && types.contains(NULL);
     }
 
     public static String getConstantName(String input) {

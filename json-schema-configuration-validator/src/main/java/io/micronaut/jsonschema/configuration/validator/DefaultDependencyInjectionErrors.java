@@ -19,6 +19,7 @@ import io.micronaut.context.ConfigurableBeanContext;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Singleton;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -53,7 +54,7 @@ final class DefaultDependencyInjectionErrors implements DependencyInjectionError
         if (cached.compareAndSet(null, computed)) {
             return computed;
         }
-        return cached.get();
+        return Objects.requireNonNull(cached.get());
     }
 
     private Set<DependencyInjectionError> validateNow() {
