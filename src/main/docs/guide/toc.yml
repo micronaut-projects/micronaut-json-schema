@@ -23,6 +23,8 @@ generator:
   title: Generating Beans from Schema
   registration: Build-time Generation Configuration
   usage: Run-time Generation Configuration
+  records: Record Generation From Discovered Schemas
+  oracle: Oracle Discovery and Plugins
   support: Supported JSON Schema Keywords and Limitations
   example: Example Output of Generation
 configurationValidator:

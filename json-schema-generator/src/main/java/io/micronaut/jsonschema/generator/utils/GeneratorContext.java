@@ -50,6 +50,9 @@ public final class GeneratorContext {
     private final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private final HashMap<String, LinkedList<String>> TEMP_DEFINITIONS = new HashMap<>();
     private final HashMap<String, @Nullable Schema> ONE_OF_SET = new HashMap<>();
+    private final List<Warning> warnings = new LinkedList<>();
+    private boolean addGeneratedJsonSchemaAnnotation;
+    private boolean jsonSchemaRecordsProfile;
     private @Nullable SourceGeneratorConfig configuration;
 
     public boolean isDefinitionClass(String key) {
@@ -81,7 +84,7 @@ public final class GeneratorContext {
     }
 
     public boolean hasDefinition(String key) {
-        return DEFINITIONS.containsKey(key);
+        return DEFINITIONS.containsKey(unifyKey(key));
     }
 
     public boolean isInheriting(String className) {
@@ -129,7 +132,12 @@ public final class GeneratorContext {
         Schema items = definition.getItems() != null ? definition.getItems() : definition.getContains();
         TypeDef innerType;
         if (items == null) {
-            return TypeDef.OBJECT;
+            if (!jsonSchemaRecordsProfile) {
+                return TypeDef.OBJECT;
+            }
+            return TypeDef.parameterized(
+                (definition.isUniqueItems() != null && definition.isUniqueItems()) ? Set.class : List.class,
+                TypeDef.OBJECT);
         } else {
             innerType = getTypeDefFromJson(items, this);
             if (innerType instanceof TypeDef.Primitive primitive) {
@@ -194,6 +202,20 @@ public final class GeneratorContext {
         DEFINITIONS.clear();
         ONE_OF_SET.clear();
         TEMP_DEFINITIONS.clear();
+        warnings.clear();
+    }
+
+    /**
+     * Enable generation behavior used by the JSON schema records pipeline.
+     *
+     * <p>The records profile keeps the default generator path intact, but opts into pipeline-specific
+     * behavior such as generated {@code @JsonSchema} annotations, stricter diagnostics for
+     * unsupported discovered-schema constructs, record-safe nullability/boxing, local-reference
+     * fallbacks, and Oracle provider metadata handling.</p>
+     */
+    public void enableJsonSchemaRecordsProfile() {
+        addGeneratedJsonSchemaAnnotation = true;
+        jsonSchemaRecordsProfile = true;
     }
 
     private String unifyKey(String key) {
@@ -217,5 +239,47 @@ public final class GeneratorContext {
      */
     public SourceGeneratorConfig getConfiguration() {
         return Objects.requireNonNull(configuration);
+    }
+
+    /**
+     * Record a non-fatal generation warning.
+     * @param code The machine-readable warning code
+     * @param message The warning message
+     */
+    public void warn(String code, String message) {
+        warnings.add(new Warning(code, message));
+    }
+
+    /**
+     * Get recorded warnings.
+     * @return The warnings
+     */
+    public List<Warning> getWarnings() {
+        return List.copyOf(warnings);
+    }
+
+    /**
+     * @return Whether generated types should be annotated with {@code @JsonSchema}
+     */
+    public boolean isAddGeneratedJsonSchemaAnnotation() {
+        return addGeneratedJsonSchemaAnnotation;
+    }
+
+    /**
+     * @return Whether record-generation profile behavior is enabled for unsupported/discovered-schema
+     * handling. This is not a general JSON Schema mode flag; it is set by
+     * {@link #enableJsonSchemaRecordsProfile()} and scopes compatibility-sensitive behavior to the
+     * records pipeline.
+     */
+    public boolean isJsonSchemaRecordsProfile() {
+        return jsonSchemaRecordsProfile;
+    }
+
+    /**
+     * A recorded generation warning.
+     * @param code The machine-readable warning code
+     * @param message The warning message
+     */
+    public record Warning(String code, String message) {
     }
 }

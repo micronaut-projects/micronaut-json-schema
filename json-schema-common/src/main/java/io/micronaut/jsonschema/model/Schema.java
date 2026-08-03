@@ -75,6 +75,9 @@ public final class Schema {
     private @Nullable List<Type> type;
 
     private @Nullable String format;
+    private @Nullable Object extendedType;
+    private @Nullable Integer sqlPrecision;
+    private @Nullable Integer sqlScale;
     @JsonProperty("const")
     private @Nullable Object constValue;
     @JsonProperty("enum")
@@ -183,6 +186,66 @@ public final class Schema {
 
     public Schema setFormat(@Nullable String format) {
         this.format = format;
+        return this;
+    }
+
+    /**
+     * @return Provider-specific type metadata, or {@code null} when none was supplied
+     */
+    @Nullable
+    public Object getExtendedType() {
+        return extendedType;
+    }
+
+    /**
+     * Set provider-specific type metadata used for source-specific Java type mapping.
+     *
+     * @param extendedType The provider-specific type metadata
+     * @return This schema
+     */
+    public Schema setExtendedType(@Nullable Object extendedType) {
+        this.extendedType = extendedType;
+        return this;
+    }
+
+    /**
+     * @return Whether provider-specific type metadata is available
+     */
+    public boolean hasExtendedType() {
+        return extendedType != null;
+    }
+
+    /**
+     * @return The provider-reported SQL precision, or {@code null} when not applicable
+     */
+    @Nullable
+    public Integer getSqlPrecision() {
+        return sqlPrecision;
+    }
+
+    /**
+     * @param sqlPrecision The provider-reported SQL precision
+     * @return This schema
+     */
+    public Schema setSqlPrecision(@Nullable Integer sqlPrecision) {
+        this.sqlPrecision = sqlPrecision;
+        return this;
+    }
+
+    /**
+     * @return The provider-reported SQL scale, or {@code null} when not applicable
+     */
+    @io.micronaut.core.annotation.Nullable
+    public Integer getSqlScale() {
+        return sqlScale;
+    }
+
+    /**
+     * @param sqlScale The provider-reported SQL scale
+     * @return This schema
+     */
+    public Schema setSqlScale(@Nullable Integer sqlScale) {
+        this.sqlScale = sqlScale;
         return this;
     }
 
@@ -759,6 +822,15 @@ public final class Schema {
         // Merge format
         if (other.format != null) {
             this.format = other.format;
+        }
+        if (other.extendedType != null) {
+            this.extendedType = other.extendedType;
+        }
+        if (other.sqlPrecision != null) {
+            this.sqlPrecision = other.sqlPrecision;
+        }
+        if (other.sqlScale != null) {
+            this.sqlScale = other.sqlScale;
         }
 
         // Merge constValue

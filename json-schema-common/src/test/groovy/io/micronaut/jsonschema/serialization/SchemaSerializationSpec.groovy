@@ -83,6 +83,19 @@ class SchemaSerializationSpec extends Specification {
         Schema.object().putProperty("a", Schema.integer()) | '{"properties":{"a":{"type":"integer"}},"type":"object"}'
     }
 
+    void "schema merge keeps existing overwrite behavior for duplicate properties"() {
+        given:
+        Schema first = Schema.object().putProperty("value", Schema.string().setMinLength(2))
+        Schema second = Schema.object().putProperty("value", Schema.string().setMaxLength(4))
+
+        when:
+        first.merge(second)
+
+        then:
+        first.properties["value"].minLength == null
+        first.properties["value"].maxLength == 4
+    }
+
     void "test #expectedJson serialization"() {
         when:
         var json = mapper.writeValueAsString(schema)

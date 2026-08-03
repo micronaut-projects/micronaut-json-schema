@@ -8,6 +8,7 @@ build/
 !build-logic/src/main/kotlin/io/micronaut/build
 classes/
 out/
+/json-schema-generator/output/
 *.db
 *.log
 *.iml

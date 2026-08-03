@@ -1,0 +1,51 @@
+plugins {
+    id("java-gradle-plugin")
+    id("io.micronaut.build.internal.json-schema-module")
+}
+
+tasks.register("generatePomFileForMavenPublication", org.gradle.api.publish.maven.tasks.GenerateMavenPom) {
+    pom = publishing.publications.named("pluginMaven").get().pom
+    destination = layout.buildDirectory.file("publications/maven/pom-default.xml").get().asFile
+}
+
+// The Micronaut module convention checks a publication named "maven", while
+// java-gradle-plugin publishes the implementation artifact as "pluginMaven".
+// Reuse the real plugin POM for that check without adding a duplicate publication.
+afterEvaluate {
+    publishing.publications.named("pluginMaven") {
+        pom.withXml {
+            def micronautVersion = libs.versions.micronaut.asProvider().get()
+            asNode().dependencies.dependency.each { dependency ->
+                if (dependency.groupId.text() == "io.micronaut" &&
+                    dependency.artifactId.text() == "micronaut-inject" &&
+                    dependency.version.isEmpty()) {
+                    dependency.appendNode("version", micronautVersion)
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation(projects.micronautJsonSchemaGenerator)
+    testImplementation(gradleTestKit())
+    testImplementation(mnTest.junit.jupiter.api)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+}
+
+gradlePlugin {
+    plugins {
+        jsonSchemaRecords {
+            id = "io.micronaut.jsonschema.records"
+            implementationClass = "io.micronaut.jsonschema.gradle.JsonSchemaRecordsGradlePlugin"
+        }
+    }
+}
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-gradle-plugin"
+    }
+    binaryCompatibility.enabledAfter("2.2.0")
+}
