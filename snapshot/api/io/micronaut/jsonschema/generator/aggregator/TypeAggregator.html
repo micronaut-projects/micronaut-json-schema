@@ -54,17 +54,11 @@ loadScripts(document, 'script');</script>
 <ol class="toc-list" tabindex="-1">
 <li><a href="#" tabindex="0">Description</a></li>
 <li><a href="#field-summary" tabindex="0">Field Summary</a></li>
-<li><a href="#constructor-summary" tabindex="0">Constructor Summary</a></li>
 <li><a href="#method-summary" tabindex="0">Method Summary</a></li>
 <li><a href="#field-detail" tabindex="0">Field Details</a>
 <ol class="toc-list">
 <li><a href="#TYPE_MAP" tabindex="0">TYPE_MAP</a></li>
 <li><a href="#TYPE_MAP_NULLABLE" tabindex="0">TYPE_MAP_NULLABLE</a></li>
-</ol>
-</li>
-<li><a href="#constructor-detail" tabindex="0">Constructor Details</a>
-<ol class="toc-list">
-<li><a href="#%3Cinit%3E()" tabindex="0">TypeAggregator()</a></li>
 </ol>
 </li>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
@@ -119,19 +113,6 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color"><code>static final <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link">Map</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>, io.micronaut.sourcegen.model.TypeDef&gt;</code></div>
 <div class="col-second odd-row-color"><code><a href="#TYPE_MAP_NULLABLE" class="member-name-link">TYPE_MAP_NULLABLE</a></code></div>
 <div class="col-last odd-row-color">&nbsp;</div>
-</div>
-</section>
-</li>
-<!-- ======== CONSTRUCTOR SUMMARY ======== -->
-<li>
-<section class="constructor-summary" id="constructor-summary">
-<h2>Constructor Summary</h2>
-<div class="caption"><span>Constructors</span></div>
-<div class="summary-table two-column-summary">
-<div class="table-header col-first">Constructor</div>
-<div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">TypeAggregator</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
 </div>
 </section>
 </li>
@@ -203,22 +184,6 @@ loadScripts(document, 'script');</script>
 </ul>
 </section>
 </li>
-<!-- ========= CONSTRUCTOR DETAIL ======== -->
-<li>
-<section class="constructor-details" id="constructor-detail">
-<h2>Constructor Details</h2>
-<ul class="member-list">
-<li>
-<section class="detail" id="&lt;init&gt;()">
-<h3>TypeAggregator</h3>
-<div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">TypeAggregator</span>()</div>
-</div>
-</section>
-</li>
-</ul>
-</section>
-</li>
 <!-- ============ METHOD DETAIL ========== -->
 <li>
 <section class="method-details" id="method-detail">
@@ -234,12 +199,12 @@ loadScripts(document, 'script');</script>
 This method analyzes the schema's type, format, and other properties to determine
 the appropriate Java type representation, handling multiple special cases such as
 type combinations, format-specific mappings, references, and "oneOf"/"anyOf" schemas.
-
+<p>
 If the schema defines multiple types, the method defaults to `java.lang.Object`.
 For specific formats like "date-time" or "uuid", the method maps to appropriate
 Java classes such as `ZonedDateTime` or `UUID`. Additionally, schema references (`$ref`)
 are resolved, potentially triggering the generation of new schema definitions.
-
+<p>
 The method also handles special cases for numerical types with patterns and
 handles the "oneOf" and "anyOf" schema keywords by recursively determining
 the appropriate type from the valid options.</div>

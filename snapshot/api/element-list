@@ -5,9 +5,14 @@ io.micronaut.jsonschema.configuration.validator.model
 io.micronaut.jsonschema.configuration.validator.report
 io.micronaut.jsonschema.generator
 io.micronaut.jsonschema.generator.aggregator
+io.micronaut.jsonschema.generator.discovery
 io.micronaut.jsonschema.generator.loaders
+io.micronaut.jsonschema.generator.oracle
+io.micronaut.jsonschema.generator.records
 io.micronaut.jsonschema.generator.utils
+io.micronaut.jsonschema.gradle
 io.micronaut.jsonschema.info
+io.micronaut.jsonschema.maven
 io.micronaut.jsonschema.model
 io.micronaut.jsonschema.serialization
 io.micronaut.jsonschema.utils

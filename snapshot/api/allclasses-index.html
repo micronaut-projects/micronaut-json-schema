@@ -50,11 +50,19 @@ loadScripts(document, 'script');</script>
 <h1 title="All Classes and Interfaces" class="title">All Classes and Interfaces</h1>
 </div>
 <div id="all-classes-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="all-classes-table-tab0" role="tab" aria-selected="true" aria-controls="all-classes-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="all-classes-table-tab1" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab1', 2)" class="table-tab">Interfaces</button><button id="all-classes-table-tab2" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab2', 2)" class="table-tab">Classes</button><button id="all-classes-table-tab3" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab3', 2)" class="table-tab">Enum Classes</button><button id="all-classes-table-tab4" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab4', 2)" class="table-tab">Record Classes</button><button id="all-classes-table-tab6" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab6', 2)" class="table-tab">Annotation Interfaces</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="all-classes-table-tab0" role="tab" aria-selected="true" aria-controls="all-classes-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="all-classes-table-tab1" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab1', 2)" class="table-tab">Interfaces</button><button id="all-classes-table-tab2" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab2', 2)" class="table-tab">Classes</button><button id="all-classes-table-tab3" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab3', 2)" class="table-tab">Enum Classes</button><button id="all-classes-table-tab4" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab4', 2)" class="table-tab">Record Classes</button><button id="all-classes-table-tab5" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab5', 2)" class="table-tab">Exception Classes</button><button id="all-classes-table-tab6" role="tab" aria-selected="false" aria-controls="all-classes-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('all-classes-table', 'all-classes-table-tab6', 2)" class="table-tab">Annotation Interfaces</button></div>
 <div id="all-classes-table.tabpanel" role="tabpanel" aria-labelledby="all-classes-table-tab0">
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/maven/AbstractGenerateFromJsonSchemaSourcesMojo.html" title="class in io.micronaut.jsonschema.maven">AbstractGenerateFromJsonSchemaSourcesMojo</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Shared Maven mojo state for JSON Schema discovery and source generation.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/gradle/AbstractGenerateFromJsonSchemaSourcesTask.html" title="class in io.micronaut.jsonschema.gradle">AbstractGenerateFromJsonSchemaSourcesTask</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Shared Gradle task properties for JSON Schema discovery and source generation.</div>
+</div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/aggregator/AnnotationsAggregator.html" title="class in io.micronaut.jsonschema.generator.aggregator">AnnotationsAggregator</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An aggregator for adding annotation information from json schema.</div>
@@ -150,36 +158,84 @@ runtime classpath and environment set, then validates bean wiring metadata.</div
 <div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Validates dependency-injection wiring using <code>BeanDefinition</code> metadata.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/visitor/aggregator/DocumentationInfoAggregator.html" title="class in io.micronaut.jsonschema.visitor.aggregator">DocumentationInfoAggregator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/discovery/DiscoveredSchema.html" title="class in io.micronaut.jsonschema.generator.discovery">DiscoveredSchema</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">A discovered JSON Schema document.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/discovery/DiscoveryResult.html" title="class in io.micronaut.jsonschema.generator.discovery">DiscoveryResult</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Result returned by a schema discovery provider.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/discovery/DiscoverySkipped.html" title="class in io.micronaut.jsonschema.generator.discovery">DiscoverySkipped</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">A skipped input emitted during discovery.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="io/micronaut/jsonschema/generator/discovery/DiscoveryStep.html" title="enum class in io.micronaut.jsonschema.generator.discovery">DiscoveryStep</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
+<div class="block">Pipeline step used in Oracle diagnostics.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/discovery/DiscoveryWarning.html" title="class in io.micronaut.jsonschema.generator.discovery">DiscoveryWarning</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">A non-fatal warning emitted during discovery.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/visitor/aggregator/DocumentationInfoAggregator.html" title="class in io.micronaut.jsonschema.visitor.aggregator">DocumentationInfoAggregator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An aggregator for adding information from the jackson serialization annotations.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/loaders/FileLoader.html" title="class in io.micronaut.jsonschema.generator.loaders">FileLoader</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/loaders/FileLoader.html" title="class in io.micronaut.jsonschema.generator.loaders">FileLoader</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Loads a JSON schema from a file.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/loaders/FileProcessor.html" title="class in io.micronaut.jsonschema.generator.loaders">FileProcessor</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/loaders/FileProcessor.html" title="class in io.micronaut.jsonschema.generator.loaders">FileProcessor</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/maven/GenerateFromJsonSchemaSourcesMojo.html" title="class in io.micronaut.jsonschema.maven">GenerateFromJsonSchemaSourcesMojo</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Maven goal that discovers JSON Schemas and generates Java records.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/maven/GenerateFromJsonSchemaSourcesMojo.OracleProviderConfiguration.html" title="class in io.micronaut.jsonschema.maven">GenerateFromJsonSchemaSourcesMojo.OracleProviderConfiguration</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Maven-bound Oracle provider-family configuration.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/maven/GenerateFromJsonSchemaSourcesMojo.ProvidersConfiguration.html" title="class in io.micronaut.jsonschema.maven">GenerateFromJsonSchemaSourcesMojo.ProvidersConfiguration</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Maven-bound provider-family configuration.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/maven/GenerateFromJsonSchemaSourcesMojo.SourceConfiguration.html" title="class in io.micronaut.jsonschema.maven">GenerateFromJsonSchemaSourcesMojo.SourceConfiguration</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Maven-bound source configuration.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/gradle/GenerateFromJsonSchemaSourcesTask.html" title="class in io.micronaut.jsonschema.gradle">GenerateFromJsonSchemaSourcesTask</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Opt-in task that discovers JSON Schemas from configured sources and generates Java records.</div>
+</div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/utils/GeneratorContext.html" title="class in io.micronaut.jsonschema.generator.utils">GeneratorContext</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An aggregator for storing and accessing definitions and oneOf relations from json schema.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/GeneratorMain.html" title="class in io.micronaut.jsonschema.generator">GeneratorMain</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/utils/GeneratorContext.Warning.html" title="class in io.micronaut.jsonschema.generator.utils">GeneratorContext.Warning</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">A recorded generation warning.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/GeneratorMain.html" title="class in io.micronaut.jsonschema.generator">GeneratorMain</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An entry point to be used in tests, to simulate
 what the Source Generation from Json Schema plugin would do.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/configuration/validator/HealthConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator">HealthConfiguration</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/configuration/validator/HealthConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator">HealthConfiguration</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Configuration for enabling/disabling the configuration errors health indicator.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/configuration/validator/report/HtmlConfigurationErrorReporter.html" title="class in io.micronaut.jsonschema.configuration.validator.report">HtmlConfigurationErrorReporter</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/configuration/validator/report/HtmlConfigurationErrorReporter.html" title="class in io.micronaut.jsonschema.configuration.validator.report">HtmlConfigurationErrorReporter</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Reports errors as an HTML document.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/visitor/aggregator/JacksonInfoAggregator.html" title="class in io.micronaut.jsonschema.visitor.aggregator">JacksonInfoAggregator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/visitor/aggregator/JacksonInfoAggregator.html" title="class in io.micronaut.jsonschema.visitor.aggregator">JacksonInfoAggregator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">An aggregator for adding information from the jackson serialization annotations.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/jsonschema/generator/discovery/JdbcConnectionProvider.html" title="interface in io.micronaut.jsonschema.generator.discovery">JdbcConnectionProvider</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="block">Lazily supplies a JDBC connection to discovery providers that need one.</div>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/configuration/validator/report/JsonConfigurationErrorReporter.html" title="class in io.micronaut.jsonschema.configuration.validator.report">JsonConfigurationErrorReporter</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
@@ -214,55 +270,155 @@ what the Source Generation from Json Schema plugin would do.</div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A factory of mappers for json schema serialization and deserialization.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/utils/JsonSchemaResourceUtils.html" title="class in io.micronaut.jsonschema.utils">JsonSchemaResourceUtils</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/gradle/JsonSchemaRecordsExtension.html" title="class in io.micronaut.jsonschema.gradle">JsonSchemaRecordsExtension</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Gradle extension backing jsonSchemaRecords discovery and record generation.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsGeneration.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsGeneration</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Shared build-plugin task definition for JSON Schema discovery and source generation.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsGeneratorConfig.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsGeneratorConfig</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Configuration for schema discovery and source generation.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/gradle/JsonSchemaRecordsGradlePlugin.html" title="class in io.micronaut.jsonschema.gradle">JsonSchemaRecordsGradlePlugin</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Gradle plugin that adds opt-in schema discovery and generation support.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/jsonschema/generator/discovery/JsonSchemaRecordsLogger.html" title="interface in io.micronaut.jsonschema.generator.discovery">JsonSchemaRecordsLogger</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="block">Logging abstraction used by the schema records pipeline.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Manifest written by the schema records pipeline.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.ConfiguredSource.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.ConfiguredSource</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">A configured source entry.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.Discovery.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.Discovery</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Discovery section of the manifest.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.Generator.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.Generator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Generator metadata.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.Parameters.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.Parameters</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Effective pipeline parameters.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.SchemaFile.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.SchemaFile</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">A discovered schema file entry.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.Skipped.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.Skipped</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">A skipped input entry.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.SourceMetadata.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.SourceMetadata</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Source metadata with sanitized values only.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.Warning.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.Warning</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">A non-fatal warning entry.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsPipeline.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsPipeline</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Schema discovery and source generation pipeline.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/records/JsonSchemaRecordsPipeline.Result.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsPipeline.Result</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Execution result.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/gradle/JsonSchemaRecordsProviders.html" title="class in io.micronaut.jsonschema.gradle">JsonSchemaRecordsProviders</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Provider-family configuration for schema records generation.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/utils/JsonSchemaResourceUtils.html" title="class in io.micronaut.jsonschema.utils">JsonSchemaResourceUtils</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">Internal utilities for resolving JSON schema resources on the classpath.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/jsonschema/validation/JsonSchemaValidator.html" title="interface in io.micronaut.jsonschema.validation">JsonSchemaValidator</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab1">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/jsonschema/validation/JsonSchemaValidator.html" title="interface in io.micronaut.jsonschema.validation">JsonSchemaValidator</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
 <div class="block">JSON Schema Validator.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html" title="class in io.micronaut.jsonschema.validation">JsonSchemaValidatorConfiguration</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html" title="class in io.micronaut.jsonschema.validation">JsonSchemaValidatorConfiguration</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
 <div class="block">A configuration for <a href="io/micronaut/jsonschema/validation/JsonSchemaValidator.html" title="interface in io.micronaut.jsonschema.validation"><code>JsonSchemaValidator</code></a>.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/visitor/JsonSchemaVisitor.html" title="class in io.micronaut.jsonschema.visitor">JsonSchemaVisitor</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/visitor/JsonSchemaVisitor.html" title="class in io.micronaut.jsonschema.visitor">JsonSchemaVisitor</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A visitor for creating JSON schemas for beans.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaAnnotationsModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaAnnotationsModuleInfo</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaCommonModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaCommonModuleInfo</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaAnnotationsModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaAnnotationsModuleInfo</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaConfigurationValidatorModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaConfigurationValidatorModuleInfo</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaCommonModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaCommonModuleInfo</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaGeneratorModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaGeneratorModuleInfo</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaConfigurationValidatorModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaConfigurationValidatorModuleInfo</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaProcessorModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaProcessorModuleInfo</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaGeneratorModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaGeneratorModuleInfo</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaUtilsModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaUtilsModuleInfo</a></div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaGradlePluginModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaGradlePluginModuleInfo</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidationModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaValidationModuleInfo</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaMavenPluginModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaMavenPluginModuleInfo</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/configuration/validator/model/MicronautMetadata.html" title="class in io.micronaut.jsonschema.configuration.validator.model">MicronautMetadata</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaProcessorModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaProcessorModuleInfo</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaUtilsModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaUtilsModuleInfo</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidationModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaValidationModuleInfo</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">&nbsp;</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/configuration/validator/model/MicronautMetadata.html" title="class in io.micronaut.jsonschema.configuration.validator.model">MicronautMetadata</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
 <div class="block">Micronaut-specific schema metadata.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/visitor/NameUtils.html" title="class in io.micronaut.jsonschema.visitor">NameUtils</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/visitor/NameUtils.html" title="class in io.micronaut.jsonschema.visitor">NameUtils</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A utility class for name conversions.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/micronaut/jsonschema/generator/oracle/OracleDiscoveryScope.html" title="enum class in io.micronaut.jsonschema.generator.oracle">OracleDiscoveryScope</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
+<div class="block">Discovery object scope used in Oracle diagnostics.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/oracle/OracleDomainSchemaDiscoveryProvider.html" title="class in io.micronaut.jsonschema.generator.oracle">OracleDomainSchemaDiscoveryProvider</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Discovery provider for Oracle SQL domains with JSON validation metadata.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/oracle/OracleDualityViewSchemaDiscoveryProvider.html" title="class in io.micronaut.jsonschema.generator.oracle">OracleDualityViewSchemaDiscoveryProvider</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Discovery provider for Oracle JSON relational duality views.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/gradle/OracleProviderConfiguration.html" title="class in io.micronaut.jsonschema.gradle">OracleProviderConfiguration</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Oracle provider-family configuration.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A JSON schema.</div>
 </div>
-<div class="col-first odd-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/model/Schema.SchemaDiscriminator.html" title="class in io.micronaut.jsonschema.model">Schema.SchemaDiscriminator</a></div>
-<div class="col-last odd-row-color all-classes-table all-classes-table-tab4">
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/model/Schema.SchemaDiscriminator.html" title="class in io.micronaut.jsonschema.model">Schema.SchemaDiscriminator</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
 <div class="block">Discriminator defines a property that can be used to distinguish between schemas that are defined as subtypes in code.</div>
 </div>
-<div class="col-first even-row-color all-classes-table all-classes-table-tab3"><a href="io/micronaut/jsonschema/model/Schema.Type.html" title="enum class in io.micronaut.jsonschema.model">Schema.Type</a></div>
-<div class="col-last even-row-color all-classes-table all-classes-table-tab3">
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab3"><a href="io/micronaut/jsonschema/model/Schema.Type.html" title="enum class in io.micronaut.jsonschema.model">Schema.Type</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab3">
 <div class="block">The type of schema exactly matching a primitive JSON type.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/discovery/SchemaDiscoveryContext.html" title="class in io.micronaut.jsonschema.generator.discovery">SchemaDiscoveryContext</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">Execution context passed to schema discovery providers.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/jsonschema/generator/discovery/SchemaDiscoveryProvider.html" title="interface in io.micronaut.jsonschema.generator.discovery">SchemaDiscoveryProvider</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
+<div class="block">SPI for retrieving JSON Schema documents from pluggable sources.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/discovery/SchemaDiscoveryProviders.html" title="class in io.micronaut.jsonschema.generator.discovery">SchemaDiscoveryProviders</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Resolves schema discovery providers from built-in registrations or the provider classpath.</div>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/jsonschema/visitor/aggregator/SchemaInfoAggregator.html" title="interface in io.micronaut.jsonschema.visitor.aggregator">SchemaInfoAggregator</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab1">
@@ -271,6 +427,14 @@ what the Source Generation from Json Schema plugin would do.</div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab1"><a href="io/micronaut/jsonschema/generator/loaders/SchemaLoader.html" title="interface in io.micronaut.jsonschema.generator.loaders">SchemaLoader</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab1">
 <div class="block">Interface for loading a JSON schema from various sources.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/SchemaReferenceCompositionSupport.html" title="class in io.micronaut.jsonschema.generator">SchemaReferenceCompositionSupport</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
+<div class="block">Shared support for same-document JSON Schema references and composition that changes Java type shape.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab5"><a href="io/micronaut/jsonschema/generator/discovery/SchemaRetrievalException.html" title="class in io.micronaut.jsonschema.generator.discovery">SchemaRetrievalException</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab5">
+<div class="block">Input-level schema retrieval failure with a stable diagnostic code.</div>
 </div>
 <div class="col-first odd-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/SourceGenerator.html" title="class in io.micronaut.jsonschema.generator">SourceGenerator</a></div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
@@ -293,6 +457,14 @@ properties related to the input and output paths, file names, and URL.</div>
 <div class="col-last odd-row-color all-classes-table all-classes-table-tab2">
 <div class="block">A builder class for the <a href="io/micronaut/jsonschema/generator/utils/SourceGeneratorConfig.html" title="class in io.micronaut.jsonschema.generator.utils"><code>SourceGeneratorConfig</code></a>; encapsulating the configuration
 properties related to the input and output paths; file names; and URL.</div>
+</div>
+<div class="col-first even-row-color all-classes-table all-classes-table-tab4"><a href="io/micronaut/jsonschema/generator/discovery/SourceSpec.html" title="class in io.micronaut.jsonschema.generator.discovery">SourceSpec</a></div>
+<div class="col-last even-row-color all-classes-table all-classes-table-tab4">
+<div class="block">A configured schema discovery source.</div>
+</div>
+<div class="col-first odd-row-color all-classes-table all-classes-table-tab5"><a href="io/micronaut/jsonschema/generator/discovery/SourceUnavailableException.html" title="class in io.micronaut.jsonschema.generator.discovery">SourceUnavailableException</a></div>
+<div class="col-last odd-row-color all-classes-table all-classes-table-tab5">
+<div class="block">A configured discovery source is unavailable before per-object schema retrieval can start.</div>
 </div>
 <div class="col-first even-row-color all-classes-table all-classes-table-tab2"><a href="io/micronaut/jsonschema/generator/loaders/StreamLoader.html" title="class in io.micronaut.jsonschema.generator.loaders">StreamLoader</a></div>
 <div class="col-last even-row-color all-classes-table all-classes-table-tab2">
