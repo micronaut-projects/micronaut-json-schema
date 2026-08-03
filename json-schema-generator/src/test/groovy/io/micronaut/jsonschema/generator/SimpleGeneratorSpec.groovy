@@ -1,7 +1,9 @@
 package io.micronaut.jsonschema.generator
 
-
+import io.micronaut.inject.visitor.VisitorContext
 import io.micronaut.jsonschema.generator.loaders.FileProcessor
+import io.micronaut.jsonschema.generator.utils.GeneratorContext
+import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfigBuilder
 
 import java.nio.file.Files
@@ -14,8 +16,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         SourceGenerator generator = new SourceGenerator("java")
 
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
-        String packageName = "com.example.project"; // Example package name
-        String fileName = "ArrayObject";
+        String packageName = "com.example.project" // Example package name
+        String fileName = "ArrayObject"
         var jsonSchema = '''
         {
           "$schema":"https://json-schema.org/draft/2020-12/schema",
@@ -26,7 +28,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             "$ref": "string"
           }
         }
-        ''';
+        '''
         File generated = generator.generate(new SourceGeneratorConfigBuilder()
                 .withInputStream(new ByteArrayInputStream(jsonSchema.getBytes()))
                 .withOutputFolder(outputPath)
@@ -121,6 +123,34 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
             List<Llama> hours
         ) {
         }""".stripIndent().trim()
+    }
+
+    void testDiscriminatorWithoutProperties() {
+        when:
+        var content = generateTypeAndGetContent("Animal", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "$id":"https://example.com/schemas/animal.schema.json",
+          "title":"Animal",
+          "type":"object",
+          "discriminator": {
+            "propertyName": "kind",
+            "mapping": {}
+          }
+        }
+        ''', b -> b.withRecordAdoptionStrategy(SourceGeneratorConfig.RecordAdoptionStrategy.ALWAYS_CLASS))
+
+        then:
+        content == """
+        @Serdeable
+        @JsonSubTypes
+        @JsonTypeInfo(
+            use = JsonTypeInfo.Id.NAME,
+            property = "kind"
+        )
+        public class Animal {
+        }
+        """.stripIndent().trim()
     }
 
     void testRecordGenerationWithInnerRecord() {
@@ -621,9 +651,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "incompatible allOf local ref branch falls back to Object at property level"() {
         given:
-        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        def context = new GeneratorContext()
         context.enableJsonSchemaRecordsProfile()
-        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
+        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, context)
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
@@ -738,6 +768,10 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'array'               | '{"type": "array", "items": {"type": "number"}}'                      | "List<Float> array"
         // support contains
         'contain'             | '{"type": "array", "contains": {"type": "number"}}'                   | "List<Float> contain"
+        // empty anyOf falls back to object
+        'test'                | '{"anyOf": []}'                                                       | "Object test"
+        // anyOf with null and one concrete type uses the concrete type
+        'test'                | '{"anyOf": [{"type": "null"}, {"type": "string"}]}'                  | "String test"
         // booleans
         'predicate'           | '{"type": "boolean"}'                                                 | 'Boolean predicate'
         // enums
@@ -827,6 +861,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'test'       | '{"type": "number", "maximum": 10}'                               | "@DecimalMax(\"10\") float test"
         'test'       | '{"type": "number", "exclusiveMaximum": 10.0}'                    | "@DecimalMax(\"9.999\") float test"
         'test'       | '{"type": "number", "exclusiveMinimum": 10.0}'                    | "@DecimalMin(\"10.001\") float test"
+        'test'       | '{"type": "integer", "exclusiveMaximum": 10}'                     | "@Max(9) int test"
+        'test'       | '{"type": "integer", "exclusiveMinimum": 10}'                     | "@Min(11) int test"
         'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*$"}'                  | "@Min(1) int test"
         'test'       | '{"type": "number", "pattern": "^[1-9][0-9]*.?[0-9]+$"}'          | "@DecimalMin(\"0.001\") float test"
         'test'       | '{"type": "number", "pattern": "^[0]|([1-9][0-9]*)$"}'            | "@Min(0) int test"
@@ -884,9 +920,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "record profile definition array without items maps to List of Object"() {
         given:
-        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        def context = new GeneratorContext()
         context.enableJsonSchemaRecordsProfile()
-        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
+        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, context)
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
@@ -914,9 +950,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "unsupported array item schema maps element to Object and records warning"() {
         given:
-        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        def context = new GeneratorContext()
         context.enableJsonSchemaRecordsProfile()
-        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
+        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, context)
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
@@ -946,9 +982,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "multi type non null union maps to Object and records warning in record profile"() {
         given:
-        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        def context = new GeneratorContext()
         context.enableJsonSchemaRecordsProfile()
-        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
+        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, context)
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
@@ -994,9 +1030,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "unsupported property-level composition falls back to Object and records warnings"() {
         given:
-        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        def context = new GeneratorContext()
         context.enableJsonSchemaRecordsProfile()
-        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
+        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, context)
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:
@@ -1031,9 +1067,9 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
 
     void "unsupported local ref outside defs falls back to Object and records warning at property level"() {
         given:
-        def context = new io.micronaut.jsonschema.generator.utils.GeneratorContext()
+        def context = new GeneratorContext()
         context.enableJsonSchemaRecordsProfile()
-        SourceGenerator generator = new SourceGenerator(io.micronaut.inject.visitor.VisitorContext.Language.JAVA, context)
+        SourceGenerator generator = new SourceGenerator(VisitorContext.Language.JAVA, context)
         Path outputPath = Files.createTempDirectory("json-schema-generator-output")
 
         when:

@@ -323,7 +323,7 @@ public final class ConfigurationJsonSchemaValidatorCli {
         return new ReportFiles(htmlFile, jsonFile);
     }
 
-    private record ReportFiles(Path htmlReport, Path jsonReport) {
+    private record ReportFiles(@Nullable Path htmlReport, @Nullable Path jsonReport) {
     }
 
     enum Format {

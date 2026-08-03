@@ -22,6 +22,7 @@ import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
+import org.jspecify.annotations.Nullable;
 
 import javax.lang.model.SourceVersion;
 import io.micronaut.jsonschema.model.Schema;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
@@ -77,22 +79,26 @@ public final class TypeAggregator {
         TYPE_MAP.put("number", TypeDef.Primitive.FLOAT);
     }
 
+    private TypeAggregator() {
+        /* This utility class should not be instantiated */
+    }
+
     /**
      * Extracts a Java type definition ({@code TypeDef}) from a given JSON schema.
      * This method analyzes the schema's type, format, and other properties to determine
      * the appropriate Java type representation, handling multiple special cases such as
      * type combinations, format-specific mappings, references, and "oneOf"/"anyOf" schemas.
-     *
+     * <p>
      * If the schema defines multiple types, the method defaults to `java.lang.Object`.
      * For specific formats like "date-time" or "uuid", the method maps to appropriate
      * Java classes such as `ZonedDateTime` or `UUID`. Additionally, schema references (`$ref`)
      * are resolved, potentially triggering the generation of new schema definitions.
-     *
+     * <p>
      * The method also handles special cases for numerical types with patterns and
      * handles the "oneOf" and "anyOf" schema keywords by recursively determining
      * the appropriate type from the valid options.
      *
-     * @param schema the JSON schema to be converted into a Java type definition
+     * @param schema  the JSON schema to be converted into a Java type definition
      * @param context the generator context, which holds existing type definitions and supports
      *                the resolution of schema references
      * @return the corresponding {@code TypeDef} representing the schema as a Java type
@@ -115,12 +121,14 @@ public final class TypeAggregator {
         if (schema.hasAnyOf()) {
             if (!context.isJsonSchemaRecordsProfile()) {
                 // Preserve the existing generator behavior for anyOf outside the record profile.
-                return chooseFromAnyOf(schema.getAnyOf(), context);
+                TypeDef typeDef = chooseFromAnyOf(schema.getAnyOf(), context);
+                return typeDef != null ? typeDef : TypeDef.OBJECT;
             }
             // The record-generation profile first handles nullable anyOf consistently with
             // type: ["T", "null"]; other anyOf shapes go through the existing broad chooser.
             if (!normalizeNullableAnyOf(schema)) {
-                return chooseFromAnyOf(schema.getAnyOf(), context);
+                TypeDef typeDef = chooseFromAnyOf(schema.getAnyOf(), context);
+                return typeDef != null ? typeDef : TypeDef.OBJECT;
             }
         } else if (schema.isEnum()) {
             return TypeDef.OBJECT;
@@ -128,8 +136,9 @@ public final class TypeAggregator {
 
         // check for "type"
         boolean nullable = false;
-        if (schema.hasType() && schema.getType().size() > 1) {
-            if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
+        List<Schema.Type> schemaTypes = schema.getType();
+        if (schemaTypes != null && schemaTypes.size() > 1) {
+            if (schemaTypes.size() == 2 && schemaTypes.contains(NULL)) {
                 nullable = true;
                 if (context.isJsonSchemaRecordsProfile()) {
                     // Record generation treats type ["T", "null"] as value nullability,
@@ -151,14 +160,15 @@ public final class TypeAggregator {
                 return TypeDef.OBJECT;
             }
         }
-        var type = schema.hasType() ? schema.getType().get(0) : Schema.Type.OBJECT;
+        schemaTypes = schema.getType();
+        var type = schemaTypes != null && !schemaTypes.isEmpty() ? schemaTypes.get(0) : Schema.Type.OBJECT;
         TypeDef typeDef;
         TypeDef oracleExtendedTypeDef = null;
         if (context.isJsonSchemaRecordsProfile() && schema.getFormat() == null) {
             oracleExtendedTypeDef = getOracleExtendedTypeDef(schema, type, nullable);
         }
-        if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
-            var format = schema.getFormat();
+        String format = schema.getFormat();
+        if (type.equals(Schema.Type.STRING) && format != null) {
             typeDef = switch (format) {
                 case "date" -> ClassTypeDef.of(LocalDate.class);
                 case "date-time", "time" -> ClassTypeDef.of(ZonedDateTime.class);
@@ -174,13 +184,14 @@ public final class TypeAggregator {
         } else if (oracleExtendedTypeDef != null) {
             typeDef = oracleExtendedTypeDef;
         } else if (type.equals(Schema.Type.NUMBER) && schema.getPattern() != null) {
-            if (schema.getPattern().contains(".")) {
+            String pattern = Objects.requireNonNull(schema.getPattern());
+            if (pattern.contains(".")) {
                 typeDef = nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT;
             } else {
                 typeDef = nullable ? TypeDef.Primitive.INT_WRAPPER : TypeDef.Primitive.INT;
             }
         } else if (schema.has$ref()) {
-            String ref = schema.get$ref();
+            String ref = Objects.requireNonNull(schema.get$ref());
             boolean localRef = ref.indexOf("#") == 0;
             if (ref.equals(THIS_SCHEMA_REF)) {
                 return TypeDef.THIS;
@@ -260,13 +271,16 @@ public final class TypeAggregator {
             return null;
         }
         return switch (extendedType.toLowerCase(Locale.ENGLISH)) {
-            case "date", "timestamp" -> isStringLike(type) ? ClassTypeDef.of(LocalDateTime.class) : null;
+            case "date", "timestamp" ->
+                isStringLike(type) ? ClassTypeDef.of(LocalDateTime.class) : null;
             case "timestamptz" -> isStringLike(type) ? ClassTypeDef.of(ZonedDateTime.class) : null;
             case "dsinterval" -> isStringLike(type) ? ClassTypeDef.of(Duration.class) : null;
             case "yminterval" -> isStringLike(type) ? ClassTypeDef.of(Period.class) : null;
             case "binary" -> isStringLike(type) ? TypeDef.array(TypeDef.Primitive.BYTE) : null;
-            case "double" -> isNumberLike(type) ? nullable ? ClassTypeDef.of(Double.class) : TypeDef.Primitive.DOUBLE : null;
-            case "float" -> isNumberLike(type) ? nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT : null;
+            case "double" ->
+                isNumberLike(type) ? nullable ? ClassTypeDef.of(Double.class) : TypeDef.Primitive.DOUBLE : null;
+            case "float" ->
+                isNumberLike(type) ? nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT : null;
             default -> null;
         };
     }
@@ -330,25 +344,20 @@ public final class TypeAggregator {
         return true;
     }
 
-    private static boolean isNullSchema(Schema schema) {
-        return schema.hasType()
-            && schema.getType().size() == 1
-            && Schema.Type.NULL.equals(schema.getType().get(0));
-    }
-
     /**
      * The strategy to choose from an anyOf keyword in Json Schema.
      * Needs improvement.
      * Current strategy:
-     *  if empty, return null,
-     *  if single schema, return that schema,
-     *  if 2 schema but one has type "NULL", return the non-null schema
-     *  if all schemas has the same type, return that common base type
-     *  else return empty Object schema.
+     * if empty, return null,
+     * if single schema, return that schema,
+     * if 2 schema but one has type "NULL", return the non-null schema
+     * if all schemas has the same type, return that common base type
+     * else return empty Object schema.
      *
      * @param schemas List of Schemas in the anyOf keyword
      * @return chosen Schema
      */
+    @Nullable
     private static TypeDef chooseFromAnyOf(List<Schema> schemas, GeneratorContext context) {
         if (schemas.isEmpty()) {
             return null;
@@ -362,17 +371,28 @@ public final class TypeAggregator {
                 nonNullSchema.setNullable(true);
                 return getTypeDefFromJson(nonNullSchema, context);
             }
+        } else if (schemas.size() == 2) {
+            Schema first = schemas.get(0);
+            Schema second = schemas.get(1);
+            if (isNullSchema(first)) {
+                return getTypeDefFromJson(second, context);
+            } else if (isNullSchema(second)) {
+                return getTypeDefFromJson(first, context);
+            }
         }
         boolean sameType = true;
         for (var i = 0; i < schemas.size() - 1; i++) {
-            if (schemas.get(i).hasType() && !schemas.get(i).getType().equals(schemas.get(i + 1).getType())) {
+            List<Schema.Type> currentTypes = schemas.get(i).getType();
+            List<Schema.Type> nextTypes = schemas.get(i + 1).getType();
+            if (currentTypes != null && !currentTypes.equals(nextTypes)) {
                 sameType = false;
-            } else if (!schemas.get(i).hasType() || !schemas.get(i + 1).hasType()) {
+            } else if (currentTypes == null || nextTypes == null) {
                 sameType = false;
             }
         }
         if (sameType) {
-            var type = schemas.get(0).getType().get(0);
+            List<Schema.Type> schemaTypes = Objects.requireNonNull(schemas.get(0).getType());
+            var type = schemaTypes.get(0);
             // Same scalar alternatives can share a broad base type. Object alternatives still
             // lose shape information, so record generation records a warning.
             TypeDef typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
@@ -400,6 +420,11 @@ public final class TypeAggregator {
             }
         }
         return nullSchemaFound ? nonNullSchema : null;
+    }
+
+    private static boolean isNullSchema(Schema schema) {
+        List<Schema.Type> types = schema.getType();
+        return types != null && types.size() == 1 && types.contains(NULL);
     }
 
     public static String getConstantName(String input) {

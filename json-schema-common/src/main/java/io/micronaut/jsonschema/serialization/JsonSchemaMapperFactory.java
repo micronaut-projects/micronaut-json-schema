@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.serialization;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
@@ -113,6 +114,7 @@ public class JsonSchemaMapperFactory {
         }
 
         @Override
+        @Nullable
         public Schema deserialize(JsonParser jsonParser, DeserializationContext context) throws JacksonException {
             JsonNode tree = jsonParser.objectReadContext().readTree(jsonParser);
             jsonParser.finishToken();

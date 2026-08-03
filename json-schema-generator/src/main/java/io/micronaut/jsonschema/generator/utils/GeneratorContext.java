@@ -20,12 +20,15 @@ import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
+import org.jspecify.annotations.Nullable;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName;
@@ -46,11 +49,11 @@ import static io.micronaut.jsonschema.model.Schema.ONE_OF_SCHEMA_REF_PREFIX;
 public final class GeneratorContext {
     private final HashMap<String, Map.Entry<TypeDef, Boolean>> DEFINITIONS = new HashMap<>();
     private final HashMap<String, LinkedList<String>> TEMP_DEFINITIONS = new HashMap<>();
-    private final HashMap<String, Schema> ONE_OF_SET = new HashMap<>();
+    private final HashMap<String, @Nullable Schema> ONE_OF_SET = new HashMap<>();
     private final List<Warning> warnings = new LinkedList<>();
     private boolean addGeneratedJsonSchemaAnnotation;
     private boolean jsonSchemaRecordsProfile;
-    private SourceGeneratorConfig configuration;
+    private @Nullable SourceGeneratorConfig configuration;
 
     public boolean isDefinitionClass(String key) {
         return getDefinition(key).getValue();
@@ -62,14 +65,22 @@ public final class GeneratorContext {
 
     private Map.Entry<TypeDef, Boolean> getDefinition(String key) {
         String defKey = unifyKey(key);
-        if (hasDefinition(defKey)) {
-            return DEFINITIONS.get(defKey);
+        Map.Entry<TypeDef, Boolean> definition = DEFINITIONS.get(defKey);
+        if (definition != null) {
+            return definition;
         }
         throw new IllegalArgumentException("Definition not found: " + key);
     }
 
     public List<Map.Entry<String, Schema>> getOneOfsToGenerate() {
-        return ONE_OF_SET.entrySet().stream().filter(entry -> entry.getValue() != null).toList();
+        List<Map.Entry<String, Schema>> oneOfsToGenerate = new ArrayList<>();
+        for (Map.Entry<String, @Nullable Schema> entry : ONE_OF_SET.entrySet()) {
+            Schema schema = entry.getValue();
+            if (schema != null) {
+                oneOfsToGenerate.add(new AbstractMap.SimpleEntry<>(entry.getKey(), schema));
+            }
+        }
+        return oneOfsToGenerate;
     }
 
     public boolean hasDefinition(String key) {
@@ -154,8 +165,9 @@ public final class GeneratorContext {
             DEFINITIONS.replace(defKey, newDef);
         }
         // update previous definitions that pointed to the current reference
-        if (TEMP_DEFINITIONS.containsKey(defKey)) {
-            TEMP_DEFINITIONS.get(defKey).forEach(ref -> {
+        LinkedList<String> tempDefinitions = TEMP_DEFINITIONS.get(defKey);
+        if (tempDefinitions != null) {
+            tempDefinitions.forEach(ref -> {
                 DEFINITIONS.put(ref, newDef);
             });
         }
@@ -164,8 +176,8 @@ public final class GeneratorContext {
     public void addTempDefinition(String referringDef, String ref) {
         String referringKey = unifyKey(referringDef);
         String referredKey = unifyKey(ref);
-        if (TEMP_DEFINITIONS.containsKey(referredKey)) {
-            var tempList = TEMP_DEFINITIONS.get(referredKey);
+        LinkedList<String> tempList = TEMP_DEFINITIONS.get(referredKey);
+        if (tempList != null) {
             tempList.add(referringKey);
             TEMP_DEFINITIONS.replace(referredKey, tempList);
         } else {
@@ -179,7 +191,8 @@ public final class GeneratorContext {
 
     public void addOneOf(Schema oneOf) {
         String fileName = getInputFileName();
-        String className = (oneOf.hasTitle()) ? getClassName(oneOf.getTitle()) : "Option" + ONE_OF_SET.size();
+        String title = oneOf.getTitle();
+        String className = title != null ? getClassName(title) : "Option" + ONE_OF_SET.size();
 
         ONE_OF_SET.put(fileName + ONE_OF_SCHEMA_REF_PREFIX + className, oneOf);
         addDefinition(fileName + ONE_OF_SCHEMA_REF_PREFIX + className, ClassTypeDef.of(getClassName(className)), true);
@@ -225,7 +238,7 @@ public final class GeneratorContext {
      * @return The configuration
      */
     public SourceGeneratorConfig getConfiguration() {
-        return configuration;
+        return Objects.requireNonNull(configuration);
     }
 
     /**

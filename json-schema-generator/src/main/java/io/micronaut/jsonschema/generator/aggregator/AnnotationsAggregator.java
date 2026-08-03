@@ -29,6 +29,7 @@ import io.micronaut.sourcegen.model.TypeDef;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.micronaut.jsonschema.generator.SourceGenerator.getInputFileName;
 
@@ -99,60 +100,62 @@ public class AnnotationsAggregator {
         var minAnn = isFloat ? DECIMAL_MIN_ANN : MIN_ANN;
         var maxAnn = isFloat ? DECIMAL_MAX_ANN : MAX_ANN;
 
-        if (schema.isNullable() != null) {
-            var nullableAnn = schema.isNullable() ? NULLABLE_ANN : NOT_NULL_ANN;
+        Boolean nullable = schema.isNullable();
+        if (nullable != null) {
+            var nullableAnn = nullable ? NULLABLE_ANN : NOT_NULL_ANN;
             annotations.add(AnnotationDef.builder(ClassTypeDef.of(nullableAnn)).build());
         } else if (required) {
             annotations.add(AnnotationDef.builder(ClassTypeDef.of(NOT_NULL_ANN)).build());
         }
-        if (schema.getMinimum() != null) {
-            var value = schema.getMinimum();
+        Object minimum = schema.getMinimum();
+        if (minimum != null) {
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(minAnn))
-                .addMember("value", isFloat ? value + "" : value)
+                .addMember("value", isFloat ? minimum + "" : minimum)
                 .build());
         }
-        if (schema.getMaximum() != null) {
-            var value = schema.getMaximum();
+        Object maximum = schema.getMaximum();
+        if (maximum != null) {
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(maxAnn))
-                .addMember("value", isFloat ? value + "" : value)
+                .addMember("value", isFloat ? maximum + "" : maximum)
                 .build());
         }
-        if (schema.getExclusiveMinimum() != null) {
-            var value = schema.getExclusiveMinimum();
+        Object exclusiveMinimum = schema.getExclusiveMinimum();
+        if (exclusiveMinimum instanceof Number exclusiveMinimumNumber) {
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(minAnn))
                 .addMember("value", isFloat ?
-                    "" + (((double) value) + EXCLUSIVE_DELTA_DOUBLE) :
-                    ((int) value) + EXCLUSIVE_DELTA_INT)
+                    "" + (exclusiveMinimumNumber.doubleValue() + EXCLUSIVE_DELTA_DOUBLE) :
+                    exclusiveMinimumNumber.intValue() + EXCLUSIVE_DELTA_INT)
                 .build());
         }
-        if (schema.getExclusiveMaximum() != null) {
-            var value = schema.getExclusiveMaximum();
+        Object exclusiveMaximum = schema.getExclusiveMaximum();
+        if (exclusiveMaximum instanceof Number exclusiveMaximumNumber) {
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(maxAnn))
                 .addMember("value", isFloat ?
-                    "" + (((double) value) - EXCLUSIVE_DELTA_DOUBLE) :
-                    ((int) value) - EXCLUSIVE_DELTA_INT)
+                    "" + (exclusiveMaximumNumber.doubleValue() - EXCLUSIVE_DELTA_DOUBLE) :
+                    exclusiveMaximumNumber.intValue() - EXCLUSIVE_DELTA_INT)
                 .build());
         }
         if (schema.getMaxLength() != null || schema.getMaxItems() != null || schema.getMaxContains() != null) {
-            var value = schema.getMaxLength() != null ? schema.getMaxLength() : schema.getMaxItems();
+            Integer value = schema.getMaxLength() != null ? schema.getMaxLength() : schema.getMaxItems();
             value = value == null ? schema.getMaxContains() : value;
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(SIZE_ANN))
-                .addMember("max", value).build());
+                .addMember("max", Objects.requireNonNull(value)).build());
         }
         if (schema.getMinLength() != null || schema.getMinItems() != null || schema.getMinContains() != null) {
-            var value = schema.getMinLength() != null ? schema.getMinLength() : schema.getMinItems();
+            Integer value = schema.getMinLength() != null ? schema.getMinLength() : schema.getMinItems();
             value = value == null ? schema.getMinContains() : value;
             annotations.add(AnnotationDef
                 .builder(ClassTypeDef.of(SIZE_ANN))
-                .addMember("min", value).build());
+                .addMember("min", Objects.requireNonNull(value)).build());
         }
-        if (schema.getPattern() != null && propertyType.equals(TypeDef.STRING)) {
-            var value = schema.getPattern();
+        String pattern = schema.getPattern();
+        if (pattern != null && propertyType.equals(TypeDef.STRING)) {
+            var value = pattern;
             if (SourceGenerator.getLanguage().equals(VisitorContext.Language.GROOVY)) {
                 value = value.replaceAll("\\$", "");
             }
@@ -160,12 +163,11 @@ public class AnnotationsAggregator {
                 .builder(ClassTypeDef.of(PATTERN_ANN))
                 .addMember("regexp", value).build());
         }
-        if (schema.getPattern() != null &&
+        if (pattern != null &&
             (propertyType.equals(ClassTypeDef.of(Float.class))
                 || propertyType.equals(ClassTypeDef.of(Integer.class))
                 || propertyType.equals(TypeDef.Primitive.INT)
                 || propertyType.equals(TypeDef.Primitive.FLOAT))) {
-            var pattern = schema.getPattern();
             switch (pattern) {
                 case "^[1-9][0-9]*$" -> // positive int
                     annotations.add(AnnotationDef
@@ -203,13 +205,15 @@ public class AnnotationsAggregator {
                 default -> System.err.println("Unsupported validation pattern for number: " + pattern);
             }
         }
-        if (schema.getFormat() != null && schema.getFormat().equals("email")) {
+        String format = schema.getFormat();
+        if ("email".equals(format)) {
             annotations.add(AnnotationDef.builder(ClassTypeDef.of(EMAIL_ANN)).build());
         }
-        if (schema.getConstValue() != null && propertyType.equals(TypeDef.Primitive.BOOLEAN)) {
-            if (schema.getConstValue().toString().equals(StringUtils.TRUE)) {
+        Object constValue = schema.getConstValue();
+        if (constValue != null && propertyType.equals(TypeDef.Primitive.BOOLEAN)) {
+            if (constValue.toString().equals(StringUtils.TRUE)) {
                 annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_TRUE_ANN)).build());
-            } else if (schema.getConstValue().toString().equals(StringUtils.FALSE)) {
+            } else if (constValue.toString().equals(StringUtils.FALSE)) {
                 annotations.add(AnnotationDef.builder(ClassTypeDef.of(ASSERT_FALSE_ANN)).build());
             }
         }

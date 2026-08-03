@@ -38,6 +38,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
@@ -86,7 +87,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
      * @return The suppression patterns
      */
     public List<String> getSuppressionPatterns() {
-        return suppressionPatterns.get();
+        return Objects.requireNonNull(suppressionPatterns.get());
     }
 
     /**
@@ -191,7 +192,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             return errors;
         }
 
-        List<SuppressionMatcher> customMatchers = SuppressionMatcher.compileAll(customSuppressionPatterns.get());
+        List<String> customPatterns = Objects.requireNonNull(customSuppressionPatterns.get());
+        List<SuppressionMatcher> customMatchers = SuppressionMatcher.compileAll(customPatterns);
         if (DEFAULT_SUPPRESSION_MATCHERS.isEmpty() && customMatchers.isEmpty()) {
             return errors;
         }
@@ -233,7 +235,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
         if (jsonMapper.compareAndSet(null, created)) {
             return created;
         }
-        return jsonMapper.get();
+        return Objects.requireNonNull(jsonMapper.get());
     }
 
     private static ConfigurationSchema readSchema(JsonMapper jsonMapper, Readable readable) throws IOException {
