@@ -770,8 +770,8 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'contain'             | '{"type": "array", "contains": {"type": "number"}}'                   | "List<Float> contain"
         // empty anyOf falls back to object
         'test'                | '{"anyOf": []}'                                                       | "Object test"
-        // anyOf with null and one concrete type uses the concrete type
-        'test'                | '{"anyOf": [{"type": "null"}, {"type": "string"}]}'                  | "String test"
+        // anyOf with null and one concrete type uses the concrete type with nullable value semantics
+        'test'                | '{"anyOf": [{"type": "null"}, {"type": "string"}]}'                  | "@Nullable String test"
         // booleans
         'predicate'           | '{"type": "boolean"}'                                                 | 'Boolean predicate'
         // enums
@@ -875,7 +875,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
         'test'       | '{"type": ["number", "null"]}'                                    | "Float test"
         'test'       | '{"type": ["object", "null"]}'                                    | "Object test"
         'test'       | '{"oneOf": [{"type": "null"}, {"type": "string", "maxLength": 20}]}' | "Object test"
-        'test'       | '{"anyOf": [{"type": "null"}, {"type": "string", "maxLength": 20}]}' | "Object test"
+        'test'       | '{"anyOf": [{"type": "null"}, {"type": "string", "maxLength": 20}]}' | "String test"
         'test'       | '{"type": "string", "extendedType": "timestampTz"}'                | "String test"
     }
 
