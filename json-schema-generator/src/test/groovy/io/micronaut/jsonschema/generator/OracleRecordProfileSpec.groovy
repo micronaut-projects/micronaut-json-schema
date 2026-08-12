@@ -4,6 +4,34 @@ import com.github.javaparser.ast.body.RecordDeclaration
 
 class OracleRecordProfileSpec extends AbstractGeneratorSpec {
 
+    void "oracle numeric metadata covers integer precision and scale branches"() {
+        when:
+        def content = generateRecordProfileTypeAndGetContent("NumericMetadata", '''
+        {
+          "title":"NumericMetadata",
+          "type":"object",
+          "properties":{
+            "small":{"type":"number","extendedType":"number","sqlPrecision":9,"sqlScale":0},
+            "large":{"type":"number","extendedType":"number","sqlPrecision":19,"sqlScale":0},
+            "integerHint":{"type":"number","extendedType":"integer","sqlPrecision":19,"sqlScale":0},
+            "nullHint":{"type":"number","extendedType":"null","sqlPrecision":19,"sqlScale":0},
+            "decimal":{"type":"number","extendedType":"number","sqlPrecision":7,"sqlScale":2},
+            "withoutHint":{"type":"number","sqlPrecision":19,"sqlScale":0}
+          },
+          "required":["small","large","integerHint","nullHint","decimal","withoutHint"],
+          "additionalProperties":false
+        }
+        ''')
+
+        then:
+        content.contains("int small")
+        content.contains("long large")
+        content.contains("long integerHint")
+        content.contains("long nullHint")
+        content.contains("float decimal")
+        content.contains("long withoutHint")
+    }
+
     void "oracle duality view NUMBER precision maps required identifiers to long"() {
         when:
         def content = generateRecordProfileTypeAndGetContent("DeptEmployees", '''
