@@ -56,25 +56,25 @@ import static java.lang.String.join;
 @Internal
 public final class TypeAggregator {
 
-    private static final String JSON_TYPE_INTEGER = "integer";
-    private static final String JSON_TYPE_NUMBER = "number";
-
     public static final Map<String, TypeDef> TYPE_MAP;
 
-    public static final Map<String, TypeDef> TYPE_MAP_NULLABLE = CollectionUtils.mapOf(
-        JSON_TYPE_INTEGER, TypeDef.Primitive.INT_WRAPPER,
-        "boolean", TypeDef.Primitive.BOOLEAN_WRAPPER,
-        "array", TypeDef.of(List.class),
-        "void", TypeDef.VOID,
-        "string", TypeDef.STRING,
-        "object", TypeDef.OBJECT,
-        JSON_TYPE_NUMBER, TypeDef.Primitive.FLOAT_WRAPPER,
-        "null", TypeDef.OBJECT
-    );
+    public static final Map<String, TypeDef> TYPE_MAP_NULLABLE;
 
+    private static final String JSON_TYPE_INTEGER = "integer";
+    private static final String JSON_TYPE_NUMBER = "number";
     private static final String UNSUPPORTED_KEYWORD = "UNSUPPORTED_KEYWORD";
 
     static {
+        TYPE_MAP_NULLABLE = CollectionUtils.mapOf(
+            JSON_TYPE_INTEGER, TypeDef.Primitive.INT_WRAPPER,
+            "boolean", TypeDef.Primitive.BOOLEAN_WRAPPER,
+            "array", TypeDef.of(List.class),
+            "void", TypeDef.VOID,
+            "string", TypeDef.STRING,
+            "object", TypeDef.OBJECT,
+            JSON_TYPE_NUMBER, TypeDef.Primitive.FLOAT_WRAPPER,
+            "null", TypeDef.OBJECT
+        );
         TYPE_MAP = new HashMap<>();
         TYPE_MAP.putAll(TYPE_MAP_NULLABLE);
         TYPE_MAP.put(JSON_TYPE_INTEGER, TypeDef.Primitive.INT);
