@@ -4,6 +4,81 @@ import com.github.javaparser.ast.body.RecordDeclaration
 
 class OracleRecordProfileSpec extends AbstractGeneratorSpec {
 
+    void "oracle numeric metadata covers integer precision and scale branches"() {
+        when:
+        def content = generateRecordProfileTypeAndGetContent("NumericMetadata", '''
+        {
+          "title":"NumericMetadata",
+          "type":"object",
+          "properties":{
+            "small":{"type":"number","extendedType":"number","sqlPrecision":9,"sqlScale":0},
+            "large":{"type":"number","extendedType":"number","sqlPrecision":19,"sqlScale":0},
+            "integerHint":{"type":"number","extendedType":"integer","sqlPrecision":19,"sqlScale":0},
+            "nullHint":{"type":"number","extendedType":"null","sqlPrecision":19,"sqlScale":0},
+            "decimal":{"type":"number","extendedType":"number","sqlPrecision":7,"sqlScale":2},
+            "withoutHint":{"type":"number","sqlPrecision":19,"sqlScale":0}
+          },
+          "required":["small","large","integerHint","nullHint","decimal","withoutHint"],
+          "additionalProperties":false
+        }
+        ''')
+
+        then:
+        content.contains("int small")
+        content.contains("long large")
+        content.contains("long integerHint")
+        content.contains("long nullHint")
+        content.contains("float decimal")
+        content.contains("long withoutHint")
+    }
+
+    void "oracle duality view NUMBER precision maps required identifiers to long"() {
+        when:
+        def content = generateRecordProfileTypeAndGetContent("DeptEmployees", '''
+        {
+          "title":"DeptEmployees",
+          "type":"object",
+          "properties":{
+            "_id":{
+              "type":"number",
+              "extendedType":"number",
+              "sqlPrecision":19,
+              "sqlScale":0
+            },
+            "employees":{
+              "type":"array",
+              "items":{
+                "type":"object",
+                "properties":{
+                  "employeeNumber":{
+                    "type":"number",
+                    "extendedType":"number",
+                    "sqlPrecision":19,
+                    "sqlScale":0
+                  },
+                  "salary":{
+                    "type":"number",
+                    "extendedType":"number",
+                    "sqlPrecision":7,
+                    "sqlScale":2
+                  }
+                },
+                "required":["employeeNumber"],
+                "additionalProperties":false
+              }
+            }
+          },
+          "required":["_id"],
+          "additionalProperties":false
+        }
+        ''')
+
+        then:
+        content.contains("@NotNull long _id")
+        content.contains("@NotNull long employeeNumber")
+        content.contains("Float salary")
+    }
+
     void "oracle profile generates JsonSchema records with default type mappings"() {
         when:
         def type = (RecordDeclaration) generateRecordProfileType("Product", '''
@@ -98,6 +173,8 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
                 {"type":"number","extendedType":"number","sqlPrecision":10,"sqlScale":0}
               ]
             },
+            "departmentId":{"type":"number","extendedType":"number","sqlPrecision":19,"sqlScale":0},
+            "amount":{"type":"number","extendedType":"number","sqlPrecision":7,"sqlScale":2},
             "createdAt":{
               "oneOf":[
                 {"type":"null","extendedType":"null"},
@@ -120,7 +197,9 @@ class OracleRecordProfileSpec extends AbstractGeneratorSpec {
 
         then:
         content.contains("@Nullable @Size(max = 20) String status")
-        content.contains("@Nullable Float floorNo")
+        content.contains("@Nullable Long floorNo")
+        content.contains("Long departmentId")
+        content.contains("Float amount")
         content.contains("@Nullable ZonedDateTime createdAt")
         content.contains("LocalDateTime updatedAt")
         content.contains("LocalDateTime businessDate")

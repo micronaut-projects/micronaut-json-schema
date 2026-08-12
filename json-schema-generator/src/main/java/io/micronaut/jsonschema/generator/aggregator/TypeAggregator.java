@@ -58,25 +58,28 @@ public final class TypeAggregator {
 
     public static final Map<String, TypeDef> TYPE_MAP;
 
-    public static final Map<String, TypeDef> TYPE_MAP_NULLABLE = CollectionUtils.mapOf(
-        "integer", TypeDef.Primitive.INT_WRAPPER,
-        "boolean", TypeDef.Primitive.BOOLEAN_WRAPPER,
-        "array", TypeDef.of(List.class),
-        "void", TypeDef.VOID,
-        "string", TypeDef.STRING,
-        "object", TypeDef.OBJECT,
-        "number", TypeDef.Primitive.FLOAT_WRAPPER,
-        "null", TypeDef.OBJECT
-    );
+    public static final Map<String, TypeDef> TYPE_MAP_NULLABLE;
 
+    private static final String JSON_TYPE_INTEGER = "integer";
+    private static final String JSON_TYPE_NUMBER = "number";
     private static final String UNSUPPORTED_KEYWORD = "UNSUPPORTED_KEYWORD";
 
     static {
+        TYPE_MAP_NULLABLE = CollectionUtils.mapOf(
+            JSON_TYPE_INTEGER, TypeDef.Primitive.INT_WRAPPER,
+            "boolean", TypeDef.Primitive.BOOLEAN_WRAPPER,
+            "array", TypeDef.of(List.class),
+            "void", TypeDef.VOID,
+            "string", TypeDef.STRING,
+            "object", TypeDef.OBJECT,
+            JSON_TYPE_NUMBER, TypeDef.Primitive.FLOAT_WRAPPER,
+            "null", TypeDef.OBJECT
+        );
         TYPE_MAP = new HashMap<>();
         TYPE_MAP.putAll(TYPE_MAP_NULLABLE);
-        TYPE_MAP.put("integer", TypeDef.Primitive.INT);
+        TYPE_MAP.put(JSON_TYPE_INTEGER, TypeDef.Primitive.INT);
         TYPE_MAP.put("boolean", TypeDef.Primitive.BOOLEAN);
-        TYPE_MAP.put("number", TypeDef.Primitive.FLOAT);
+        TYPE_MAP.put(JSON_TYPE_NUMBER, TypeDef.Primitive.FLOAT);
     }
 
     private TypeAggregator() {
@@ -264,11 +267,11 @@ public final class TypeAggregator {
 
     private static TypeDef getOracleExtendedTypeDef(Schema schema, Schema.Type type, boolean nullable) {
         if (!schema.hasExtendedType()) {
-            return null;
+            return getOracleIntegralNumberTypeDef(schema, type, nullable);
         }
         String extendedType = firstExtendedType(schema);
         if (extendedType == null || "null".equalsIgnoreCase(extendedType)) {
-            return null;
+            return getOracleIntegralNumberTypeDef(schema, type, nullable);
         }
         return switch (extendedType.toLowerCase(Locale.ENGLISH)) {
             case "date", "timestamp" ->
@@ -281,8 +284,21 @@ public final class TypeAggregator {
                 isNumberLike(type) ? nullable ? ClassTypeDef.of(Double.class) : TypeDef.Primitive.DOUBLE : null;
             case "float" ->
                 isNumberLike(type) ? nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT : null;
+            case JSON_TYPE_NUMBER, JSON_TYPE_INTEGER -> getOracleIntegralNumberTypeDef(schema, type, nullable);
             default -> null;
         };
+    }
+
+    private static TypeDef getOracleIntegralNumberTypeDef(Schema schema, Schema.Type type, boolean nullable) {
+        if (!Schema.Type.NUMBER.equals(type) || !Integer.valueOf(0).equals(schema.getSqlScale())) {
+            return null;
+        }
+        // Oracle NUMBER(19,0), commonly used for identifiers, is represented as long in the
+        // records profile. The default JSON Schema generator is intentionally unaffected.
+        if (schema.getSqlPrecision() != null && schema.getSqlPrecision() <= 9) {
+            return nullable ? TypeDef.Primitive.INT_WRAPPER : TypeDef.Primitive.INT;
+        }
+        return nullable ? TypeDef.Primitive.LONG_WRAPPER : TypeDef.Primitive.LONG;
     }
 
     private static String firstExtendedType(Schema schema) {
