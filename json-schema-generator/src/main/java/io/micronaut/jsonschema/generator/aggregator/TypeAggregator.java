@@ -284,7 +284,7 @@ public final class TypeAggregator {
                 isNumberLike(type) ? nullable ? ClassTypeDef.of(Double.class) : TypeDef.Primitive.DOUBLE : null;
             case "float" ->
                 isNumberLike(type) ? nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT : null;
-            case "number", "integer" -> getOracleIntegralNumberTypeDef(schema, type, nullable);
+            case JSON_TYPE_NUMBER, JSON_TYPE_INTEGER -> getOracleIntegralNumberTypeDef(schema, type, nullable);
             default -> null;
         };
     }
