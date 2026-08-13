@@ -27,7 +27,7 @@ managed-json-schema-validator = "3.0.6"
 micronaut-toml = "3.1.0"
 micronaut-sql = "7.1.0"
 maven = "3.9.9"
-maven-plugin-tools = "3.15.1"
+maven-plugin-tools = "3.15.2"
 maven-plugin-testing-harness = "3.5.0"
 
 [libraries]
