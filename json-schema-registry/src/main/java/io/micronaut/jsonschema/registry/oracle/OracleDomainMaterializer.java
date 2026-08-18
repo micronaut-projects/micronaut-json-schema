@@ -50,7 +50,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
     private static final Logger LOG = LoggerFactory.getLogger(OracleDomainMaterializer.class);
     private static final Pattern SIMPLE_IDENTIFIER = Pattern.compile("[A-Z][A-Z0-9_$#]{0,127}");
     private static final String TARGET = "oracle.domain";
-    private static final int SQL_LITERAL_CHUNK_SIZE = 3_000;
+    private static final int SQL_LITERAL_CHUNK_BYTES = 3_000;
 
     private final JsonSchemaNormalizer normalizer;
     private final SchemaDiscoveryProvider discoveryProvider;
@@ -67,7 +67,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
 
     @Override
     public String representationDescription() {
-        return "Self-contained Oracle JSON Domain validation schema; remote JSON Schema $ref is not supported";
+        return "Self-contained Oracle JSON Domain validation schema with strict or CAST validation mode; remote JSON Schema $ref is not supported";
     }
 
     @Override
@@ -117,14 +117,16 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
             }
             try {
                 request.recordOperation("ddl", () -> {
-                    createDomain(connection, owner, domainName, request.candidate().schemaJson());
+                    createDomain(connection, owner, domainName, request.candidate().schemaJson(), castMode(request));
                     return null;
                 });
             } catch (Exception createFailure) {
                 // A second process may have created the domain after the existence check.
                 if (request.recordOperation("introspection", () -> domainExists(connection, domainName, request.owner()))) {
                     Optional<DiscoveredSchema> concurrent = request.recordOperation("introspection", () -> readDomain(connection, domainName, owner));
-                    if (concurrent.isPresent() && normalizer.equivalent(request.candidate().schemaJson(), concurrent.get().schemaJson())) {
+                    if (concurrent.isPresent()
+                        && normalizer.equivalent(request.candidate().schemaJson(), concurrent.get().schemaJson())
+                        && castMode(request) == concurrent.get().castMode()) {
                         return JsonSchemaRegistryOutcome.ok(
                             request.candidate().logicalSchema(),
                             TARGET,
@@ -148,7 +150,9 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
         if (current.isEmpty()) {
             return driftOutcome(request, "Oracle domain exists but schema could not be discovered: " + qualifiedName(owner, domainName));
         }
-        if (normalizer.equivalent(request.candidate().schemaJson(), current.get().schemaJson())) {
+        boolean requestedCastMode = castMode(request);
+        if (normalizer.equivalent(request.candidate().schemaJson(), current.get().schemaJson())
+            && requestedCastMode == current.get().castMode()) {
             return JsonSchemaRegistryOutcome.ok(
                 request.candidate().logicalSchema(),
                 TARGET,
@@ -206,11 +210,20 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
         return Optional.of(result.schemas().get(0));
     }
 
-    private static void createDomain(Connection connection, String owner, String domainName, String schemaJson) throws Exception {
-        String sql = "CREATE DOMAIN " + qualifiedName(owner, domainName) + " AS JSON VALIDATE USING " + clobLiteral(schemaJson);
+    private static void createDomain(Connection connection,
+                                      String owner,
+                                      String domainName,
+                                      String schemaJson,
+                                      boolean castMode) throws Exception {
+        String validationMode = castMode ? "VALIDATE CAST USING " : "VALIDATE USING ";
+        String sql = "CREATE DOMAIN " + qualifiedName(owner, domainName) + " AS JSON " + validationMode + clobLiteral(schemaJson);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.executeUpdate();
         }
+    }
+
+    private static boolean castMode(OracleMaterializationRequest request) {
+        return OracleJsonSchemaCastMode.parse(request.options().get("castMode")) == OracleJsonSchemaCastMode.CAST;
     }
 
     private static JsonSchemaRegistryOutcome driftOutcome(OracleMaterializationRequest request, String message) {
@@ -255,18 +268,58 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
     }
 
     private static String clobLiteral(String value) {
-        if (value.length() <= SQL_LITERAL_CHUNK_SIZE) {
+        if (escapedUtf8Length(value) <= SQL_LITERAL_CHUNK_BYTES) {
             return "'" + escapeSqlLiteral(value) + "'";
         }
         StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < value.length(); i += SQL_LITERAL_CHUNK_SIZE) {
+        int offset = 0;
+        while (offset < value.length()) {
             if (builder.length() > 0) {
                 builder.append(" || ");
             }
-            int end = Math.min(i + SQL_LITERAL_CHUNK_SIZE, value.length());
-            builder.append("to_clob('").append(escapeSqlLiteral(value.substring(i, end))).append("')");
+            int end = nextChunkEnd(value, offset);
+            builder.append("to_clob('").append(escapeSqlLiteral(value.substring(offset, end))).append("')");
+            offset = end;
         }
         return builder.toString();
+    }
+
+    private static int nextChunkEnd(String value, int offset) {
+        int end = offset;
+        int bytes = 0;
+        while (end < value.length()) {
+            int codePoint = value.codePointAt(end);
+            int codePointBytes = codePoint == '\'' ? 2 : utf8Length(codePoint);
+            if (end > offset && bytes + codePointBytes > SQL_LITERAL_CHUNK_BYTES) {
+                break;
+            }
+            bytes += codePointBytes;
+            end += Character.charCount(codePoint);
+        }
+        return end;
+    }
+
+    private static int escapedUtf8Length(String value) {
+        int bytes = 0;
+        for (int offset = 0; offset < value.length();) {
+            int codePoint = value.codePointAt(offset);
+            bytes += codePoint == '\'' ? 2 : utf8Length(codePoint);
+            offset += Character.charCount(codePoint);
+        }
+        return bytes;
+    }
+
+    private static int utf8Length(int codePoint) {
+        if (codePoint <= 0x7F) {
+            return 1;
+        }
+        if (codePoint <= 0x7FF) {
+            return 2;
+        }
+        if (codePoint <= 0xFFFF) {
+            return 3;
+        }
+        return 4;
     }
 
     private static String escapeSqlLiteral(String value) {

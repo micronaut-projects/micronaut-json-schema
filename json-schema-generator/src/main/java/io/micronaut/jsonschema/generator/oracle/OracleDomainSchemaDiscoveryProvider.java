@@ -87,7 +87,7 @@ public final class OracleDomainSchemaDiscoveryProvider implements SchemaDiscover
                     selectedInputs++;
                     try {
                         DiscoveryPayload payload = OracleDiscoverySupport.readDomainPayload(connection, scope, domainName, owner, warnings);
-                        schemas.add(new DiscoveredSchema(OracleDiscoveryScope.DOMAIN.name(), domainName, payload.jsonSchema(), payload.retrievalMode()));
+                        schemas.add(new DiscoveredSchema(OracleDiscoveryScope.DOMAIN.name(), domainName, payload.jsonSchema(), payload.retrievalMode(), payload.castMode()));
                         context.logger().info("[jsonschema-records] INFO source=" + source.name() + " scope=" + OracleDiscoveryScope.DOMAIN.name() + " name=" + domainName + " retrievalMode=" + payload.retrievalMode());
                     } catch (SchemaRetrievalException e) {
                         if (skipOnError) {

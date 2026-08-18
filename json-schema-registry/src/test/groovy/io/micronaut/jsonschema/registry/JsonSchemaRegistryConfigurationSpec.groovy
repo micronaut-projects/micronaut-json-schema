@@ -33,6 +33,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer
 import io.micronaut.jsonschema.registry.oracle.OracleDualityJsonViewMaterializer
 import io.micronaut.jsonschema.registry.oracle.OracleMaterializationRequest
+import io.micronaut.jsonschema.registry.oracle.OracleJsonSchemaCastMode
 import io.micronaut.jsonschema.registry.oracle.OracleSchemaDiscoveryProviderResolver
 import io.micronaut.jsonschema.registry.oracle.OracleSchemaMaterializer
 import io.micronaut.jsonschema.registry.oracle.OracleSchemaMaterializerResolver
@@ -66,6 +67,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
                 "micronaut.jsonschema.registry.oracle.policy.mode"                           : "observe_only",
                 "micronaut.jsonschema.registry.oracle.drift.mode"                            : "fail",
                 "micronaut.jsonschema.registry.oracle.datasource"                            : "orders",
+                "micronaut.jsonschema.registry.oracle.cast-mode"                             : "cast",
                 "micronaut.jsonschema.registry.oracle.domains[0]"                            : "APP_COM_ACME_ORDER",
                 "micronaut.jsonschema.registry.oracle.authority.providers[0].name"           : "duality-views",
                 "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": "example.DualityProvider",
@@ -88,6 +90,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         configuration.oracle.policy.mode == JsonSchemaRegistryPolicyMode.OBSERVE_ONLY
         configuration.oracle.drift.mode == JsonSchemaRegistryDriftMode.FAIL
         configuration.oracle.datasource == "orders"
+        configuration.oracle.castMode == OracleJsonSchemaCastMode.CAST
         configuration.oracle.domains[0] == "APP_COM_ACME_ORDER"
         configuration.oracle.authority.providers[0].providerClassName == "example.DualityProvider"
         configuration.oracle.authority.providers[0].owner == "HR"

@@ -22,12 +22,26 @@ package io.micronaut.jsonschema.generator.discovery;
  * @param name Input object name
  * @param schemaJson The discovered JSON Schema text
  * @param retrievalMode Retrieval mode used to obtain the schema
+ * @param castMode Whether Oracle JSON Schema validation uses CAST mode
  * @since 2.2.0
  */
 public record DiscoveredSchema(
     String scope,
     String name,
     String schemaJson,
-    String retrievalMode
+    String retrievalMode,
+    boolean castMode
 ) {
+
+    /**
+     * Create a discovered schema using strict Oracle JSON Schema validation.
+     *
+     * @param scope Provider-defined discovery scope
+     * @param name Input object name
+     * @param schemaJson Discovered JSON Schema text
+     * @param retrievalMode Retrieval mode used to obtain the schema
+     */
+    public DiscoveredSchema(String scope, String name, String schemaJson, String retrievalMode) {
+        this(scope, name, schemaJson, retrievalMode, false);
+    }
 }

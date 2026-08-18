@@ -51,4 +51,9 @@ final class DefaultJsonSchemaNormalizerSpec extends Specification {
         normalizer.normalize('{"default":null,"properties":{"value":{"const":null}},"type":"object"}') ==
                 '{"default":null,"properties":{"value":{"const":null}},"type":"object"}'
     }
+
+    void "orders object keys by Unicode code point"() {
+        expect:
+        normalizer.normalize('{"\uD800\uDC00":1,"\uE000":2}') == '{"\uE000":2,"\uD800\uDC00":1}'
+    }
 }

@@ -22,6 +22,7 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.type.Argument;
 import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider;
 import io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer;
+import io.micronaut.jsonschema.registry.oracle.OracleJsonSchemaCastMode;
 import jakarta.inject.Inject;
 
 import java.util.LinkedHashMap;
@@ -143,6 +144,8 @@ public final class JsonSchemaRegistryConfiguration {
         environment.getProperty(PREFIX + ".oracle.enabled", Boolean.class).ifPresent(oracle::setEnabled);
         stringProperty(environment, PREFIX + ".oracle.datasource").ifPresent(oracle::setDatasource);
         environment.getProperty(PREFIX + ".oracle.domains", Argument.listOf(String.class)).ifPresent(oracle::setDomains);
+        stringProperty(environment, PREFIX + ".oracle.cast-mode")
+            .ifPresent(value -> oracle.setCastMode(OracleJsonSchemaCastMode.parse(value)));
         environment.getProperty(PREFIX + ".oracle.policy.mode", JsonSchemaRegistryPolicyMode.class).ifPresent(oracle.getPolicy()::setMode);
         environment.getProperty(PREFIX + ".oracle.drift.mode", JsonSchemaRegistryDriftMode.class).ifPresent(oracle.getDrift()::setMode);
         environment.getProperty(PREFIX + ".oracle.authority.providers", Argument.listOf(ProviderConfiguration.class))
@@ -237,12 +240,27 @@ public final class JsonSchemaRegistryConfiguration {
     List<ProviderConfiguration> resolveOracleMaterializers() {
         List<ProviderConfiguration> configured = oracle.getMaterializers();
         if (!configured.isEmpty()) {
-            return configured;
+            return configured.stream().map(this::applyBuiltInDomainMaterializerOptions).toList();
         }
         ProviderConfiguration provider = new ProviderConfiguration();
         provider.setName("domains");
         provider.setProviderClassName(OracleDomainMaterializer.class.getName());
+        provider.setOptions(Map.of("castMode", oracle.getCastMode().configurationValue()));
         return List.of(provider);
+    }
+
+    private ProviderConfiguration applyBuiltInDomainMaterializerOptions(ProviderConfiguration provider) {
+        if (!OracleDomainMaterializer.class.getName().equals(providerClassName(provider, OracleDomainMaterializer.class.getName()))) {
+            return provider;
+        }
+        Map<String, String> options = new LinkedHashMap<>(provider.getOptions());
+        options.putIfAbsent("castMode", oracle.getCastMode().configurationValue());
+        ProviderConfiguration copy = new ProviderConfiguration();
+        copy.setName(provider.getName());
+        copy.setProviderClassName(provider.getProviderClassName());
+        copy.setOwner(provider.getOwner());
+        copy.setOptions(options);
+        return copy;
     }
 
     Map<String, Mapping> mappingsByDomain() {
@@ -479,6 +497,7 @@ public final class JsonSchemaRegistryConfiguration {
         private boolean enabled;
         private String datasource = "default";
         private List<String> domains = List.of();
+        private OracleJsonSchemaCastMode castMode = OracleJsonSchemaCastMode.STRICT;
         private TargetPolicyConfiguration policy = new TargetPolicyConfiguration();
         private DriftConfiguration drift = new DriftConfiguration();
         private AuthorityConfiguration authority = new AuthorityConfiguration();
@@ -524,6 +543,20 @@ public final class JsonSchemaRegistryConfiguration {
          */
         public void setDomains(@Nullable List<String> domains) {
             this.domains = domains == null ? List.of() : List.copyOf(domains);
+        }
+
+        /**
+         * @return Oracle JSON Schema validation mode for the built-in domain materializer
+         */
+        public OracleJsonSchemaCastMode getCastMode() {
+            return castMode;
+        }
+
+        /**
+         * @param castMode Oracle JSON Schema validation mode
+         */
+        public void setCastMode(@Nullable OracleJsonSchemaCastMode castMode) {
+            this.castMode = castMode == null ? OracleJsonSchemaCastMode.STRICT : castMode;
         }
 
         /**

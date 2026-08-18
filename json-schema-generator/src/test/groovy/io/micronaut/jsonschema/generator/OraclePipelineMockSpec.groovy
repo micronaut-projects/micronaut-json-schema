@@ -546,7 +546,7 @@ class OraclePipelineMockSpec extends Specification {
         1 * ddlStatement.setString(1, "MOONPHASE")
         1 * ddlStatement.executeQuery() >> ddlResult
         1 * ddlResult.next() >> true
-        1 * ddlResult.getString(1) >> """CREATE DOMAIN MOONPHASE AS JSON CHECK (VALUE IS JSON VALIDATE USING '{"type":"object","properties":{"phase":{"type":"string"}},"required":["phase"]}')"""
+        1 * ddlResult.getString(1) >> """CREATE DOMAIN MOONPHASE AS JSON CHECK (VALUE IS JSON VALIDATE CAST USING '{"type":"object","properties":{"phase":{"type":"string"}},"required":["phase"]}')"""
 
         when:
         def result = withRegisteredDriver(driver) {

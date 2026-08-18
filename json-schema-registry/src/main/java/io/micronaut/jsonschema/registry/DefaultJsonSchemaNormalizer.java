@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.PrimitiveIterator;
 
 /**
  * Jackson-backed schema normalizer.
@@ -48,7 +49,7 @@ public final class DefaultJsonSchemaNormalizer implements JsonSchemaNormalizer {
         if (value instanceof ObjectNode object) {
             List<Map.Entry<String, JsonNode>> fields = new ArrayList<>();
             fields.addAll(object.properties());
-            fields.sort(Comparator.comparing(Map.Entry::getKey));
+            fields.sort(Comparator.comparing(Map.Entry::getKey, DefaultJsonSchemaNormalizer::compareCodePointOrder));
             ObjectNode sorted = objectMapper.createObjectNode();
             for (Map.Entry<String, JsonNode> field : fields) {
                 sorted.set(field.getKey(), sortObjects(field.getValue()));
@@ -63,5 +64,20 @@ public final class DefaultJsonSchemaNormalizer implements JsonSchemaNormalizer {
             return sorted;
         }
         return value;
+    }
+
+    private static int compareCodePointOrder(String left, String right) {
+        PrimitiveIterator.OfInt leftCodePoints = left.codePoints().iterator();
+        PrimitiveIterator.OfInt rightCodePoints = right.codePoints().iterator();
+        while (leftCodePoints.hasNext() && rightCodePoints.hasNext()) {
+            int comparison = Integer.compare(leftCodePoints.nextInt(), rightCodePoints.nextInt());
+            if (comparison != 0) {
+                return comparison;
+            }
+        }
+        if (leftCodePoints.hasNext()) {
+            return 1;
+        }
+        return rightCodePoints.hasNext() ? -1 : 0;
     }
 }

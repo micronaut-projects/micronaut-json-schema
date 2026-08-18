@@ -31,6 +31,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
 import java.sql.Statement
+import java.sql.ResultSet
 
 final class OracleDomainMaterializerIntegrationSpec extends Specification {
 
@@ -39,6 +40,7 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
     ]
     private static final String SCHEMA = '{"type":"object","properties":{"phase":{"type":"string","minLength":1}},"required":["phase"]}'
     private static final String DRIFT_SCHEMA = '{"type":"object","properties":{"phase":{"type":"string","minLength":2}},"required":["phase"]}'
+    private static final String CAST_SCHEMA = '{"type":"object","properties":{"publishedDate":{"extendedType":"timestamp"}},"required":["publishedDate"]}'
 
     @Shared
     private ApplicationContext context
@@ -75,6 +77,10 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
                 dropDomain(connection, "REG_OBSERVE_${suffix}")
                 dropDomain(connection, "REG_EQUIV_${suffix}")
                 dropDomain(connection, "REG_DRIFT_${suffix}")
+                dropTable(connection, "REG_CAST_TAB_${suffix}")
+                dropDomain(connection, "REG_CAST_${suffix}")
+                dropTable(connection, "REG_CAST_CONV_TAB_${suffix}")
+                dropDomain(connection, "REG_CAST_CONV_${suffix}")
             }
         }
         context?.close()
@@ -146,6 +152,58 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
         outcome.failure()
     }
 
+    void "cast mode is part of domain equivalence"() {
+        given:
+        String domainName = "REG_CAST_${suffix}"
+
+        when:
+        JsonSchemaRegistryOutcome created = reconcile(domainName, CAST_SCHEMA, JsonSchemaRegistryPolicyMode.MANAGE, JsonSchemaRegistryDriftMode.REPORT, false, [castMode: "cast"])
+        JsonSchemaRegistryOutcome strict = reconcile(domainName, CAST_SCHEMA, JsonSchemaRegistryPolicyMode.MANAGE, JsonSchemaRegistryDriftMode.REPORT, false, [:])
+        JsonSchemaRegistryOutcome cast = reconcile(domainName, CAST_SCHEMA, JsonSchemaRegistryPolicyMode.MANAGE, JsonSchemaRegistryDriftMode.REPORT, false, [castMode: "cast"])
+
+        then:
+        created.status() == JsonSchemaRegistryOutcomeStatus.CREATED
+        strict.status() == JsonSchemaRegistryOutcomeStatus.DRIFT
+        cast.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
+    }
+
+    void "cast domain converts an ISO timestamp string into an Oracle JSON timestamp"() {
+        given:
+        String domainName = "REG_CAST_CONV_${suffix}"
+        String tableName = "REG_CAST_CONV_TAB_${suffix}"
+        JsonSchemaRegistryOutcome created = reconcile(domainName, CAST_SCHEMA, JsonSchemaRegistryPolicyMode.MANAGE, JsonSchemaRegistryDriftMode.REPORT, false, [castMode: "cast"])
+
+        when:
+        String jsonType
+        withConnection { Connection connection ->
+            Statement statement = connection.createStatement()
+            try {
+                statement.execute("CREATE TABLE ${tableName} (payload JSON DOMAIN ${domainName})")
+                statement.execute("INSERT INTO ${tableName} VALUES ('{\"publishedDate\":\"2026-08-18T09:31:43.123\"}')")
+                ResultSet resultSet = statement.executeQuery("SELECT json_value(payload, '\$.publishedDate.type()') FROM ${tableName}")
+                try {
+                    resultSet.next()
+                    jsonType = resultSet.getString(1)
+                } finally {
+                    resultSet.close()
+                }
+            } finally {
+                statement.close()
+            }
+        }
+
+        then:
+        created.status() == JsonSchemaRegistryOutcomeStatus.CREATED
+        jsonType.equalsIgnoreCase("timestamp")
+
+        cleanup:
+        if (context != null && jdbcUrl != null) {
+            withConnection { Connection connection ->
+                dropTable(connection, tableName)
+            }
+        }
+    }
+
     private JsonSchemaRegistryOutcome reconcile(String domainName,
                                                String schemaJson,
                                                JsonSchemaRegistryPolicyMode policyMode,
@@ -158,6 +216,15 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
                                                JsonSchemaRegistryPolicyMode policyMode,
                                                JsonSchemaRegistryDriftMode driftMode,
                                                boolean dryRun) {
+        reconcile(domainName, schemaJson, policyMode, driftMode, dryRun, [:])
+    }
+
+    private JsonSchemaRegistryOutcome reconcile(String domainName,
+                                               String schemaJson,
+                                               JsonSchemaRegistryPolicyMode policyMode,
+                                               JsonSchemaRegistryDriftMode driftMode,
+                                               boolean dryRun,
+                                               Map<String, String> options) {
         withConnection { Connection connection ->
             materializer.reconcile(
                     connection,
@@ -165,7 +232,7 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
                             new JsonSchemaCandidate(new LogicalSchema(domainName, null, domainName), schemaJson, "test"),
                             domainName,
                             null,
-                            [:],
+                            options,
                             policyMode,
                             driftMode,
                             dryRun
@@ -221,6 +288,17 @@ final class OracleDomainMaterializerIntegrationSpec extends Specification {
             statement.execute("DROP DOMAIN ${domainName} FORCE")
         } catch (SQLException ignored) {
             // Best-effort cleanup for tests that may have failed before creating the domain.
+        } finally {
+            statement.close()
+        }
+    }
+
+    private static void dropTable(Connection connection, String tableName) {
+        Statement statement = connection.createStatement()
+        try {
+            statement.execute("DROP TABLE ${tableName} PURGE")
+        } catch (SQLException ignored) {
+            // Best-effort cleanup for tests that may have failed before creating the table.
         } finally {
             statement.close()
         }

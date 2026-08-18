@@ -47,7 +47,7 @@ import java.util.regex.Pattern;
 final class OracleDiscoverySupport {
 
     private static final String SELECT_ONE_FROM = "SELECT 1 FROM ";
-    private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)VALIDATE\\s+USING\\s+'((?:''|[^'])*)'");
+    private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)VALIDATE\\s+(CAST\\s+)?USING\\s+'((?:''|[^'])*)'");
     private static final Set<String> ALLOWED_DICTIONARY_VIEWS = Set.of(
         "USER_DOMAINS",
         "ALL_DOMAINS",
@@ -251,9 +251,9 @@ final class OracleDiscoverySupport {
         }
         if (ddl != null) {
             try {
-                String json = extractJsonLiteral(ddl);
-                ensureValidJson(json);
-                return new DiscoveryPayload(json, "DOMAIN_DDL");
+                ExtractedSchema extracted = extractJsonLiteral(ddl);
+                ensureValidJson(extracted.jsonSchema());
+                return new DiscoveryPayload(extracted.jsonSchema(), "DOMAIN_DDL", extracted.castMode());
             } catch (IOException e) {
                 warnings.add(new DiscoveryWarning(OracleDiscoveryScope.DOMAIN.name(), domainName, DiscoveryStep.SCHEMA_RETRIEVAL, "GET_DDL_FAILED", "Oracle metadata JSON could not be parsed: " + e.getMessage()));
             }
@@ -283,9 +283,10 @@ final class OracleDiscoverySupport {
                 "DOMAIN_CONSTRAINTS"
             );
         }
-        String json;
         try {
-            json = extractJsonLiteral(searchCondition);
+            ExtractedSchema extracted = extractJsonLiteral(searchCondition);
+            ensureValidJson(extracted.jsonSchema());
+            return new DiscoveryPayload(extracted.jsonSchema(), "DOMAIN_CONSTRAINTS", extracted.castMode());
         } catch (IOException e) {
             throw new SchemaRetrievalException(
                 "DOMAIN_CONSTRAINTS_PARSE_FAILED",
@@ -293,16 +294,6 @@ final class OracleDiscoverySupport {
                 "DOMAIN_CONSTRAINTS"
             );
         }
-        try {
-            ensureValidJson(json);
-        } catch (IOException e) {
-            throw new SchemaRetrievalException(
-                "MALFORMED_JSON",
-                e.getMessage(),
-                "DOMAIN_CONSTRAINTS"
-            );
-        }
-        return new DiscoveryPayload(json, "DOMAIN_CONSTRAINTS");
     }
 
     /**
@@ -460,12 +451,12 @@ final class OracleDiscoverySupport {
         return viewName;
     }
 
-    private static String extractJsonLiteral(String text) throws IOException {
+    private static ExtractedSchema extractJsonLiteral(String text) throws IOException {
         Matcher matcher = VALIDATE_USING_PATTERN.matcher(text);
         if (!matcher.find()) {
             throw new IOException("Failed to extract JSON schema text from Oracle metadata.");
         }
-        return matcher.group(1).replace("''", "'");
+        return new ExtractedSchema(matcher.group(2).replace("''", "'"), matcher.group(1) != null);
     }
 
     /**
@@ -502,7 +493,10 @@ final class OracleDiscoverySupport {
      * @param jsonSchema The JSON Schema document
      * @param retrievalMode The retrieval mode identifier
      */
-    record DiscoveryPayload(String jsonSchema, String retrievalMode) {
+    record DiscoveryPayload(String jsonSchema, String retrievalMode, boolean castMode) {
+    }
+
+    private record ExtractedSchema(String jsonSchema, boolean castMode) {
     }
 
     private static final class JsonMapperHolder {

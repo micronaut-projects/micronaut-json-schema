@@ -22,11 +22,15 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema
 import io.micronaut.jsonschema.generator.discovery.DiscoveryResult
+import io.micronaut.jsonschema.generator.discovery.DiscoverySkipped
+import io.micronaut.jsonschema.generator.discovery.DiscoveryStep
 import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger
 import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext
 import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider
 import io.micronaut.jsonschema.generator.discovery.SourceSpec
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope
+import io.micronaut.jsonschema.registry.oracle.OracleMaterializationRequest
+import io.micronaut.jsonschema.registry.oracle.OracleSchemaMaterializer
 import jakarta.inject.Singleton
 import spock.lang.Specification
 
@@ -35,6 +39,7 @@ import java.nio.charset.StandardCharsets
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
+import java.util.Optional
 
 final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
 
@@ -93,6 +98,31 @@ final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
         outcomes[0].logicalSchema().logicalFqcn() == "Order"
         outcomes[0].logicalSchema().subject() == "com.acme.Order"
         outcomes[0].status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT
+    }
+
+    void "CSR authority continues with later subjects when one latest-schema request fails"() {
+        given:
+        startServer([
+                "/subjects"                              : response(200, '["com.acme.First","com.acme.Second"]'),
+                "/subjects/com.acme.First/versions/latest" : response(500, '{}'),
+                "/subjects/com.acme.Second/versions/latest": response(200, '{"schema":"{\\"type\\":\\"object\\"}"}')
+        ])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "micronaut.jsonschema.registry.enabled"               : "true",
+                "micronaut.jsonschema.registry.authority"             : "csr",
+                "micronaut.jsonschema.registry.csr.enabled"            : "true",
+                "micronaut.jsonschema.registry.csr.url"                : serverUrl(),
+                "micronaut.jsonschema.registry.naming.subject.prefix" : "com.acme.",
+                "micronaut.jsonschema.registry.oracle.enabled"         : "false"
+        ]) { ApplicationContext context ->
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any { it.logicalSchema().subject() == "com.acme.First" && it.target() == "csr.authority" && it.failure() }
+        outcomes.any { it.logicalSchema().subject() == "com.acme.Second" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
     }
 
     void "application authority registers missing CSR subject"() {
@@ -415,6 +445,117 @@ final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
         registrations[0].contains('"schemaType":"JSON"')
     }
 
+    void "Oracle authority reports an explicitly selected missing domain"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "micronaut.jsonschema.registry.enabled"           : "true",
+                "micronaut.jsonschema.registry.authority"         : "oracle",
+                "micronaut.jsonschema.registry.oracle.enabled"    : "true",
+                "micronaut.jsonschema.registry.oracle.domains[0]" : "APP_COM_ACME_MISSING",
+                "micronaut.jsonschema.registry.csr.enabled"      : "false"
+        ]) { ApplicationContext context ->
+            DataSource dataSource = Mock()
+            Connection connection = Mock()
+            PreparedStatement statement = Mock()
+            ResultSet resultSet = Mock()
+            dataSource.getConnection() >> connection
+            connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?) ORDER BY name") >> statement
+            statement.setString(1, "APP_COM_ACME_MISSING")
+            statement.executeQuery() >> resultSet
+            resultSet.next() >> false
+            context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "oracle.authority" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.MISSING_AUTHORITY &&
+                    it.failure()
+        }
+    }
+
+    void "Oracle authority continues after one discovery provider fails"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                               : "provider-isolation",
+                "micronaut.jsonschema.registry.enabled"                                  : "true",
+                "micronaut.jsonschema.registry.authority"                                : "oracle",
+                "micronaut.jsonschema.registry.oracle.enabled"                           : "true",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].name"       : "broken",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": FailingDiscoveryProvider.name,
+                "micronaut.jsonschema.registry.oracle.authority.providers[1].name"       : "working",
+                "micronaut.jsonschema.registry.oracle.authority.providers[1].providerClassName": WorkingDiscoveryProvider.name,
+                "micronaut.jsonschema.registry.oracle.authority.providers[1].options.logicalFqcn": "com.acme.Order",
+                "micronaut.jsonschema.registry.oracle.authority.providers[1].options.subject": "com.acme.Order",
+                "micronaut.jsonschema.registry.csr.enabled"                             : "false"
+        ]) { ApplicationContext context ->
+            DataSource dataSource = Stub()
+            Connection connection = Stub()
+            dataSource.getConnection() >> connection
+            context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any { it.target() == "oracle.authority" && it.status() == JsonSchemaRegistryOutcomeStatus.FAILED }
+        outcomes.any { it.logicalSchema().subject() == "com.acme.Order" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
+    }
+
+    void "Oracle authority reports an existing unreadable schema as unreadable authority"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                               : "unreadable-authority",
+                "micronaut.jsonschema.registry.enabled"                                  : "true",
+                "micronaut.jsonschema.registry.authority"                                : "oracle",
+                "micronaut.jsonschema.registry.oracle.enabled"                           : "true",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].name"       : "duality-views",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": UnreadableDiscoveryProvider.name,
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.logicalFqcn": "com.acme.OrderView",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.subject": "com.acme.OrderView",
+                "micronaut.jsonschema.registry.csr.enabled"                             : "false"
+        ]) { ApplicationContext context ->
+            DataSource dataSource = Stub()
+            Connection connection = Stub()
+            dataSource.getConnection() >> connection
+            context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "oracle.authority" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.UNREADABLE_AUTHORITY &&
+                    it.failure()
+        }
+        !outcomes.any { it.status() == JsonSchemaRegistryOutcomeStatus.MISSING_AUTHORITY }
+    }
+
+    void "Oracle target continues after one materializer projection fails"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                        : "materializer-isolation",
+                "micronaut.jsonschema.registry.enabled"                           : "true",
+                "micronaut.jsonschema.registry.oracle.enabled"                    : "true",
+                "micronaut.jsonschema.registry.oracle.materializers[0].name"      : "broken",
+                "micronaut.jsonschema.registry.oracle.materializers[0].providerClassName": FailingProjectionMaterializer.name,
+                "micronaut.jsonschema.registry.oracle.materializers[1].name"      : "working",
+                "micronaut.jsonschema.registry.oracle.materializers[1].providerClassName": WorkingMaterializer.name
+        ]) { ApplicationContext context ->
+            DataSource dataSource = Stub()
+            Connection connection = Stub()
+            dataSource.getConnection() >> connection
+            context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
+            context.getBean(DefaultJsonSchemaRegistryReconciler).reconcileOracleTarget([
+                    new JsonSchemaCandidate(new LogicalSchema("com.acme.Order", "com.acme.Order", "ORDER"), '{"type":"object"}', "test")
+            ])
+        }
+
+        then:
+        outcomes.any { it.target() == "oracle" && it.status() == JsonSchemaRegistryOutcomeStatus.FAILED && it.message().contains("projection failed") }
+        outcomes.any { it.target() == "oracle.success" && it.status() == JsonSchemaRegistryOutcomeStatus.EQUIVALENT }
+    }
+
     void "application authority validates generated schema when targets are disabled"() {
         when:
         List<JsonSchemaRegistryOutcome> outcomes = withContext([
@@ -497,6 +638,74 @@ final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
             new DiscoveryResult([
                     new DiscoveredSchema(OracleDiscoveryScope.DOMAIN.name(), "APP_COM_ACME_ORDER", '{"type":"object"}', "test")
             ], [], [])
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "provider-isolation")
+    static final class FailingDiscoveryProvider implements SchemaDiscoveryProvider {
+        @Override
+        String providerId() { "failing-discovery-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            throw new IllegalStateException("discovery failed")
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "provider-isolation")
+    static final class WorkingDiscoveryProvider implements SchemaDiscoveryProvider {
+        @Override
+        String providerId() { "working-discovery-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            new DiscoveryResult([
+                    new DiscoveredSchema(OracleDiscoveryScope.CUSTOM.name(), "ORDER", '{"type":"object"}', "test")
+            ], [], [])
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "unreadable-authority")
+    static final class UnreadableDiscoveryProvider implements SchemaDiscoveryProvider {
+        @Override
+        String providerId() { "unreadable-discovery-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            new DiscoveryResult([], [], [new DiscoverySkipped(
+                    OracleDiscoveryScope.DUALITY_VIEW.name(),
+                    "ORDER_DV",
+                    DiscoveryStep.SCHEMA_RETRIEVAL,
+                    "MISSING_JSON_SCHEMA",
+                    "JSON_SCHEMA is null or empty",
+                    "DUALITY_DB_PROVIDED"
+            )])
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "materializer-isolation")
+    static final class FailingProjectionMaterializer implements OracleSchemaMaterializer {
+        @Override
+        Optional<JsonSchemaRegistryOutcome> projectionCompatibility(OracleMaterializationRequest request) {
+            throw new IllegalStateException("projection failed")
+        }
+
+        @Override
+        JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) {
+            throw new AssertionError("materialization should not be called")
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "materializer-isolation")
+    static final class WorkingMaterializer implements OracleSchemaMaterializer {
+        @Override
+        JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) {
+            JsonSchemaRegistryOutcome.ok(request.candidate().logicalSchema(), "oracle.success", JsonSchemaRegistryOutcomeStatus.EQUIVALENT, "ok")
         }
     }
 }
