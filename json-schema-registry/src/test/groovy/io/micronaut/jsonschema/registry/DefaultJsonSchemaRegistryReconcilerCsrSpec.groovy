@@ -24,6 +24,7 @@ import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema
 import io.micronaut.jsonschema.generator.discovery.DiscoveryResult
 import io.micronaut.jsonschema.generator.discovery.DiscoverySkipped
 import io.micronaut.jsonschema.generator.discovery.DiscoveryStep
+import io.micronaut.jsonschema.generator.discovery.DiscoveryWarning
 import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger
 import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext
 import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider
@@ -321,6 +322,63 @@ final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
                     it.status() == JsonSchemaRegistryOutcomeStatus.FAILED &&
                     it.message().contains("missing_mapping") &&
                     it.message().contains("Unable to derive logicalFqcn")
+        }
+    }
+
+    void "custom Oracle provider options make a selected missing source an authority failure"() {
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                                    : "custom-selection",
+                "micronaut.jsonschema.registry.enabled"                                       : "true",
+                "micronaut.jsonschema.registry.authority"                                     : "oracle",
+                "micronaut.jsonschema.registry.oracle.enabled"                                : "true",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": MissingSelectedSourceDiscoveryProvider.name,
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.objectName": "ORDER",
+                "micronaut.jsonschema.registry.csr.enabled"                                   : "false"
+        ]) { ApplicationContext context ->
+            DataSource dataSource = Mock()
+            Connection connection = Mock()
+            dataSource.getConnection() >> connection
+            context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "oracle.authority" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.MISSING_AUTHORITY &&
+                    it.message().contains("No selected Oracle source")
+        }
+    }
+
+    void "CSR target rejects Oracle SQL schema metadata extensions"() {
+        given:
+        startServer([:])
+
+        when:
+        List<JsonSchemaRegistryOutcome> outcomes = withContext([
+                "spec.name"                                                                    : "oracle-extension",
+                "micronaut.jsonschema.registry.enabled"                                       : "true",
+                "micronaut.jsonschema.registry.authority"                                     : "oracle",
+                "micronaut.jsonschema.registry.oracle.enabled"                                : "true",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName": OracleExtensionDiscoveryProvider.name,
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.logicalFqcn": "com.acme.Amount",
+                "micronaut.jsonschema.registry.oracle.authority.providers[0].options.subject" : "com.acme.Amount",
+                "micronaut.jsonschema.registry.csr.enabled"                                  : "true",
+                "micronaut.jsonschema.registry.csr.url"                                      : serverUrl()
+        ]) { ApplicationContext context ->
+            DataSource dataSource = Mock()
+            Connection connection = Mock()
+            dataSource.getConnection() >> connection
+            context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
+            context.getBean(JsonSchemaRegistryReconciler).reconcile()
+        }
+
+        then:
+        outcomes.any {
+            it.target() == "csr" &&
+                    it.status() == JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY &&
+                    it.message().contains("sqlPrecision")
         }
     }
 
@@ -663,6 +721,43 @@ final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
         DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
             new DiscoveryResult([
                     new DiscoveredSchema(OracleDiscoveryScope.CUSTOM.name(), "ORDER", '{"type":"object"}', "test")
+            ], [], [])
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "custom-selection")
+    static final class MissingSelectedSourceDiscoveryProvider implements SchemaDiscoveryProvider {
+        @Override
+        String providerId() { "missing-selected-source-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            new DiscoveryResult([], [new DiscoveryWarning(
+                    OracleDiscoveryScope.CUSTOM.name(),
+                    source.option("objectName"),
+                    DiscoveryStep.DISCOVERY,
+                    "NO_INPUTS_DISCOVERED",
+                    "No selected Oracle source was discovered"
+            )], [])
+        }
+    }
+
+    @Singleton
+    @Requires(property = "spec.name", value = "oracle-extension")
+    static final class OracleExtensionDiscoveryProvider implements SchemaDiscoveryProvider {
+        @Override
+        String providerId() { "oracle-extension-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            new DiscoveryResult([
+                    new DiscoveredSchema(
+                            OracleDiscoveryScope.CUSTOM.name(),
+                            "AMOUNT",
+                            '{"type":"number","sqlPrecision":10,"sqlScale":2}',
+                            "test"
+                    )
             ], [], [])
         }
     }

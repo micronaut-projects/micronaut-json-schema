@@ -572,6 +572,55 @@ class OraclePipelineMockSpec extends Specification {
         jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "MOONPHASE"
     }
 
+    void "pipeline extracts chunked Oracle domain DDL literals"() {
+        given:
+        Connection connection = Mock()
+        PreparedStatement domainListStatement = Mock()
+        PreparedStatement ddlStatement = Mock()
+        ResultSet domainListResult = Mock()
+        ResultSet ddlResult = Mock()
+        Path schemaCacheDir = Files.createTempDirectory("oracle-mock-schema-cache")
+        Path outputDir = Files.createTempDirectory("oracle-mock-output")
+        Driver driver = driverReturning(connection)
+        String schema = '{"type":"object","description":"' + ('x' * 3200) + '"}'
+        String ddl = "CREATE DOMAIN MOONPHASE AS JSON VALIDATE USING to_clob('${schema.substring(0, 3000)}') || to_clob('${schema.substring(3000)}')"
+
+        1 * connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?) ORDER BY name") >> domainListStatement
+        1 * domainListStatement.setString(1, "MOONPHASE")
+        1 * domainListStatement.executeQuery() >> domainListResult
+        2 * domainListResult.next() >>> [true, false]
+        1 * domainListResult.getString(1) >> "MOONPHASE"
+
+        1 * connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual") >> ddlStatement
+        1 * ddlStatement.setString(1, "MOONPHASE")
+        1 * ddlStatement.executeQuery() >> ddlResult
+        1 * ddlResult.next() >> true
+        1 * ddlResult.getString(1) >> ddl
+
+        when:
+        def result = withRegisteredDriver(driver) {
+            new JsonSchemaRecordsPipeline({ }).execute(
+                new JsonSchemaRecordsGeneratorConfig(
+                    "jdbc:mockoracle:test",
+                    "test",
+                    "test",
+                    "io.micronaut.jsonschema.oracle.generated",
+                    21,
+                    schemaCacheDir,
+                    outputDir,
+                    [new SourceSpec("domains", "oracle-domains", [include: "MOONPHASE"])],
+                    false,
+                    true
+                )
+            )
+        }
+
+        then:
+        result.generatedTypes() == 1
+        def manifest = readJson(result.manifestPath())
+        jsonAt(manifest, "discovery", "schemas", 0, "name").getStringValue() == "MOONPHASE"
+    }
+
     void "pipeline accepts Oracle include and exclude filters as list options"() {
         given:
         Connection connection = Mock()

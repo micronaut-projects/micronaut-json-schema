@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Default registry reconciler.
@@ -66,6 +67,7 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
     private static final Logger LOG = LoggerFactory.getLogger(DefaultJsonSchemaRegistryReconciler.class);
     private static final int MAX_ORACLE_IDENTIFIER_BYTES = 128;
     private static final int DOMAIN_HASH_HEX_LENGTH = 8;
+    private static final Set<String> ORACLE_SCHEMA_EXTENSION_KEYS = Set.of("extendedType", "sqlPrecision", "sqlScale");
 
     private final JsonSchemaRegistryConfiguration configuration;
     private final BeanContext beanContext;
@@ -454,12 +456,14 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         try (ConfluentSchemaRegistryClient csrClient = new ConfluentSchemaRegistryClient(csr, meterRegistry())) {
             for (JsonSchemaCandidate candidate : candidates) {
                 try {
-                    if (containsOracleExtendedType(objectMapper.readValue(candidate.schemaJson(), Object.class))) {
+                    Optional<String> oracleExtension = firstOracleSchemaExtension(objectMapper.readValue(candidate.schemaJson(), Object.class));
+                    if (oracleExtension.isPresent()) {
                         outcomes.add(JsonSchemaRegistryOutcome.failure(
                             candidate.logicalSchema(),
                             "csr",
                             JsonSchemaRegistryOutcomeStatus.PROJECTION_INCOMPATIBILITY,
-                            "CSR cannot represent Oracle-specific JSON Schema keyword extendedType without weakening validation"
+                            "CSR cannot represent Oracle-specific JSON Schema keyword " + oracleExtension.get()
+                                + " without weakening validation"
                         ));
                         continue;
                     }
@@ -592,17 +596,29 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         return outcomes;
     }
 
-    private static boolean containsOracleExtendedType(Object value) {
+    private static Optional<String> firstOracleSchemaExtension(Object value) {
         if (value instanceof Map<?, ?> map) {
-            if (map.containsKey("extendedType")) {
-                return true;
+            for (Object key : map.keySet()) {
+                if (key instanceof String name && ORACLE_SCHEMA_EXTENSION_KEYS.contains(name)) {
+                    return Optional.of(name);
+                }
             }
-            return map.values().stream().anyMatch(DefaultJsonSchemaRegistryReconciler::containsOracleExtendedType);
+            for (Object nested : map.values()) {
+                Optional<String> extension = firstOracleSchemaExtension(nested);
+                if (extension.isPresent()) {
+                    return extension;
+                }
+            }
         }
         if (value instanceof List<?> list) {
-            return list.stream().anyMatch(DefaultJsonSchemaRegistryReconciler::containsOracleExtendedType);
+            for (Object nested : list) {
+                Optional<String> extension = firstOracleSchemaExtension(nested);
+                if (extension.isPresent()) {
+                    return extension;
+                }
+            }
         }
-        return false;
+        return Optional.empty();
     }
 
     private static void ensureSchemaRegistryWritable(ConfluentSchemaRegistryClient csrClient, String subject) throws Exception {
@@ -643,9 +659,10 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             return true;
         }
         Map<String, String> options = providerConfiguration.getOptions();
-        return hasText(options.get("include"))
-            || hasText(options.get("domain"))
-            || hasText(options.get("viewName"));
+        return options.entrySet().stream()
+            .filter(entry -> hasText(entry.getValue()))
+            // Prefix/exclude filters still describe discovery, not one selected source.
+            .anyMatch(entry -> !"prefix".equals(entry.getKey()) && !"exclude".equals(entry.getKey()));
     }
 
     private LogicalSchema logicalSchemaFromProvider(JsonSchemaRegistryConfiguration.ProviderConfiguration providerConfiguration,

@@ -47,7 +47,9 @@ import java.util.regex.Pattern;
 final class OracleDiscoverySupport {
 
     private static final String SELECT_ONE_FROM = "SELECT 1 FROM ";
-    private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)VALIDATE\\s+(CAST\\s+)?USING\\s+'((?:''|[^'])*)'");
+    private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)VALIDATE\\s+(CAST\\s+)?USING\\s+");
+    private static final Pattern SQL_LITERAL_PART_PATTERN = Pattern.compile("\\s*(?:TO_CLOB\\s*\\(\\s*'((?:''|[^'])*)'\\s*\\)|'((?:''|[^'])*)')");
+    private static final Pattern CONCATENATION_PATTERN = Pattern.compile("\\s*\\|\\|\\s*");
     private static final Set<String> ALLOWED_DICTIONARY_VIEWS = Set.of(
         "USER_DOMAINS",
         "ALL_DOMAINS",
@@ -452,11 +454,35 @@ final class OracleDiscoverySupport {
     }
 
     private static ExtractedSchema extractJsonLiteral(String text) throws IOException {
-        Matcher matcher = VALIDATE_USING_PATTERN.matcher(text);
-        if (!matcher.find()) {
+        Matcher clause = VALIDATE_USING_PATTERN.matcher(text);
+        if (!clause.find()) {
             throw new IOException("Failed to extract JSON schema text from Oracle metadata.");
         }
-        return new ExtractedSchema(matcher.group(2).replace("''", "'"), matcher.group(1) != null);
+        StringBuilder jsonSchema = new StringBuilder();
+        int cursor = clause.end();
+        boolean foundLiteral = false;
+        while (true) {
+            Matcher literal = SQL_LITERAL_PART_PATTERN.matcher(text);
+            literal.region(cursor, text.length());
+            if (!literal.lookingAt()) {
+                break;
+            }
+            foundLiteral = true;
+            String chunk = literal.group(1) == null ? literal.group(2) : literal.group(1);
+            jsonSchema.append(chunk.replace("''", "'"));
+            cursor = literal.end();
+
+            Matcher concatenation = CONCATENATION_PATTERN.matcher(text);
+            concatenation.region(cursor, text.length());
+            if (!concatenation.lookingAt()) {
+                break;
+            }
+            cursor = concatenation.end();
+        }
+        if (!foundLiteral) {
+            throw new IOException("Failed to extract JSON schema text from Oracle metadata.");
+        }
+        return new ExtractedSchema(jsonSchema.toString(), clause.group(1) != null);
     }
 
     /**
