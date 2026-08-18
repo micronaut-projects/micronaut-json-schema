@@ -95,19 +95,32 @@ final class OracleDiscoverySupport {
     }
 
     /**
+     * Resolve the optional name prefix filter from a source specification.
+     *
+     * @param source The configured source
+     * @return The normalized prefix, or an empty string
+     */
+    static String prefix(SourceSpec source) {
+        String prefix = source.option("prefix");
+        return prefix == null || prefix.isBlank() ? "" : normalizeIdentifier(prefix);
+    }
+
+    /**
      * Match a discovered Oracle object name against built-in include and exclude filters.
      *
      * @param name The discovered object name
      * @param includes The configured include filters
      * @param excludes The configured exclude filters
+     * @param prefix The configured name prefix
      * @return {@code true} if the name should be included
      */
-    static boolean matches(String name, Set<String> includes, Set<String> excludes) {
+    static boolean matches(String name, Set<String> includes, Set<String> excludes, String prefix) {
         String normalizedName = normalizeIdentifier(name);
         if (!matchesInclude(normalizedName, includes)) {
             return false;
         }
-        return !matchesExclude(normalizedName, excludes);
+        return !matchesExclude(normalizedName, excludes)
+            && (prefix == null || prefix.isBlank() || normalizedName.startsWith(prefix));
     }
 
     /**
@@ -119,6 +132,7 @@ final class OracleDiscoverySupport {
      * @param owner The normalized owner for cross-schema queries
      * @param includes The normalized include filters
      * @param excludes The normalized exclude filters
+     * @param prefix The normalized name prefix filter
      * @return The SQL query and bind parameters
      */
     static FilteredQuery objectListQuery(MetadataQueryScope scope,
@@ -126,7 +140,8 @@ final class OracleDiscoverySupport {
                                          String nameColumn,
                                          String owner,
                                          Set<String> includes,
-                                         Set<String> excludes) {
+                                         Set<String> excludes,
+                                         String prefix) {
         StringBuilder sql = new StringBuilder("SELECT ")
             .append(selectList)
             .append(" FROM ")
@@ -145,9 +160,14 @@ final class OracleDiscoverySupport {
             conditions.add(nameColumn + " NOT IN (" + placeholders(excludes.size()) + ")");
             parameters.addAll(excludes);
         }
+        if (prefix != null && !prefix.isBlank()) {
+            conditions.add(nameColumn + " LIKE ?");
+            parameters.add(prefix + "%");
+        }
         if (!conditions.isEmpty()) {
             sql.append(" WHERE ").append(String.join(" AND ", conditions));
         }
+        sql.append(" ORDER BY ").append(nameColumn);
         return new FilteredQuery(sql.toString(), parameters);
     }
 
@@ -223,15 +243,20 @@ final class OracleDiscoverySupport {
                                               String domainName,
                                               String owner,
                                               List<DiscoveryWarning> warnings) throws SQLException, IOException {
+        String ddl = null;
         try {
-            String ddl = readDomainDdl(connection, domainName, scope.currentUserScope() ? null : owner);
-            if (ddl != null) {
+            ddl = readDomainDdl(connection, domainName, scope.currentUserScope() ? null : owner);
+        } catch (SQLException e) {
+            warnings.add(new DiscoveryWarning(OracleDiscoveryScope.DOMAIN.name(), domainName, DiscoveryStep.SCHEMA_RETRIEVAL, "GET_DDL_FAILED", "Oracle metadata lookup failed: " + e.getMessage()));
+        }
+        if (ddl != null) {
+            try {
                 String json = extractJsonLiteral(ddl);
                 ensureValidJson(json);
                 return new DiscoveryPayload(json, "DOMAIN_DDL");
+            } catch (IOException e) {
+                warnings.add(new DiscoveryWarning(OracleDiscoveryScope.DOMAIN.name(), domainName, DiscoveryStep.SCHEMA_RETRIEVAL, "GET_DDL_FAILED", "Oracle metadata JSON could not be parsed: " + e.getMessage()));
             }
-        } catch (SQLException | IOException e) {
-            warnings.add(new DiscoveryWarning(OracleDiscoveryScope.DOMAIN.name(), domainName, DiscoveryStep.SCHEMA_RETRIEVAL, "GET_DDL_FAILED", e.getMessage()));
         }
         String constraintView = scope.dictionaryViewName().replace("_DOMAINS", "_DOMAIN_CONSTRAINTS");
         if (!isConstraintViewQueryable(connection, constraintView, scope.currentUserScope() ? null : owner)) {

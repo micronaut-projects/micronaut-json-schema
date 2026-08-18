@@ -76,12 +76,40 @@ final class OracleDualityJsonViewMaterializerSpec extends Specification {
         )
 
         then:
-        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?)") >> {
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?) ORDER BY view_name") >> {
             throw new SQLException("metadata unavailable")
         }
         outcome.status() == JsonSchemaRegistryOutcomeStatus.DRIFT
         outcome.failure()
         outcome.message().contains("UNREADABLE_SCHEMA")
+    }
+
+    void "existing duality view without JSON_SCHEMA is reported as drift without DDL"() {
+        given:
+        OracleDualityJsonViewMaterializer materializer = new OracleDualityJsonViewMaterializer(new DefaultJsonSchemaNormalizer())
+        Connection connection = Mock()
+        PreparedStatement statement = Mock()
+        ResultSet resultSet = Mock()
+
+        when:
+        JsonSchemaRegistryOutcome outcome = materializer.reconcile(
+                connection,
+                request([viewName: "ORDER_DV", viewDdl: "CREATE JSON RELATIONAL DUALITY VIEW ORDER_DV"], JsonSchemaRegistryPolicyMode.MANAGE, JsonSchemaRegistryDriftMode.FAIL, false)
+        )
+
+        then:
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?) ORDER BY view_name") >> statement
+        1 * statement.setString(1, "ORDER_DV")
+        1 * statement.executeQuery() >> resultSet
+        2 * resultSet.next() >>> [true, false]
+        1 * resultSet.getString(1) >> "ORDER_DV"
+        1 * resultSet.getString(2) >> null
+        1 * resultSet.close()
+        1 * statement.close()
+        0 * connection.prepareStatement("CREATE JSON RELATIONAL DUALITY VIEW ORDER_DV")
+        outcome.status() == JsonSchemaRegistryOutcomeStatus.DRIFT
+        outcome.failure()
+        outcome.message().contains("MISSING_JSON_SCHEMA")
     }
 
     void "missing duality view without ddl reports missing target"() {
@@ -98,7 +126,7 @@ final class OracleDualityJsonViewMaterializerSpec extends Specification {
         )
 
         then:
-        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?)") >> statement
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?) ORDER BY view_name") >> statement
         1 * statement.setString(1, "ORDER_DV")
         1 * statement.executeQuery() >> resultSet
         1 * resultSet.next() >> false
@@ -131,7 +159,7 @@ final class OracleDualityJsonViewMaterializerSpec extends Specification {
         1 * connection.prepareStatement("SELECT 1 FROM DBA_JSON_DUALITY_VIEWS WHERE owner = ? FETCH FIRST 1 ROWS ONLY") >> dbaStatement
         1 * dbaStatement.setString(1, "HR")
         1 * dbaStatement.executeQuery() >> dbaResultSet
-        1 * connection.prepareStatement("SELECT view_name, json_schema FROM DBA_JSON_DUALITY_VIEWS WHERE owner = ? AND view_name IN (?)") >> dbaStatement
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM DBA_JSON_DUALITY_VIEWS WHERE owner = ? AND view_name IN (?) ORDER BY view_name") >> dbaStatement
         1 * dbaStatement.setString(1, "HR")
         1 * dbaStatement.setString(2, "ORDER_DV")
         1 * dbaStatement.executeQuery() >> dbaResultSet

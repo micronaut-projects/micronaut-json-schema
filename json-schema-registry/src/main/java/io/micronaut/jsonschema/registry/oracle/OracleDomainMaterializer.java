@@ -26,6 +26,8 @@ import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcomeStatus;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryPolicyMode;
 import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
@@ -45,6 +47,7 @@ import java.util.regex.Pattern;
  */
 @Singleton
 public final class OracleDomainMaterializer implements OracleSchemaMaterializer {
+    private static final Logger LOG = LoggerFactory.getLogger(OracleDomainMaterializer.class);
     private static final Pattern SIMPLE_IDENTIFIER = Pattern.compile("[A-Z][A-Z0-9_$#]{0,127}");
     private static final String TARGET = "oracle.domain";
     private static final int SQL_LITERAL_CHUNK_SIZE = 3_000;
@@ -112,10 +115,27 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
                     "[DRY-RUN] would create Oracle domain " + qualifiedName(owner, domainName)
                 );
             }
-            request.recordOperation("ddl", () -> {
-                createDomain(connection, owner, domainName, request.candidate().schemaJson());
-                return null;
-            });
+            try {
+                request.recordOperation("ddl", () -> {
+                    createDomain(connection, owner, domainName, request.candidate().schemaJson());
+                    return null;
+                });
+            } catch (Exception createFailure) {
+                // A second process may have created the domain after the existence check.
+                if (request.recordOperation("introspection", () -> domainExists(connection, domainName, request.owner()))) {
+                    Optional<DiscoveredSchema> concurrent = request.recordOperation("introspection", () -> readDomain(connection, domainName, owner));
+                    if (concurrent.isPresent() && normalizer.equivalent(request.candidate().schemaJson(), concurrent.get().schemaJson())) {
+                        return JsonSchemaRegistryOutcome.ok(
+                            request.candidate().logicalSchema(),
+                            TARGET,
+                            JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                            "Oracle domain was created concurrently: " + qualifiedName(owner, domainName)
+                        );
+                    }
+                    return driftOutcome(request, "Oracle domain was created concurrently but its schema is not equivalent: " + qualifiedName(owner, domainName));
+                }
+                throw createFailure;
+            }
             return JsonSchemaRegistryOutcome.ok(
                 request.candidate().logicalSchema(),
                 TARGET,
@@ -171,9 +191,15 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
             "domains",
             owner,
             Map.of("include", domainName),
-            ignored -> {
-            }
+            LOG::info
         );
+        result.warnings().forEach(warning -> LOG.warn("Oracle domain materializer warning: {}", warning));
+        result.skipped().forEach(skipped -> LOG.warn(
+            "Oracle domain materializer skipped {}: {} {}",
+            skipped.name(),
+            skipped.code(),
+            skipped.reason()
+        ));
         if (result.schemas().isEmpty()) {
             return Optional.empty();
         }

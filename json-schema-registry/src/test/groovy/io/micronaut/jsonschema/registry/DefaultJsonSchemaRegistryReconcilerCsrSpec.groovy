@@ -391,7 +391,7 @@ final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
             PreparedStatement ddlStatement = Mock()
             ResultSet ddlResultSet = Mock()
             dataSource.getConnection() >> connection
-            connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?)") >> domainListStatement
+            connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?) ORDER BY name") >> domainListStatement
             domainListStatement.setString(1, "APP_COM_ACME_ORDER")
             domainListStatement.executeQuery() >> domainListResultSet
             domainListResultSet.next() >>> [true, false]

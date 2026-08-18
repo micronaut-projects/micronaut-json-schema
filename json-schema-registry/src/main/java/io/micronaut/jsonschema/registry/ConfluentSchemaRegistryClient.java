@@ -80,6 +80,7 @@ final class ConfluentSchemaRegistryClient implements AutoCloseable {
                 .filter(String.class::isInstance)
                 .map(String.class::cast)
                 .filter(subject -> prefix == null || prefix.isBlank() || subject.startsWith(prefix))
+                .sorted()
                 .toList();
         });
     }

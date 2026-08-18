@@ -106,9 +106,6 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
         result.warnings().forEach(warning -> LOG.warn("Oracle duality view materializer warning: {}", warning));
         if (!result.skipped().isEmpty()) {
             DiscoverySkipped skipped = result.skipped().get(0);
-            if (isMissingSchema(skipped)) {
-                return reconcileMissingView(connection, request, viewName);
-            }
             return driftOutcome(request, "Oracle duality view schema could not be read: " + viewName + "; " + skipped.code() + ": " + skipped.reason());
         }
         if (result.schemas().isEmpty()) {
@@ -146,17 +143,32 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
                 "[DRY-RUN] would create Oracle duality view " + viewName
             );
         }
-        request.recordOperation("ddl", () -> {
-            executeDdl(connection, ddl.get());
-            return null;
-        });
+        try {
+            request.recordOperation("ddl", () -> {
+                executeDdl(connection, ddl.get());
+                return null;
+            });
+        } catch (Exception createFailure) {
+            // A second process may have created the view after the existence check.
+            DiscoveryResult concurrent = request.recordOperation("introspection", () -> discoverView(connection, request.owner(), viewName));
+            if (!concurrent.schemas().isEmpty()
+                && normalizer.equivalent(request.candidate().schemaJson(), concurrent.schemas().get(0).schemaJson())) {
+                return JsonSchemaRegistryOutcome.ok(
+                    request.candidate().logicalSchema(),
+                    TARGET,
+                    JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                    "Oracle duality view was created concurrently: " + viewName
+                );
+            }
+            if (!concurrent.schemas().isEmpty() || !concurrent.skipped().isEmpty()) {
+                return driftOutcome(request, "Oracle duality view was created concurrently but its schema is not equivalent: " + viewName);
+            }
+            throw createFailure;
+        }
         DiscoveryResult created = request.recordOperation("introspection", () -> discoverView(connection, request.owner(), viewName));
         created.warnings().forEach(warning -> LOG.warn("Oracle duality view materializer warning: {}", warning));
         if (!created.skipped().isEmpty()) {
             DiscoverySkipped skipped = created.skipped().get(0);
-            if (isMissingSchema(skipped)) {
-                return driftOutcome(request, "Created Oracle duality view but schema is missing: " + viewName);
-            }
             return driftOutcome(request, "Created Oracle duality view but schema could not be read: " + viewName + "; " + skipped.code() + ": " + skipped.reason());
         }
         if (created.schemas().isEmpty()) {
@@ -203,10 +215,6 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
         try (PreparedStatement statement = connection.prepareStatement(ddl)) {
             statement.execute();
         }
-    }
-
-    private static boolean isMissingSchema(DiscoverySkipped skipped) {
-        return skipped.code() != null && skipped.code().startsWith("MISSING");
     }
 
     private static Optional<String> resolveDdl(Map<String, String> options) throws IOException {

@@ -446,6 +446,16 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                             ));
                         } else {
                             ensureSchemaRegistryWritable(csrClient, subject);
+                            Optional<String> concurrent = csrClient.latestSchema(subject);
+                            if (concurrent.isPresent() && normalizer.equivalent(concurrent.get(), candidate.schemaJson())) {
+                                outcomes.add(JsonSchemaRegistryOutcome.ok(
+                                    candidate.logicalSchema(),
+                                    "csr",
+                                    JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                                    "Schema Registry subject was registered concurrently: " + subject
+                                ));
+                                continue;
+                            }
                             csrClient.register(subject, candidate.schemaJson());
                             outcomes.add(JsonSchemaRegistryOutcome.ok(
                                 candidate.logicalSchema(),
@@ -479,6 +489,16 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
                         ));
                     } else {
                         ensureSchemaRegistryWritable(csrClient, subject);
+                        Optional<String> concurrent = csrClient.latestSchema(subject);
+                        if (concurrent.isPresent() && normalizer.equivalent(concurrent.get(), candidate.schemaJson())) {
+                            outcomes.add(JsonSchemaRegistryOutcome.ok(
+                                candidate.logicalSchema(),
+                                "csr",
+                                JsonSchemaRegistryOutcomeStatus.EQUIVALENT,
+                                "Schema Registry subject was reconciled concurrently: " + subject
+                            ));
+                            continue;
+                        }
                         Optional<String> compatibility = csrClient.compatibility(subject, candidate.schemaJson());
                         if (compatibility.isPresent() && !"true".equalsIgnoreCase(compatibility.get())) {
                             outcomes.add(JsonSchemaRegistryOutcome.failure(
@@ -526,7 +546,8 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
 
     private JsonSchemaCandidate toOracleCandidate(JsonSchemaRegistryConfiguration.ProviderConfiguration providerConfiguration,
                                                   String providerClassName,
-                                                  DiscoveredSchema schema) {
+                                                  DiscoveredSchema schema) throws Exception {
+        normalizer.normalize(schema.schemaJson());
         LogicalSchema logicalSchema = logicalSchemaFromOracle(providerConfiguration, providerClassName, schema);
         return new JsonSchemaCandidate(logicalSchema, schema.schemaJson(), schema.scope() + ":" + schema.name());
     }
@@ -608,20 +629,18 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         return configuration.getOracle().isEnabled()
             && !prefix.isBlank()
             && !subject.startsWith(prefix)
-            && !configuration.mappingsBySubject().containsKey(subject);
+            && !configuration.mappingsBySubject().containsKey(subject)
+            && !hasConfiguredOraclePairing();
     }
 
     private String resolveCsrSubject(JsonSchemaCandidate candidate) {
+        JsonSchemaRegistryConfiguration.Mapping mapping = mappingForCandidate(candidate);
+        if (mapping != null && mapping.getSubject() != null && !mapping.getSubject().isBlank()) {
+            return mapping.getSubject();
+        }
         String subject = candidate.logicalSchema().subject();
         if (subject != null && !subject.isBlank()) {
             return subject;
-        }
-        String oracleArtifactName = candidate.logicalSchema().oracleArtifactName();
-        if (oracleArtifactName != null) {
-            JsonSchemaRegistryConfiguration.Mapping mapping = configuration.mappingsByDomain().get(oracleArtifactName);
-            if (mapping != null) {
-                return mapping.getSubject();
-            }
         }
         return null;
     }
@@ -644,8 +663,8 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             }
             return null;
         }
-        JsonSchemaRegistryConfiguration.Mapping mapping = configuration.mappingsBySubject().get(candidate.logicalSchema().subject());
-        if (mapping != null && mapping.getDomain() != null) {
+        JsonSchemaRegistryConfiguration.Mapping mapping = mappingForCandidate(candidate);
+        if (mapping != null && mapping.getDomain() != null && !mapping.getDomain().isBlank()) {
             return mapping.getDomain();
         }
         String configured = materializerConfiguration.getOptions().get("domain");
@@ -656,6 +675,47 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             return candidateArtifact;
         }
         return domainNameFromLogicalName(candidate.logicalSchema().logicalFqcn());
+    }
+
+    private JsonSchemaRegistryConfiguration.Mapping mappingForCandidate(JsonSchemaCandidate candidate) {
+        String subject = candidate.logicalSchema().subject();
+        if (subject != null && !subject.isBlank()) {
+            JsonSchemaRegistryConfiguration.Mapping mapping = configuration.mappingsBySubject().get(subject);
+            if (mapping != null) {
+                return mapping;
+            }
+        }
+        String artifactName = candidate.logicalSchema().oracleArtifactName();
+        if (artifactName != null && !artifactName.isBlank()) {
+            JsonSchemaRegistryConfiguration.Mapping mapping = configuration.mappingsByDomain().get(artifactName.toUpperCase(Locale.ENGLISH));
+            if (mapping != null) {
+                return mapping;
+            }
+        }
+        String logicalFqcn = candidate.logicalSchema().logicalFqcn();
+        if (logicalFqcn != null && !logicalFqcn.isBlank()) {
+            return configuration.mappingsByDomain().get(domainNameFromLogicalName(logicalFqcn));
+        }
+        return null;
+    }
+
+    private boolean hasConfiguredOraclePairing() {
+        for (JsonSchemaRegistryConfiguration.ProviderConfiguration provider : configuration.resolveOracleMaterializers()) {
+            Map<String, String> options = provider.getOptions();
+            if (hasText(options.get("logicalFqcn"))
+                || hasText(options.get("subject"))
+                || hasText(options.get("artifactName"))
+                || hasText(options.get("viewName"))
+                || (hasText(provider.getProviderClassName())
+                    && !OracleDomainMaterializer.class.getName().equals(provider.getProviderClassName()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private DataSource resolveDataSource() {

@@ -72,15 +72,16 @@ public final class OracleDomainSchemaDiscoveryProvider implements SchemaDiscover
         context.logger().info("[jsonschema-records] INFO source=" + source.name() + " scope=" + OracleDiscoveryScope.DOMAIN.name() + " dictionaryView=" + scope.dictionaryViewName());
         Set<String> includes = OracleDiscoverySupport.includeFilter(source);
         Set<String> excludes = OracleDiscoverySupport.excludeFilter(source);
+        String prefix = OracleDiscoverySupport.prefix(source);
         List<DiscoveredSchema> schemas = new ArrayList<>();
         int selectedInputs = 0;
-        FilteredQuery query = OracleDiscoverySupport.objectListQuery(scope, "name", "name", owner, includes, excludes);
+        FilteredQuery query = OracleDiscoverySupport.objectListQuery(scope, "name", "name", owner, includes, excludes, prefix);
         try (PreparedStatement statement = connection.prepareStatement(query.sql())) {
             query.bind(statement);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     String domainName = OracleDiscoverySupport.normalizeIdentifier(rs.getString(1));
-                    if (!OracleDiscoverySupport.matches(domainName, includes, excludes)) {
+                    if (!OracleDiscoverySupport.matches(domainName, includes, excludes, prefix)) {
                         continue;
                     }
                     selectedInputs++;

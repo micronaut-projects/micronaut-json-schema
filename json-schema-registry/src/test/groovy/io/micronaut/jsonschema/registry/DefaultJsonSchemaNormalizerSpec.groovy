@@ -45,4 +45,10 @@ final class DefaultJsonSchemaNormalizerSpec extends Specification {
                 '{"properties":{"id":{"type":"integer"}},"type":"object"}'
         )
     }
+
+    void "retains explicit JSON null values during normalization"() {
+        expect:
+        normalizer.normalize('{"default":null,"properties":{"value":{"const":null}},"type":"object"}') ==
+                '{"default":null,"properties":{"value":{"const":null}},"type":"object"}'
+    }
 }

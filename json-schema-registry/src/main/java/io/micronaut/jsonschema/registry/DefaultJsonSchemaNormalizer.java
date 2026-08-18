@@ -17,6 +17,7 @@ package io.micronaut.jsonschema.registry;
 
 import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
 import jakarta.inject.Singleton;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -32,7 +33,8 @@ public final class DefaultJsonSchemaNormalizer implements JsonSchemaNormalizer {
 
     @Override
     public String normalize(String jsonSchema) throws IOException {
-        Object value = objectMapper.readValue(jsonSchema, Object.class);
+        // Use a tree so explicit JSON null values are retained during canonicalization.
+        JsonNode value = objectMapper.readValue(jsonSchema, JsonNode.class);
         return objectMapper.writeValueAsString(value);
     }
 }
