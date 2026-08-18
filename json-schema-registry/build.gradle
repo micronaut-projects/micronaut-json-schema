@@ -46,7 +46,7 @@ micronautBuild {
 }
 
 micronaut {
-    version libs.versions.micronaut.asProvider().get()
+    version libs.versions.micronaut.platform.get()
     testResources {
         enabled = true
         inferClasspath = false

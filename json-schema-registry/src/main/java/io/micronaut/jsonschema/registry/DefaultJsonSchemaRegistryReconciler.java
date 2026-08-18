@@ -20,13 +20,14 @@ import io.micronaut.core.beans.BeanIntrospector;
 import io.micronaut.inject.qualifiers.Qualifiers;
 import io.micronaut.jsonschema.JsonSchema;
 import io.micronaut.jsonschema.JsonSchemaMapper;
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema;
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult;
+import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult;
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope;
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySkipped;
-import io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider;
-import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
-import io.micronaut.jsonschema.registry.oracle.OracleDomainDiscoveryProvider;
+import io.micronaut.jsonschema.generator.discovery.DiscoverySkipped;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.discovery.SourceSpec;
+import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider;
 import io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer;
 import io.micronaut.jsonschema.registry.oracle.OracleMaterializationRequest;
 import io.micronaut.jsonschema.registry.oracle.OracleOperationRecorder;
@@ -46,6 +47,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -271,25 +273,41 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
             classLoader = getClass().getClassLoader();
         }
         for (JsonSchemaRegistryConfiguration.ProviderConfiguration providerConfiguration : configuration.resolveOracleAuthorityProviders()) {
-            String providerClassName = providerClassName(providerConfiguration, OracleDomainDiscoveryProvider.class.getName());
-            OracleSchemaDiscoveryProvider provider = providerResolver.resolve(providerClassName, classLoader);
-            OracleSourceSpec sourceSpec = new OracleSourceSpec(
+            String providerClassName = providerClassName(providerConfiguration, OracleDomainSchemaDiscoveryProvider.class.getName());
+            SchemaDiscoveryProvider provider = providerResolver.resolve(providerClassName, classLoader);
+            Map<String, Object> sourceOptions = new LinkedHashMap<>(providerConfiguration.getOptions());
+            if (providerConfiguration.getOwner() != null && !providerConfiguration.getOwner().isBlank()) {
+                sourceOptions.put("owner", providerConfiguration.getOwner());
+            }
+            SourceSpec sourceSpec = new SourceSpec(
                 providerName(providerConfiguration, "oracle-authority"),
-                providerClassName,
-                providerConfiguration.getOwner(),
-                providerConfiguration.getOptions()
+                provider.providerId(),
+                sourceOptions
             );
-            OracleDiscoveryResult result = recordOperation(
+            SchemaDiscoveryContext discoveryContext = new SchemaDiscoveryContext(
+                true,
+                false,
+                null,
+                null,
+                Map.of(),
+                LOG::info,
+                () -> connection
+            );
+            DiscoveryResult result = recordOperation(
                 "oracle",
                 "introspection",
-                () -> provider.discover(connection, sourceSpec, true, LOG::info)
+                () -> provider.discover(discoveryContext, sourceSpec)
             );
-            result.warnings().forEach(warning -> LOG.warn("Oracle authority discovery warning: {}", warning));
+            result.warnings().forEach(warning -> LOG.warn(
+                "Oracle authority discovery warning: {} {}",
+                warning.code(),
+                warning.message()
+            ));
             result.skipped().forEach(skipped -> {
-                LOG.warn("Oracle authority discovery skipped: {}", skipped);
+                LOG.warn("Oracle authority discovery skipped: {} {}", skipped.code(), skipped.reason());
                 outcomes.add(skippedOutcome(providerConfiguration, providerClassName, skipped));
             });
-            for (OracleDiscoveredSchema schema : result.schemas()) {
+            for (DiscoveredSchema schema : result.schemas()) {
                 try {
                     candidates.add(toOracleCandidate(providerConfiguration, providerClassName, schema));
                 } catch (Exception e) {
@@ -508,28 +526,28 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
 
     private JsonSchemaCandidate toOracleCandidate(JsonSchemaRegistryConfiguration.ProviderConfiguration providerConfiguration,
                                                   String providerClassName,
-                                                  OracleDiscoveredSchema schema) {
+                                                  DiscoveredSchema schema) {
         LogicalSchema logicalSchema = logicalSchemaFromOracle(providerConfiguration, providerClassName, schema);
         return new JsonSchemaCandidate(logicalSchema, schema.schemaJson(), schema.scope() + ":" + schema.name());
     }
 
     private JsonSchemaRegistryOutcome skippedOutcome(JsonSchemaRegistryConfiguration.ProviderConfiguration providerConfiguration,
                                                      String providerClassName,
-                                                     OracleDiscoverySkipped skipped) {
+                                                     DiscoverySkipped skipped) {
         LogicalSchema logicalSchema = logicalSchemaFromOracle(
             providerConfiguration,
             providerClassName,
-            new OracleDiscoveredSchema(skipped.scope(), skipped.name(), "{}", "skipped")
+            new DiscoveredSchema(skipped.scope(), skipped.name(), "{}", "skipped")
         );
-        JsonSchemaRegistryOutcomeStatus status = skipped.reason() != null && skipped.reason().startsWith("MISSING")
+        JsonSchemaRegistryOutcomeStatus status = skipped.code() != null && skipped.code().startsWith("MISSING")
             ? JsonSchemaRegistryOutcomeStatus.MISSING_AUTHORITY
             : JsonSchemaRegistryOutcomeStatus.UNREADABLE_AUTHORITY;
-        return JsonSchemaRegistryOutcome.failure(logicalSchema, "oracle.authority", status, skipped.message());
+        return JsonSchemaRegistryOutcome.failure(logicalSchema, "oracle.authority", status, skipped.reason());
     }
 
     private LogicalSchema logicalSchemaFromOracle(JsonSchemaRegistryConfiguration.ProviderConfiguration providerConfiguration,
                                                   String providerClassName,
-                                                  OracleDiscoveredSchema schema) {
+                                                  DiscoveredSchema schema) {
         if (isDomainProvider(providerClassName, schema)) {
             String domainName = schema.name().toUpperCase(Locale.ENGLISH);
             JsonSchemaRegistryConfiguration.Mapping mapping = configuration.mappingsByDomain().get(domainName);
@@ -653,9 +671,9 @@ public final class DefaultJsonSchemaRegistryReconciler implements JsonSchemaRegi
         throw new JsonSchemaRegistryException("No DataSource bean named '" + datasourceName + "' available for JSON Schema Registry");
     }
 
-    private boolean isDomainProvider(String providerClassName, OracleDiscoveredSchema schema) {
-        return schema.scope() == OracleDiscoveryScope.DOMAIN
-            || OracleDomainDiscoveryProvider.class.getName().equals(providerClassName);
+    private boolean isDomainProvider(String providerClassName, DiscoveredSchema schema) {
+        return OracleDiscoveryScope.DOMAIN.name().equals(schema.scope())
+            || OracleDomainSchemaDiscoveryProvider.class.getName().equals(providerClassName);
     }
 
     private boolean isDomainMaterializer(String providerClassName) {

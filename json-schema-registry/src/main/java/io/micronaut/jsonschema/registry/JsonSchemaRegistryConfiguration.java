@@ -20,7 +20,7 @@ import io.micronaut.context.env.Environment;
 import io.micronaut.core.annotation.Introspected;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.type.Argument;
-import io.micronaut.jsonschema.registry.oracle.OracleDomainDiscoveryProvider;
+import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider;
 import io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer;
 import jakarta.inject.Inject;
 
@@ -206,12 +206,12 @@ public final class JsonSchemaRegistryConfiguration {
         }
         ProviderConfiguration provider = new ProviderConfiguration();
         provider.setName("domains");
-        provider.setProviderClassName(OracleDomainDiscoveryProvider.class.getName());
+        provider.setProviderClassName(OracleDomainSchemaDiscoveryProvider.class.getName());
         return List.of(applyBuiltInDomainSelection(provider));
     }
 
     private ProviderConfiguration applyBuiltInDomainSelection(ProviderConfiguration provider) {
-        if (!OracleDomainDiscoveryProvider.class.getName().equals(providerClassName(provider, OracleDomainDiscoveryProvider.class.getName()))) {
+        if (!OracleDomainSchemaDiscoveryProvider.class.getName().equals(providerClassName(provider, OracleDomainSchemaDiscoveryProvider.class.getName()))) {
             return provider;
         }
         Map<String, String> options = new LinkedHashMap<>(provider.getOptions());

@@ -20,15 +20,16 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.context.annotation.Requires
 import io.micronaut.health.HealthStatus
 import io.micronaut.inject.qualifiers.Qualifiers
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult
+import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult
+import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider
+import io.micronaut.jsonschema.generator.discovery.SourceSpec
+import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger
-import io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
-import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import io.micronaut.jsonschema.registry.oracle.OracleDomainDiscoveryProvider
 import io.micronaut.jsonschema.registry.oracle.OracleDomainMaterializer
 import io.micronaut.jsonschema.registry.oracle.OracleDualityJsonViewMaterializer
 import io.micronaut.jsonschema.registry.oracle.OracleMaterializationRequest
@@ -102,7 +103,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         JsonSchemaRegistryConfiguration configuration = new JsonSchemaRegistryConfiguration()
 
         expect:
-        configuration.resolveOracleAuthorityProviders()[0].providerClassName == OracleDomainDiscoveryProvider.name
+        configuration.resolveOracleAuthorityProviders()[0].providerClassName == OracleDomainSchemaDiscoveryProvider.name
         configuration.resolveOracleMaterializers()[0].providerClassName == OracleDomainMaterializer.name
     }
 
@@ -115,7 +116,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         JsonSchemaRegistryConfiguration.ProviderConfiguration provider = configuration.resolveOracleAuthorityProviders()[0]
 
         then:
-        provider.providerClassName == OracleDomainDiscoveryProvider.name
+        provider.providerClassName == OracleDomainSchemaDiscoveryProvider.name
         provider.options.include == "APP_COM_ACME_ORDER,APP_COM_ACME_INVOICE"
     }
 
@@ -125,7 +126,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         configuration.oracle.domains = ["APP_COM_ACME_ORDER"]
         JsonSchemaRegistryConfiguration.ProviderConfiguration domainProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
                 name: "domains",
-                providerClassName: OracleDomainDiscoveryProvider.name,
+                providerClassName: OracleDomainSchemaDiscoveryProvider.name,
                 options: [prefix: "APP_"]
         )
         JsonSchemaRegistryConfiguration.ProviderConfiguration dualityProvider = new JsonSchemaRegistryConfiguration.ProviderConfiguration(
@@ -139,7 +140,7 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
         List<JsonSchemaRegistryConfiguration.ProviderConfiguration> providers = configuration.resolveOracleAuthorityProviders()
 
         then:
-        providers[0].providerClassName == OracleDomainDiscoveryProvider.name
+        providers[0].providerClassName == OracleDomainSchemaDiscoveryProvider.name
         providers[0].options.include == "APP_COM_ACME_ORDER"
         !providers[0].options.containsKey("prefix")
         providers[1] == dualityProvider
@@ -196,20 +197,19 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
 
     void "resolves reusable generator Oracle discovery provider from Micronaut bean"() {
         when:
-        OracleDiscoveryResult result = withContext(["spec.name": "generator-bean-discovery-provider"]) { ApplicationContext context ->
-            OracleSchemaDiscoveryProvider provider = context.getBean(OracleSchemaDiscoveryProviderResolver)
+        DiscoveryResult result = withContext(["spec.name": "generator-bean-discovery-provider"]) { ApplicationContext context ->
+            SchemaDiscoveryProvider provider = context.getBean(OracleSchemaDiscoveryProviderResolver)
                     .resolve(GeneratorBeanDiscoveryProvider.name, getClass().classLoader)
             provider.discover(
-                    null,
-                    new OracleSourceSpec("generator", GeneratorBeanDiscoveryProvider.name, null, [:]),
-                    false,
-                    { String ignored -> } as OracleJsonSchemaLogger
+                    new SchemaDiscoveryContext(false, false, null, null, [:],
+                            { String ignored -> } as JsonSchemaRecordsLogger, null),
+                    new SourceSpec("generator", provider.providerId(), [:])
             )
         }
 
         then:
         result.schemas().size() == 1
-        result.schemas()[0].scope() == OracleDiscoveryScope.CUSTOM
+        result.schemas()[0].scope() == OracleDiscoveryScope.CUSTOM.name()
         result.schemas()[0].name() == "ORDER_DV"
     }
 
@@ -743,42 +743,42 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
 
     @Singleton
     @Requires(property = "spec.name", value = "bean-discovery-provider")
-    static final class BeanDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+    static final class BeanDiscoveryProvider implements SchemaDiscoveryProvider {
         @Override
-        OracleDiscoveryResult discover(Connection connection,
-                                       OracleSourceSpec source,
-                                       boolean skipOnError,
-                                       OracleJsonSchemaLogger logger) {
-            new OracleDiscoveryResult([], [], [])
+        String providerId() { "bean-discovery-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            new DiscoveryResult([], [], [])
         }
     }
 
     @Singleton
     @Requires(property = "spec.name", value = "option-discovery-provider")
-    static final class OptionDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+    static final class OptionDiscoveryProvider implements SchemaDiscoveryProvider {
         @Override
-        OracleDiscoveryResult discover(Connection connection,
-                                       OracleSourceSpec source,
-                                       boolean skipOnError,
-                                       OracleJsonSchemaLogger logger) {
-            new OracleDiscoveryResult([
-                    new OracleDiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW, "ORDER_DV", '{"type":"object"}', "test")
+        String providerId() { "option-discovery-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            new DiscoveryResult([
+                    new DiscoveredSchema(OracleDiscoveryScope.DUALITY_VIEW.name(), "ORDER_DV", '{"type":"object"}', "test")
             ], [], [])
         }
     }
 
     @Singleton
     @Requires(property = "spec.name", value = "domain-discovery-provider")
-    static final class DomainDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+    static final class DomainDiscoveryProvider implements SchemaDiscoveryProvider {
         @Override
-        OracleDiscoveryResult discover(Connection connection,
-                                       OracleSourceSpec source,
-                                       boolean skipOnError,
-                                       OracleJsonSchemaLogger logger) {
-            new OracleDiscoveryResult([
-                    new OracleDiscoveredSchema(
-                            OracleDiscoveryScope.DOMAIN,
-                            source.options().getOrDefault("domain", "APP_COM_ACME_ORDER"),
+        String providerId() { "domain-discovery-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            new DiscoveryResult([
+                    new DiscoveredSchema(
+                            OracleDiscoveryScope.DOMAIN.name(),
+                            source.option("domain") ?: "APP_COM_ACME_ORDER",
                             '{"type":"object"}',
                             "test"
                     )
@@ -788,16 +788,15 @@ final class JsonSchemaRegistryConfigurationSpec extends Specification {
 
     @Singleton
     @Requires(property = "spec.name", value = "generator-bean-discovery-provider")
-    static final class GeneratorBeanDiscoveryProvider implements io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider {
+    static final class GeneratorBeanDiscoveryProvider implements SchemaDiscoveryProvider {
         @Override
-        io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult discover(
-                Connection connection,
-                io.micronaut.jsonschema.generator.oracle.OracleSourceSpec source,
-                boolean skipOnError,
-                io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger logger) {
-            new io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult([
-                    new io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema(
-                            io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope.CUSTOM,
+        String providerId() { "generator-bean-discovery-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            new DiscoveryResult([
+                    new DiscoveredSchema(
+                            OracleDiscoveryScope.CUSTOM.name(),
                             "ORDER_DV",
                             '{"type":"object"}',
                             "test"

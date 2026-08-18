@@ -16,7 +16,10 @@
 package io.micronaut.jsonschema.registry.oracle;
 
 import io.micronaut.context.BeanContext;
-import io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProviders;
+import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider;
 import jakarta.inject.Singleton;
 
 import java.util.List;
@@ -25,7 +28,7 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
 /**
- * Resolves Oracle authority discovery providers from Micronaut beans or {@link ServiceLoader}.
+ * Resolves Oracle authority discovery providers from built-ins, Micronaut beans, or {@link ServiceLoader}.
  *
  * @since 2.2.0
  */
@@ -47,8 +50,12 @@ public final class OracleSchemaDiscoveryProviderResolver {
      * @param classLoader ClassLoader
      * @return The provider instance
      */
-    public OracleSchemaDiscoveryProvider resolve(String providerClassName, ClassLoader classLoader) {
-        Optional<OracleSchemaDiscoveryProvider> beanProvider = beanContext.getBeansOfType(OracleSchemaDiscoveryProvider.class)
+    public SchemaDiscoveryProvider resolve(String providerClassName, ClassLoader classLoader) {
+        SchemaDiscoveryProvider builtIn = builtIn(providerClassName, classLoader);
+        if (builtIn != null) {
+            return builtIn;
+        }
+        Optional<SchemaDiscoveryProvider> beanProvider = beanContext.getBeansOfType(SchemaDiscoveryProvider.class)
             .stream()
             .filter(provider -> provider.getClass().getName().equals(providerClassName))
             .findFirst();
@@ -56,7 +63,7 @@ public final class OracleSchemaDiscoveryProviderResolver {
             return beanProvider.get();
         }
         try {
-            ServiceLoader<OracleSchemaDiscoveryProvider> loader = ServiceLoader.load(OracleSchemaDiscoveryProvider.class, classLoader);
+            ServiceLoader<SchemaDiscoveryProvider> loader = ServiceLoader.load(SchemaDiscoveryProvider.class, classLoader);
             return loader.stream()
                 .filter(loadedProvider -> loadedProvider.type().getName().equals(providerClassName))
                 .findFirst()
@@ -70,10 +77,20 @@ public final class OracleSchemaDiscoveryProviderResolver {
         }
     }
 
-    private static List<String> availableProviders(ServiceLoader<OracleSchemaDiscoveryProvider> loader) {
+    private static List<String> availableProviders(ServiceLoader<SchemaDiscoveryProvider> loader) {
         return loader.stream()
             .map(provider -> provider.type().getName())
             .sorted()
             .toList();
+    }
+
+    private static SchemaDiscoveryProvider builtIn(String providerClassName, ClassLoader classLoader) {
+        if (OracleDomainSchemaDiscoveryProvider.class.getName().equals(providerClassName)) {
+            return SchemaDiscoveryProviders.resolve(OracleDomainSchemaDiscoveryProvider.PROVIDER_ID, classLoader);
+        }
+        if (OracleDualityViewSchemaDiscoveryProvider.class.getName().equals(providerClassName)) {
+            return SchemaDiscoveryProviders.resolve(OracleDualityViewSchemaDiscoveryProvider.PROVIDER_ID, classLoader);
+        }
+        return null;
     }
 }

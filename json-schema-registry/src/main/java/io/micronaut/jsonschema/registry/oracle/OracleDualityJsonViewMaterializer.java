@@ -15,10 +15,13 @@
  */
 package io.micronaut.jsonschema.registry.oracle;
 
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema;
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult;
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoverySkipped;
-import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
+import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult;
+import io.micronaut.jsonschema.generator.discovery.DiscoverySkipped;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryStep;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope;
 import io.micronaut.jsonschema.registry.JsonSchemaNormalizer;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryDriftMode;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcome;
@@ -55,7 +58,7 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
     private static final String TARGET = "oracle.duality-view";
 
     private final JsonSchemaNormalizer normalizer;
-    private final OracleDualityJsonViewDiscoveryProvider discoveryProvider;
+    private final SchemaDiscoveryProvider discoveryProvider;
     private final ObjectMapper objectMapper;
 
     /**
@@ -63,7 +66,7 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
      */
     public OracleDualityJsonViewMaterializer(JsonSchemaNormalizer normalizer) {
         this.normalizer = normalizer;
-        this.discoveryProvider = new OracleDualityJsonViewDiscoveryProvider();
+        this.discoveryProvider = new OracleDualityViewSchemaDiscoveryProvider();
         this.objectMapper = JsonSchemaMapperFactory.createMapper();
     }
 
@@ -99,19 +102,19 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
     @Override
     public JsonSchemaRegistryOutcome reconcile(Connection connection, OracleMaterializationRequest request) throws Exception {
         String viewName = normalizeIdentifier(resolveViewName(request));
-        OracleDiscoveryResult result = request.recordOperation("introspection", () -> discoverView(connection, request.owner(), viewName));
+        DiscoveryResult result = request.recordOperation("introspection", () -> discoverView(connection, request.owner(), viewName));
         result.warnings().forEach(warning -> LOG.warn("Oracle duality view materializer warning: {}", warning));
         if (!result.skipped().isEmpty()) {
-            OracleDiscoverySkipped skipped = result.skipped().get(0);
+            DiscoverySkipped skipped = result.skipped().get(0);
             if (isMissingSchema(skipped)) {
                 return reconcileMissingView(connection, request, viewName);
             }
-            return driftOutcome(request, "Oracle duality view schema could not be read: " + viewName + "; " + skipped.reason());
+            return driftOutcome(request, "Oracle duality view schema could not be read: " + viewName + "; " + skipped.code() + ": " + skipped.reason());
         }
         if (result.schemas().isEmpty()) {
             return reconcileMissingView(connection, request, viewName);
         }
-        OracleDiscoveredSchema current = result.schemas().get(0);
+        DiscoveredSchema current = result.schemas().get(0);
         if (normalizer.equivalent(request.candidate().schemaJson(), current.schemaJson())) {
             return JsonSchemaRegistryOutcome.ok(
                 request.candidate().logicalSchema(),
@@ -147,14 +150,14 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
             executeDdl(connection, ddl.get());
             return null;
         });
-        OracleDiscoveryResult created = request.recordOperation("introspection", () -> discoverView(connection, request.owner(), viewName));
+        DiscoveryResult created = request.recordOperation("introspection", () -> discoverView(connection, request.owner(), viewName));
         created.warnings().forEach(warning -> LOG.warn("Oracle duality view materializer warning: {}", warning));
         if (!created.skipped().isEmpty()) {
-            OracleDiscoverySkipped skipped = created.skipped().get(0);
+            DiscoverySkipped skipped = created.skipped().get(0);
             if (isMissingSchema(skipped)) {
                 return driftOutcome(request, "Created Oracle duality view but schema is missing: " + viewName);
             }
-            return driftOutcome(request, "Created Oracle duality view but schema could not be read: " + viewName + "; " + skipped.reason());
+            return driftOutcome(request, "Created Oracle duality view but schema could not be read: " + viewName + "; " + skipped.code() + ": " + skipped.reason());
         }
         if (created.schemas().isEmpty()) {
             return driftOutcome(request, "Created Oracle duality view but schema is missing: " + viewName);
@@ -170,13 +173,30 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
         return driftOutcome(request, "Oracle duality view was created but exposed schema is not equivalent: " + viewName);
     }
 
-    private OracleDiscoveryResult discoverView(Connection connection, String owner, String viewName) throws Exception {
-        return discoveryProvider.discover(
-            connection,
-            new OracleSourceSpec("duality-views", OracleDualityJsonViewDiscoveryProvider.class.getName(), owner, Map.of("include", viewName)),
-            true,
-            LOG::info
-        );
+    private DiscoveryResult discoverView(Connection connection, String owner, String viewName) throws Exception {
+        try {
+            return RegistryOracleDiscovery.discover(
+                discoveryProvider,
+                connection,
+                "duality-views",
+                owner,
+                Map.of("include", viewName),
+                LOG::info
+            );
+        } catch (Exception e) {
+            return new DiscoveryResult(
+                List.of(),
+                List.of(),
+                List.of(new DiscoverySkipped(
+                    OracleDiscoveryScope.DUALITY_VIEW.name(),
+                    viewName,
+                    DiscoveryStep.SCHEMA_RETRIEVAL,
+                    "UNREADABLE_SCHEMA",
+                    e.getMessage(),
+                    null
+                ))
+            );
+        }
     }
 
     private static void executeDdl(Connection connection, String ddl) throws Exception {
@@ -185,8 +205,8 @@ public final class OracleDualityJsonViewMaterializer implements OracleSchemaMate
         }
     }
 
-    private static boolean isMissingSchema(OracleDiscoverySkipped skipped) {
-        return "MISSING_SCHEMA".equals(skipped.reason());
+    private static boolean isMissingSchema(DiscoverySkipped skipped) {
+        return skipped.code() != null && skipped.code().startsWith("MISSING");
     }
 
     private static Optional<String> resolveDdl(Map<String, String> options) throws IOException {

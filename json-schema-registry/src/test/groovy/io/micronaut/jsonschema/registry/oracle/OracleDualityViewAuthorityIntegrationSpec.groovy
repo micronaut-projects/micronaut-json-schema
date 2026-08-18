@@ -19,6 +19,7 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcome
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcomeStatus
+import io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryReconciler
 import oracle.jdbc.datasource.impl.OracleDataSource
 import org.opentest4j.TestAbortedException
@@ -33,7 +34,7 @@ import java.sql.Statement
 
 final class OracleDualityViewAuthorityIntegrationSpec extends Specification {
 
-    private static final String DUALITY_PROVIDER = OracleDualityJsonViewDiscoveryProvider.name
+    private static final String DUALITY_PROVIDER = OracleDualityViewSchemaDiscoveryProvider.name
 
     @Shared
     private ApplicationContext context

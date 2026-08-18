@@ -177,15 +177,14 @@ SELECT json_serialize(json_schema RETURNING CLOB) FROM dba_json_duality_views WH
 
 == Oracle Extensions
 
-Authority discovery providers use the shared Oracle discovery SPI from the generator module:
+Authority discovery providers use the shared schema discovery SPI from the generator module:
 
 [source,java]
 ----
-public interface OracleSchemaDiscoveryProvider {
-    OracleDiscoveryResult discover(Connection connection,
-                                   OracleSourceSpec source,
-                                   boolean skipOnError,
-                                   OracleJsonSchemaLogger logger) throws Exception;
+public interface SchemaDiscoveryProvider {
+    String providerId();
+    DiscoveryResult discover(SchemaDiscoveryContext context,
+                             SourceSpec source) throws Exception;
 }
 ----
 
@@ -193,7 +192,7 @@ Registry provider resolution supports Micronaut beans and `ServiceLoader` entrie
 
 [source]
 ----
-META-INF/services/io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
+META-INF/services/io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider
 ----
 
 Custom provider configuration is passed through `providerClassName`, optional `owner`, and provider-specific `options`:

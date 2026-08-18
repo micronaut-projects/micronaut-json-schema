@@ -15,9 +15,11 @@
  */
 package io.micronaut.jsonschema.registry.oracle
 
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger
-import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult
+import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext
+import io.micronaut.jsonschema.generator.discovery.SourceSpec
+import io.micronaut.jsonschema.generator.oracle.OracleDualityViewSchemaDiscoveryProvider
 import io.micronaut.jsonschema.registry.DefaultJsonSchemaNormalizer
 import io.micronaut.jsonschema.registry.JsonSchemaCandidate
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryDriftMode
@@ -74,7 +76,7 @@ final class OracleDualityJsonViewMaterializerSpec extends Specification {
         )
 
         then:
-        1 * connection.prepareStatement("SELECT json_serialize(json_schema RETURNING CLOB) FROM user_json_duality_views WHERE view_name = ?") >> {
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?)") >> {
             throw new SQLException("metadata unavailable")
         }
         outcome.status() == JsonSchemaRegistryOutcomeStatus.DRIFT
@@ -96,7 +98,7 @@ final class OracleDualityJsonViewMaterializerSpec extends Specification {
         )
 
         then:
-        1 * connection.prepareStatement("SELECT json_serialize(json_schema RETURNING CLOB) FROM user_json_duality_views WHERE view_name = ?") >> statement
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS WHERE view_name IN (?)") >> statement
         1 * statement.setString(1, "ORDER_DV")
         1 * statement.executeQuery() >> resultSet
         1 * resultSet.next() >> false
@@ -106,9 +108,9 @@ final class OracleDualityJsonViewMaterializerSpec extends Specification {
         !outcome.failure()
     }
 
-    void "duality view discovery falls back to DBA metadata for owner scoped schema read"() {
+    void "duality view discovery uses DBA metadata when ALL metadata is unavailable"() {
         given:
-        OracleDualityJsonViewDiscoveryProvider provider = new OracleDualityJsonViewDiscoveryProvider()
+        OracleDualityViewSchemaDiscoveryProvider provider = new OracleDualityViewSchemaDiscoveryProvider()
         Connection connection = Mock()
         PreparedStatement allStatement = Mock()
         PreparedStatement dbaStatement = Mock()
@@ -116,28 +118,29 @@ final class OracleDualityJsonViewMaterializerSpec extends Specification {
         ResultSet dbaResultSet = Mock()
 
         when:
-        OracleDiscoveryResult result = provider.discover(
-                connection,
-                new OracleSourceSpec("duality-views", OracleDualityJsonViewDiscoveryProvider.name, "HR", [include: "ORDER_DV"]),
-                true,
-                { String ignored -> } as OracleJsonSchemaLogger
+        DiscoveryResult result = provider.discover(
+                new SchemaDiscoveryContext(true, false, null, null, [:],
+                        { String ignored -> } as JsonSchemaRecordsLogger, { connection }),
+                new SourceSpec("duality-views", provider.providerId(), [owner: "HR", include: "ORDER_DV"])
         )
 
         then:
-        1 * connection.prepareStatement("SELECT json_serialize(json_schema RETURNING CLOB) FROM all_json_duality_views WHERE owner = ? AND view_name = ?") >> allStatement
+        1 * connection.prepareStatement("SELECT 1 FROM ALL_JSON_DUALITY_VIEWS WHERE owner = ? FETCH FIRST 1 ROWS ONLY") >> allStatement
         1 * allStatement.setString(1, "HR")
-        1 * allStatement.setString(2, "ORDER_DV")
-        1 * allStatement.executeQuery() >> allResultSet
-        1 * allResultSet.next() >> false
-        1 * connection.prepareStatement("SELECT json_serialize(json_schema RETURNING CLOB) FROM dba_json_duality_views WHERE owner = ? AND view_name = ?") >> dbaStatement
+        1 * allStatement.executeQuery() >> { throw new SQLException("ALL metadata unavailable") }
+        1 * connection.prepareStatement("SELECT 1 FROM DBA_JSON_DUALITY_VIEWS WHERE owner = ? FETCH FIRST 1 ROWS ONLY") >> dbaStatement
+        1 * dbaStatement.setString(1, "HR")
+        1 * dbaStatement.executeQuery() >> dbaResultSet
+        1 * connection.prepareStatement("SELECT view_name, json_schema FROM DBA_JSON_DUALITY_VIEWS WHERE owner = ? AND view_name IN (?)") >> dbaStatement
         1 * dbaStatement.setString(1, "HR")
         1 * dbaStatement.setString(2, "ORDER_DV")
         1 * dbaStatement.executeQuery() >> dbaResultSet
-        1 * dbaResultSet.next() >> true
-        1 * dbaResultSet.getObject(1) >> '{"type":"object"}'
+        2 * dbaResultSet.next() >>> [true, false]
+        1 * dbaResultSet.getString(1) >> "ORDER_DV"
+        1 * dbaResultSet.getString(2) >> '{"type":"object"}'
         result.schemas().size() == 1
         result.schemas()[0].name() == "ORDER_DV"
-        result.schemas()[0].retrievalMode() == "duality_dba_metadata"
+        result.schemas()[0].retrievalMode() == "DUALITY_DB_PROVIDED"
     }
 
     private static OracleMaterializationRequest request(Map<String, String> options,

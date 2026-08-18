@@ -15,9 +15,10 @@
  */
 package io.micronaut.jsonschema.registry.oracle;
 
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema;
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult;
-import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec;
+import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema;
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult;
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider;
+import io.micronaut.jsonschema.generator.oracle.OracleDomainSchemaDiscoveryProvider;
 import io.micronaut.jsonschema.registry.JsonSchemaNormalizer;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryDriftMode;
 import io.micronaut.jsonschema.registry.JsonSchemaRegistryOutcome;
@@ -49,7 +50,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
     private static final int SQL_LITERAL_CHUNK_SIZE = 3_000;
 
     private final JsonSchemaNormalizer normalizer;
-    private final OracleDomainDiscoveryProvider discoveryProvider;
+    private final SchemaDiscoveryProvider discoveryProvider;
     private final ObjectMapper objectMapper;
 
     /**
@@ -57,7 +58,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
      */
     public OracleDomainMaterializer(JsonSchemaNormalizer normalizer) {
         this.normalizer = normalizer;
-        this.discoveryProvider = new OracleDomainDiscoveryProvider();
+        this.discoveryProvider = new OracleDomainSchemaDiscoveryProvider();
         this.objectMapper = JsonSchemaMapperFactory.createMapper();
     }
 
@@ -123,7 +124,7 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
             );
         }
 
-        Optional<OracleDiscoveredSchema> current = request.recordOperation("introspection", () -> readDomain(connection, domainName, owner));
+        Optional<DiscoveredSchema> current = request.recordOperation("introspection", () -> readDomain(connection, domainName, owner));
         if (current.isEmpty()) {
             return driftOutcome(request, "Oracle domain exists but schema could not be discovered: " + qualifiedName(owner, domainName));
         }
@@ -163,11 +164,13 @@ public final class OracleDomainMaterializer implements OracleSchemaMaterializer 
         }
     }
 
-    private Optional<OracleDiscoveredSchema> readDomain(Connection connection, String domainName, String owner) throws Exception {
-        OracleDiscoveryResult result = discoveryProvider.discover(
+    private Optional<DiscoveredSchema> readDomain(Connection connection, String domainName, String owner) throws Exception {
+        DiscoveryResult result = RegistryOracleDiscovery.discover(
+            discoveryProvider,
             connection,
-            new OracleSourceSpec("domains", OracleDomainDiscoveryProvider.class.getName(), owner, Map.of("include", domainName)),
-            true,
+            "domains",
+            owner,
+            Map.of("include", domainName),
             ignored -> {
             }
         );

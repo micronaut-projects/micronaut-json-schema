@@ -19,12 +19,12 @@
 micronaut = "5.1.10"
 micronaut-gradle-plugin = "5.0.2"
 micronaut-platform = "5.0.5"
-micronaut-ser   de = "3.1.0"
+micronaut-serde = "3.1.0"
 micronaut-sourcegen = "2.1.0"
 micronaut-validation = "5.1.0"
+micronaut-micrometer = "6.0.1"
 micronaut-testresources = "4.1.0"
 managed-json-schema-validator = "3.0.6"
-micronaut-testresources = "4.1.0"
 micronaut-toml = "3.1.0"
 micronaut-sql = "7.1.0"
 maven = "3.9.16"
@@ -33,7 +33,6 @@ maven-plugin-testing-harness = "3.5.1"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
-gradle-micronaut = { module = "io.micronaut.gradle:micronaut-gradle-plugin", version.ref = "micronaut-gradle-plugin" }
 micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.ref = "micronaut-serde" }
 micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-bom", version.ref = "micronaut-validation" }
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }

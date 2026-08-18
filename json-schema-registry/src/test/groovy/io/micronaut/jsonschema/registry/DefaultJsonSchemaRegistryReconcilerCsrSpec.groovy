@@ -20,12 +20,13 @@ import com.sun.net.httpserver.HttpServer
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Requires
 import io.micronaut.inject.qualifiers.Qualifiers
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveredSchema
-import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryResult
+import io.micronaut.jsonschema.generator.discovery.DiscoveredSchema
+import io.micronaut.jsonschema.generator.discovery.DiscoveryResult
+import io.micronaut.jsonschema.generator.discovery.JsonSchemaRecordsLogger
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryContext
+import io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider
+import io.micronaut.jsonschema.generator.discovery.SourceSpec
 import io.micronaut.jsonschema.generator.oracle.OracleDiscoveryScope
-import io.micronaut.jsonschema.generator.oracle.OracleJsonSchemaLogger
-import io.micronaut.jsonschema.generator.oracle.OracleSchemaDiscoveryProvider
-import io.micronaut.jsonschema.generator.oracle.OracleSourceSpec
 import jakarta.inject.Singleton
 import spock.lang.Specification
 
@@ -385,13 +386,20 @@ final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
         ]) { ApplicationContext context ->
             DataSource dataSource = Mock()
             Connection connection = Mock()
+            PreparedStatement domainListStatement = Mock()
+            ResultSet domainListResultSet = Mock()
             PreparedStatement ddlStatement = Mock()
             ResultSet ddlResultSet = Mock()
             dataSource.getConnection() >> connection
+            connection.prepareStatement("SELECT name FROM USER_DOMAINS WHERE name IN (?)") >> domainListStatement
+            domainListStatement.setString(1, "APP_COM_ACME_ORDER")
+            domainListStatement.executeQuery() >> domainListResultSet
+            domainListResultSet.next() >>> [true, false]
+            domainListResultSet.getString(1) >> "APP_COM_ACME_ORDER"
             connection.prepareStatement("SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual") >> ddlStatement
             ddlStatement.executeQuery() >> ddlResultSet
             ddlResultSet.next() >> true
-            ddlResultSet.getObject(1) >> 'CREATE DOMAIN APP_COM_ACME_ORDER AS JSON VALIDATE USING \'{"type":"object"}\''
+            ddlResultSet.getString(1) >> 'CREATE DOMAIN APP_COM_ACME_ORDER AS JSON VALIDATE USING \'{"type":"object"}\''
             context.registerSingleton(DataSource, dataSource, Qualifiers.byName("default"), false)
             context.getBean(JsonSchemaRegistryReconciler).reconcile()
         }
@@ -480,14 +488,14 @@ final class DefaultJsonSchemaRegistryReconcilerCsrSpec extends Specification {
 
     @Singleton
     @Requires(property = "spec.name", value = "csr-domain-discovery-provider")
-    static final class CsrDomainDiscoveryProvider implements OracleSchemaDiscoveryProvider {
+    static final class CsrDomainDiscoveryProvider implements SchemaDiscoveryProvider {
         @Override
-        OracleDiscoveryResult discover(Connection connection,
-                                       OracleSourceSpec source,
-                                       boolean skipOnError,
-                                       OracleJsonSchemaLogger logger) {
-            new OracleDiscoveryResult([
-                    new OracleDiscoveredSchema(OracleDiscoveryScope.DOMAIN, "APP_COM_ACME_ORDER", '{"type":"object"}', "test")
+        String providerId() { "csr-domain-discovery-provider" }
+
+        @Override
+        DiscoveryResult discover(SchemaDiscoveryContext context, SourceSpec source) {
+            new DiscoveryResult([
+                    new DiscoveredSchema(OracleDiscoveryScope.DOMAIN.name(), "APP_COM_ACME_ORDER", '{"type":"object"}', "test")
             ], [], [])
         }
     }
