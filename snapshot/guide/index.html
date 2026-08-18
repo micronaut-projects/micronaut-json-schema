@@ -3988,12 +3988,12 @@ micronaut.jsonschema.registry.oracle.domains[0]=APP_COM_ACME_ORDER</code></pre>
 <p>The built-in domain provider supports explicit selection through <code>micronaut.jsonschema.registry.oracle.domains</code>. When no explicit domain list is configured, it applies <code>micronaut.jsonschema.registry.naming.domain.prefix</code> as a prefix filter.</p>
 </div>
 <div class="paragraph">
-<p>The built-in domain authority provider enumerates domains with:</p>
+<p>The built-in domain authority provider enumerates domains from the resolved Oracle data dictionary view. The query always orders by <code>name</code>; an explicit domain list is pushed down as <code>IN</code> predicates, while the configured domain prefix is pushed down as a <code>LIKE</code> predicate:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-sql hljs" data-lang="sql">SELECT name FROM user_domains WHERE name LIKE ? ORDER BY name
-SELECT name FROM all_domains WHERE owner = ? AND name LIKE ? ORDER BY name</code></pre>
+<pre class="highlightjs highlight"><code class="language-sql hljs" data-lang="sql">SELECT name FROM USER_DOMAINS [WHERE name IN (?) | name LIKE ?] ORDER BY name
+SELECT name FROM ALL_DOMAINS WHERE owner = ? [AND name IN (?) | AND name LIKE ?] ORDER BY name</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -4022,23 +4022,13 @@ SELECT name FROM all_domains WHERE owner = ? AND name LIKE ? ORDER BY name</code
 <p>In Oracle authority mode, built-in domain names are paired to Schema Registry subjects through <code>micronaut.jsonschema.registry.mappings</code> when the domain name cannot be reversed deterministically. Names that include <code>_</code>, truncation, hash suffixing, or case-sensitive Java-style package names require an explicit mapping.</p>
 </div>
 <div class="paragraph">
-<p>The built-in duality-view discovery provider enumerates owner-scoped views with:</p>
+<p>The built-in duality-view discovery provider resolves <code>USER_</code>, <code>ALL_</code>, or <code>DBA_</code> metadata and retrieves each view name and its raw <code>JSON_SCHEMA</code> value in one ordered query. The same include, exclude, and prefix filtering rules are applied to <code>view_name</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-sql hljs" data-lang="sql">SELECT view_name FROM user_json_duality_views ORDER BY view_name
-SELECT view_name FROM all_json_duality_views WHERE owner = ? ORDER BY view_name
-SELECT view_name FROM dba_json_duality_views WHERE owner = ? ORDER BY view_name</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>It reads view schemas with:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-sql hljs" data-lang="sql">SELECT json_serialize(json_schema RETURNING CLOB) FROM user_json_duality_views WHERE view_name = ?
-SELECT json_serialize(json_schema RETURNING CLOB) FROM all_json_duality_views WHERE owner = ? AND view_name = ?
-SELECT json_serialize(json_schema RETURNING CLOB) FROM dba_json_duality_views WHERE owner = ? AND view_name = ?</code></pre>
+<pre class="highlightjs highlight"><code class="language-sql hljs" data-lang="sql">SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS [WHERE view_name IN (?) | view_name LIKE ?] ORDER BY view_name
+SELECT view_name, json_schema FROM ALL_JSON_DUALITY_VIEWS WHERE owner = ? [AND view_name IN (?) | AND view_name LIKE ?] ORDER BY view_name
+SELECT view_name, json_schema FROM DBA_JSON_DUALITY_VIEWS WHERE owner = ? [AND view_name IN (?) | AND view_name LIKE ?] ORDER BY view_name</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -4197,6 +4187,14 @@ micronaut.jsonschema.registry.oracle.authority.providers[0].options.viewName=ORD
 <div class="paragraph">
 <p>Materializers implement <a href="../api/io/micronaut/jsonschema/registry/oracle/OracleSchemaMaterializer.html">OracleSchemaMaterializer</a> and are resolved as Micronaut beans or <code>ServiceLoader</code> providers matched by <code>providerClassName</code>.
 The materializer SPI exposes <code>representationDescription()</code> so implementations can describe the Oracle artifact representation they support. The registry still calls <code>projectionCompatibility(&#8230;&#8203;)</code> for each candidate before materialization.</p>
+</div>
+<div class="paragraph">
+<p><code>ServiceLoader</code> materializers are registered through:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">META-INF/services/io.micronaut.jsonschema.registry.oracle.OracleSchemaMaterializer</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>The registry includes a duality-view materializer, <code>io.micronaut.jsonschema.registry.oracle.OracleDualityJsonViewMaterializer</code>. It verifies existing JSON Relational Duality Views by reading Oracle duality-view metadata and comparing normalized schema text. It can create a missing view only when <code>options.viewDdl</code> or <code>options.viewDdlResource</code> supplies explicit DDL. Existing views are never replaced or mutated.</p>
