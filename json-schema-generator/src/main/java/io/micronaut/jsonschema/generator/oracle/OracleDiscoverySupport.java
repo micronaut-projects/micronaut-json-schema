@@ -48,7 +48,7 @@ final class OracleDiscoverySupport {
 
     private static final String SELECT_ONE_FROM = "SELECT 1 FROM ";
     private static final Pattern VALIDATE_USING_PATTERN = Pattern.compile("(?is)VALIDATE\\s+(CAST\\s+)?USING\\s+");
-    private static final Pattern SQL_LITERAL_PART_PATTERN = Pattern.compile("\\s*(?:TO_CLOB\\s*\\(\\s*'((?:''|[^'])*)'\\s*\\)|'((?:''|[^'])*)')");
+    private static final Pattern SQL_LITERAL_PART_PATTERN = Pattern.compile("(?is)\\s*(?:TO_CLOB\\s*\\(\\s*'((?:''|[^'])*)'\\s*\\)|'((?:''|[^'])*)')");
     private static final Pattern CONCATENATION_PATTERN = Pattern.compile("\\s*\\|\\|\\s*");
     private static final Set<String> ALLOWED_DICTIONARY_VIEWS = Set.of(
         "USER_DOMAINS",
