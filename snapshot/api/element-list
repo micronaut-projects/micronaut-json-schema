@@ -14,8 +14,6 @@ io.micronaut.jsonschema.gradle
 io.micronaut.jsonschema.info
 io.micronaut.jsonschema.maven
 io.micronaut.jsonschema.model
-io.micronaut.jsonschema.registry
-io.micronaut.jsonschema.registry.oracle
 io.micronaut.jsonschema.serialization
 io.micronaut.jsonschema.utils
 io.micronaut.jsonschema.validation
