@@ -69,6 +69,8 @@ loadScripts(document, 'script');</script>
 <li><a href="#setDatasource(java.lang.String)" tabindex="0">setDatasource(String)</a></li>
 <li><a href="#getDomains()" tabindex="0">getDomains()</a></li>
 <li><a href="#setDomains(java.util.List)" tabindex="0">setDomains(List)</a></li>
+<li><a href="#getCastMode()" tabindex="0">getCastMode()</a></li>
+<li><a href="#setCastMode(io.micronaut.jsonschema.registry.oracle.OracleJsonSchemaCastMode)" tabindex="0">setCastMode(OracleJsonSchemaCastMode)</a></li>
 <li><a href="#getPolicy()" tabindex="0">getPolicy()</a></li>
 <li><a href="#setPolicy(io.micronaut.jsonschema.registry.JsonSchemaRegistryConfiguration.TargetPolicyConfiguration)" tabindex="0">setPolicy(JsonSchemaRegistryConfiguration.TargetPolicyConfiguration)</a></li>
 <li><a href="#getDrift()" tabindex="0">getDrift()</a></li>
@@ -135,26 +137,32 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="JsonSchemaRegistryConfiguration.AuthorityConfiguration.html" title="class in io.micronaut.jsonschema.registry">JsonSchemaRegistryConfiguration.AuthorityConfiguration</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAuthority()" class="member-name-link">getAuthority</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDatasource()" class="member-name-link">getDatasource</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="oracle/OracleJsonSchemaCastMode.html" title="enum class in io.micronaut.jsonschema.registry.oracle">OracleJsonSchemaCastMode</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCastMode()" class="member-name-link">getCastMode</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDomains()" class="member-name-link">getDomains</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDatasource()" class="member-name-link">getDatasource</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="JsonSchemaRegistryConfiguration.DriftConfiguration.html" title="class in io.micronaut.jsonschema.registry">JsonSchemaRegistryConfiguration.DriftConfiguration</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDrift()" class="member-name-link">getDrift</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDomains()" class="member-name-link">getDomains</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="JsonSchemaRegistryConfiguration.ProviderConfiguration.html" title="class in io.micronaut.jsonschema.registry">JsonSchemaRegistryConfiguration.ProviderConfiguration</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getMaterializers()" class="member-name-link">getMaterializers</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="JsonSchemaRegistryConfiguration.DriftConfiguration.html" title="class in io.micronaut.jsonschema.registry">JsonSchemaRegistryConfiguration.DriftConfiguration</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDrift()" class="member-name-link">getDrift</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="JsonSchemaRegistryConfiguration.TargetPolicyConfiguration.html" title="class in io.micronaut.jsonschema.registry">JsonSchemaRegistryConfiguration.TargetPolicyConfiguration</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getPolicy()" class="member-name-link">getPolicy</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="JsonSchemaRegistryConfiguration.ProviderConfiguration.html" title="class in io.micronaut.jsonschema.registry">JsonSchemaRegistryConfiguration.ProviderConfiguration</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getMaterializers()" class="member-name-link">getMaterializers</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isEnabled()" class="member-name-link">isEnabled</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="JsonSchemaRegistryConfiguration.TargetPolicyConfiguration.html" title="class in io.micronaut.jsonschema.registry">JsonSchemaRegistryConfiguration.TargetPolicyConfiguration</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getPolicy()" class="member-name-link">getPolicy</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isEnabled()" class="member-name-link">isEnabled</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAuthority(io.micronaut.jsonschema.registry.JsonSchemaRegistryConfiguration.AuthorityConfiguration)" class="member-name-link">setAuthority</a><wbr>(@Nullable <a href="JsonSchemaRegistryConfiguration.AuthorityConfiguration.html" title="class in io.micronaut.jsonschema.registry">JsonSchemaRegistryConfiguration.AuthorityConfiguration</a>&nbsp;authority)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setAuthority(io.micronaut.jsonschema.registry.JsonSchemaRegistryConfiguration.AuthorityConfiguration)" class="member-name-link">setAuthority</a><wbr>(@Nullable <a href="JsonSchemaRegistryConfiguration.AuthorityConfiguration.html" title="class in io.micronaut.jsonschema.registry">JsonSchemaRegistryConfiguration.AuthorityConfiguration</a>&nbsp;authority)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setCastMode(io.micronaut.jsonschema.registry.oracle.OracleJsonSchemaCastMode)" class="member-name-link">setCastMode</a><wbr>(@Nullable <a href="oracle/OracleJsonSchemaCastMode.html" title="enum class in io.micronaut.jsonschema.registry.oracle">OracleJsonSchemaCastMode</a>&nbsp;castMode)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#setDatasource(java.lang.String)" class="member-name-link">setDatasource</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;datasource)</code></div>
@@ -277,6 +285,31 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>domains</code> - Explicit selected domain set for built-in domain authority discovery</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getCastMode()">
+<h3>getCastMode</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="oracle/OracleJsonSchemaCastMode.html" title="enum class in io.micronaut.jsonschema.registry.oracle">OracleJsonSchemaCastMode</a></span>&nbsp;<span class="element-name">getCastMode</span>()</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>Oracle JSON Schema validation mode for the built-in domain materializer</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="setCastMode(io.micronaut.jsonschema.registry.oracle.OracleJsonSchemaCastMode)">
+<h3>setCastMode</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">setCastMode</span><wbr><span class="parameters">(@Nullable
+ @Nullable <a href="oracle/OracleJsonSchemaCastMode.html" title="enum class in io.micronaut.jsonschema.registry.oracle">OracleJsonSchemaCastMode</a>&nbsp;castMode)</span></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>castMode</code> - Oracle JSON Schema validation mode</dd>
 </dl>
 </div>
 </section>
