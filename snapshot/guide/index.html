@@ -4013,13 +4013,16 @@ SELECT name FROM ALL_DOMAINS WHERE owner = ? [AND name IN (?) | AND name LIKE ?]
 </ol>
 </div>
 <div class="paragraph">
-<p>The provider extracts the JSON text from a single-quoted <code>VALIDATE USING</code> clause, unescapes doubled single quotes, parses the text as JSON, and logs whether <code>get_ddl</code> or <code>search_condition</code> was used.</p>
+<p>The provider extracts the JSON text from either <code>VALIDATE USING</code> or <code>VALIDATE CAST USING</code>, unescapes doubled single quotes, parses the text as JSON, and logs whether <code>get_ddl</code> or <code>search_condition</code> was used. Large schemas created by the built-in materializer are reconstructed from <code>to_clob('chunk') || &#8230;&#8203;</code> expressions. CAST mode is retained as part of the discovered domain representation.</p>
 </div>
 <div class="paragraph">
 <p>The built-in domain materializer computes domain names from logical schema names by prepending <code>micronaut.jsonschema.registry.naming.domain.prefix</code>, replacing <code>.</code> with <code><em></code>, and uppercasing the result. If the computed identifier is longer than 128 UTF-8 bytes, it is truncated and suffixed with <code></em></code> plus the first 8 uppercase hex characters of the SHA-256 hash of the full computed name.</p>
 </div>
 <div class="paragraph">
 <p>In Oracle authority mode, built-in domain names are paired to Schema Registry subjects through <code>micronaut.jsonschema.registry.mappings</code> when the domain name cannot be reversed deterministically. Names that include <code>_</code>, truncation, hash suffixing, or case-sensitive Java-style package names require an explicit mapping.</p>
+</div>
+<div class="paragraph">
+<p>The built-in domain materializer uses strict validation by default. Configure <code>micronaut.jsonschema.registry.oracle.cast-mode=cast</code> to enable Oracle CAST validation, or set <code>options.castMode</code> on a configured built-in domain materializer to override the default. Strict and CAST domains with otherwise identical schema text are reported as drift.</p>
 </div>
 <div class="paragraph">
 <p>The built-in duality-view discovery provider resolves <code>USER_</code>, <code>ALL_</code>, or <code>DBA_</code> metadata and retrieves each view name and its raw <code>JSON_SCHEMA</code> value in one ordered query. The same include, exclude, and prefix filtering rules are applied to <code>view_name</code>:</p>
@@ -4206,6 +4209,9 @@ The materializer SPI exposes <code>representationDescription()</code> so impleme
 <div class="sectionbody">
 <div class="paragraph">
 <p>Before reconciling a schema to Oracle, each materializer checks whether its Oracle artifact model can represent the candidate schema exactly. If exact representation is not possible, the registry reports <code>projection_incompatibility</code>.</p>
+</div>
+<div class="paragraph">
+<p>Oracle-specific schema metadata such as <code>extendedType</code>, <code>sqlPrecision</code>, and <code>sqlScale</code> cannot be projected to CSR without weakening validation semantics and is reported as <code>projection_incompatibility</code>.</p>
 </div>
 <div class="paragraph">
 <p>Oracle materializers are create-missing only in this version:</p>
