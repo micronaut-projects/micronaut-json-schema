@@ -94,10 +94,13 @@ public class FileProcessor {
             if (fileName.contains("http")) {
                 fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
             }
-        } else if (schema.hasTitle()) {
-            fileName = getClassName(schema.getTitle());
         } else {
-            fileName = "SchemaFile"; // default
+            String title = schema.getTitle();
+            if (title != null) {
+                fileName = getClassName(title);
+            } else {
+                fileName = "SchemaFile"; // default
+            }
         }
 
         switch (SourceGenerator.getLanguage()) {
@@ -108,4 +111,3 @@ public class FileProcessor {
         return fileName;
     }
 }
-

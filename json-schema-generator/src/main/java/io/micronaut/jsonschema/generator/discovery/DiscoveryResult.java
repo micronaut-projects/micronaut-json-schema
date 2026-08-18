@@ -1,0 +1,64 @@
+/*
+ * Copyright 2017-2026 original authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.micronaut.jsonschema.generator.discovery;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Result returned by a schema discovery provider.
+ *
+ * @param schemas The discovered schemas
+ * @param warnings Non-fatal warnings emitted by discovery
+ * @param skipped Skipped inputs recorded when {@code skipOnError=true}
+ * @param sourceMetadata Sanitized source metadata returned by the provider
+ * @since 2.2.0
+ */
+public record DiscoveryResult(
+    List<DiscoveredSchema> schemas,
+    List<DiscoveryWarning> warnings,
+    List<DiscoverySkipped> skipped,
+    Map<String, String> sourceMetadata
+) {
+
+    /**
+     * Create an immutable discovery result without source metadata.
+     *
+     * @param schemas The discovered schemas
+     * @param warnings Non-fatal warnings emitted by discovery
+     * @param skipped Skipped inputs recorded when {@code skipOnError=true}
+     */
+    public DiscoveryResult(List<DiscoveredSchema> schemas,
+                           List<DiscoveryWarning> warnings,
+                           List<DiscoverySkipped> skipped) {
+        this(schemas, warnings, skipped, Map.of());
+    }
+
+    /**
+     * Create an immutable discovery result.
+     *
+     * @param schemas The discovered schemas
+     * @param warnings Non-fatal warnings emitted by discovery
+     * @param skipped Skipped inputs recorded when {@code skipOnError=true}
+     * @param sourceMetadata Sanitized source metadata returned by the provider
+     */
+    public DiscoveryResult {
+        schemas = schemas == null ? List.of() : List.copyOf(schemas);
+        warnings = warnings == null ? List.of() : List.copyOf(warnings);
+        skipped = skipped == null ? List.of() : List.copyOf(skipped);
+        sourceMetadata = sourceMetadata == null ? Map.of() : Map.copyOf(sourceMetadata);
+    }
+}

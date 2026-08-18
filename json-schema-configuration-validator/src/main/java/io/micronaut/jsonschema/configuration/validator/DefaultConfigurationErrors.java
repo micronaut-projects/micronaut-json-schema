@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.configuration.validator;
 import io.micronaut.context.env.Environment;
 import jakarta.inject.Singleton;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -58,7 +59,7 @@ final class DefaultConfigurationErrors implements ConfigurationErrors {
         if (cached.compareAndSet(null, computed)) {
             return computed;
         }
-        return cached.get();
+        return Objects.requireNonNull(cached.get());
     }
 
     /**

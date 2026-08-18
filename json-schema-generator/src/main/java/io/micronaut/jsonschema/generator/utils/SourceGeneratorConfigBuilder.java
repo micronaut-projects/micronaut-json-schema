@@ -17,10 +17,12 @@ package io.micronaut.jsonschema.generator.utils;
 
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig;
 import io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Objects;
 
 /**
  * A builder class for the {@link SourceGeneratorConfig}; encapsulating the configuration
@@ -30,11 +32,11 @@ import java.nio.file.Path;
  * @version 1.3
  */
 public class SourceGeneratorConfigBuilder {
-    InputStream inputStream = null;
-    String jsonUrl = null;
-    File jsonFile = null;
-    Path inputFolder = null;
-    Path outputPath = null;
+    @Nullable InputStream inputStream = null;
+    @Nullable String jsonUrl = null;
+    @Nullable File jsonFile = null;
+    @Nullable Path inputFolder = null;
+    @Nullable Path outputPath = null;
     String outputPackageName = "";
     String outputFileName = "";
     JavadocConfig javadocConfig = new JavadocConfig();
@@ -49,7 +51,7 @@ public class SourceGeneratorConfigBuilder {
             jsonUrl,
             jsonFile,
             inputFolder,
-            outputPath,
+            Objects.requireNonNull(outputPath, "Source generator outputPath is required"),
             outputPackageName,
             outputFileName,
             javadocConfig,
@@ -62,7 +64,7 @@ public class SourceGeneratorConfigBuilder {
      * @param inputStream Input stream of a json schema
      * @return SourceGeneratorConfigBuilder
      */
-    public SourceGeneratorConfigBuilder withInputStream(InputStream inputStream) {
+    public SourceGeneratorConfigBuilder withInputStream(@Nullable InputStream inputStream) {
         this.inputStream = inputStream;
         return this;
     }
@@ -72,7 +74,7 @@ public class SourceGeneratorConfigBuilder {
      * @param jsonUrl URL of a json schema
      * @return SourceGeneratorConfigBuilder
      */
-    public SourceGeneratorConfigBuilder withJsonUrl(String jsonUrl) {
+    public SourceGeneratorConfigBuilder withJsonUrl(@Nullable String jsonUrl) {
         this.jsonUrl = jsonUrl;
         return this;
     }
@@ -82,7 +84,7 @@ public class SourceGeneratorConfigBuilder {
      * @param jsonFile File of a json schema
      * @return SourceGeneratorConfigBuilder
      */
-    public SourceGeneratorConfigBuilder withJsonFile(File jsonFile) {
+    public SourceGeneratorConfigBuilder withJsonFile(@Nullable File jsonFile) {
         this.jsonFile = jsonFile;
         return this;
     }
@@ -92,7 +94,7 @@ public class SourceGeneratorConfigBuilder {
      * @param inputFolder Input folder of json schema
      * @return SourceGeneratorConfigBuilder
      */
-    public SourceGeneratorConfigBuilder withInputFolder(Path inputFolder) {
+    public SourceGeneratorConfigBuilder withInputFolder(@Nullable Path inputFolder) {
         this.inputFolder = inputFolder;
         return this;
     }
@@ -102,7 +104,7 @@ public class SourceGeneratorConfigBuilder {
      * @param outputFolder Output path for the generated files
      * @return SourceGeneratorConfigBuilder
      */
-    public SourceGeneratorConfigBuilder withOutputFolder(Path outputFolder) {
+    public SourceGeneratorConfigBuilder withOutputFolder(@Nullable Path outputFolder) {
         this.outputPath = outputFolder;
         return this;
     }
@@ -148,4 +150,3 @@ public class SourceGeneratorConfigBuilder {
     }
 
 }
-

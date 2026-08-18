@@ -39,6 +39,7 @@ import io.micronaut.sourcegen.model.RecordDef;
 import io.micronaut.sourcegen.model.StatementDef;
 import io.micronaut.sourcegen.model.TypeDef;
 import io.micronaut.sourcegen.model.VariableDef;
+import org.jspecify.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -50,9 +51,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -87,10 +90,12 @@ import static io.micronaut.jsonschema.model.Schema.DEF_SCHEMA_REF_PREFIX;
 @Internal
 public final class SourceGenerator {
 
-    private static String inputFileName = null;
-    private static VisitorContext.Language language;
-    private static Path outputPath;
-    private static String outputPackageName;
+    private static final String UNKNOWN_FIELDS_PROPERTY = "unknownFields";
+
+    private static @Nullable String inputFileName = null;
+    private static VisitorContext.@Nullable Language language;
+    private static @Nullable Path outputPath;
+    private static @Nullable String outputPackageName;
 
     private enum ObjectType { CLASS, RECORD, INTERFACE, ENUM }
     private final io.micronaut.sourcegen.generator.SourceGenerator sourceGenerator;
@@ -129,10 +134,8 @@ public final class SourceGenerator {
      *                          The exception message will indicate the language for which no generator was found.
      */
     public SourceGenerator(VisitorContext.Language language, GeneratorContext context) {
-        sourceGenerator = SourceGenerators.findByLanguage(language).orElse(null);
-        if (sourceGenerator == null) {
-            throw new RuntimeException("No source generator found for language " + language);
-        }
+        sourceGenerator = SourceGenerators.findByLanguage(language)
+            .orElseThrow(() -> new RuntimeException("No source generator found for language " + language));
         SourceGenerator.language = language;
         this.context = context;
     }
@@ -156,30 +159,41 @@ public final class SourceGenerator {
      * @return The top level schema's generated File when a single input is given, null otherwise.
      * @throws IOException If an I/O error occurs during file or directory creation, or if an error occurs while reading or writing files.
      */
+    @Nullable
     public File generate(SourceGeneratorConfig config) throws IOException {
         context.setConfiguration(config);
-        outputPath = config.outputPath();
-        outputPackageName = config.outputPackageName();
+        setGenerationState(config);
         if (config.inputFolder() != null) {
             generateFolder(config);
         } else {
             Schema jsonSchema = getJsonSchema(config);
             assert jsonSchema != null;
-            inputFileName = getInputFileName() != null ? getInputFileName() : config.getInputName();
-            // single java object is generated
+            setInputFileName(getInputFileName() != null ? getInputFileName() : config.getInputName());
             if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
-                var outputFileName = config.outputFileName();
-                // remove extension from file name if there is
-                if (config.outputFileName().contains(".")) {
-                    outputFileName = outputFileName.substring(0, outputFileName.indexOf('.'));
-                }
-                return generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
-            } else {
-                saveDefinitions(jsonSchema);
-                return generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+                return generateSingleSchema(config, jsonSchema, false);
             }
+            saveDefinitions(jsonSchema);
+            return generateSingleSchema(config, jsonSchema, false);
         }
         return null;
+    }
+
+    /**
+     * Generates source code from an already prepared schema.
+     *
+     * @param config The generator configuration
+     * @param jsonSchema The schema to generate from
+     * @return The top level schema's generated File, or null when no top level type is generated
+     * @throws IOException If an I/O error occurs during source generation
+     */
+    public File generate(SourceGeneratorConfig config, Schema jsonSchema) throws IOException {
+        context.setConfiguration(config);
+        setGenerationState(config);
+        setInputFileName(config.getInputName());
+        // The record pipeline may pass a schema that was already prepared in memory.
+        // Register definitions from that schema instead of loading/parsing it again.
+        saveDefinitions(jsonSchema);
+        return generateSingleSchema(config, jsonSchema, true);
     }
 
     /**
@@ -189,42 +203,67 @@ public final class SourceGenerator {
      */
     private void generateFolder(SourceGeneratorConfig config) throws IOException {
         HashMap<Schema, String> schemas = new HashMap<>();
-        Path jsonFolder =  config.inputFolder();
+        Path jsonFolder =  Objects.requireNonNull(config.inputFolder());
         // Walk through the directory to find all json files
         try (Stream<Path> paths = Files.walk(jsonFolder).filter(file -> file.toString().endsWith(".schema.json"))) {
             paths.forEach(path -> {
                 // Read content of each JSON file
                 var jsonSchema = new FileLoader(path.toFile()).load();
                 assert jsonSchema != null;
-                inputFileName = path.toString().substring(jsonFolder.toString().length() + 1);
-                schemas.put(jsonSchema, inputFileName);
+                String fileName = path.toString().substring(jsonFolder.toString().length() + 1);
+                setInputFileName(fileName);
+                schemas.put(jsonSchema, fileName);
                 saveDefinitions(jsonSchema);
             });
         } catch (IOException e) {
             throw new FileSystemException(jsonFolder.toString());
         }
 
+        Path configOutputPath = Objects.requireNonNull(config.outputPath(), "Source generator outputPath is required");
         schemas.forEach((jsonSchema, fileName) -> {
             try {
-                inputFileName = fileName;
-                generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+                setInputFileName(fileName);
+                generateDefinitions(jsonSchema, configOutputPath, config.outputPackageName());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
     }
 
+    private File generateSingleSchema(SourceGeneratorConfig config, Schema jsonSchema, boolean generateDefinitionTypesForNamedOutput) throws IOException {
+        // single java object is generated
+        if (config.outputFileName() != null && !config.outputFileName().isBlank()) {
+            var outputFileName = config.outputFileName();
+            // remove extension from file name if there is
+            if (config.outputFileName().contains(".")) {
+                outputFileName = outputFileName.substring(0, outputFileName.indexOf('.'));
+            }
+            File topLevelObject = generateFromSchema(jsonSchema, config.outputPath(), config.outputPackageName(), outputFileName);
+            if (generateDefinitionTypesForNamedOutput) {
+                // Prepared schemas can still reference generated definition types even when
+                // the top-level output name is supplied by the pipeline.
+                generateDefinitionTypes(jsonSchema, config.outputPath(), config.outputPackageName());
+            }
+            return topLevelObject;
+        } else {
+            return generateDefinitions(jsonSchema, config.outputPath(), config.outputPackageName());
+        }
+    }
+
     private void saveDefinitions(Schema jsonSchema) {
-        String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
+        String currentInputFileName = Objects.requireNonNull(inputFileName);
+        String title = jsonSchema.getTitle();
+        String schemaName = title != null ? title : currentInputFileName.substring(0, currentInputFileName.indexOf('.'));
         String finalSchemaName = getClassName(schemaName);
 
         // save all definition and oneOf types
-        if (jsonSchema.hasOneOf()) {
-            jsonSchema.getOneOf().forEach(oneOf -> {
+        List<Schema> oneOfs = jsonSchema.getOneOf();
+        if (oneOfs != null) {
+            oneOfs.forEach(oneOf -> {
                 if (oneOf.has$ref()) {
-                    String ref = oneOf.get$ref();
+                    String ref = Objects.requireNonNull(oneOf.get$ref());
                     if (ref.indexOf("#") == 0) {
-                        ref = inputFileName + ref;
+                        ref = currentInputFileName + ref;
                     }
                     context.addOneOf(ref);
                 } else {
@@ -232,36 +271,48 @@ public final class SourceGenerator {
                 }
             });
         }
-        if (jsonSchema.has$defs()) {
-            jsonSchema.get$defs().forEach((key, value) -> {
-                if (key.equals("//")) {
+        Map<String, Schema> defs = jsonSchema.get$defs();
+        if (defs != null && !defs.isEmpty()) {
+            defs.forEach((s, schema) -> {
+                if (s.equals("//")) {
                     if (!jsonSchema.hasDescription()) {
-                        jsonSchema.setDescription(String.valueOf(value));
+                        jsonSchema.setDescription(String.valueOf(schema));
                     } else {
-                        jsonSchema.setDescription(jsonSchema.getDescription() + "<br>" + value);
+                        String description = Objects.requireNonNull(jsonSchema.getDescription());
+                        jsonSchema.setDescription(description + "<br>" + schema);
                     }
-                } else if (value.hasOneOf() && jsonSchema.hasDiscriminator()) {
+                } else if (schema.hasOneOf() && jsonSchema.hasDiscriminator()) {
                     // WARNING: assumes the same interface as top level schema
-                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, TypeDef.THIS, true);
+                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + s, TypeDef.THIS, true);
                 } else {
-                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + key, value);
+                    context.addDefinition(inputFileName + DEF_SCHEMA_REF_PREFIX + s, schema);
                 }
             });
         }
-        context.addDefinition(inputFileName + "#/" + finalSchemaName, jsonSchema);
+        context.addDefinition(currentInputFileName + "#/" + finalSchemaName, jsonSchema);
     }
 
+    @Nullable
     private File generateDefinitions(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
         // generate top level schema
-        String schemaName = jsonSchema.hasTitle() ? jsonSchema.getTitle() : inputFileName.substring(0, inputFileName.indexOf('.'));
+        String currentInputFileName = Objects.requireNonNull(inputFileName);
+        String title = jsonSchema.getTitle();
+        String schemaName = title != null ? title : currentInputFileName.substring(0, currentInputFileName.indexOf('.'));
         schemaName = getClassName(schemaName);
 
         File topLevelObject = generateFromSchema(jsonSchema, outputPath, packageName, schemaName);
 
+        generateDefinitionTypes(jsonSchema, outputPath, packageName);
+        return topLevelObject;
+    }
+
+    private void generateDefinitionTypes(Schema jsonSchema, Path outputPath, String packageName) throws IOException {
         // generate classes in definitions and oneOfs
-        if (jsonSchema.has$defs()) {
-            jsonSchema.get$defs().entrySet()
+        Map<String, Schema> defs = jsonSchema.get$defs();
+        if (defs != null) {
+            defs.entrySet()
                 .stream()
+                // Only emit definitions that were registered as real Java types while resolving references.
                 .filter(definition -> !definition.getKey().equals("//") && context.isDefinitionClass(inputFileName + DEF_SCHEMA_REF_PREFIX + definition.getKey()))
                 .forEach(definition -> {
                     try {
@@ -276,9 +327,9 @@ public final class SourceGenerator {
             String className = oneOf.getKey().substring(oneOf.getKey().lastIndexOf('/') + 1);
             generateFromSchema(oneOf.getValue(), outputPath, packageName, className);
         }
-        return topLevelObject;
     }
 
+    @Nullable
     private File generateFromSchema(Schema jsonSchema, Path outputPath, String packageName, String fileName) throws IOException {
         try {
             String decidedFileName = getFileName(jsonSchema, Optional.ofNullable(fileName));
@@ -338,7 +389,8 @@ public final class SourceGenerator {
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
         LinkedHashMap<String, Object> enumValues = new LinkedHashMap<>();
         int counter = 0; // for naming same const's
-        for (Object anEnum : jsonSchema.getEnumValues()) {
+        List<Object> schemaEnumValues = Objects.requireNonNull(jsonSchema.getEnumValues());
+        for (Object anEnum : schemaEnumValues) {
             String enumConst = anEnum.toString();
             String constName;
             if (isOnlyLetters(enumConst)) {
@@ -370,16 +422,17 @@ public final class SourceGenerator {
             // check for default value
             ExpressionDef defaultValue;
             if (jsonSchema.hasDefaultValue() && enumValues.containsValue(jsonSchema.getDefaultValue())) {
-                defaultValue = cases.get(ExpressionDef.constant(jsonSchema.getDefaultValue()));
+                defaultValue = Objects.requireNonNull(cases.get(ExpressionDef.constant(jsonSchema.getDefaultValue())));
             } else {
                 defaultValue = ExpressionDef.nullValue();
             }
             // get enum value TypeDef
-            Schema.Type valueType = jsonSchema.hasType() ? jsonSchema.getType().get(0) : Schema.Type.STRING;
+            List<Schema.Type> schemaTypes = jsonSchema.getType();
+            Schema.Type valueType = schemaTypes != null && !schemaTypes.isEmpty() ? schemaTypes.get(0) : Schema.Type.STRING;
             if (valueType.equals(Schema.Type.NULL)) {
                 valueType = Schema.Type.STRING;
             }
-            TypeDef valueTypeDef = TYPE_MAP_NULLABLE.get(valueType.toString().toLowerCase(Locale.ENGLISH));
+            TypeDef valueTypeDef = Objects.requireNonNull(TYPE_MAP_NULLABLE.get(valueType.toString().toLowerCase(Locale.ENGLISH)));
             // add constructor field and methods
             enumBuilder.addField(FieldDef.builder("value")
                     .ofType(valueTypeDef)
@@ -409,6 +462,7 @@ public final class SourceGenerator {
         RecordDef.RecordDefBuilder objectBuilder = RecordDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addJsonSchemaAnnotation(objectBuilder);
 
         addFields(jsonSchema, objectBuilder);
         return objectBuilder.build();
@@ -418,6 +472,7 @@ public final class SourceGenerator {
         ClassDef.ClassDefBuilder objectBuilder = ClassDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addJsonSchemaAnnotation(objectBuilder);
 
         if (context.hasDefinition(inputFileName + "/superClass")) {
             var superClass = context.getDefinitionType(inputFileName + "/superClass");
@@ -436,12 +491,14 @@ public final class SourceGenerator {
             objectBuilder.addAnnotation(getJsonTypeInfoAnn(discriminatorProperty));
 
             Map<String, Schema> properties = jsonSchema.getProperties();
-            if (properties.containsKey(discriminatorProperty)) {
+            Schema discriminatorPropertySchema = properties != null ? properties.get(discriminatorProperty) : null;
+            if (discriminatorPropertySchema != null) {
+                Object discriminatorValue = discriminatorPropertySchema.getConstValue();
                 objectBuilder.addField(
                     FieldDef.builder(discriminatorProperty)
                         .ofType(TypeDef.STRING)
                         .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                        .initializer(ExpressionDef.constant(properties.get(discriminatorProperty).getConstValue()))
+                        .initializer(ExpressionDef.constant(discriminatorValue))
                         .build());
             }
         }
@@ -452,6 +509,7 @@ public final class SourceGenerator {
         InterfaceDef.InterfaceDefBuilder objectBuilder = InterfaceDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addJsonSchemaAnnotation(objectBuilder);
         if (jsonSchema.hasDiscriminator()) {
             // top level interface
             addDiscriminatorAnnotations(jsonSchema, objectBuilder);
@@ -463,39 +521,52 @@ public final class SourceGenerator {
     }
 
     private void addFields(Schema jsonSchema, ObjectDefBuilder builder) {
-        if (jsonSchema.hasDescription()) {
-            builder.addJavadoc(getJavadoc(jsonSchema.getDescription()));
+        String description = jsonSchema.getDescription();
+        if (description != null) {
+            builder.addJavadoc(getJavadoc(description));
         }
 
-        if (jsonSchema.hasProperties()) {
+        Map<String, Schema> properties = jsonSchema.getProperties();
+        if (properties != null) {
+            if (context.isJsonSchemaRecordsProfile()) {
+                // The record profile fails fast for generated member collisions instead of
+                // silently overwriting fields after Java-name sanitization.
+                validateMemberNameCollisions(jsonSchema);
+            }
             List<String> requiredProperties = (jsonSchema.getRequired() != null) ? jsonSchema.getRequired() : new ArrayList<>();
-            jsonSchema.getProperties().forEach((key, value) -> addField(
-                builder,
-                key,
-                value,
-                requiredProperties.contains(key)
-            ));
+            jsonSchema.getProperties().entrySet().forEach(entry -> addField(
+                    builder,
+                    entry.getKey(),
+                    entry.getValue(),
+                    requiredProperties.contains(entry.getKey())
+                ));
 
-            if (jsonSchema.hasAdditionalProperties() && !jsonSchema.getAdditionalProperties().equals(Schema.FALSE)) {
+            if (shouldGenerateAdditionalProperties(jsonSchema)) {
                 addAdditionalField(jsonSchema, builder);
             }
+        } else if (context.isJsonSchemaRecordsProfile() && shouldGenerateAdditionalProperties(jsonSchema)) {
+            // Existing generation only adds the open-object member after declared properties.
+            // The record profile also models explicitly open objects with no declared properties.
+            addAdditionalField(jsonSchema, builder);
         }
     }
 
     private void addAdditionalField(Schema jsonSchema, ObjectDefBuilder builder) {
         TypeDef mapType;
-        if (jsonSchema.getAdditionalProperties().equals(Schema.TRUE)) {
+        Schema additionalProperties = Objects.requireNonNull(jsonSchema.getAdditionalProperties());
+        if (additionalProperties.equals(Schema.TRUE)) {
             mapType = TypeDef.OBJECT;
         } else {
-            mapType = getTypeDefFromJson(jsonSchema.getAdditionalProperties(), context);
+            // Map value types cannot be primitive Java types.
+            mapType = boxPrimitive(getTypeDefFromJson(additionalProperties, context));
         }
         TypeDef type = TypeDef.parameterized(ClassTypeDef.of(HashMap.class), TypeDef.STRING, mapType);
         if (builder instanceof ClassDef.ClassDefBuilder classDefBuilder) {
-            classDefBuilder.addField(FieldDef.builder("unknownFields")
+            classDefBuilder.addField(FieldDef.builder(UNKNOWN_FIELDS_PROPERTY)
                 .ofType(type)
                 .build());
         } else {
-            builder.addProperty(PropertyDef.builder("unknownFields")
+            builder.addProperty(PropertyDef.builder(UNKNOWN_FIELDS_PROPERTY)
                 .ofType(type)
                 .build());
         }
@@ -505,9 +576,9 @@ public final class SourceGenerator {
                 .addAnnotation(ClassTypeDef.of(JSON_ANY_GETTER_ANN))
                 .build((aThis, parameters) -> {
                     if (builder instanceof ClassDef.ClassDefBuilder) {
-                        return aThis.field("unknownFields", type).returning();
+                        return aThis.field(UNKNOWN_FIELDS_PROPERTY, type).returning();
                     }
-                    return new VariableDef.Local("unknownFields", type).returning();
+                    return new VariableDef.Local(UNKNOWN_FIELDS_PROPERTY, type).returning();
                 }));
         builder.addMethod(MethodDef.builder("setUnknownFields")
                 .addModifiers(Modifier.PUBLIC)
@@ -517,8 +588,8 @@ public final class SourceGenerator {
                 .addParameter("value", mapType)
                 .build((aThis, parameters) -> {
                     var unknownField = (builder instanceof ClassDef.ClassDefBuilder) ?
-                        aThis.field("unknownFields", type) :
-                        new VariableDef.Local("unknownFields", type);
+                        aThis.field(UNKNOWN_FIELDS_PROPERTY, type) :
+                        new VariableDef.Local(UNKNOWN_FIELDS_PROPERTY, type);
 
                     return StatementDef.multi(
                         unknownField.ifNull(unknownField.assign(ClassTypeDef.of(HashMap.class).instantiate())),
@@ -538,6 +609,10 @@ public final class SourceGenerator {
         }
 
         TypeDef propertyType = getPropertyType(objectBuilder, schema, name);
+        if (context.isJsonSchemaRecordsProfile() && !isRequired && propertyType instanceof TypeDef.Primitive primitive) {
+            // Optional record-profile properties represent absence, so scalar types must be boxed.
+            propertyType = primitive.wrapperType();
+        }
         // add annotations
         var annotations = AnnotationsAggregator.getAnnotations(schema, propertyType, isRequired);
         if (!annotations.isEmpty()) {
@@ -547,7 +622,10 @@ public final class SourceGenerator {
 
         // add javadoc
         if (schema.hasDescription()) {
-            propertyDef.addJavadoc(getJavadoc(schema.getDescription()));
+            String description = schema.getDescription();
+            if (description != null) {
+                propertyDef.addJavadoc(getJavadoc(description));
+            }
         }
 
         PropertyDef property = propertyDef.build();
@@ -584,30 +662,75 @@ public final class SourceGenerator {
     }
 
     private TypeDef getPropertyType(ObjectDefBuilder objectBuilder, Schema schema, String name) {
+        if (context.isJsonSchemaRecordsProfile() && SchemaReferenceCompositionSupport.hasUnsupportedAllOf(schema)) {
+            // At property level an ambiguous allOf is recoverable: keep generating the owner type
+            // and make this member broad rather than emitting an invalid partial shape.
+            context.warn("UNSUPPORTED_KEYWORD", "allOf cannot be flattened deterministically at property level; using java.lang.Object");
+            return TypeDef.OBJECT;
+        }
         // add type info and type validation annotations
         TypeDef propertyType = getTypeDefFromJson(schema, context);
+        if (context.isJsonSchemaRecordsProfile() && hasUnsupportedPropertyShape(schema)) {
+            // The record profile reports unsupported unions/refs through warnings and uses Object
+            // for the affected property; root-level failures are handled by the pipeline.
+            return TypeDef.OBJECT;
+        }
         if (schema.isEnum()) {
             propertyType = getEnumType(objectBuilder, name, schema);
-        } else if  (propertyType.equals(TypeDef.of(List.class))) {
+        } else if (propertyType.equals(TypeDef.of(List.class))) {
             propertyType = getListTypeDef(objectBuilder, name, schema);
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasProperties()) {
             propertyType = buildInnerType(objectBuilder, name, schema);
         } else if (propertyType.equals(TypeDef.OBJECT) && schema.hasAdditionalProperties()) {
-            if (schema.getAdditionalProperties().equals(Schema.TRUE)) {
+            Schema additionalProperties = Objects.requireNonNull(schema.getAdditionalProperties());
+            if (additionalProperties.equals(Schema.TRUE)) {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING, TypeDef.OBJECT);
             } else {
                 return TypeDef.parameterized(ClassTypeDef.of(Map.class), TypeDef.STRING,
-                    getPropertyType(objectBuilder, schema.getAdditionalProperties(), name + "Item"));
+                    // Map value types cannot be primitive Java types.
+                    boxPrimitive(getPropertyType(objectBuilder, additionalProperties, name + "Item")));
             }
         }
         return propertyType;
+    }
+
+    private boolean hasUnsupportedPropertyShape(Schema schema) {
+        if (schema.hasOneOf()) {
+            // oneOf can express polymorphic validation, but the record profile cannot choose a
+            // single property type here without losing the "exactly one branch" semantics.
+            return true;
+        }
+        if (schema.hasType() && schema.getType().stream()
+            .filter(type -> !Schema.Type.NULL.equals(type))
+            .distinct()
+            .count() > 1) {
+            // A union like ["string", "null"] is handled as nullable string elsewhere. Multiple
+            // non-null types, for example ["string", "integer"], have no precise Java member type.
+            return true;
+        }
+        if (schema.has$ref()) {
+            String ref = schema.get$ref();
+            if (Schema.THIS_SCHEMA_REF.equals(ref)) {
+                // Recursive self-reference maps to the generated enclosing type.
+                return false;
+            }
+            if (ref.startsWith("#")) {
+                // Supported same-document refs are registered in GeneratorContext before property
+                // generation. If a local ref is still unknown here, keep the owner type valid by
+                // falling back to Object for this property.
+                return !context.hasDefinition(inputFileName + ref);
+            }
+            // The record pipeline does not fetch remote schemas during generation.
+            return true;
+        }
+        return false;
     }
 
     private void addDiscriminatorAnnotations(Schema jsonSchema, ObjectDefBuilder objectBuilder) {
         if (!jsonSchema.hasDiscriminator()) {
             return;
         }
-        var discriminator = jsonSchema.getDiscriminator();
+        var discriminator = Objects.requireNonNull(jsonSchema.getDiscriminator());
         discriminatorProperty = discriminator.propertyName();
         objectBuilder.addAnnotation(getJsonSubTypesAnn(discriminator.mapping(), context));
     }
@@ -630,7 +753,7 @@ public final class SourceGenerator {
     }
 
     private TypeDef getEnumType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
-        EnumDef enumDef = buildEnum(schema, capitalize(propertyName));
+        EnumDef enumDef = buildEnum(schema, getClassName(propertyName));
         objectBuilder.addInnerType(enumDef);
         return enumDef.asTypeDef();
     }
@@ -638,9 +761,19 @@ public final class SourceGenerator {
     private TypeDef getListTypeDef(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         Schema items = schema.getItems() != null ? schema.getItems() : schema.getContains();
         if (items == null) {
-            return TypeDef.OBJECT;
+            // In the record profile, arrays with omitted items are still arrays of unconstrained values.
+            // Keep existing default behavior outside that profile.
+            return context.isJsonSchemaRecordsProfile()
+                ? TypeDef.parameterized(
+                    ClassTypeDef.of(schema.isUniqueItems() != null && schema.isUniqueItems() ? Set.class : List.class),
+                    TypeDef.OBJECT)
+                : TypeDef.OBJECT;
         }
 
+        if (context.isJsonSchemaRecordsProfile() && items.hasType() && items.getType().contains(io.micronaut.jsonschema.model.Schema.Type.NULL)) {
+            // Convert item type ["T", "null"] into the generator's existing nullable annotation path.
+            items.setNullable(true);
+        }
         TypeDef propertyType = getPropertyType(objectBuilder, items, propertyName);
         if (propertyType instanceof TypeDef.Primitive primitive) {
             propertyType = primitive.wrapperType();
@@ -654,10 +787,12 @@ public final class SourceGenerator {
     private TypeDef buildInnerType(ObjectDefBuilder objectBuilder, String propertyName, Schema schema) {
         // inner type
         ObjectDef builder;
+        // Sanitization here matches top-level and definition class naming for record-profile nested types.
+        String nestedTypeName = getClassName(propertyName);
         if (shouldBeAClass(schema)) {
-            builder = buildClass(schema, capitalize(propertyName));
+            builder = buildClass(schema, nestedTypeName);
         } else {
-            builder = buildRecord(schema, capitalize(propertyName));
+            builder = buildRecord(schema, nestedTypeName);
         }
         objectBuilder.addInnerType(builder);
         return ClassTypeDef.of(builder.getName());
@@ -667,27 +802,85 @@ public final class SourceGenerator {
         if (context.getConfiguration().recordAdoptionStrategy() == RecordAdoptionStrategy.ALWAYS_CLASS) {
             return true;
         }
-        boolean hasOverLimitParameters = schema.hasProperties() && schema.getProperties().size() > 255;
+        boolean hasOverLimitParameters = schema.hasProperties() && Objects.requireNonNull(schema.getProperties()).size() > 255;
         return hasOverLimitParameters || schema.hasAdditionalProperties() || schema.hasConstValue();
     }
 
+    private static void setGenerationState(SourceGeneratorConfig config) {
+        outputPath = config.outputPath();
+        outputPackageName = config.outputPackageName();
+    }
+
+    @Nullable
     public static String getInputFileName() {
         return inputFileName;
     }
 
-    public static void setInputFileName(String inputFileName) {
+    public static void setInputFileName(@Nullable String inputFileName) {
         SourceGenerator.inputFileName = inputFileName;
     }
 
+    @Nullable
     public static Path getOutputPath() {
         return outputPath;
     }
 
+    @Nullable
     public static String getOutputPackageName() {
         return outputPackageName;
     }
 
     public static VisitorContext.Language getLanguage() {
-        return language;
+        return Objects.requireNonNull(language);
+    }
+
+    /**
+     * Get recorded warnings for the latest generation run.
+     * @return The warnings
+     */
+    public List<GeneratorContext.Warning> getWarnings() {
+        return context.getWarnings();
+    }
+
+    private boolean shouldAddGeneratedJsonSchemaAnnotation() {
+        return context.isAddGeneratedJsonSchemaAnnotation();
+    }
+
+    private void addJsonSchemaAnnotation(ObjectDefBuilder builder) {
+        if (shouldAddGeneratedJsonSchemaAnnotation()) {
+            // Enabled by the record-generation profile so emitted models can be discovered as schema-backed types.
+            builder.addAnnotation(ClassTypeDef.of(io.micronaut.jsonschema.JsonSchema.class));
+        }
+    }
+
+    private boolean shouldGenerateAdditionalProperties(Schema schema) {
+        return schema.hasAdditionalProperties() && !Schema.FALSE.equals(schema.getAdditionalProperties());
+    }
+
+    private TypeDef boxPrimitive(TypeDef type) {
+        if (type instanceof TypeDef.Primitive primitive) {
+            return primitive.wrapperType();
+        }
+        return type;
+    }
+
+    private void validateMemberNameCollisions(Schema schema) {
+        Map<String, List<String>> jsonNamesByJavaName = new LinkedHashMap<>();
+        if (schema.hasProperties()) {
+            schema.getProperties().keySet().forEach(jsonName ->
+                jsonNamesByJavaName.computeIfAbsent(getPropertyName(jsonName), ignored -> new LinkedList<>()).add(jsonName));
+        }
+        if (shouldGenerateAdditionalProperties(schema)) {
+            // The open-object member is generated with a fixed name, so user properties must not
+            // sanitize to the same Java member name.
+            jsonNamesByJavaName.computeIfAbsent(UNKNOWN_FIELDS_PROPERTY, ignored -> new LinkedList<>()).add("<additionalProperties>");
+        }
+        jsonNamesByJavaName.entrySet().stream()
+            .filter(entry -> entry.getValue().size() > 1)
+            .findFirst()
+            .ifPresent(entry -> {
+                throw new IllegalArgumentException("NAME_COLLISION: JSON properties " + entry.getValue()
+                    + " resolve to Java member name '" + entry.getKey() + "'");
+            });
     }
 }

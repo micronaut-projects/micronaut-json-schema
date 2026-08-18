@@ -16,18 +16,24 @@
 # a managed version (a version which alias starts with "managed-"
 
 [versions]
-micronaut = "5.1.6"
+micronaut = "5.1.10"
 micronaut-gradle-plugin = "5.0.2"
-micronaut-serde = "3.1.0"
+micronaut-platform = "5.0.5"
+micronaut-ser   de = "3.1.0"
 micronaut-sourcegen = "2.1.0"
 micronaut-validation = "5.1.0"
+micronaut-testresources = "4.1.0"
 managed-json-schema-validator = "3.0.6"
 micronaut-testresources = "4.1.0"
 micronaut-toml = "3.1.0"
 micronaut-sql = "7.1.0"
+maven = "3.9.16"
+maven-plugin-tools = "3.15.2"
+maven-plugin-testing-harness = "3.5.1"
 
 [libraries]
 micronaut-core = { module = 'io.micronaut:micronaut-core-bom', version.ref = 'micronaut' }
+gradle-micronaut = { module = "io.micronaut.gradle:micronaut-gradle-plugin", version.ref = "micronaut-gradle-plugin" }
 micronaut-serde = { module = "io.micronaut.serde:micronaut-serde-bom", version.ref = "micronaut-serde" }
 micronaut-validation = { module = "io.micronaut.validation:micronaut-validation-bom", version.ref = "micronaut-validation" }
 micronaut-sourcegen = { module = "io.micronaut.sourcegen:micronaut-sourcegen-bom", version.ref = "micronaut-sourcegen" }
@@ -40,6 +46,10 @@ managed-json-schema-validator = { module = "com.networknt:json-schema-validator"
 micronaut-toml = { module = "io.micronaut.toml:micronaut-toml", version.ref = "micronaut-toml" }
 micronaut-sql-jdbc-hikari = { module = "io.micronaut.sql:micronaut-jdbc-hikari", version.ref = "micronaut-sql" }
 gradle-micronaut = { module = "io.micronaut.gradle:micronaut-gradle-plugin", version.ref = "micronaut-gradle-plugin" }
+maven-plugin-api = { module = "org.apache.maven:maven-plugin-api", version.ref = "maven" }
+maven-core = { module = "org.apache.maven:maven-core", version.ref = "maven" }
+maven-plugin-annotations = { module = "org.apache.maven.plugin-tools:maven-plugin-annotations", version.ref = "maven-plugin-tools" }
+maven-plugin-testing-harness = { module = "org.apache.maven.plugin-testing:maven-plugin-testing-harness", version.ref = "maven-plugin-testing-harness" }
 
 [bundles]
 

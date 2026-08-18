@@ -44,7 +44,7 @@ public interface JsonSchemaClassPathResourceLoader {
      *
      * @param classLoader The classloader
      * @return The default loader
-     * @since 2.1.0
+     * @since 2.2.0
      */
     @NonNull
     static JsonSchemaClassPathResourceLoader createDefault(@NonNull ClassLoader classLoader) {

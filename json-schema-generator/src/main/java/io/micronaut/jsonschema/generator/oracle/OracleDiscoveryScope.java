@@ -16,12 +16,23 @@
 package io.micronaut.jsonschema.generator.oracle;
 
 /**
- * Oracle schema discovery artifact scope.
+ * Discovery object scope used in Oracle diagnostics.
  *
- * @since 2.0.0
+ * @since 2.2.0
  */
 public enum OracleDiscoveryScope {
+    /**
+     * Oracle SQL domain discovery.
+     */
     DOMAIN,
+
+    /**
+     * Oracle JSON relational duality view discovery.
+     */
     DUALITY_VIEW,
+
+    /**
+     * Custom provider-specific discovery scope.
+     */
     CUSTOM
 }

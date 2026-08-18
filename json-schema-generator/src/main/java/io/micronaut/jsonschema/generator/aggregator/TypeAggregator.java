@@ -22,6 +22,7 @@ import io.micronaut.jsonschema.generator.SourceGenerator;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
 import io.micronaut.sourcegen.model.ClassTypeDef;
 import io.micronaut.sourcegen.model.TypeDef;
+import org.jspecify.annotations.Nullable;
 
 import javax.lang.model.SourceVersion;
 import io.micronaut.jsonschema.model.Schema;
@@ -30,11 +31,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static io.micronaut.core.util.StringUtils.capitalize;
@@ -54,23 +58,32 @@ public final class TypeAggregator {
 
     public static final Map<String, TypeDef> TYPE_MAP;
 
-    public static final Map<String, TypeDef> TYPE_MAP_NULLABLE = CollectionUtils.mapOf(
-        "integer", TypeDef.Primitive.INT_WRAPPER,
-        "boolean", TypeDef.Primitive.BOOLEAN_WRAPPER,
-        "array", TypeDef.of(List.class),
-        "void", TypeDef.VOID,
-        "string", TypeDef.STRING,
-        "object", TypeDef.OBJECT,
-        "number", TypeDef.Primitive.FLOAT_WRAPPER,
-        "null", TypeDef.OBJECT
-    );
+    public static final Map<String, TypeDef> TYPE_MAP_NULLABLE;
+
+    private static final String JSON_TYPE_INTEGER = "integer";
+    private static final String JSON_TYPE_NUMBER = "number";
+    private static final String UNSUPPORTED_KEYWORD = "UNSUPPORTED_KEYWORD";
 
     static {
+        TYPE_MAP_NULLABLE = CollectionUtils.mapOf(
+            JSON_TYPE_INTEGER, TypeDef.Primitive.INT_WRAPPER,
+            "boolean", TypeDef.Primitive.BOOLEAN_WRAPPER,
+            "array", TypeDef.of(List.class),
+            "void", TypeDef.VOID,
+            "string", TypeDef.STRING,
+            "object", TypeDef.OBJECT,
+            JSON_TYPE_NUMBER, TypeDef.Primitive.FLOAT_WRAPPER,
+            "null", TypeDef.OBJECT
+        );
         TYPE_MAP = new HashMap<>();
         TYPE_MAP.putAll(TYPE_MAP_NULLABLE);
-        TYPE_MAP.put("integer", TypeDef.Primitive.INT);
+        TYPE_MAP.put(JSON_TYPE_INTEGER, TypeDef.Primitive.INT);
         TYPE_MAP.put("boolean", TypeDef.Primitive.BOOLEAN);
-        TYPE_MAP.put("number", TypeDef.Primitive.FLOAT);
+        TYPE_MAP.put(JSON_TYPE_NUMBER, TypeDef.Primitive.FLOAT);
+    }
+
+    private TypeAggregator() {
+        /* This utility class should not be instantiated */
     }
 
     /**
@@ -78,17 +91,17 @@ public final class TypeAggregator {
      * This method analyzes the schema's type, format, and other properties to determine
      * the appropriate Java type representation, handling multiple special cases such as
      * type combinations, format-specific mappings, references, and "oneOf"/"anyOf" schemas.
-     *
+     * <p>
      * If the schema defines multiple types, the method defaults to `java.lang.Object`.
      * For specific formats like "date-time" or "uuid", the method maps to appropriate
      * Java classes such as `ZonedDateTime` or `UUID`. Additionally, schema references (`$ref`)
      * are resolved, potentially triggering the generation of new schema definitions.
-     *
+     * <p>
      * The method also handles special cases for numerical types with patterns and
      * handles the "oneOf" and "anyOf" schema keywords by recursively determining
      * the appropriate type from the valid options.
      *
-     * @param schema the JSON schema to be converted into a Java type definition
+     * @param schema  the JSON schema to be converted into a Java type definition
      * @param context the generator context, which holds existing type definitions and supports
      *                the resolution of schema references
      * @return the corresponding {@code TypeDef} representing the schema as a Java type
@@ -97,32 +110,68 @@ public final class TypeAggregator {
     public static TypeDef getTypeDefFromJson(Schema schema, GeneratorContext context) {
         // check oneOf, anyOf (allOf is already merged into during mapping)
         if (schema.hasOneOf()) {
-            // inner oneOf's are treated as objects
-            return TypeDef.OBJECT;
-        } else if (schema.hasAnyOf()) {
-            return chooseFromAnyOf(schema.getAnyOf(), context);
+            if (!context.isJsonSchemaRecordsProfile()) {
+                // Preserve the existing generator behavior: property-level oneOf is broad Object.
+                return TypeDef.OBJECT;
+            }
+            // The record-generation profile accepts only the common nullable composition form,
+            // oneOf: [{ "type": "null" }, { ...single non-null schema... }].
+            if (!normalizeNullableOneOf(schema)) {
+                context.warn(UNSUPPORTED_KEYWORD, "oneOf is not supported at property level; using java.lang.Object");
+                return TypeDef.OBJECT;
+            }
+        }
+        if (schema.hasAnyOf()) {
+            if (!context.isJsonSchemaRecordsProfile()) {
+                // Preserve the existing generator behavior for anyOf outside the record profile.
+                TypeDef typeDef = chooseFromAnyOf(schema.getAnyOf(), context);
+                return typeDef != null ? typeDef : TypeDef.OBJECT;
+            }
+            // The record-generation profile first handles nullable anyOf consistently with
+            // type: ["T", "null"]; other anyOf shapes go through the existing broad chooser.
+            if (!normalizeNullableAnyOf(schema)) {
+                TypeDef typeDef = chooseFromAnyOf(schema.getAnyOf(), context);
+                return typeDef != null ? typeDef : TypeDef.OBJECT;
+            }
         } else if (schema.isEnum()) {
             return TypeDef.OBJECT;
         }
 
         // check for "type"
         boolean nullable = false;
-        if (schema.hasType() && schema.getType().size() > 1) {
-            if (schema.getType().size() == 2 && schema.getType().contains(NULL)) {
+        List<Schema.Type> schemaTypes = schema.getType();
+        if (schemaTypes != null && schemaTypes.size() > 1) {
+            if (schemaTypes.size() == 2 && schemaTypes.contains(NULL)) {
                 nullable = true;
-                var typeList = schema.getType();
+                if (context.isJsonSchemaRecordsProfile()) {
+                    // Record generation treats type ["T", "null"] as value nullability,
+                    // not as a Java union type.
+                    schema.setNullable(true);
+                }
+                // Preserve the old generator's in-place list mutation. In the record profile,
+                // copy first so we do not mutate a list while it may be shared by the parser/model.
+                var typeList = context.isJsonSchemaRecordsProfile() ? new java.util.ArrayList<>(schema.getType()) : schema.getType();
                 typeList.remove(NULL);
                 schema.setType(typeList);
             } else {
-                System.err.println("Only one type is allowed per schema. " +
-                    "In case of multiple types, the variable is generated as a java.lang.Object.");
+                if (context.isJsonSchemaRecordsProfile()) {
+                    context.warn(UNSUPPORTED_KEYWORD, "Multiple non-null JSON Schema types are not supported at property level; using java.lang.Object");
+                } else {
+                    System.err.println("Only one type is allowed per schema. " +
+                        "In case of multiple types, the variable is generated as a java.lang.Object.");
+                }
                 return TypeDef.OBJECT;
             }
         }
-        var type = schema.hasType() ? schema.getType().get(0) : Schema.Type.OBJECT;
+        schemaTypes = schema.getType();
+        var type = schemaTypes != null && !schemaTypes.isEmpty() ? schemaTypes.get(0) : Schema.Type.OBJECT;
         TypeDef typeDef;
-        if (type.equals(Schema.Type.STRING) && schema.getFormat() != null) {
-            var format = schema.getFormat();
+        TypeDef oracleExtendedTypeDef = null;
+        if (context.isJsonSchemaRecordsProfile() && schema.getFormat() == null) {
+            oracleExtendedTypeDef = getOracleExtendedTypeDef(schema, type, nullable);
+        }
+        String format = schema.getFormat();
+        if (type.equals(Schema.Type.STRING) && format != null) {
             typeDef = switch (format) {
                 case "date" -> ClassTypeDef.of(LocalDate.class);
                 case "date-time", "time" -> ClassTypeDef.of(ZonedDateTime.class);
@@ -135,31 +184,54 @@ public final class TypeAggregator {
                 // missing: web hostname, uri-reference, uri-template, regex
                 default -> TypeDef.STRING;
             };
+        } else if (oracleExtendedTypeDef != null) {
+            typeDef = oracleExtendedTypeDef;
         } else if (type.equals(Schema.Type.NUMBER) && schema.getPattern() != null) {
-            if (schema.getPattern().contains(".")) {
+            String pattern = Objects.requireNonNull(schema.getPattern());
+            if (pattern.contains(".")) {
                 typeDef = nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT;
             } else {
                 typeDef = nullable ? TypeDef.Primitive.INT_WRAPPER : TypeDef.Primitive.INT;
             }
         } else if (schema.has$ref()) {
-            String ref = schema.get$ref();
+            String ref = Objects.requireNonNull(schema.get$ref());
+            boolean localRef = ref.indexOf("#") == 0;
             if (ref.equals(THIS_SCHEMA_REF)) {
                 return TypeDef.THIS;
-            } else if (ref.indexOf("#") == 0) {
+            } else if (localRef) {
                 ref = SourceGenerator.getInputFileName() + ref;
             }
-            var location = ref.substring(0, ref.indexOf("#"));
-            var originalFileName = SourceGenerator.getInputFileName();
-            if (!context.hasDefinition(ref) && isValidUrl(location) && !location.equals(originalFileName)) {
-                try {
-                    var generator = new SourceGenerator(SourceGenerator.getLanguage(), context);
-                    SourceGenerator.setInputFileName(location);
-                    generator.generate(
-                        context.getConfiguration().toBuilder().withInputStream(null)
-                            .withInputFolder(null).withJsonUrl(location).withJsonFile(null).build());
-                    SourceGenerator.setInputFileName(originalFileName);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+            if (context.isJsonSchemaRecordsProfile()) {
+                // The record pipeline prepares supported same-document refs before generation.
+                // Anything still missing here cannot be represented precisely as a property type.
+                if (!context.hasDefinition(ref)) {
+                    context.warn(UNSUPPORTED_KEYWORD, (localRef ? "Local" : "External") + " $ref is not resolved: " + schema.get$ref());
+                    return TypeDef.OBJECT;
+                }
+            } else {
+                int fragmentIndex = ref.indexOf("#");
+                if (fragmentIndex < 0 && !context.hasDefinition(ref)) {
+                    return TypeDef.OBJECT;
+                }
+                var originalFileName = SourceGenerator.getInputFileName();
+                if (fragmentIndex > 0 && !context.hasDefinition(ref)) {
+                    var location = ref.substring(0, fragmentIndex);
+                    if (!isValidUrl(location) || location.equals(originalFileName)) {
+                        // Keep the previous fallback for unresolved local/current-file fragments.
+                        typeDef = context.getDefinitionType(ref);
+                        return typeDef;
+                    }
+                    try {
+                        // Preserve legacy behavior: non-record generation may fetch referenced URL schemas.
+                        var generator = new SourceGenerator(SourceGenerator.getLanguage(), context);
+                        SourceGenerator.setInputFileName(location);
+                        generator.generate(
+                            context.getConfiguration().toBuilder().withInputStream(null)
+                                .withInputFolder(null).withJsonUrl(location).withJsonFile(null).build());
+                        SourceGenerator.setInputFileName(originalFileName);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
             typeDef = context.getDefinitionType(ref);
@@ -193,45 +265,182 @@ public final class TypeAggregator {
         return typeDef;
     }
 
+    private static TypeDef getOracleExtendedTypeDef(Schema schema, Schema.Type type, boolean nullable) {
+        if (!schema.hasExtendedType()) {
+            return getOracleIntegralNumberTypeDef(schema, type, nullable);
+        }
+        String extendedType = firstExtendedType(schema);
+        if (extendedType == null || "null".equalsIgnoreCase(extendedType)) {
+            return getOracleIntegralNumberTypeDef(schema, type, nullable);
+        }
+        return switch (extendedType.toLowerCase(Locale.ENGLISH)) {
+            case "date", "timestamp" ->
+                isStringLike(type) ? ClassTypeDef.of(LocalDateTime.class) : null;
+            case "timestamptz" -> isStringLike(type) ? ClassTypeDef.of(ZonedDateTime.class) : null;
+            case "dsinterval" -> isStringLike(type) ? ClassTypeDef.of(Duration.class) : null;
+            case "yminterval" -> isStringLike(type) ? ClassTypeDef.of(Period.class) : null;
+            case "binary" -> isStringLike(type) ? TypeDef.array(TypeDef.Primitive.BYTE) : null;
+            case "double" ->
+                isNumberLike(type) ? nullable ? ClassTypeDef.of(Double.class) : TypeDef.Primitive.DOUBLE : null;
+            case "float" ->
+                isNumberLike(type) ? nullable ? TypeDef.Primitive.FLOAT_WRAPPER : TypeDef.Primitive.FLOAT : null;
+            case JSON_TYPE_NUMBER, JSON_TYPE_INTEGER -> getOracleIntegralNumberTypeDef(schema, type, nullable);
+            default -> null;
+        };
+    }
+
+    private static TypeDef getOracleIntegralNumberTypeDef(Schema schema, Schema.Type type, boolean nullable) {
+        if (!Schema.Type.NUMBER.equals(type) || !Integer.valueOf(0).equals(schema.getSqlScale())) {
+            return null;
+        }
+        // Oracle NUMBER(19,0), commonly used for identifiers, is represented as long in the
+        // records profile. The default JSON Schema generator is intentionally unaffected.
+        if (schema.getSqlPrecision() != null && schema.getSqlPrecision() <= 9) {
+            return nullable ? TypeDef.Primitive.INT_WRAPPER : TypeDef.Primitive.INT;
+        }
+        return nullable ? TypeDef.Primitive.LONG_WRAPPER : TypeDef.Primitive.LONG;
+    }
+
+    private static String firstExtendedType(Schema schema) {
+        Object extendedType = schema.getExtendedType();
+        if (extendedType instanceof String value) {
+            return value;
+        }
+        if (extendedType instanceof List<?> values) {
+            List<String> nonNullValues = values.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .filter(val -> !"null".equalsIgnoreCase(val))
+                .distinct()
+                .toList();
+            if (nonNullValues.size() == 1) {
+                return nonNullValues.get(0);
+            }
+        }
+        return null;
+    }
+
+    private static boolean isStringLike(Schema.Type type) {
+        return Schema.Type.STRING.equals(type) || Schema.Type.OBJECT.equals(type);
+    }
+
+    private static boolean isNumberLike(Schema.Type type) {
+        return Schema.Type.NUMBER.equals(type) || Schema.Type.INTEGER.equals(type) || Schema.Type.OBJECT.equals(type);
+    }
+
+    private static boolean normalizeNullableOneOf(Schema schema) {
+        if (schema.getOneOf().size() != 2) {
+            return false;
+        }
+        Schema nonNullSchema = nullableCompositionBranch(schema.getOneOf());
+        if (nonNullSchema == null) {
+            return false;
+        }
+        // Replace the nullable composition wrapper with its non-null branch so the normal
+        // type/annotation pipeline can produce @Nullable T instead of Object.
+        schema.merge(nonNullSchema);
+        schema.setOneOf(null);
+        schema.setNullable(true);
+        return true;
+    }
+
+    private static boolean normalizeNullableAnyOf(Schema schema) {
+        if (schema.getAnyOf().size() != 2) {
+            return false;
+        }
+        Schema nonNullSchema = nullableCompositionBranch(schema.getAnyOf());
+        if (nonNullSchema == null) {
+            return false;
+        }
+        // Replace the nullable composition wrapper with its non-null branch so the normal
+        // type/annotation pipeline can produce @Nullable T instead of Object.
+        schema.merge(nonNullSchema);
+        schema.setAnyOf(null);
+        schema.setNullable(true);
+        return true;
+    }
+
     /**
      * The strategy to choose from an anyOf keyword in Json Schema.
      * Needs improvement.
      * Current strategy:
-     *  if empty, return null,
-     *  if single schema, return that schema,
-     *  if 2 schema but one has type "NULL", return the non-null schema
-     *  if all schemas has the same type, merge all schemas and return
-     *  else return empty Object schema.
+     * if empty, return null,
+     * if single schema, return that schema,
+     * if 2 schema but one has type "NULL", return the non-null schema
+     * if all schemas has the same type, return that common base type
+     * else return empty Object schema.
      *
      * @param schemas List of Schemas in the anyOf keyword
      * @return chosen Schema
      */
+    @Nullable
     private static TypeDef chooseFromAnyOf(List<Schema> schemas, GeneratorContext context) {
         if (schemas.isEmpty()) {
             return null;
         } else if (schemas.size() == 1) {
             return getTypeDefFromJson(schemas.get(0), context);
+        } else if (context.isJsonSchemaRecordsProfile() && schemas.size() == 2) {
+            // This path catches nullable anyOf when chooseFromAnyOf is reached directly,
+            // for example from legacy-compatible branches above.
+            Schema nonNullSchema = nullableCompositionBranch(schemas);
+            if (nonNullSchema != null) {
+                nonNullSchema.setNullable(true);
+                return getTypeDefFromJson(nonNullSchema, context);
+            }
         } else if (schemas.size() == 2) {
-            var nullSchema = new Schema();
-            nullSchema.setType(List.of(Schema.Type.NULL));
-            if (schemas.contains(nullSchema)) {
-                schemas.remove(nullSchema);
-                return getTypeDefFromJson(schemas.get(0), context);
+            Schema first = schemas.get(0);
+            Schema second = schemas.get(1);
+            if (isNullSchema(first)) {
+                return getTypeDefFromJson(second, context);
+            } else if (isNullSchema(second)) {
+                return getTypeDefFromJson(first, context);
             }
         }
         boolean sameType = true;
         for (var i = 0; i < schemas.size() - 1; i++) {
-            if (schemas.get(i).hasType() && !schemas.get(i).getType().equals(schemas.get(i + 1).getType())) {
+            List<Schema.Type> currentTypes = schemas.get(i).getType();
+            List<Schema.Type> nextTypes = schemas.get(i + 1).getType();
+            if (currentTypes != null && !currentTypes.equals(nextTypes)) {
                 sameType = false;
-            } else if (!schemas.get(i).hasType() || !schemas.get(i + 1).hasType()) {
+            } else if (currentTypes == null || nextTypes == null) {
                 sameType = false;
             }
         }
         if (sameType) {
-            var type = schemas.get(0).getType().get(0);
-            return TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
+            List<Schema.Type> schemaTypes = Objects.requireNonNull(schemas.get(0).getType());
+            var type = schemaTypes.get(0);
+            // Same scalar alternatives can share a broad base type. Object alternatives still
+            // lose shape information, so record generation records a warning.
+            TypeDef typeDef = TYPE_MAP.get(type.toString().toLowerCase(Locale.ENGLISH));
+            if (context.isJsonSchemaRecordsProfile() && TypeDef.OBJECT.equals(typeDef)) {
+                context.warn(UNSUPPORTED_KEYWORD, "anyOf object alternatives are not supported at property level; using java.lang.Object");
+            }
+            return typeDef;
+        }
+        if (context.isJsonSchemaRecordsProfile()) {
+            context.warn(UNSUPPORTED_KEYWORD, "anyOf alternatives cannot be modeled deterministically at property level; using java.lang.Object");
         }
         return TypeDef.OBJECT;
+    }
+
+    private static Schema nullableCompositionBranch(List<Schema> schemas) {
+        Schema nonNullSchema = null;
+        boolean nullSchemaFound = false;
+        for (Schema candidate : schemas) {
+            if (isNullSchema(candidate)) {
+                nullSchemaFound = true;
+            } else if (nonNullSchema == null) {
+                nonNullSchema = candidate;
+            } else {
+                return null;
+            }
+        }
+        return nullSchemaFound ? nonNullSchema : null;
+    }
+
+    private static boolean isNullSchema(Schema schema) {
+        List<Schema.Type> types = schema.getType();
+        return types != null && types.size() == 1 && types.contains(NULL);
     }
 
     public static String getConstantName(String input) {

@@ -1,0 +1,39 @@
+plugins {
+    id("java-library")
+    id("io.micronaut.build.internal.json-schema-module")
+}
+
+dependencies {
+    implementation(projects.micronautJsonSchemaGenerator)
+    compileOnly(libs.maven.plugin.api)
+    compileOnly(libs.maven.core)
+    compileOnly(libs.maven.plugin.annotations)
+    testCompileOnly(libs.maven.plugin.annotations)
+    testImplementation(libs.maven.plugin.api)
+    testImplementation(libs.maven.core)
+    testImplementation(libs.maven.plugin.testing.harness)
+    testImplementation(mnTest.junit.jupiter.api)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+}
+
+micronautBuild {
+    descriptor {
+        parentModuleId = "io.micronaut.jsonschema:micronaut-json-schema-maven-plugin"
+    }
+    binaryCompatibility.enabledAfter("2.2.0")
+}
+
+tasks.named("processResources") {
+    inputs.property("projectVersion", project.version.toString())
+    filesMatching("META-INF/maven/plugin.xml") {
+        filter { line -> line.replace('${project.version}', project.version.toString()) }
+    }
+}
+
+tasks.named("processTestResources") {
+    inputs.property("projectVersion", project.version.toString())
+    filesMatching("META-INF/plexus/components.xml") {
+        filter { line -> line.replace('${project.version}', project.version.toString()) }
+    }
+}
