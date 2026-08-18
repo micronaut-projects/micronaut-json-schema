@@ -15,8 +15,9 @@
  */
 package io.micronaut.jsonschema.configuration.validator.report;
 
-import io.micronaut.json.JsonMapper;
+import io.micronaut.core.type.Argument;
 import io.micronaut.core.naming.NameUtils;
+import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.configuration.validator.ConfigurationError;
 import io.micronaut.jsonschema.configuration.validator.DependencyInjectionError;
 import io.micronaut.serde.annotation.Serdeable;
@@ -70,7 +71,7 @@ public final class JsonConfigurationErrorReporter implements ConfigurationErrorR
                 error.snippetLanguage()
             ));
         }
-        String json = jsonMapper.writeValueAsString(new JsonReport(view, diView));
+        String json = jsonMapper.writeValueAsString(Argument.of(JsonReport.class), new JsonReport(view, diView));
         output.write(json.getBytes(StandardCharsets.UTF_8));
         output.write('\n');
         output.flush();
