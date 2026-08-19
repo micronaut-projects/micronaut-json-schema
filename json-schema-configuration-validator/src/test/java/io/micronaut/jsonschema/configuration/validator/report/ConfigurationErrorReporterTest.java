@@ -93,6 +93,29 @@ class ConfigurationErrorReporterTest {
     }
 
     @Test
+    void jsonReporterProducesValidJsonWithDependencyInjectionErrors() throws Exception {
+        Set<DependencyInjectionError> dependencyInjectionErrors = Set.of(new DependencyInjectionError(
+            "example.Root",
+            "example.Bean",
+            "No bean of type [example.Missing] exists",
+            "field dependency",
+            "Disabled by @Requires",
+            List.of("* example.Root", "* example.Bean"),
+            null,
+            null
+        ));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        new JsonConfigurationErrorReporter(JsonMapper.createDefault(), baos)
+            .report(Set.of(), dependencyInjectionErrors);
+        String json = baos.toString(StandardCharsets.UTF_8);
+
+        assertTrue(json.contains("\"dependencyInjectionErrors\""));
+        assertTrue(json.contains("example.Root"));
+        assertTrue(json.contains("example.Missing"));
+    }
+
+    @Test
     void htmlReporterEscapesContent() throws Exception {
         Set<ConfigurationError> errors = Set.of(new ConfigurationError(
             "a<b",
