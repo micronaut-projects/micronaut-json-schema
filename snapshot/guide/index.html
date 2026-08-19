@@ -58,11 +58,9 @@
                                 
                                 <div class="toc-item" style="margin-left:0"><a href="#configurationValidator"><strong>6</strong><span>Validating Configuration Against Schemas</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#jsonSchemaRegistry"><strong>7</strong><span>Runtime Schema Registry Reconciliation</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>7</strong><span>Repository</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>8</strong><span>Repository</span></a></div>
-                                
-                                <div class="toc-item" style="margin-left:0"><a href="#releaseHistory"><strong>9</strong><span>Release History</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#releaseHistory"><strong>8</strong><span>Release History</span></a></div>
                                 
                             </div>
                         </div>
@@ -135,11 +133,9 @@
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-configurationValidator"><a href="#configurationValidator"><strong>6</strong><span>Validating Configuration Against Schemas</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-jsonSchemaRegistry"><a href="#jsonSchemaRegistry"><strong>7</strong><span>Runtime Schema Registry Reconciliation</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>7</strong><span>Repository</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>8</strong><span>Repository</span></a></div>
-        
-        <div class="toc-item" style="margin-left:0px" id="toc-item-releaseHistory"><a href="#releaseHistory"><strong>9</strong><span>Release History</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-releaseHistory"><a href="#releaseHistory"><strong>8</strong><span>Release History</span></a></div>
         
         </div>
     </div>
@@ -155,7 +151,7 @@
 <h1 id="introduction"><a class="anchor" href="#introduction"></a>1 Introduction</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/introduction.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/introduction.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -171,14 +167,11 @@ JSON data consistency, validity and interoperability.</p>
 <div class="paragraph">
 <p>It also includes a configuration validator that can validate Micronaut configuration against JSON Schemas on the classpath.</p>
 </div>
-<div class="paragraph">
-<p>The runtime JSON Schema Registry module can reconcile schemas between application models, Confluent Schema Registry, and Oracle-backed JSON schema artifacts.</p>
-</div>
 
 <h1 id="dependencies"><a class="anchor" href="#dependencies"></a>2 Dependencies</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/dependencies.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/dependencies.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -255,29 +248,11 @@ The Generator module can also be directly used with the Micronaut&#8217;s <a hre
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>In order to reconcile runtime JSON Schemas between application models, Confluent Schema Registry, and Oracle-backed artifacts, add the registry module:
-        <div class="listingblock multi-language-sample">
-<div class="title"></div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">implementation(<span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-registry")</span></code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;dependency&gt;
-    &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
-    &lt;artifactId&gt;micronaut-json-schema-registry&lt;/artifactId&gt;
-&lt;/dependency&gt;</code></pre>
-</div>
-</div>
-</p>
-</div>
 
 <h1 id="quickStart"><a class="anchor" href="#quickStart"></a>3 Quick Start</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/quickStart.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/quickStart.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -432,7 +407,7 @@ documentation and add <code>Serdeable</code> annotation to the bean.</td>
 <h1 id="processor"><a class="anchor" href="#processor"></a>4 Creating Schema From Beans</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/processor.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/processor.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -445,7 +420,7 @@ documentation and add <code>Serdeable</code> annotation to the bean.</td>
 <h2 id="globalConfiguration"><a class="anchor" href="#globalConfiguration"></a>4.1 JSON Schema Configuration</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/processor/globalConfiguration.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/processor/globalConfiguration.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -568,7 +543,7 @@ kapt {
 <h2 id="configuration"><a class="anchor" href="#configuration"></a>4.2 JSON Schema Annotation Members</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/processor/configuration.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/processor/configuration.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -669,7 +644,7 @@ This will affect the file name as well as the id by which this schema can be ref
 <h2 id="serving"><a class="anchor" href="#serving"></a>4.3 Serving JSON Schemas</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/processor/serving.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/processor/serving.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -701,7 +676,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="loading"><a class="anchor" href="#loading"></a>4.4 Loading JSON Schemas</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/processor/loading.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/processor/loading.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -731,7 +706,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="validation"><a class="anchor" href="#validation"></a>4.5 JSON Schema Validation</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/processor/validation.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/processor/validation.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -761,7 +736,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="sources"><a class="anchor" href="#sources"></a>4.6 Supported Information Sources</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/sources.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/sources.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -774,7 +749,7 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 <h2 id="javadoc"><a class="anchor" href="#javadoc"></a>4.6.1 JavaDoc</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/processor/sources/javadoc.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/processor/sources/javadoc.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -788,7 +763,7 @@ descriptions and record parameter descriptions.</p>
 <h2 id="validationAnnotations"><a class="anchor" href="#validationAnnotations"></a>4.6.2 Validation Annotations</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/processor/sources/validationAnnotations.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/processor/sources/validationAnnotations.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -944,7 +919,7 @@ Custom validators cannot be supported, as this information is implementation-spe
 <h2 id="jacksonAnnotations"><a class="anchor" href="#jacksonAnnotations"></a>4.6.3 Jackson Annotations</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/processor/sources/jacksonAnnotations.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/processor/sources/jacksonAnnotations.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1162,7 +1137,7 @@ which allows defining custom filters.
 <h1 id="generator"><a class="anchor" href="#generator"></a>5 Generating Beans from Schema</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/generator.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/generator.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1187,7 +1162,7 @@ In addition to generating sources from schema files, URLs, and runtime inputs, t
 <h2 id="registration"><a class="anchor" href="#registration"></a>5.1 Build-time Generation Configuration</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/generator/registration.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/generator/registration.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1258,7 +1233,7 @@ In addition to generating sources from schema files, URLs, and runtime inputs, t
 <h2 id="usage"><a class="anchor" href="#usage"></a>5.2 Run-time Generation Configuration</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/generator/usage.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/generator/usage.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1364,7 +1339,7 @@ javaGenerator.generate(config);</code></pre>
 <h2 id="records"><a class="anchor" href="#records"></a>5.3 Record Generation From Discovered Schemas</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/generator/records.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/generator/records.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -1638,7 +1613,7 @@ Remote <code>$ref</code> fetching, arbitrary JSON Pointer resolution beyond supp
 <h2 id="oracle"><a class="anchor" href="#oracle"></a>5.4 Oracle Discovery and Plugins</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/generator/oracle.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/generator/oracle.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -2107,7 +2082,7 @@ The goal&#8217;s <code>skip</code> option defaults to <code>true</code>, so set 
 <h2 id="support"><a class="anchor" href="#support"></a>5.5 Supported JSON Schema Keywords and Limitations</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/generator/support.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/generator/support.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -2441,7 +2416,7 @@ The source code generation decides which object type to use for representing the
 <h2 id="example"><a class="anchor" href="#example"></a>5.6 Example Output of Generation</h2>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/generator/example.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/generator/example.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -2655,7 +2630,7 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 <h1 id="configurationValidator"><a class="anchor" href="#configurationValidator"></a>6 Validating Configuration Against Schemas</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/configurationValidator.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/configurationValidator.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -3455,918 +3430,10 @@ Implementations are discovered using <code>ServiceLoader</code> from the same cl
 </div>
 </div>
 
-<h1 id="jsonSchemaRegistry"><a class="anchor" href="#jsonSchemaRegistry"></a>7 Runtime Schema Registry Reconciliation</h1>
+<h1 id="repository"><a class="anchor" href="#repository"></a>7 Repository</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/jsonSchemaRegistry.adoc"'>
-        <i class='fa fa-pencil-square-o'></i> Improve this doc
-    </button>
-</div>
-
-
-<div id="jsonSchemaRegistry" class="paragraph">
-<p>The Micronaut JSON Schema Registry module reconciles JSON Schemas between one authority source and configured targets at runtime.</p>
-</div>
-<div class="paragraph">
-<p>The registry supports three authority modes:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>application</code>: discover application classes annotated with <a href="../api/io/micronaut/jsonschema/JsonSchema.html">JsonSchema</a> and resolve their generated JSON Schemas</p>
-</li>
-<li>
-<p><code>csr</code>: read the latest JSON Schema from Confluent Schema Registry subjects</p>
-</li>
-<li>
-<p><code>oracle</code>: read JSON Schemas from configured Oracle authority discovery providers</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>The non-authoritative systems are reconciled as targets. Schema Registry can register missing or changed subjects. Oracle materializers can create missing configured artifacts and report drift for existing artifacts.</p>
-</div>
-<div class="sect1">
-<h2 id="_dependency">Dependency</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>To use runtime reconciliation, add the registry module:</p>
-</div>
-<div class="paragraph">
-<p>        <div class="listingblock multi-language-sample">
-<div class="title"></div>
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">implementation(<span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-registry")</span></code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;dependency&gt;
-    &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
-    &lt;artifactId&gt;micronaut-json-schema-registry&lt;/artifactId&gt;
-&lt;/dependency&gt;</code></pre>
-</div>
-</div>
-</p>
-</div>
-<div class="paragraph">
-<p>Application authority mode also requires the normal JSON Schema annotation processor setup so schema resources are generated during compilation.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_enabling_the_registry">Enabling the Registry</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The registry is disabled by default. Enable it with <code>micronaut.jsonschema.registry.enabled</code>:</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.jsonschema.registry.enabled=true
-micronaut.jsonschema.registry.authority=application</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">micronaut:
-  jsonschema:
-    registry:
-      enabled: true
-      authority: application</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">micronaut = {jsonschema = {registry = {enabled = true, authority = "application"}}}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-groovy-config hljs" data-lang="groovy-config">micronaut {
-  jsonschema {
-    registry {
-      enabled = true
-      authority = "application"
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-hocon hljs" data-lang="hocon">{
-  micronaut {
-    jsonschema {
-      registry {
-        enabled = true
-        authority = "application"
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json-config hljs" data-lang="json-config">{
-  "micronaut": {
-    "jsonschema": {
-      "registry": {
-        "enabled": true,
-        "authority": "application"
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>When enabled, the registry runs once on startup. Startup failure handling is controlled by <code>micronaut.jsonschema.registry.fail-fast-strategy</code>:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>readiness_gate</code>: record the failure and keep readiness down until a later successful run</p>
-</li>
-<li>
-<p><code>startup_abort</code>: fail application startup when startup reconciliation fails</p>
-</li>
-<li>
-<p><code>none</code>: record the failure and continue without gating readiness</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>The registry also exposes <a href="../api/io/micronaut/jsonschema/registry/JsonSchemaRegistryService.html">JsonSchemaRegistryService</a>, which can trigger the same reconciliation logic programmatically.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_authority_modes">Authority Modes</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Application authority discovers <a href="../api/io/micronaut/jsonschema/JsonSchema.html">JsonSchema</a> types and resolves their generated schemas through <a href="../api/io/micronaut/jsonschema/JsonSchemaMapper.html">JsonSchemaMapper</a>.</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.jsonschema.registry.enabled=true
-micronaut.jsonschema.registry.authority=application
-micronaut.jsonschema.registry.csr.enabled=true
-micronaut.jsonschema.registry.csr.url=http://localhost:8081
-micronaut.jsonschema.registry.oracle.enabled=true
-micronaut.jsonschema.registry.oracle.datasource=default</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">micronaut:
-  jsonschema:
-    registry:
-      enabled: true
-      authority: application
-      csr:
-        enabled: true
-        url: http://localhost:8081
-      oracle:
-        enabled: true
-        datasource: default</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">micronaut = {jsonschema = {registry = {enabled = true, authority = "application", csr = {enabled = true, url = "http://localhost:8081"}, oracle = {enabled = true, datasource = "default"}}}}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-groovy-config hljs" data-lang="groovy-config">micronaut {
-  jsonschema {
-    registry {
-      enabled = true
-      authority = "application"
-      csr {
-        enabled = true
-        url = "http://localhost:8081"
-      }
-      oracle {
-        enabled = true
-        datasource = "default"
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-hocon hljs" data-lang="hocon">{
-  micronaut {
-    jsonschema {
-      registry {
-        enabled = true
-        authority = "application"
-        csr {
-          enabled = true
-          url = "http://localhost:8081"
-        }
-        oracle {
-          enabled = true
-          datasource = "default"
-        }
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json-config hljs" data-lang="json-config">{
-  "micronaut": {
-    "jsonschema": {
-      "registry": {
-        "enabled": true,
-        "authority": "application",
-        "csr": {
-          "enabled": true,
-          "url": "http://localhost:8081"
-        },
-        "oracle": {
-          "enabled": true,
-          "datasource": "default"
-        }
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Schema Registry authority uses configured subjects when <code>micronaut.jsonschema.registry.csr.subjects</code> is set. Otherwise, it discovers subjects from <code>GET /subjects</code> and keeps subjects that start with <code>micronaut.jsonschema.registry.naming.subject.prefix</code>.</p>
-</div>
-<div class="paragraph">
-<p>When Schema Registry is used, the registry uses these Confluent Schema Registry API calls:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>subject enumeration: <code>GET /subjects</code>, filtered client-side by <code>micronaut.jsonschema.registry.naming.subject.prefix</code></p>
-</li>
-<li>
-<p>authority or target latest schema lookup: <code>GET /subjects/{subject}/versions/latest</code></p>
-</li>
-<li>
-<p>target mode check before writes: <code>GET /mode/{subject}</code>, falling back to <code>GET /mode</code> when the subject mode is not set</p>
-</li>
-<li>
-<p>compatibility check before registering a changed target schema: <code>POST /compatibility/subjects/{subject}/versions/latest</code></p>
-</li>
-<li>
-<p>target registration: <code>POST /subjects/{subject}/versions</code> with <code>schemaType=JSON</code></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>HTTP 5xx and HTTP 429 responses are retried with a bounded retry policy. Other HTTP 4xx responses are not retried.</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.jsonschema.registry.enabled=true
-micronaut.jsonschema.registry.authority=csr
-micronaut.jsonschema.registry.csr.enabled=true
-micronaut.jsonschema.registry.csr.url=http://localhost:8081
-micronaut.jsonschema.registry.csr.subjects[0]=com.acme.Order</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">micronaut:
-  jsonschema:
-    registry:
-      enabled: true
-      authority: csr
-      csr:
-        enabled: true
-        url: http://localhost:8081
-        subjects:
-          - com.acme.Order</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">micronaut = {jsonschema = {registry = {enabled = true, authority = "csr", csr = {enabled = true, url = "http://localhost:8081", subjects = ["com.acme.Order"]}}}}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-groovy-config hljs" data-lang="groovy-config">micronaut {
-  jsonschema {
-    registry {
-      enabled = true
-      authority = "csr"
-      csr {
-        enabled = true
-        url = "http://localhost:8081"
-        subjects = ["com.acme.Order"]
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-hocon hljs" data-lang="hocon">{
-  micronaut {
-    jsonschema {
-      registry {
-        enabled = true
-        authority = "csr"
-        csr {
-          enabled = true
-          url = "http://localhost:8081"
-          subjects = ["com.acme.Order"]
-        }
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json-config hljs" data-lang="json-config">{
-  "micronaut": {
-    "jsonschema": {
-      "registry": {
-        "enabled": true,
-        "authority": "csr",
-        "csr": {
-          "enabled": true,
-          "url": "http://localhost:8081",
-          "subjects": ["com.acme.Order"]
-        }
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Oracle authority uses configured Oracle authority discovery providers. If none are configured, the built-in JSON Domain discovery provider is used.</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.jsonschema.registry.enabled=true
-micronaut.jsonschema.registry.authority=oracle
-micronaut.jsonschema.registry.oracle.enabled=true
-micronaut.jsonschema.registry.oracle.datasource=default
-micronaut.jsonschema.registry.oracle.domains[0]=APP_COM_ACME_ORDER</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">micronaut:
-  jsonschema:
-    registry:
-      enabled: true
-      authority: oracle
-      oracle:
-        enabled: true
-        datasource: default
-        domains:
-          - APP_COM_ACME_ORDER</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">micronaut = {jsonschema = {registry = {enabled = true, authority = "oracle", oracle = {enabled = true, datasource = "default", domains = ["APP_COM_ACME_ORDER"]}}}}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-groovy-config hljs" data-lang="groovy-config">micronaut {
-  jsonschema {
-    registry {
-      enabled = true
-      authority = "oracle"
-      oracle {
-        enabled = true
-        datasource = "default"
-        domains = ["APP_COM_ACME_ORDER"]
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-hocon hljs" data-lang="hocon">{
-  micronaut {
-    jsonschema {
-      registry {
-        enabled = true
-        authority = "oracle"
-        oracle {
-          enabled = true
-          datasource = "default"
-          domains = ["APP_COM_ACME_ORDER"]
-        }
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json-config hljs" data-lang="json-config">{
-  "micronaut": {
-    "jsonschema": {
-      "registry": {
-        "enabled": true,
-        "authority": "oracle",
-        "oracle": {
-          "enabled": true,
-          "datasource": "default",
-          "domains": ["APP_COM_ACME_ORDER"]
-        }
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_schema_registry_target">Schema Registry Target</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Schema Registry is enabled with <code>micronaut.jsonschema.registry.csr.enabled=true</code>.</p>
-</div>
-<div class="paragraph">
-<p>When Schema Registry is a target:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>manage</code> registers a missing subject or a new version when the latest schema differs</p>
-</li>
-<li>
-<p><code>observe_only</code> reads the latest subject and reports <code>missing_target</code>, <code>equivalent</code>, or <code>drift</code></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Schema Registry writes are skipped when <code>micronaut.jsonschema.registry.dry-run=true</code>; outcomes are labelled with <code>[DRY-RUN]</code>.</p>
-</div>
-<div class="paragraph">
-<p>The registry can authenticate to Schema Registry using:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>micronaut.jsonschema.registry.csr.username</code> and <code>micronaut.jsonschema.registry.csr.password</code></p>
-</li>
-<li>
-<p><code>micronaut.jsonschema.registry.csr.bearer-token</code></p>
-</li>
-<li>
-<p><code>micronaut.jsonschema.registry.csr.headers.*</code></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Bearer authentication takes precedence over basic authentication when both are configured.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_oracle_authority_and_materialization">Oracle Authority and Materialization</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Oracle integration requires <code>micronaut.jsonschema.registry.oracle.enabled=true</code> and a <code>javax.sql.DataSource</code> bean. The datasource bean name is selected with <code>micronaut.jsonschema.registry.oracle.datasource</code>; the default is <code>default</code>.</p>
-</div>
-<div class="paragraph">
-<p>Oracle integration has two roles:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>authority discovery providers read existing Oracle-backed JSON Schemas when <code>authority=oracle</code></p>
-</li>
-<li>
-<p>materializers reconcile a candidate schema to Oracle artifacts when Oracle is a target</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>If <code>micronaut.jsonschema.registry.oracle.authority.providers</code> is not configured, the built-in domain authority provider is used. If the provider list is configured, the configured list replaces the default list.</p>
-</div>
-<div class="paragraph">
-<p>If <code>micronaut.jsonschema.registry.oracle.materializers</code> is not configured, the built-in JSON Domain materializer is used. If the materializer list is configured, the configured list replaces the default list.</p>
-</div>
-<div class="paragraph">
-<p>The built-in domain provider supports explicit selection through <code>micronaut.jsonschema.registry.oracle.domains</code>. When no explicit domain list is configured, it applies <code>micronaut.jsonschema.registry.naming.domain.prefix</code> as a prefix filter.</p>
-</div>
-<div class="paragraph">
-<p>The built-in domain authority provider enumerates domains from the resolved Oracle data dictionary view. The query always orders by <code>name</code>; an explicit domain list is pushed down as <code>IN</code> predicates, while the configured domain prefix is pushed down as a <code>LIKE</code> predicate:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-sql hljs" data-lang="sql">SELECT name FROM USER_DOMAINS [WHERE name IN (?) | name LIKE ?] ORDER BY name
-SELECT name FROM ALL_DOMAINS WHERE owner = ? [AND name IN (?) | AND name LIKE ?] ORDER BY name</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>When <code>micronaut.jsonschema.registry.oracle.domains</code> is set, those configured names are used as the selected set and uppercased before lookup. When no explicit domain list is set, the prefix filter is <code>micronaut.jsonschema.registry.naming.domain.prefix</code> uppercased plus <code>%</code>.</p>
-</div>
-<div class="paragraph">
-<p>For each selected domain, schema extraction uses this order:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><code>SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?) FROM dual</code>, or <code>SELECT dbms_metadata.get_ddl('SQL_DOMAIN', ?, ?) FROM dual</code> when <code>owner</code> is configured</p>
-</li>
-<li>
-<p><code>SELECT search_condition FROM user_domain_constraints WHERE domain_name = ?</code>, or <code>SELECT search_condition FROM all_domain_constraints WHERE owner = ? AND domain_name = ?</code> when <code>owner</code> is configured</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>The provider extracts the JSON text from either <code>VALIDATE USING</code> or <code>VALIDATE CAST USING</code>, unescapes doubled single quotes, parses the text as JSON, and logs whether <code>get_ddl</code> or <code>search_condition</code> was used. Large schemas created by the built-in materializer are reconstructed from <code>to_clob('chunk') || &#8230;&#8203;</code> expressions. CAST mode is retained as part of the discovered domain representation.</p>
-</div>
-<div class="paragraph">
-<p>The built-in domain materializer computes domain names from logical schema names by prepending <code>micronaut.jsonschema.registry.naming.domain.prefix</code>, replacing <code>.</code> with <code><em></code>, and uppercasing the result. If the computed identifier is longer than 128 UTF-8 bytes, it is truncated and suffixed with <code></em></code> plus the first 8 uppercase hex characters of the SHA-256 hash of the full computed name.</p>
-</div>
-<div class="paragraph">
-<p>In Oracle authority mode, built-in domain names are paired to Schema Registry subjects through <code>micronaut.jsonschema.registry.mappings</code> when the domain name cannot be reversed deterministically. Names that include <code>_</code>, truncation, hash suffixing, or case-sensitive Java-style package names require an explicit mapping.</p>
-</div>
-<div class="paragraph">
-<p>The built-in domain materializer uses strict validation by default. Configure <code>micronaut.jsonschema.registry.oracle.cast-mode=cast</code> to enable Oracle CAST validation, or set <code>options.castMode</code> on a configured built-in domain materializer to override the default. Strict and CAST domains with otherwise identical schema text are reported as drift.</p>
-</div>
-<div class="paragraph">
-<p>The built-in duality-view discovery provider resolves <code>USER_</code>, <code>ALL_</code>, or <code>DBA_</code> metadata and retrieves each view name and its raw <code>JSON_SCHEMA</code> value in one ordered query. The same include, exclude, and prefix filtering rules are applied to <code>view_name</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-sql hljs" data-lang="sql">SELECT view_name, json_schema FROM USER_JSON_DUALITY_VIEWS [WHERE view_name IN (?) | view_name LIKE ?] ORDER BY view_name
-SELECT view_name, json_schema FROM ALL_JSON_DUALITY_VIEWS WHERE owner = ? [AND view_name IN (?) | AND view_name LIKE ?] ORDER BY view_name
-SELECT view_name, json_schema FROM DBA_JSON_DUALITY_VIEWS WHERE owner = ? [AND view_name IN (?) | AND view_name LIKE ?] ORDER BY view_name</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><code>USER_</code> metadata is used when no owner is configured. With an owner, <code>ALL_</code> metadata is tried first and <code>DBA_</code> metadata is used as a fallback when appropriate.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_oracle_extensions">Oracle Extensions</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Authority discovery providers use the shared schema discovery SPI from the generator module:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">public interface SchemaDiscoveryProvider {
-    String providerId();
-    DiscoveryResult discover(SchemaDiscoveryContext context,
-                             SourceSpec source) throws Exception;
-}</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Registry provider resolution supports Micronaut beans and <code>ServiceLoader</code> entries for:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs">META-INF/services/io.micronaut.jsonschema.generator.discovery.SchemaDiscoveryProvider</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Custom provider configuration is passed through <code>providerClassName</code>, optional <code>owner</code>, and provider-specific <code>options</code>:</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.jsonschema.registry.enabled=true
-micronaut.jsonschema.registry.authority=oracle
-micronaut.jsonschema.registry.oracle.enabled=true
-micronaut.jsonschema.registry.oracle.authority.providers[0].name=duality-views
-micronaut.jsonschema.registry.oracle.authority.providers[0].providerClassName=example.oracle.OrderDualityViewDiscoveryProvider
-micronaut.jsonschema.registry.oracle.authority.providers[0].options.logicalFqcn=com.acme.Order
-micronaut.jsonschema.registry.oracle.authority.providers[0].options.subject=com.acme.Order
-micronaut.jsonschema.registry.oracle.authority.providers[0].options.viewName=ORDER_DV</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">micronaut:
-  jsonschema:
-    registry:
-      enabled: true
-      authority: oracle
-      oracle:
-        enabled: true
-        authority:
-          providers:
-            - name: duality-views
-              providerClassName: example.oracle.OrderDualityViewDiscoveryProvider
-              options:
-                logicalFqcn: com.acme.Order
-                subject: com.acme.Order
-                viewName: ORDER_DV</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">micronaut = {jsonschema = {registry = {enabled = true, authority = "oracle", oracle = {enabled = true, authority = {providers = [{name = "duality-views", providerClassName = "example.oracle.OrderDualityViewDiscoveryProvider", options = {logicalFqcn = "com.acme.Order", subject = "com.acme.Order", viewName = "ORDER_DV"}}]}}}}}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-groovy-config hljs" data-lang="groovy-config">micronaut {
-  jsonschema {
-    registry {
-      enabled = true
-      authority = "oracle"
-      oracle {
-        enabled = true
-        authority {
-          providers = [{
-              name = "duality-views"
-              providerClassName = "example.oracle.OrderDualityViewDiscoveryProvider"
-              options {
-                logicalFqcn = "com.acme.Order"
-                subject = "com.acme.Order"
-                viewName = "ORDER_DV"
-              }
-            }]
-        }
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-hocon hljs" data-lang="hocon">{
-  micronaut {
-    jsonschema {
-      registry {
-        enabled = true
-        authority = "oracle"
-        oracle {
-          enabled = true
-          authority {
-            providers = [{
-                name = "duality-views"
-                providerClassName = "example.oracle.OrderDualityViewDiscoveryProvider"
-                options {
-                  logicalFqcn = "com.acme.Order"
-                  subject = "com.acme.Order"
-                  viewName = "ORDER_DV"
-                }
-              }]
-          }
-        }
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json-config hljs" data-lang="json-config">{
-  "micronaut": {
-    "jsonschema": {
-      "registry": {
-        "enabled": true,
-        "authority": "oracle",
-        "oracle": {
-          "enabled": true,
-          "authority": {
-            "providers": [{
-                "name": "duality-views",
-                "providerClassName": "example.oracle.OrderDualityViewDiscoveryProvider",
-                "options": {
-                  "logicalFqcn": "com.acme.Order",
-                  "subject": "com.acme.Order",
-                  "viewName": "ORDER_DV"
-                }
-              }]
-          }
-        }
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Materializers implement <a href="../api/io/micronaut/jsonschema/registry/oracle/OracleSchemaMaterializer.html">OracleSchemaMaterializer</a> and are resolved as Micronaut beans or <code>ServiceLoader</code> providers matched by <code>providerClassName</code>.
-The materializer SPI exposes <code>representationDescription()</code> so implementations can describe the Oracle artifact representation they support. The registry still calls <code>projectionCompatibility(&#8230;&#8203;)</code> for each candidate before materialization.</p>
-</div>
-<div class="paragraph">
-<p><code>ServiceLoader</code> materializers are registered through:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs">META-INF/services/io.micronaut.jsonschema.registry.oracle.OracleSchemaMaterializer</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The registry includes a duality-view materializer, <code>io.micronaut.jsonschema.registry.oracle.OracleDualityJsonViewMaterializer</code>. It verifies existing JSON Relational Duality Views by reading Oracle duality-view metadata and comparing normalized schema text. It can create a missing view only when <code>options.viewDdl</code> or <code>options.viewDdlResource</code> supplies explicit DDL. Existing views are never replaced or mutated.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_drift_and_projection_compatibility">Drift and Projection Compatibility</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Before reconciling a schema to Oracle, each materializer checks whether its Oracle artifact model can represent the candidate schema exactly. If exact representation is not possible, the registry reports <code>projection_incompatibility</code>.</p>
-</div>
-<div class="paragraph">
-<p>Oracle-specific schema metadata such as <code>extendedType</code>, <code>sqlPrecision</code>, and <code>sqlScale</code> cannot be projected to CSR without weakening validation semantics and is reported as <code>projection_incompatibility</code>.</p>
-</div>
-<div class="paragraph">
-<p>Oracle materializers are create-missing only in this version:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>missing target + <code>manage</code>: create the configured artifact</p>
-</li>
-<li>
-<p>missing target + <code>observe_only</code>: report <code>missing_target</code></p>
-</li>
-<li>
-<p>existing equivalent artifact: report <code>equivalent</code></p>
-</li>
-<li>
-<p>existing different or unreadable artifact: report <code>drift</code></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Existing Oracle artifacts are not altered, replaced, dropped, or migrated.</p>
-</div>
-<div class="paragraph">
-<p><code>micronaut.jsonschema.registry.oracle.drift.mode</code> controls whether drift is treated as a reconciliation failure:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>report</code>: report drift without marking the outcome as a failure</p>
-</li>
-<li>
-<p><code>fail</code>: report drift and mark the outcome as a failure</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_mapping">Mapping</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The registry derives names from configured naming rules where possible. Explicit <code>micronaut.jsonschema.registry.mappings</code> entries are available as a built-in domain pairing shortcut:</p>
-</div>
-<div class="openblock">
-<div class="content">
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.jsonschema.registry.mappings[0].subject=com.acme.Order
-micronaut.jsonschema.registry.mappings[0].domain=APP_COM_ACME_ORDER</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">micronaut:
-  jsonschema:
-    registry:
-      mappings:
-        - subject: com.acme.Order
-          domain: APP_COM_ACME_ORDER</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">micronaut = {jsonschema = {registry = {mappings = [{subject = "com.acme.Order", domain = "APP_COM_ACME_ORDER"}]}}}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-groovy-config hljs" data-lang="groovy-config">micronaut {
-  jsonschema {
-    registry {
-      mappings = [{
-          subject = "com.acme.Order"
-          domain = "APP_COM_ACME_ORDER"
-        }]
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-hocon hljs" data-lang="hocon">{
-  micronaut {
-    jsonschema {
-      registry {
-        mappings = [{
-            subject = "com.acme.Order"
-            domain = "APP_COM_ACME_ORDER"
-          }]
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-<div class="listingblock multi-language-sample">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-json-config hljs" data-lang="json-config">{
-  "micronaut": {
-    "jsonschema": {
-      "registry": {
-        "mappings": [{
-            "subject": "com.acme.Order",
-            "domain": "APP_COM_ACME_ORDER"
-          }]
-      }
-    }
-  }
-}</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="paragraph">
-<p>Mappings are used to override or disambiguate subject/domain pairing. They are not a generic mapping format for every Oracle artifact kind. Non-domain providers and materializers should define their mapping options under their own <code>options</code>.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_readiness_and_metrics">Readiness and Metrics</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>When Micronaut Management is present, the registry exposes a readiness indicator backed by the last reconciliation state. Health checks do not query Schema Registry or Oracle directly.</p>
-</div>
-<div class="paragraph">
-<p>When Micrometer is present, the registry records:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>reconciliation outcomes</p>
-</li>
-<li>
-<p>discovered authority schema counts</p>
-</li>
-<li>
-<p>reconciliation run duration</p>
-</li>
-<li>
-<p>target operation duration for Schema Registry HTTP operations and Oracle introspection/DDL operations</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Metrics avoid high-cardinality schema identifiers. Schema names, subjects, and Oracle artifact names are logged in structured reconciliation outcome messages.</p>
-</div>
-</div>
-</div>
-
-<h1 id="repository"><a class="anchor" href="#repository"></a>8 Repository</h1>
-
-<div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/repository.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/repository.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
@@ -4379,10 +3446,10 @@ micronaut.jsonschema.registry.mappings[0].domain=APP_COM_ACME_ORDER</code></pre>
 <p><a href="https://github.com/micronaut-projects/micronaut-json-schema">https://github.com/micronaut-projects/micronaut-json-schema</a></p>
 </div>
 
-<h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>9 Release History</h1>
+<h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>8 Release History</h1>
 
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/json-schema-registry-poc-new/src/main/docs/guide/releaseHistory.adoc"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.2.x/src/main/docs/guide/releaseHistory.adoc"'>
         <i class='fa fa-pencil-square-o'></i> Improve this doc
     </button>
 </div>
