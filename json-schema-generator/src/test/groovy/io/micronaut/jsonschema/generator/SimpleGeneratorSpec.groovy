@@ -228,7 +228,7 @@ class SimpleGeneratorSpec extends AbstractGeneratorSpec {
                 }
 
                 @JsonCreator
-                public static Run.Shell statusOf(String value) {
+                public static Shell statusOf(String value) {
                   return switch (value) {
                     case "bash" -> BASH;
                     case "pwsh" -> PWSH;
