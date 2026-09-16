@@ -1,0 +1,42 @@
+import io.micronaut.build.internal.generator.MockSchemaServerService
+
+// Shared setup of the test-suite-generator-<language> projects, which generate beans from the JSON schemas
+// of test-suite-generator-java/src/test/resources at build time and exercise them from tests in each language.
+plugins {
+    id("io.micronaut.build.internal.json-schema-base")
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    beanGenerator {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+dependencies {
+    beanGenerator(project(":micronaut-json-schema-generator"))
+}
+
+// The JSON schema fixtures are shared by all the generator test suites.
+ext.schemaFixturesDir = rootProject.layout.projectDirectory.dir("test-suite-generator-java/src/test/resources")
+
+// Serves test-only JSON fixtures over HTTP so generator tasks can resolve `$ref`
+// URLs without depending on remote services (see #191). Port is fixed so the
+// fixture files can hardcode `http://127.0.0.1:38080/...` as their reference URL.
+// 127.0.0.1 (not localhost) keeps lookup IPv4-only and avoids dual-stack issues
+// on hosts where localhost resolves to ::1 first.
+ext.mockSchemaServer = gradle.sharedServices.registerIfAbsent("mockSchemaServer", MockSchemaServerService) {
+    parameters {
+        fixturesDir = schemaFixturesDir.dir("_fixtures")
+        port = 38080
+    }
+    maxParallelUsages = 1
+}
+
+tasks.withType(Checkstyle).configureEach {
+    enabled = false
+}

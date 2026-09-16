@@ -6,7 +6,7 @@ pluginManagement {
 }
 
 plugins {
-    id 'io.micronaut.build.shared.settings' version '8.0.2'
+    id 'io.micronaut.build.shared.settings' version '8.1.1'
 }
 
 dependencyResolutionManagement {
@@ -32,8 +32,12 @@ include 'json-schema-utils'
 include 'json-schema-configuration-validator'
 include 'test-suite'
 include 'test-suite-generator-java'
+include 'test-suite-generator-groovy'
+include 'test-suite-generator-kotlin'
+include 'test-suite-generator-python'
 include 'test-suite-groovy'
 include 'test-suite-kotlin'
+include 'test-suite-python'
 
 enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 

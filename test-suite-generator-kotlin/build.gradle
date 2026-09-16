@@ -1,0 +1,61 @@
+import io.micronaut.build.internal.generator.BeanGeneratorTask
+
+plugins {
+    id("io.micronaut.build.internal.kotlin-ksp")
+    id("io.micronaut.build.internal.test-suite-generator")
+}
+
+dependencies {
+    implementation(projects.micronautJsonSchemaGenerator)
+    implementation(mnSerde.micronaut.serde.jackson)
+    implementation(mnValidation.validation)
+
+    api(projects.micronautJsonSchemaAnnotations)
+
+    // The generated Java beans are compiled in the main source set by javac with the Java annotation processors
+    // (KSP reads the Jackson annotations and primitive getters of Java sources differently), the Kotlin tests use KSP.
+    annotationProcessor(mn.micronaut.inject.java)
+    annotationProcessor(mnSerde.micronaut.serde.processor)
+
+    kspTest(mn.micronaut.inject.kotlin)
+
+    testImplementation(mn.micronaut.inject.kotlin.test)
+    testImplementation(mn.micronaut.inject)
+    testImplementation(mnTest.micronaut.test.junit5)
+    testImplementation(mnTest.junit.jupiter.api)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+    testRuntimeOnly(mnTest.junit.jupiter.engine)
+}
+
+// TODO(json-schema-generator): the beans are generated as Java sources because the Kotlin target does not yet
+// produce compilable code for the polymorphic animal schema (subtypes import and extend a final `Animal` with
+// no zero-argument constructor); the Kotlin tests consume the Java beans.
+def beanGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(schemaFixturesDir.file("animal.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.animals")
+}
+
+def refGenerator = tasks.register("generateRef", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    inputDirectory.convention(schemaFixturesDir.dir("ref"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.ref")
+    acceptedUrlPatterns.convention(["^http://127\\.0\\.0\\.1:38080/[^?]+\\.json(#.*)?\$"])
+    usesService(mockSchemaServer)
+    doFirst { mockSchemaServer.get() } // force eager start before the subprocess runs
+}
+
+sourceSets {
+    main {
+        java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(refGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+    }
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
