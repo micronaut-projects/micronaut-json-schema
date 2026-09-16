@@ -1,32 +1,12 @@
 The source generation from JSON schema can also be used during run-time with the api:jsonschema.generator[] package. The following code snippet shows how `SourceGenerator` object can be used to generate beans of your desired language from JSON schema.
 
-[source,java]
-----
-// create a generator with your chosen language
-var javaGenerator = new SourceGenerator("JAVA");
-
-// Optional: can configure accepted URL references
-UrlLoader.setAllowedUrlPatterns(List.of("^https://.*/.*.schema.json$"));
-UrlLoader.addAllowedUrlPattern("^http://localhost:.*");
-
-// Optional: set up input file name
-String schemaFileName = "example.schema.json";
-SourceGenerator.setInputFileName(schemaFileName);
-
-Path outputPath = Paths.get("output"); // Define the base output path
-String packageName = "com.example.temp"; // Example package name
-SourceGeneratorConfig config = new SourceGeneratorConfigBuilder()
-                                    .withOutputFolder(outputPath)
-                                    .withOutputPackageName(packageName)
-                                    .withJsonUrl("https://www.jsonschemastore.org/example/temp.schema.json")
-                                    .build();
-
-javaGenerator.generate(config);
-----
+snippet::io.micronaut.jsonschema.generator.usage.RuntimeGenerationTest[project-base="test-suite-generator", tags=generate, indent=0]
 
 <1> Setting up `allowedUrlPatterns` would provide a check for all URL references inside the schema.
 <2> The input file name does not need to be specified. It is usually extracted from the given URL, file, or folder. This name might be used while deciding on the same of the top level schema if there is no `title` available in the schema.
 <3> Calling the ``SourceGenerator``'s `generate(SourceGeneratorConfig config)` function will generate beans inside the given config's output location. The function will return the generated File object of the top level schema when there is a single input schema. Otherwise (a folder of schemas), the function would return null regardless of generation completion status.
+
+NOTE: The generator produces Java or Kotlin sources (`"JAVA"` or `"KOTLIN"`). Groovy and Python applications consume the generated Java beans as ordinary classes on the classpath.
 
 The `SourceGeneratorConfigBuilder` methods are similar to that of `BeanGeneratorTask`'s configuration explained in the previous section. There are explained below:
 
