@@ -1,20 +1,13 @@
 import re
 from typing import Annotated
 
-import java
 from jakarta.inject import Inject
+from micronaut.jsonschema.generator.animals import Animal, Cat, Dog
 from micronaut.jsonschema.generator.ref import Achievement
 from micronaut.serde import ObjectMapper
 from micronaut.test.extensions.junit5.annotation import MicronautTest
 from org.junit.jupiter.api import Test
 from tools.jackson.databind.json import JsonMapper
-
-# TODO(python): java.type needed because importing io.micronaut.jsonschema.generator.animals writes its Python shim to
-# micronaut/jsonschema/generator/animals/__init__.py, the source package of AnimalTest ("Output stream or writer has
-# already been opened"); see DISABLED_TESTS.md.
-Animal = java.type("io.micronaut.jsonschema.generator.animals.Animal")
-Cat = java.type("io.micronaut.jsonschema.generator.animals.Cat")
-Dog = java.type("io.micronaut.jsonschema.generator.animals.Dog")
 
 
 @MicronautTest

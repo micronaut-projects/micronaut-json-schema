@@ -7,16 +7,18 @@ from jakarta.inject import Inject
 from micronaut.core.io import ResourceLoader
 from micronaut.test.extensions.junit5.annotation import MicronautTest
 from org.junit.jupiter.api import Test
+from org.junit.jupiter.params import ParameterizedTest
+from org.junit.jupiter.params.provider import ValueSource
 
 
 @MicronautTest(startApplication=False)
 class SchemaGenerationTest:
     resource_loader: Annotated[ResourceLoader, Inject]
 
-    @Test
-    def test_build_json_schema(self) -> None:
-        for name in ["llama", "red-winged-blackbird"]:
-            assert self.resource_loader.getResource("META-INF/schemas/" + name + ".schema.json").isPresent()
+    @ParameterizedTest
+    @ValueSource(strings=["llama", "red-winged-blackbird"])
+    def test_build_json_schema(self, name: str) -> None:
+        assert self.resource_loader.getResource("META-INF/schemas/" + name + ".schema.json").isPresent()
 
     @Test
     def test_llama_schema(self) -> None:

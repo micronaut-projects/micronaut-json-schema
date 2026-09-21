@@ -24,14 +24,17 @@ dependencies {
 
     testImplementation(mnTest.micronaut.test.junit5)
     testImplementation(mnTest.junit.jupiter.api)
+    testImplementation(mnTest.junit.jupiter.params)
     testRuntimeOnly(mnTest.junit.jupiter.engine)
     testRuntimeOnly(mnTest.junit.platform.launcher)
     testRuntimeOnly(mnLogging.logback.classic)
 }
 
-// TODO(python): the Python compiler does not expose annotation processor options (PythonVisitorContext.getOptions()
-// is empty), so `micronaut.jsonschema.baseUri` cannot be set like in the other suites; the schemas use the default
-// http://localhost:8080/schemas base URI, which the test resources match.
+micronautBuild {
+    python {
+        compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas")
+    }
+}
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()

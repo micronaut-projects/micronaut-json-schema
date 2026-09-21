@@ -1,5 +1,4 @@
 import io.micronaut.build.internal.generator.BeanGeneratorTask
-import io.micronaut.build.python.PythonCompile
 
 plugins {
     id("java-library")
@@ -56,12 +55,6 @@ sourceSets {
         java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
         java.srcDir(refGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
     }
-}
-
-// The Python compile classpath only contains jars: make the generated beans of this project visible.
-tasks.named("compileTestPython", PythonCompile) {
-    dependsOn(tasks.named("classes"))
-    classpath.from(sourceSets.main.output)
 }
 
 tasks.withType(Test).configureEach {
