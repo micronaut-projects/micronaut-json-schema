@@ -1,8 +1,16 @@
 To expose the generated JSON Schema output from your running application, add https://docs.micronaut.io/latest/guide/#staticResources[static resources] configuration.
 
-[source,properties]
+[configuration]
 ----
-include::test-suite/src/test/resources/application.properties[]
+micronaut:
+  router:
+    static-resources:
+      jsonschema:
+        paths: classpath:META-INF/schemas
+        mapping: /schemas/**
+  jsonschema:
+    validation:
+      baseUri: https://example.com/schemas
 ----
 
 <1> The schemas are exposed on the `/schemas` path, which can be customized for your specific needs.
