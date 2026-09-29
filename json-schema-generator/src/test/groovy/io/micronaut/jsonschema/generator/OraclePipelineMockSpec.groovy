@@ -63,7 +63,8 @@ class OraclePipelineMockSpec extends Specification {
                 ])],
                 false,
                 true,
-                "KOTLIN"
+                "KOTLIN",
+                true
             )
         )
 
@@ -73,6 +74,7 @@ class OraclePipelineMockSpec extends Specification {
         and:
         def manifest = readJson(result.manifestPath())
         jsonAt(manifest, "parameters", "language").getStringValue() == "KOTLIN"
+        jsonAt(manifest, "parameters", "generatedAnnotation").getBooleanValue()
         jsonAt(manifest, "generatedSourceFiles", 0).getStringValue() == "io/micronaut/jsonschema/kotlin/generated/Kotlinpayload.kt"
 
         and:
@@ -80,6 +82,7 @@ class OraclePipelineMockSpec extends Specification {
         source.contains("data class Kotlinpayload")
         source.contains("val name:")
         source.contains("String")
+        source.contains("@GeneratedFromJsonSchema")
     }
 
     void "pipeline falls back to domain constraints when get ddl is unavailable"() {
@@ -903,6 +906,9 @@ class OraclePipelineMockSpec extends Specification {
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/PolyRoot.java").toFile().text.contains("public interface PolyRoot")
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/Alpha.java").toFile().text.contains("public class Alpha implements PolyRoot")
         outputDir.resolve("io/micronaut/jsonschema/custom/generated/Beta.java").toFile().text.contains("public class Beta implements PolyRoot")
+        ["PolyRoot", "Alpha", "Beta"].every {
+            !outputDir.resolve("io/micronaut/jsonschema/custom/generated/${it}.java").toFile().text.contains("@GeneratedFromJsonSchema")
+        }
     }
 
     void "pipeline maps root anyOf object alternatives to existing oneOf polymorphic generator behavior"() {

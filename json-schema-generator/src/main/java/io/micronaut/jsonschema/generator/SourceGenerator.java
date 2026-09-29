@@ -18,6 +18,7 @@ package io.micronaut.jsonschema.generator;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.inject.processing.ProcessingException;
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.jsonschema.GeneratedFromJsonSchema;
 import io.micronaut.jsonschema.generator.aggregator.AnnotationsAggregator;
 import io.micronaut.jsonschema.generator.loaders.FileLoader;
 import io.micronaut.jsonschema.generator.utils.GeneratorContext;
@@ -385,6 +386,7 @@ public final class SourceGenerator {
         EnumDef.EnumDefBuilder enumBuilder = EnumDef.builder(builderClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(ClassTypeDef.of(SERDEABLE_ANN));
+        addGeneratedAnnotation(enumBuilder);
         boolean isComplexEnum = false;
         LinkedHashMap<ExpressionDef.Constant, ExpressionDef> cases = new LinkedHashMap<>();
         LinkedHashMap<String, Object> enumValues = new LinkedHashMap<>();
@@ -850,6 +852,13 @@ public final class SourceGenerator {
         if (shouldAddGeneratedJsonSchemaAnnotation()) {
             // Enabled by the record-generation profile so emitted models can be discovered as schema-backed types.
             builder.addAnnotation(ClassTypeDef.of(io.micronaut.jsonschema.JsonSchema.class));
+        }
+        addGeneratedAnnotation(builder);
+    }
+
+    private void addGeneratedAnnotation(ObjectDefBuilder builder) {
+        if (context.getConfiguration().generatedAnnotation()) {
+            builder.addAnnotation(ClassTypeDef.of(GeneratedFromJsonSchema.class));
         }
     }
 

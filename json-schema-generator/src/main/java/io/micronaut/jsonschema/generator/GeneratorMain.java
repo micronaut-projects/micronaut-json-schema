@@ -47,11 +47,12 @@ public class GeneratorMain {
      *                 <li>The output path and package name.</li>
      *                 <li>An optional file name in case there is only one output file desired.</li>
      *                 <li>An optional List of String that has allowed URL patterns that are accepted for the references inside the schema</li>
+     *                 <li>Whether to annotate the generated types with {@code @GeneratedFromJsonSchema}.</li>
      *             </ol>
      * @throws IOException In case definition file path is incorrect.
      */
     public static void main(String[] args) throws IOException {
-        if (args.length != 8) {
+        if (args.length != 9) {
             throw new IllegalStateException("Invalid number of arguments.");
         }
         String jsonURL = args[0];
@@ -74,6 +75,7 @@ public class GeneratorMain {
             .withOutputFolder(outputPath)
             .withOutputPackageName(outputPackageName)
             .withOutputFileName(outputFileName)
+            .withGeneratedAnnotation(Boolean.parseBoolean(args[8]))
             .build();
 
         var allowedUrlPatterns = parseListOfAllowedUrlPatterns(args[7]);

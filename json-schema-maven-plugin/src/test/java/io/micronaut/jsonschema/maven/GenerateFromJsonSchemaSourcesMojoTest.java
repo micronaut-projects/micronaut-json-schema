@@ -76,12 +76,14 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         );
         mojo.skipOnError = true;
         mojo.failOnMissingSource = false;
+        mojo.generatedAnnotation = true;
         mojo.project = new MavenProject();
 
         mojo.execute();
 
         JsonSchemaRecordsGeneratorConfig config = mojo.capturedConfig;
         assertNotNull(config);
+        assertTrue(config.generatedAnnotation());
         assertEquals("jdbc:oracle:thin:@localhost:1521/FREEPDB1", config.jdbcUrl());
         assertEquals("app", config.username());
         assertEquals("secret", config.password());
@@ -238,6 +240,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         private List<SourceConfiguration> sources = List.of();
         private boolean skipOnError;
         private boolean failOnMissingSource = true;
+        private boolean generatedAnnotation;
         private boolean skip = true;
         private MavenProject project = new MavenProject();
         private JsonSchemaRecordsGeneratorConfig capturedConfig;
@@ -299,6 +302,11 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         }
 
         @Override
+        protected Boolean getGeneratedAnnotation() {
+            return generatedAnnotation;
+        }
+
+        @Override
         boolean isSkipped() {
             return skip;
         }
@@ -329,6 +337,7 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         private List<SourceConfiguration> sources = List.of();
         private boolean skipOnError;
         private boolean failOnMissingSource = true;
+        private boolean generatedAnnotation;
         private boolean skip = true;
         private String serverId;
         private Settings settings;
@@ -373,6 +382,11 @@ class GenerateFromJsonSchemaSourcesMojoTest {
         @Override
         protected Boolean getFailOnMissingSource() {
             return failOnMissingSource;
+        }
+
+        @Override
+        protected Boolean getGeneratedAnnotation() {
+            return generatedAnnotation;
         }
 
         @Override

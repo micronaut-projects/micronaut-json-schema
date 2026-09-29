@@ -41,6 +41,7 @@ public class SourceGeneratorConfigBuilder {
     String outputFileName = "";
     JavadocConfig javadocConfig = new JavadocConfig();
     RecordAdoptionStrategy recordAdoptionStrategy = RecordAdoptionStrategy.PREFER_RECORD;
+    boolean generatedAnnotation = false;
 
     /**
      * @return {@link SourceGeneratorConfig}
@@ -55,7 +56,8 @@ public class SourceGeneratorConfigBuilder {
             outputPackageName,
             outputFileName,
             javadocConfig,
-            recordAdoptionStrategy
+            recordAdoptionStrategy,
+            generatedAnnotation
         );
     }
 
@@ -146,6 +148,18 @@ public class SourceGeneratorConfigBuilder {
      */
     public SourceGeneratorConfigBuilder withRecordAdoptionStrategy(RecordAdoptionStrategy strategy) {
         this.recordAdoptionStrategy = strategy;
+        return this;
+    }
+
+    /**
+     * Sets whether to annotate the generated types with {@code @GeneratedFromJsonSchema}, so that code coverage tools
+     * like JaCoCo skip them. The generated sources then need the JSON schema annotations module on the compile classpath.
+     * @param generatedAnnotation Whether to add the annotation
+     * @return This
+     * @since 2.3.0
+     */
+    public SourceGeneratorConfigBuilder withGeneratedAnnotation(boolean generatedAnnotation) {
+        this.generatedAnnotation = generatedAnnotation;
         return this;
     }
 

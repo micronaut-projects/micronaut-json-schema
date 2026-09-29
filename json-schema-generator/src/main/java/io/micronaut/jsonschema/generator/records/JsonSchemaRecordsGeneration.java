@@ -40,6 +40,7 @@ import java.util.Map;
  * @param skipOnError Whether per-object discovery and generation failures should be skipped
  * @param failOnMissingSource Whether unavailable configured sources should fail the build
  * @param language Generated source language
+ * @param generatedAnnotation Whether to annotate the generated types with {@code @GeneratedFromJsonSchema}
  * @since 2.2.0
  */
 public record JsonSchemaRecordsGeneration(
@@ -63,7 +64,9 @@ public record JsonSchemaRecordsGeneration(
 
     Boolean failOnMissingSource,
 
-    String language
+    String language,
+
+    Boolean generatedAnnotation
 ) {
 
     /**
@@ -95,6 +98,36 @@ public record JsonSchemaRecordsGeneration(
     }
 
     /**
+     * Create a generation task definition that does not annotate the generated types with {@code @GeneratedFromJsonSchema}.
+     *
+     * @param jdbcUrl JDBC URL
+     * @param username Database username
+     * @param password Database password
+     * @param targetPackage Target package for generated sources
+     * @param languageLevel Java language level used for generated Java sources
+     * @param schemaCacheDir Directory where discovered schemas are cached
+     * @param outputDir Directory where sources are generated
+     * @param sources Configured schema discovery sources
+     * @param skipOnError Whether per-object discovery and generation failures should be skipped
+     * @param failOnMissingSource Whether unavailable configured sources should fail the build
+     * @param language Generated source language
+     */
+    public JsonSchemaRecordsGeneration(String jdbcUrl,
+                                       String username,
+                                       String password,
+                                       String targetPackage,
+                                       Integer languageLevel,
+                                       File schemaCacheDir,
+                                       File outputDir,
+                                       List<Map<String, Object>> sources,
+                                       Boolean skipOnError,
+                                       Boolean failOnMissingSource,
+                                       String language) {
+        this(jdbcUrl, username, password, targetPackage, languageLevel, schemaCacheDir, outputDir, sources,
+            skipOnError, failOnMissingSource, language, false);
+    }
+
+    /**
      * Create a normalized generation task definition.
      *
      * @param jdbcUrl JDBC URL
@@ -108,6 +141,7 @@ public record JsonSchemaRecordsGeneration(
      * @param skipOnError Whether per-object discovery and generation failures should be skipped
      * @param failOnMissingSource Whether unavailable configured sources should fail the build
      * @param language Generated source language
+     * @param generatedAnnotation Whether to annotate the generated types with {@code @GeneratedFromJsonSchema}
      */
     public JsonSchemaRecordsGeneration {
         if (targetPackage == null || targetPackage.isBlank()) {
@@ -124,6 +158,7 @@ public record JsonSchemaRecordsGeneration(
         skipOnError = skipOnError != null && skipOnError;
         failOnMissingSource = failOnMissingSource == null || failOnMissingSource;
         language = language == null ? "JAVA" : language;
+        generatedAnnotation = generatedAnnotation != null && generatedAnnotation;
     }
 
     public void generate() {
@@ -162,7 +197,8 @@ public record JsonSchemaRecordsGeneration(
             toSourceSpecs(sources),
             skipOnError,
             failOnMissingSource,
-            language
+            language,
+            generatedAnnotation
         );
     }
 

@@ -82,6 +82,7 @@ public record JsonSchemaRecordsManifest(
      * @param sources Configured sources
      * @param skipOnError Skip toggle
      * @param failOnMissingSource Missing source toggle
+     * @param generatedAnnotation Generated annotation toggle
      */
     public record Parameters(
         String targetPackage,
@@ -91,8 +92,33 @@ public record JsonSchemaRecordsManifest(
         String outputDir,
         List<ConfiguredSource> sources,
         boolean skipOnError,
-        boolean failOnMissingSource
+        boolean failOnMissingSource,
+        boolean generatedAnnotation
     ) {
+
+        /**
+         * Effective pipeline parameters without the generated annotation.
+         *
+         * @param targetPackage Target package
+         * @param language Generated source language
+         * @param languageLevel Java language level used for generation
+         * @param schemaCacheDir Schema cache directory
+         * @param outputDir Output directory
+         * @param sources Configured sources
+         * @param skipOnError Skip toggle
+         * @param failOnMissingSource Missing source toggle
+         */
+        public Parameters(String targetPackage,
+                          String language,
+                          int languageLevel,
+                          String schemaCacheDir,
+                          String outputDir,
+                          List<ConfiguredSource> sources,
+                          boolean skipOnError,
+                          boolean failOnMissingSource) {
+            this(targetPackage, language, languageLevel, schemaCacheDir, outputDir, sources, skipOnError,
+                failOnMissingSource, false);
+        }
     }
 
     /**

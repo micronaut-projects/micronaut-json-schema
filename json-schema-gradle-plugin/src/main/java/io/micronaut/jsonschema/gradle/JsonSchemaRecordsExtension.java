@@ -123,4 +123,10 @@ public abstract class JsonSchemaRecordsExtension {
      * @return Whether unavailable configured sources should fail the build.
      */
     public abstract Property<Boolean> getFailOnMissingSource();
+
+    /**
+     * @return Whether generated types should be annotated with {@code @GeneratedFromJsonSchema}, so that code coverage
+     * tools like JaCoCo skip them.
+     */
+    public abstract Property<Boolean> getGeneratedAnnotation();
 }

@@ -90,4 +90,12 @@ public abstract class AbstractGenerateFromJsonSchemaSourcesMojo extends Abstract
      * @return Whether unavailable configured sources should fail the build
      */
     protected abstract Boolean getFailOnMissingSource();
+
+    /**
+     * @return Whether generated types should be annotated with {@code @GeneratedFromJsonSchema}
+     * @since 2.3.0
+     */
+    protected Boolean getGeneratedAnnotation() {
+        return false;
+    }
 }

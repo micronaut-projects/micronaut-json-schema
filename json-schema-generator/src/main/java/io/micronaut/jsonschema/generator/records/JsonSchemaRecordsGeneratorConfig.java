@@ -40,6 +40,7 @@ import java.util.Map;
  * @param skipOnError Whether to skip individual failures
  * @param failOnMissingSource Whether unavailable configured sources should fail the build
  * @param language Generated source language
+ * @param generatedAnnotation Whether to annotate the generated types with {@code @GeneratedFromJsonSchema}
  * @since 2.2.0
  */
 @Internal
@@ -54,7 +55,8 @@ public record JsonSchemaRecordsGeneratorConfig(
     List<SourceSpec> sources,
     boolean skipOnError,
     boolean failOnMissingSource,
-    String language
+    String language,
+    boolean generatedAnnotation
 ) {
 
     /**
@@ -86,6 +88,36 @@ public record JsonSchemaRecordsGeneratorConfig(
     }
 
     /**
+     * Create a generation configuration that does not annotate the generated types with {@code @GeneratedFromJsonSchema}.
+     *
+     * @param jdbcUrl The JDBC URL
+     * @param username The database username
+     * @param password The database password
+     * @param targetPackage Target package
+     * @param languageLevel Java language level used for Java generation
+     * @param schemaCacheDir Discovery output directory
+     * @param outputDir Generated source directory
+     * @param sources Configured discovery sources
+     * @param skipOnError Whether to skip individual failures
+     * @param failOnMissingSource Whether unavailable configured sources should fail the build
+     * @param language Generated source language
+     */
+    public JsonSchemaRecordsGeneratorConfig(String jdbcUrl,
+                                            String username,
+                                            String password,
+                                            String targetPackage,
+                                            int languageLevel,
+                                            Path schemaCacheDir,
+                                            Path outputDir,
+                                            List<SourceSpec> sources,
+                                            boolean skipOnError,
+                                            boolean failOnMissingSource,
+                                            String language) {
+        this(jdbcUrl, username, password, targetPackage, languageLevel, schemaCacheDir, outputDir, sources,
+            skipOnError, failOnMissingSource, language, false);
+    }
+
+    /**
      * Create a normalized generator configuration.
      *
      * @param jdbcUrl The JDBC URL
@@ -99,6 +131,7 @@ public record JsonSchemaRecordsGeneratorConfig(
      * @param skipOnError Whether to skip individual failures
      * @param failOnMissingSource Whether unavailable configured sources should fail the build
      * @param language Generated source language
+     * @param generatedAnnotation Whether to annotate the generated types with {@code @GeneratedFromJsonSchema}
      */
     public JsonSchemaRecordsGeneratorConfig {
         if (languageLevel <= 0) {

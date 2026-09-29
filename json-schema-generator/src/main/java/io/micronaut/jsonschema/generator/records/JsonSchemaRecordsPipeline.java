@@ -268,7 +268,8 @@ public final class JsonSchemaRecordsPipeline {
                     config.targetPackage(),
                     plan.topLevelTypeName(),
                     new SourceGeneratorConfig.JavadocConfig(),
-                    recordAdoptionStrategy(config)
+                    recordAdoptionStrategy(config),
+                    config.generatedAnnotation()
                 );
                 File generatedFile = generator.generate(sourceGeneratorConfig, rootSchema);
                 if (generatedFile != null) {
@@ -556,7 +557,8 @@ public final class JsonSchemaRecordsPipeline {
                     ))
                     .toList(),
                 config.skipOnError(),
-                config.failOnMissingSource()
+                config.failOnMissingSource(),
+                config.generatedAnnotation()
             ),
             new JsonSchemaRecordsManifest.Discovery(schemaEntries),
             warnings,
@@ -596,6 +598,7 @@ public final class JsonSchemaRecordsPipeline {
             + " outputDir=" + config.outputDir()
             + " skipOnError=" + config.skipOnError()
             + " failOnMissingSource=" + config.failOnMissingSource()
+            + " generatedAnnotation=" + config.generatedAnnotation()
             + " sources=" + config.sources().stream().map(this::describeSource).toList());
     }
 

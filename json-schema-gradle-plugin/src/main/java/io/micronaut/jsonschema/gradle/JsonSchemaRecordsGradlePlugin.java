@@ -52,6 +52,7 @@ public final class JsonSchemaRecordsGradlePlugin implements Plugin<Project> {
         extension.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("generated/sources/jsonschema"));
         extension.getSkipOnError().convention(false);
         extension.getFailOnMissingSource().convention(true);
+        extension.getGeneratedAnnotation().convention(false);
         extension.getSources().convention(List.of());
         extension.getProviderClasspath().from(providerConfiguration);
 
@@ -69,6 +70,7 @@ public final class JsonSchemaRecordsGradlePlugin implements Plugin<Project> {
             task.getProviderClasspath().from(extension.getProviderClasspath());
             task.getSkipOnError().convention(extension.getSkipOnError());
             task.getFailOnMissingSource().convention(extension.getFailOnMissingSource());
+            task.getGeneratedAnnotation().convention(extension.getGeneratedAnnotation());
         });
 
         project.getPlugins().withType(JavaPlugin.class, ignored -> {

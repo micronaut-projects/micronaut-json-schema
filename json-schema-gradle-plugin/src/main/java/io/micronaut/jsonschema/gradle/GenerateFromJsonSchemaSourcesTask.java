@@ -97,7 +97,8 @@ public abstract class GenerateFromJsonSchemaSourcesTask extends AbstractGenerate
             getSources().getOrElse(List.of()),
             getSkipOnError().getOrElse(false),
             getFailOnMissingSource().getOrElse(true),
-            getLanguage().getOrElse("JAVA")
+            getLanguage().getOrElse("JAVA"),
+            getGeneratedAnnotation().getOrElse(false)
         );
         // JDBC drivers may lazily load helper classes/resources after DriverManager registration.
         // Keep the driver classloader open for the whole pipeline execution, then deregister and close it.
