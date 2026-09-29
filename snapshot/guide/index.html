@@ -1408,6 +1408,10 @@ javaGenerator.generate(config);</code></pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>withOutputFileName(String outputFileName)</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The file name of the generated source file. This field is taken into account when there is only one bean generated. If not specified, schema&#8217;s title or schema file&#8217;s name is considered for the generated file.</p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>withGeneratedAnnotation(boolean generatedAnnotation)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether to annotate the generated types with <code>@GeneratedFromJsonSchema</code>. Defaults to <code>false</code>. See the note below.</p></td>
+</tr>
 </tbody>
 </table>
 <div class="colist arabic">
@@ -1417,6 +1421,30 @@ javaGenerator.generate(config);</code></pre>
 <td>It is important to note that one of input options (<code>inputStream</code>, <code>jsonURL</code>, <code>jsonFile</code>, and <code>inputFile</code>) must be stated. In case multiple inputs are given, only one will be accepted following the order: <code>inputFolder</code>, <code>inputStream</code>, <code>jsonURL</code>, and <code>jsonFile</code>.</td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p><code>@GeneratedFromJsonSchema</code> is retained in the class files, which makes code coverage tools such as JaCoCo skip the generated types. Unlike <code>io.micronaut.core.annotation.Generated</code>, which makes Micronaut annotation processors skip the type, it does not prevent the bean introspections of the generated <code>@Serdeable</code> types from being created.</p>
+</div>
+<div class="paragraph">
+<p>The annotation lives in the <code>micronaut-json-schema-annotations</code> module, which must be on the compile classpath of the generated sources when <code>withGeneratedAnnotation(true)</code> is used. The annotation is not needed at runtime, so a compile-only dependency is enough:</p>
+</div>
+<div class="paragraph">
+<p>        <div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">compileOnly(<span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-annotations")</span></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;dependency&gt;
+    &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
+    &lt;artifactId&gt;micronaut-json-schema-annotations&lt;/artifactId&gt;
+    &lt;scope&gt;provided&lt;/scope&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div>
+</p>
 </div>
 
 <h2 id="records"><a class="anchor" href="#records"></a>5.3 Record Generation From Discovered Schemas</h2>
@@ -1592,6 +1620,27 @@ For ordinary property names this matches the default generator, but unusual prop
 <div class="paragraph">
 <p>Generated files are written under <code>outputDir</code>.
 The configured <code>targetPackage</code> is used as the package for generated top-level types.</p>
+</div>
+<div class="paragraph">
+<p>Generated types are annotated with <code>@Serdeable</code>, and generated records, classes and interfaces also with <code>@JsonSchema</code>, so the consuming build needs Micronaut Serde and the <code>micronaut-json-schema-annotations</code> module on the compile classpath.</p>
+</div>
+<div class="paragraph">
+<p>When the <code>generatedAnnotation</code> option is set to <code>true</code>, generated types are also annotated with <code>@GeneratedFromJsonSchema</code>.
+The option defaults to <code>false</code>.
+The annotation lives in the same <code>micronaut-json-schema-annotations</code> module as <code>@JsonSchema</code>, so it needs no additional dependency.
+<code>@GeneratedFromJsonSchema</code> is retained in the class files, which makes code coverage tools such as JaCoCo skip the generated types.
+Unlike <code>io.micronaut.core.annotation.Generated</code>, it does not stop Micronaut annotation processors from creating bean introspections for the generated types.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">jsonSchemaRecords {
+    targetPackage = "example.generated"
+    generatedAnnotation = true
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For Maven, configure <code>&lt;generatedAnnotation&gt;true&lt;/generatedAnnotation&gt;</code> or pass <code>-DjsonSchemaRecords.generatedAnnotation=true</code>.</p>
 </div>
 </div>
 </div>

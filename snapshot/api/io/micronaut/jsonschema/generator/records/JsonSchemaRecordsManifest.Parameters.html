@@ -59,6 +59,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#constructor-detail" tabindex="0">Constructor Details</a>
 <ol class="toc-list">
 <li><a href="#%3Cinit%3E(java.lang.String,java.lang.String,int,java.lang.String,java.lang.String,java.util.List,boolean,boolean)" tabindex="0">Parameters(String, String, int, String, String, List, boolean, boolean)</a></li>
+<li><a href="#%3Cinit%3E(java.lang.String,java.lang.String,int,java.lang.String,java.lang.String,java.util.List,boolean,boolean,boolean)" tabindex="0">Parameters(String, String, int, String, String, List, boolean, boolean, boolean)</a></li>
 </ol>
 </li>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
@@ -74,6 +75,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#sources()" tabindex="0">sources()</a></li>
 <li><a href="#skipOnError()" tabindex="0">skipOnError()</a></li>
 <li><a href="#failOnMissingSource()" tabindex="0">failOnMissingSource()</a></li>
+<li><a href="#generatedAnnotation()" tabindex="0">generatedAnnotation()</a></li>
 </ol>
 </li>
 </ol>
@@ -99,6 +101,7 @@ loadScripts(document, 'script');</script>
 <dd><code><span id="param-sources">sources</span></code> - Configured sources</dd>
 <dd><code><span id="param-skipOnError">skipOnError</span></code> - Skip toggle</dd>
 <dd><code><span id="param-failOnMissingSource">failOnMissingSource</span></code> - Missing source toggle</dd>
+<dd><code><span id="param-generatedAnnotation">generatedAnnotation</span></code> - Generated annotation toggle</dd>
 </dl>
 <dl class="notes">
 <dt>Enclosing class:</dt>
@@ -106,7 +109,7 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="horizontal-scroll">
-<div class="type-signature"><span class="modifiers">public static record </span><span class="element-name type-name-label">JsonSchemaRecordsManifest.Parameters</span>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetPackage, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;language, int&nbsp;languageLevel, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;schemaCacheDir, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputDir, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="JsonSchemaRecordsManifest.ConfiguredSource.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.ConfiguredSource</a>&gt;&nbsp;sources, boolean&nbsp;skipOnError, boolean&nbsp;failOnMissingSource)
+<div class="type-signature"><span class="modifiers">public static record </span><span class="element-name type-name-label">JsonSchemaRecordsManifest.Parameters</span>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetPackage, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;language, int&nbsp;languageLevel, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;schemaCacheDir, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputDir, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="JsonSchemaRecordsManifest.ConfiguredSource.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.ConfiguredSource</a>&gt;&nbsp;sources, boolean&nbsp;skipOnError, boolean&nbsp;failOnMissingSource, boolean&nbsp;generatedAnnotation)
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
 <div class="block">Effective pipeline parameters.</div>
 <dl class="notes">
@@ -134,6 +137,18 @@ loadScripts(document, 'script');</script>
  boolean&nbsp;skipOnError,
  boolean&nbsp;failOnMissingSource)</code></div>
 <div class="col-last even-row-color">
+<div class="block">Effective pipeline parameters without the generated annotation.</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,int,java.lang.String,java.lang.String,java.util.List,boolean,boolean,boolean)" class="member-name-link">Parameters</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetPackage,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;language,
+ int&nbsp;languageLevel,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;schemaCacheDir,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputDir,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="JsonSchemaRecordsManifest.ConfiguredSource.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.ConfiguredSource</a>&gt;&nbsp;sources,
+ boolean&nbsp;skipOnError,
+ boolean&nbsp;failOnMissingSource,
+ boolean&nbsp;generatedAnnotation)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Creates an instance of a <code>Parameters</code> record class.</div>
 </div>
 </div>
@@ -160,49 +175,54 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-failOnMissingSource"><code>failOnMissingSource</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#generatedAnnotation()" class="member-name-link">generatedAnnotation</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of the <a href="#param-generatedAnnotation"><code>generatedAnnotation</code></a> record component.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a hash code value for this object.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#language()" class="member-name-link">language</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#language()" class="member-name-link">language</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-language"><code>language</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#languageLevel()" class="member-name-link">languageLevel</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#languageLevel()" class="member-name-link">languageLevel</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-languageLevel"><code>languageLevel</code></a> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outputDir()" class="member-name-link">outputDir</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#outputDir()" class="member-name-link">outputDir</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-outputDir"><code>outputDir</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#schemaCacheDir()" class="member-name-link">schemaCacheDir</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#schemaCacheDir()" class="member-name-link">schemaCacheDir</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-schemaCacheDir"><code>schemaCacheDir</code></a> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#skipOnError()" class="member-name-link">skipOnError</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#skipOnError()" class="member-name-link">skipOnError</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-skipOnError"><code>skipOnError</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="JsonSchemaRecordsManifest.ConfiguredSource.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.ConfiguredSource</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sources()" class="member-name-link">sources</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a><wbr>&lt;<a href="JsonSchemaRecordsManifest.ConfiguredSource.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.ConfiguredSource</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sources()" class="member-name-link">sources</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-sources"><code>sources</code></a> record component.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#targetPackage()" class="member-name-link">targetPackage</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#targetPackage()" class="member-name-link">targetPackage</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of the <a href="#param-targetPackage"><code>targetPackage</code></a> record component.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a string representation of this record class.</div>
 </div>
 </div>
@@ -234,6 +254,34 @@ loadScripts(document, 'script');</script>
  <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="JsonSchemaRecordsManifest.ConfiguredSource.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.ConfiguredSource</a>&gt;&nbsp;sources,
  boolean&nbsp;skipOnError,
  boolean&nbsp;failOnMissingSource)</span></div>
+<div class="block">Effective pipeline parameters without the generated annotation.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>targetPackage</code> - Target package</dd>
+<dd><code>language</code> - Generated source language</dd>
+<dd><code>languageLevel</code> - Java language level used for generation</dd>
+<dd><code>schemaCacheDir</code> - Schema cache directory</dd>
+<dd><code>outputDir</code> - Output directory</dd>
+<dd><code>sources</code> - Configured sources</dd>
+<dd><code>skipOnError</code> - Skip toggle</dd>
+<dd><code>failOnMissingSource</code> - Missing source toggle</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,int,java.lang.String,java.lang.String,java.util.List,boolean,boolean,boolean)">
+<h3>Parameters</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Parameters</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetPackage,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;language,
+ int&nbsp;languageLevel,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;schemaCacheDir,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputDir,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="JsonSchemaRecordsManifest.ConfiguredSource.html" title="class in io.micronaut.jsonschema.generator.records">JsonSchemaRecordsManifest.ConfiguredSource</a>&gt;&nbsp;sources,
+ boolean&nbsp;skipOnError,
+ boolean&nbsp;failOnMissingSource,
+ boolean&nbsp;generatedAnnotation)</span></div>
 <div class="block">Creates an instance of a <code>Parameters</code> record class.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -245,6 +293,7 @@ loadScripts(document, 'script');</script>
 <dd><code>sources</code> - the value for the <a href="#param-sources"><code>sources</code></a> record component</dd>
 <dd><code>skipOnError</code> - the value for the <a href="#param-skipOnError"><code>skipOnError</code></a> record component</dd>
 <dd><code>failOnMissingSource</code> - the value for the <a href="#param-failOnMissingSource"><code>failOnMissingSource</code></a> record component</dd>
+<dd><code>generatedAnnotation</code> - the value for the <a href="#param-generatedAnnotation"><code>generatedAnnotation</code></a> record component</dd>
 </dl>
 </div>
 </section>
@@ -404,6 +453,19 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>the value of the <a href="#param-failOnMissingSource"><code>failOnMissingSource</code></a> record component</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="generatedAnnotation()">
+<h3>generatedAnnotation</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">generatedAnnotation</span>()</div>
+<div class="block">Returns the value of the <a href="#param-generatedAnnotation"><code>generatedAnnotation</code></a> record component.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the value of the <a href="#param-generatedAnnotation"><code>generatedAnnotation</code></a> record component</dd>
 </dl>
 </div>
 </section>

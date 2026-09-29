@@ -72,6 +72,7 @@ loadScripts(document, 'script');</script>
 <li><a href="#withOutputFileName(java.lang.String)" tabindex="0">withOutputFileName(String)</a></li>
 <li><a href="#withJavadoc(io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig)" tabindex="0">withJavadoc(SourceGeneratorConfig.JavadocConfig)</a></li>
 <li><a href="#withRecordAdoptionStrategy(io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy)" tabindex="0">withRecordAdoptionStrategy(SourceGeneratorConfig.RecordAdoptionStrategy)</a></li>
+<li><a href="#withGeneratedAnnotation(boolean)" tabindex="0">withGeneratedAnnotation(boolean)</a></li>
 </ol>
 </li>
 </ol>
@@ -127,48 +128,54 @@ properties related to the input and output paths; file names; and URL.</div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withInputFolder(java.nio.file.Path)" class="member-name-link">withInputFolder</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;inputFolder)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withGeneratedAnnotation(boolean)" class="member-name-link">withGeneratedAnnotation</a><wbr>(boolean&nbsp;generatedAnnotation)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets whether to annotate the generated types with <code>@GeneratedFromJsonSchema</code>, so that code coverage tools
+like JaCoCo skip them.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withInputFolder(java.nio.file.Path)" class="member-name-link">withInputFolder</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;inputFolder)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds the input folder of json schema.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withInputStream(java.io.InputStream)" class="member-name-link">withInputStream</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&nbsp;inputStream)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withInputStream(java.io.InputStream)" class="member-name-link">withInputStream</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link">InputStream</a>&nbsp;inputStream)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds the input stream config.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withJavadoc(io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig)" class="member-name-link">withJavadoc</a><wbr>(<a href="SourceGeneratorConfig.JavadocConfig.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.JavadocConfig</a>&nbsp;javadoc)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withJavadoc(io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.JavadocConfig)" class="member-name-link">withJavadoc</a><wbr>(<a href="SourceGeneratorConfig.JavadocConfig.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.JavadocConfig</a>&nbsp;javadoc)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets the Javadoc-specific configuration.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withJsonFile(java.io.File)" class="member-name-link">withJsonFile</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/File.html" title="class or interface in java.io" class="external-link">File</a>&nbsp;jsonFile)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withJsonFile(java.io.File)" class="member-name-link">withJsonFile</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/File.html" title="class or interface in java.io" class="external-link">File</a>&nbsp;jsonFile)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds the File of a json schema.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withJsonUrl(java.lang.String)" class="member-name-link">withJsonUrl</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;jsonUrl)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withJsonUrl(java.lang.String)" class="member-name-link">withJsonUrl</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;jsonUrl)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds the URL of a json schema.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withOutputFileName(java.lang.String)" class="member-name-link">withOutputFileName</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputFileName)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withOutputFileName(java.lang.String)" class="member-name-link">withOutputFileName</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputFileName)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds the desired file name for single generations.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withOutputFolder(java.nio.file.Path)" class="member-name-link">withOutputFolder</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;outputFolder)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withOutputFolder(java.nio.file.Path)" class="member-name-link">withOutputFolder</a><wbr>(@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/Path.html" title="class or interface in java.nio.file" class="external-link">Path</a>&nbsp;outputFolder)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds the Output path for the generated files.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withOutputPackageName(java.lang.String)" class="member-name-link">withOutputPackageName</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputPackageName)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withOutputPackageName(java.lang.String)" class="member-name-link">withOutputPackageName</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;outputPackageName)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds the Package name for generated files.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withRecordAdoptionStrategy(io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy)" class="member-name-link">withRecordAdoptionStrategy</a><wbr>(<a href="SourceGeneratorConfig.RecordAdoptionStrategy.html" title="enum class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.RecordAdoptionStrategy</a>&nbsp;strategy)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#withRecordAdoptionStrategy(io.micronaut.jsonschema.generator.utils.SourceGeneratorConfig.RecordAdoptionStrategy)" class="member-name-link">withRecordAdoptionStrategy</a><wbr>(<a href="SourceGeneratorConfig.RecordAdoptionStrategy.html" title="enum class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig.RecordAdoptionStrategy</a>&nbsp;strategy)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets the strategy for generating records vs classes.</div>
 </div>
 </div>
@@ -347,6 +354,24 @@ properties related to the input and output paths; file names; and URL.</div>
 <dd><code>strategy</code> - The strategy</dd>
 <dt>Returns:</dt>
 <dd>This</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="withGeneratedAnnotation(boolean)">
+<h3>withGeneratedAnnotation</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="SourceGeneratorConfigBuilder.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfigBuilder</a></span>&nbsp;<span class="element-name">withGeneratedAnnotation</span><wbr><span class="parameters">(boolean&nbsp;generatedAnnotation)</span></div>
+<div class="block">Sets whether to annotate the generated types with <code>@GeneratedFromJsonSchema</code>, so that code coverage tools
+like JaCoCo skip them. The generated sources then need the JSON schema annotations module on the compile classpath.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>generatedAnnotation</code> - Whether to add the annotation</dd>
+<dt>Returns:</dt>
+<dd>This</dd>
+<dt>Since:</dt>
+<dd>2.3.0</dd>
 </dl>
 </div>
 </section>
