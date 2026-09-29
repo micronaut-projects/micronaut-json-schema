@@ -106,4 +106,12 @@ public abstract class AbstractGenerateFromJsonSchemaSourcesTask extends DefaultT
     @Input
     @Optional
     public abstract Property<Boolean> getFailOnMissingSource();
+
+    /**
+     * @return Whether generated types should be annotated with {@code @GeneratedFromJsonSchema}
+     * @since 2.3.0
+     */
+    @Input
+    @Optional
+    public abstract Property<Boolean> getGeneratedAnnotation();
 }

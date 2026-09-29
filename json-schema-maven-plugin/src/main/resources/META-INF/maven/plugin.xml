@@ -88,6 +88,11 @@
           <required>false</required>
         </parameter>
         <parameter>
+          <name>generatedAnnotation</name>
+          <type>boolean</type>
+          <required>false</required>
+        </parameter>
+        <parameter>
           <name>skip</name>
           <type>boolean</type>
           <required>false</required>
@@ -116,6 +121,7 @@
         <outputDir implementation="java.io.File" default-value="${project.build.directory}/generated-sources/jsonschema" />
         <skipOnError implementation="boolean" default-value="false">${jsonSchemaRecords.skipOnError}</skipOnError>
         <failOnMissingSource implementation="boolean" default-value="true">${jsonSchemaRecords.failOnMissingSource}</failOnMissingSource>
+        <generatedAnnotation implementation="boolean" default-value="false">${jsonSchemaRecords.generatedAnnotation}</generatedAnnotation>
         <skip implementation="boolean" default-value="true">${jsonSchemaRecords.skip}</skip>
         <project implementation="org.apache.maven.project.MavenProject" default-value="${project}" />
         <settings implementation="org.apache.maven.settings.Settings" default-value="${settings}" />

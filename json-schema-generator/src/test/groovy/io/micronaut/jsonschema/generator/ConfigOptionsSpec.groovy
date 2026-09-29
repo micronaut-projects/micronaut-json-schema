@@ -65,6 +65,105 @@ class ConfigOptionsSpec extends AbstractGeneratorSpec {
         """.stripIndent().trim()
     }
 
+    void testGeneratedAnnotationIsNotAddedByDefault() {
+        when:
+        var type = generateType("Owl", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "title": "Owl",
+          "type":["object"],
+          "properties":{
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+        ''')
+
+        then:
+        type.annotations*.nameAsString == ["Serdeable"]
+    }
+
+    void testGeneratedAnnotation() {
+        when:
+        var type = generateType("Heron", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "title": "Heron",
+          "type":["object"],
+          "properties":{
+            "name": {
+              "type": "string"
+            },
+            "nest": {
+              "type": "object",
+              "properties": {
+                "height": {
+                  "type": "integer"
+                }
+              }
+            },
+            "plumage": {
+              "type": "string",
+              "enum": ["grey", "white"]
+            }
+          }
+        }
+        ''', b -> b.withGeneratedAnnotation(true))
+
+        then:
+        type.findCompilationUnit().get().imports*.nameAsString.contains("io.micronaut.jsonschema.GeneratedFromJsonSchema")
+        type.annotations*.nameAsString == ["Serdeable", "GeneratedFromJsonSchema"]
+        type.members.findAll { it.isTypeDeclaration() }.collect { it.asTypeDeclaration() }.every {
+            it.annotations*.nameAsString.containsAll(["Serdeable", "GeneratedFromJsonSchema"])
+        }
+        type.members.count { it.isTypeDeclaration() } == 2
+    }
+
+    void testGeneratedAnnotationOnInterface() {
+        when:
+        var type = generateType("Bird", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "title": "Bird",
+          "oneOf": [
+            {"title": "Crow", "type": "object", "properties": {"name": {"type": "string"}}},
+            {"title": "Swan", "type": "object", "properties": {"color": {"type": "string"}}}
+          ]
+        }
+        ''', b -> b.withGeneratedAnnotation(true))
+
+        then:
+        type.isClassOrInterfaceDeclaration()
+        type.asClassOrInterfaceDeclaration().isInterface()
+        type.annotations*.nameAsString == ["Serdeable", "GeneratedFromJsonSchema"]
+    }
+
+    void testGeneratedAnnotationOnClass() {
+        when:
+        var content = generateTypeAndGetContent("Porcupine", '''
+        {
+          "$schema":"https://json-schema.org/draft/2020-12/schema",
+          "title": "Porcupine",
+          "type":["object"],
+          "properties":{
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+        ''', b -> b
+            .withRecordAdoptionStrategy(SourceGeneratorConfig.RecordAdoptionStrategy.ALWAYS_CLASS)
+            .withGeneratedAnnotation(true))
+
+        then:
+        content.startsWith("""
+        @Serdeable
+        @GeneratedFromJsonSchema
+        public class Porcupine {
+        """.stripIndent().trim())
+    }
+
     void testOutputPathIsRequired() {
         when:
         new SourceGeneratorConfigBuilder().build()

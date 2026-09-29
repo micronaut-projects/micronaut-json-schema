@@ -46,6 +46,9 @@ import java.nio.file.Path;
  * @param outputFileName The name of the file where the generated source code will be written. This field is optional.
  * @param javadoc Configuration specific to Javadoc.
  * @param recordAdoptionStrategy Strategy specifying when to generate records vs classes. Defaults to preferring records.
+ * @param generatedAnnotation Whether to annotate the generated types with {@code @GeneratedFromJsonSchema}, so that code
+ *                            coverage tools like JaCoCo skip them. The generated sources then need the JSON schema
+ *                            annotations module on the compile classpath. Defaults to {@code false}.
  * @author Elif Kurtay
  * @version 1.3
  */
@@ -58,8 +61,36 @@ public record SourceGeneratorConfig(
     String outputPackageName,
     String outputFileName,
     JavadocConfig javadoc,
-    RecordAdoptionStrategy recordAdoptionStrategy
+    RecordAdoptionStrategy recordAdoptionStrategy,
+    boolean generatedAnnotation
 ) {
+
+    /**
+     * Create a configuration that does not annotate the generated types with {@code @GeneratedFromJsonSchema}.
+     *
+     * @param inputStream The Input Stream of the JSON schema to be processed.
+     * @param jsonUrl The URL of the JSON schema file to be downloaded or processed.
+     * @param jsonFile The JSON schema file, typically ending in {@code .schema.json}.
+     * @param inputFolder The path to the folder where the input files (JSON schemas) are located.
+     * @param outputPath The path where generated source files will be saved.
+     * @param outputPackageName The package name to be applied to the generated source files.
+     * @param outputFileName The name of the file where the generated source code will be written.
+     * @param javadoc Configuration specific to Javadoc.
+     * @param recordAdoptionStrategy Strategy specifying when to generate records vs classes.
+     */
+    public SourceGeneratorConfig(@Nullable InputStream inputStream,
+                                 @Nullable String jsonUrl,
+                                 @Nullable File jsonFile,
+                                 @Nullable Path inputFolder,
+                                 Path outputPath,
+                                 String outputPackageName,
+                                 String outputFileName,
+                                 JavadocConfig javadoc,
+                                 RecordAdoptionStrategy recordAdoptionStrategy) {
+        this(inputStream, jsonUrl, jsonFile, inputFolder, outputPath, outputPackageName, outputFileName, javadoc,
+            recordAdoptionStrategy, false);
+    }
+
     public String getInputName() {
         if (jsonFile != null) {
             return jsonFile.getName();
@@ -84,7 +115,8 @@ public record SourceGeneratorConfig(
             .withOutputPackageName(outputPackageName)
             .withOutputFileName(outputFileName)
             .withJavadoc(javadoc)
-            .withRecordAdoptionStrategy(recordAdoptionStrategy);
+            .withRecordAdoptionStrategy(recordAdoptionStrategy)
+            .withGeneratedAnnotation(generatedAnnotation);
 
     }
 

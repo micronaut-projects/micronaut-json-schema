@@ -121,6 +121,12 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
     private boolean failOnMissingSource = true;
 
     /**
+     * Annotate the generated types with {@code @GeneratedFromJsonSchema}, so that code coverage tools like JaCoCo skip them.
+     */
+    @Parameter(property = "jsonSchemaRecords.generatedAnnotation", defaultValue = "false")
+    private boolean generatedAnnotation;
+
+    /**
      * Opt-in switch. The goal is inert unless this is set to {@code false}.
      */
     @Parameter(property = "jsonSchemaRecords.skip", defaultValue = "true")
@@ -168,7 +174,8 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
                 getSources(),
                 getSkipOnError(),
                 getFailOnMissingSource(),
-                getLanguage()
+                getLanguage(),
+                getGeneratedAnnotation()
             ).toGeneratorConfig());
             getProject().addCompileSourceRoot(getOutputDir().getAbsolutePath());
         } catch (MojoExecutionException e) {
@@ -326,6 +333,14 @@ public class GenerateFromJsonSchemaSourcesMojo extends AbstractGenerateFromJsonS
      */
     protected boolean isFailOnMissingSource() {
         return getFailOnMissingSource();
+    }
+
+    /**
+     * @return Whether generated types should be annotated with {@code @GeneratedFromJsonSchema}.
+     */
+    @Override
+    protected Boolean getGeneratedAnnotation() {
+        return generatedAnnotation;
     }
 
     /**

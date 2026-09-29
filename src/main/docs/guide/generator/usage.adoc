@@ -47,6 +47,14 @@ The `SourceGeneratorConfigBuilder` methods are similar to that of `BeanGenerator
 | The package name of the generated source files.
 | `withOutputFileName(String outputFileName)`
 | The file name of the generated source file. This field is taken into account when there is only one bean generated. If not specified, schema's title or schema file's name is considered for the generated file.
+| `withGeneratedAnnotation(boolean generatedAnnotation)`
+| Whether to annotate the generated types with `@GeneratedFromJsonSchema`. Defaults to `false`. See the note below.
 |===
 
 <1> It is important to note that one of input options (`inputStream`, `jsonURL`, `jsonFile`, and `inputFile`) must be stated. In case multiple inputs are given, only one will be accepted following the order: `inputFolder`, `inputStream`, `jsonURL`, and `jsonFile`.
+
+`@GeneratedFromJsonSchema` is retained in the class files, which makes code coverage tools such as JaCoCo skip the generated types. Unlike `io.micronaut.core.annotation.Generated`, which makes Micronaut annotation processors skip the type, it does not prevent the bean introspections of the generated `@Serdeable` types from being created.
+
+The annotation lives in the `micronaut-json-schema-annotations` module, which must be on the compile classpath of the generated sources when `withGeneratedAnnotation(true)` is used. The annotation is not needed at runtime, so a compile-only dependency is enough:
+
+dependency:micronaut-json-schema-annotations[scope="compileOnly", groupId="io.micronaut.jsonschema"]

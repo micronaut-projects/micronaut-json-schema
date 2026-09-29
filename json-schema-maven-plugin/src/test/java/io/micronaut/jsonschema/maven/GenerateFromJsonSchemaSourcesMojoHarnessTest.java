@@ -56,6 +56,7 @@ class GenerateFromJsonSchemaSourcesMojoHarnessTest {
         assertEquals("APP_VIEW", mojo.getSourceConfigurations().get(1).getOptions().get("include"));
         assertTrue(mojo.isSkipOnError());
         assertFalse(mojo.isFailOnMissingSource());
+        assertFalse(mojo.getGeneratedAnnotation());
         assertTrue(mojo.isSkipped());
         assertNotNull(mojo.getSchemaCacheDir());
         assertNotNull(mojo.getOutputDir());

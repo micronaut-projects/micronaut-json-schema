@@ -70,6 +70,7 @@ class JsonSchemaRecordsGradlePluginTest {
         assertEquals(21, task.getLanguageLevel().get());
         assertFalse(task.getSkipOnError().get());
         assertTrue(task.getFailOnMissingSource().get());
+        assertFalse(task.getGeneratedAnnotation().get());
         assertTrue(task.getSources().get().isEmpty());
         assertTrue(sourceSets.getByName("main").getJava().getSrcDirs().contains(task.getGeneratedSourcesDirectory().toFile()));
     }
@@ -96,6 +97,7 @@ class JsonSchemaRecordsGradlePluginTest {
         ));
         task.getSkipOnError().set(true);
         task.getFailOnMissingSource().set(false);
+        task.getGeneratedAnnotation().set(true);
 
         task.generate();
 
@@ -115,6 +117,7 @@ class JsonSchemaRecordsGradlePluginTest {
         ), config.sources());
         assertTrue(config.skipOnError());
         assertFalse(config.failOnMissingSource());
+        assertTrue(config.generatedAnnotation());
     }
 
     @Test

@@ -51,6 +51,8 @@ def beanGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
     jsonFile.convention(layout.projectDirectory.file("src/test/resources/animal.schema.json"))
     outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
     packageName.convention("io.micronaut.jsonschema.generator.animals")
+    // Serialization tests check that the annotated types still get their bean introspections.
+    generatedAnnotation = true
 }
 
 def foodGenerator = tasks.register("generateFood", BeanGeneratorTask) {
@@ -83,6 +85,7 @@ def refGenerator = tasks.register("generateRef", BeanGeneratorTask) {
     inputDirectory.convention(layout.projectDirectory.dir("src/test/resources/ref"))
     outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
     packageName.convention("io.micronaut.jsonschema.generator.ref")
+    generatedAnnotation = true
     acceptedUrlPatterns.convention(["^http://127\\.0\\.0\\.1:38080/[^?]+\\.json(#.*)?\$"])
     usesService(mockSchemaServer)
     doFirst { mockSchemaServer.get() } // force eager start before the subprocess runs

@@ -85,6 +85,9 @@ public abstract class BeanGeneratorTask extends DefaultTask {
     @Optional
     public abstract ListProperty<String> getAcceptedUrlPatterns();
 
+    @Input
+    @Optional
+    public abstract Property<Boolean> getGeneratedAnnotation();
 
     @Internal
     public Provider<Directory> getGeneratedSourcesDirectory() {
@@ -125,6 +128,7 @@ public abstract class BeanGeneratorTask extends DefaultTask {
             args.add(getPackageName().getOrElse(""));
             args.add(getOutputFileName().getOrElse(""));
             args.add(getAcceptedUrlPatterns().getOrElse(List.of("")).toString());
+            args.add(getGeneratedAnnotation().getOrElse(false).toString());
             javaexec.args(args);
         });
     }

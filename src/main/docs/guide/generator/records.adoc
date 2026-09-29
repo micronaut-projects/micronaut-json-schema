@@ -110,6 +110,24 @@ For Kotlin, record-capable schemas are emitted as Kotlin `data class` declaratio
 Generated files are written under `outputDir`.
 The configured `targetPackage` is used as the package for generated top-level types.
 
+Generated types are annotated with `@Serdeable`, and generated records, classes and interfaces also with `@JsonSchema`, so the consuming build needs Micronaut Serde and the `micronaut-json-schema-annotations` module on the compile classpath.
+
+When the `generatedAnnotation` option is set to `true`, generated types are also annotated with `@GeneratedFromJsonSchema`.
+The option defaults to `false`.
+The annotation lives in the same `micronaut-json-schema-annotations` module as `@JsonSchema`, so it needs no additional dependency.
+`@GeneratedFromJsonSchema` is retained in the class files, which makes code coverage tools such as JaCoCo skip the generated types.
+Unlike `io.micronaut.core.annotation.Generated`, it does not stop Micronaut annotation processors from creating bean introspections for the generated types.
+
+[source,groovy]
+----
+jsonSchemaRecords {
+    targetPackage = "example.generated"
+    generatedAnnotation = true
+}
+----
+
+For Maven, configure `<generatedAnnotation>true</generatedAnnotation>` or pass `-DjsonSchemaRecords.generatedAnnotation=true`.
+
 == Cache And Manifest
 
 Discovered JSON Schema documents are written under `schemaCacheDir`.
