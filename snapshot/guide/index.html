@@ -198,6 +198,15 @@ JSON data consistency, validity and interoperability.</p>
 &lt;/annotationProcessorPaths&gt;</code></pre>
 </div>
 </div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="pyronaut">[tool.pyronaut.dependencies]
+build = [
+    <span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-processor"</span>,
+]</code></pre>
+</div>
+</div>
 </p>
 </div>
 <div class="paragraph">
@@ -216,6 +225,15 @@ JSON data consistency, validity and interoperability.</p>
 &lt;/dependency&gt;</code></pre>
 </div>
 </div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="pyronaut">[tool.pyronaut.dependencies]
+runtime = [
+    <span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-annotations"</span>,
+]</code></pre>
+</div>
+</div>
 </p>
 </div>
 <div class="paragraph">
@@ -232,6 +250,15 @@ JSON data consistency, validity and interoperability.</p>
     &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
     &lt;artifactId&gt;micronaut-json-schema-generator&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="pyronaut">[tool.pyronaut.dependencies]
+runtime = [
+    <span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-generator"</span>,
+]</code></pre>
 </div>
 </div>
 </p>
@@ -293,6 +320,30 @@ public record Llama(
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">from dataclasses import dataclass
+from typing import Annotated
+
+from com.fasterxml.jackson.annotation import JsonInclude
+from jakarta.validation.constraints import NotBlank, PositiveOrZero
+from micronaut.jsonschema import JsonSchema
+from micronaut.serde.annotation import Serdeable
+
+
+@JsonSchema  # <b class="conum">(1)</b>
+@Serdeable  # <b class="conum">(2)</b>
+@dataclass
+class Llama:
+    """A llama."""  # <b class="conum">(4)</b>
+
+    name: Annotated[str, NotBlank, JsonInclude(JsonInclude.Include.NON_NULL)]  # <b class="conum">(3)</b>
+    """The name"""
+
+    age: Annotated[int | None, PositiveOrZero] = None  # <b class="conum">(3)</b>
+    """The age"""</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
 <pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">package io.micronaut.jsonschema.test
 
 import com.fasterxml.jackson.annotation.JsonInclude
@@ -311,11 +362,11 @@ import jakarta.validation.constraints.PositiveOrZero
 @JsonSchema // <b class="conum">(1)</b>
 @Serdeable // <b class="conum">(2)</b>
 class Llama(
+        @field:NotBlank // <b class="conum">(3)</b>
         @field:JsonInclude(Include.NON_NULL)
-        @field:NotBlank
         val name: String,
-        @field:PositiveOrZero
-        val age: Int? // <b class="conum">(3)</b>
+        @field:PositiveOrZero // <b class="conum">(3)</b>
+        val age: Int?
 )</code></pre>
 </div>
 </div>
@@ -570,6 +621,25 @@ public record RWBlackbird(
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">@JsonSchema(
+    title="RedWingedBlackbird",  # <b class="conum">(1)</b>
+    description="A species of blackbird with red wings",
+    uri="/red-winged-blackbird",  # <b class="conum">(2)</b>
+)
+@Serdeable
+@dataclass
+class RWBlackbird:
+    """A red-winged blackbird."""
+
+    name: str | None = None
+    """The name"""
+
+    wingSpan: float | None = None
+    """The wing span of the bird"""</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
 <pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">@JsonSchema(
     title = "RedWingedBlackbird", // <b class="conum">(1)</b>
     description = "A species of blackbird with red wings",
@@ -783,6 +853,15 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
 &lt;/dependency&gt;</code></pre>
 </div>
 </div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="pyronaut">[tool.pyronaut.dependencies]
+runtime = [
+    <span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-utils"</span>,
+]</code></pre>
+</div>
+</div>
 </p>
 </div>
 
@@ -811,6 +890,15 @@ micronaut.jsonschema.validation.baseUri=https://example.com/schemas</code></pre>
     &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
     &lt;artifactId&gt;micronaut-json-schema-validation&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="pyronaut">[tool.pyronaut.dependencies]
+runtime = [
+    <span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-validation"</span>,
+]</code></pre>
 </div>
 </div>
 </p>
@@ -1325,28 +1413,96 @@ In addition to generating sources from schema files, URLs, and runtime inputs, t
 <div class="paragraph">
 <p>The source generation from JSON schema can also be used during run-time with the <a href="../api/io/micronaut/jsonschema/generator/.html">generator</a> package. The following code snippet shows how <code>SourceGenerator</code> object can be used to generate beans of your desired language from JSON schema.</p>
 </div>
-<div class="listingblock">
+<div class="listingblock multi-language-sample">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// create a generator with your chosen language
 var javaGenerator = new SourceGenerator("JAVA");
 
 // Optional: can configure accepted URL references
-UrlLoader.setAllowedUrlPatterns(List.of("^https://.*/.*.schema.json$"));
+UrlLoader.setAllowedUrlPatterns(List.of("^https://.*/.*.schema.json$")); // <b class="conum">(1)</b>
 UrlLoader.addAllowedUrlPattern("^http://localhost:.*");
 
 // Optional: set up input file name
 String schemaFileName = "example.schema.json";
-SourceGenerator.setInputFileName(schemaFileName);
+SourceGenerator.setInputFileName(schemaFileName); // <b class="conum">(2)</b>
 
-Path outputPath = Paths.get("output"); // Define the base output path
 String packageName = "com.example.temp"; // Example package name
 SourceGeneratorConfig config = new SourceGeneratorConfigBuilder()
-                                    .withOutputFolder(outputPath)
-                                    .withOutputPackageName(packageName)
-                                    .withJsonUrl("https://www.jsonschemastore.org/example/temp.schema.json")
-                                    .build();
+    .withOutputFolder(outputPath) // Define the base output path
+    .withOutputPackageName(packageName)
+    .withJsonFile(schemaFile)
+    .build();
 
-javaGenerator.generate(config);</code></pre>
+File generated = javaGenerator.generate(config); // <b class="conum">(3)</b></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python"># create a generator with your chosen language
+java_generator = SourceGenerator("JAVA")
+
+# Optional: can configure accepted URL references
+UrlLoader.setAllowedUrlPatterns(["^https://.*/.*.schema.json$"])  # <b class="conum">(1)</b>
+UrlLoader.addAllowedUrlPattern("^http://localhost:.*")
+
+# Optional: set up input file name
+schema_file_name = "example.schema.json"
+SourceGenerator.setInputFileName(schema_file_name)  # <b class="conum">(2)</b>
+
+package_name = "com.example.temp"  # Example package name
+config = (SourceGeneratorConfigBuilder()
+          .withOutputFolder(output_path)  # Define the base output path
+          .withOutputPackageName(package_name)
+          .withJsonFile(schema_file)
+          .build())
+
+generated = java_generator.generate(config)  # <b class="conum">(3)</b></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">// create a generator with your chosen language
+val javaGenerator = SourceGenerator("JAVA")
+
+// Optional: can configure accepted URL references
+UrlLoader.setAllowedUrlPatterns(listOf("^https://.*/.*.schema.json$")) // <b class="conum">(1)</b>
+UrlLoader.addAllowedUrlPattern("^http://localhost:.*")
+
+// Optional: set up input file name
+val schemaFileName = "example.schema.json"
+SourceGenerator.setInputFileName(schemaFileName) // <b class="conum">(2)</b>
+
+val packageName = "com.example.temp" // Example package name
+val config = SourceGeneratorConfigBuilder()
+    .withOutputFolder(outputPath) // Define the base output path
+    .withOutputPackageName(packageName)
+    .withJsonFile(schemaFile)
+    .build()
+
+val generated = javaGenerator.generate(config) // <b class="conum">(3)</b></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">// create a generator with your chosen language
+def javaGenerator = new SourceGenerator("JAVA")
+
+// Optional: can configure accepted URL references
+UrlLoader.allowedUrlPatterns = ['^https://.*/.*.schema.json$'] // <b class="conum">(1)</b>
+UrlLoader.addAllowedUrlPattern('^http://localhost:.*')
+
+// Optional: set up input file name
+String schemaFileName = "example.schema.json"
+SourceGenerator.inputFileName = schemaFileName // <b class="conum">(2)</b>
+
+String packageName = "com.example.temp" // Example package name
+SourceGeneratorConfig config = new SourceGeneratorConfigBuilder()
+        .withOutputFolder(outputPath) // Define the base output path
+        .withOutputPackageName(packageName)
+        .withJsonFile(schemaFile)
+        .build()
+
+File generated = javaGenerator.generate(config) // <b class="conum">(3)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -1362,6 +1518,18 @@ javaGenerator.generate(config);</code></pre>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
 <td>Calling the <code>SourceGenerator</code>'s <code>generate(SourceGeneratorConfig config)</code> function will generate beans inside the given config&#8217;s output location. The function will return the generated File object of the top level schema when there is a single input schema. Otherwise (a folder of schemas), the function would return null regardless of generation completion status.</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The generator produces Java or Kotlin sources (<code>"JAVA"</code> or <code>"KOTLIN"</code>). Groovy and Python applications consume the generated Java beans as ordinary classes on the classpath.
+</td>
 </tr>
 </table>
 </div>
@@ -1442,6 +1610,15 @@ javaGenerator.generate(config);</code></pre>
     &lt;artifactId&gt;micronaut-json-schema-annotations&lt;/artifactId&gt;
     &lt;scope&gt;provided&lt;/scope&gt;
 &lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="pyronaut">[tool.pyronaut.dependencies]
+build = [
+    <span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-annotations"</span>,
+]</code></pre>
 </div>
 </div>
 </p>
@@ -2695,6 +2872,18 @@ The source code generation decides which object type to use for representing the
 <div class="paragraph">
 <p>The following example shows how the <code>JsonMapper</code> can map the JSON data to the best fitting/correct class in the inheritance relation even though only the interface is given to the function.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The beans of the examples below are generated as Java classes and used from Java, Kotlin, Groovy and Python alike.
+</td>
+</tr>
+</table>
+</div>
 <div class="listingblock multi-language-sample">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">@Test
@@ -2716,6 +2905,80 @@ public void mapCat() throws JacksonException {
     assertEquals("Micronaut", cat.getName());
     assertEquals(true, cat.getHasMate());
     assertEquals("Cat", cat.resourceType);
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">@Test
+def test_map_cat(self) -&gt; None:
+    animal = self.json_mapper.readValue("""
+        {
+          "id": "0x",
+          "birthdate": "2000-01-01",
+          "name": "Micronaut",
+          "resourceType": "Cat",
+          "hasMate": true
+        }
+        """, Animal)
+    assert animal.getClass() == Cat.class_
+    cat = animal
+
+    assert cat.getId() == "0x"
+    assert cat.getBirthdate() == "2000-01-01"
+    assert cat.getName() == "Micronaut"
+    assert cat.getHasMate() is True
+    assert cat.resourceType == "Cat"</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">@Test
+fun mapCat() {
+    val animal = jsonMapper.readValue(
+        """
+        {
+          "id": "0x",
+          "birthdate": "2000-01-01",
+          "name": "Micronaut",
+          "resourceType": "Cat",
+          "hasMate": true
+        }
+        """, Animal::class.java
+    )
+    assertEquals(Cat::class.java, animal.javaClass)
+    val cat = animal as Cat
+
+    assertEquals("0x", cat.id)
+    assertEquals("2000-01-01", cat.birthdate)
+    assertEquals("Micronaut", cat.name)
+    assertEquals(true, cat.hasMate)
+    assertEquals("Cat", cat.resourceType)
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">void "map cat"() {
+    when:
+    def animal = jsonMapper.readValue('''
+        {
+          "id": "0x",
+          "birthdate": "2000-01-01",
+          "name": "Micronaut",
+          "resourceType": "Cat",
+          "hasMate": true
+        }
+        ''', Animal)
+
+    then:
+    animal.class == Cat
+    Cat cat = (Cat) animal
+    cat.id == "0x"
+    cat.birthdate == "2000-01-01"
+    cat.name == "Micronaut"
+    cat.hasMate
+    cat.resourceType == "Cat"
 }</code></pre>
 </div>
 </div>
@@ -2755,6 +3018,116 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
 
     String result = objectMapper.writeValueAsString(dog);
     assertEquals(inputData, result);
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">@Test
+def test_serialize_generated_additional_property(self) -&gt; None:
+    input_data = re.sub(r"\s", "", """
+        {
+          "resourceType": "Dog",
+          "id": "0x",
+          "birthdate": "2000-01-01",
+          "name": "Micronaut",
+          "nickname": "Goodie",
+          "enemies": [
+          {
+              "resourceType": "Cat",
+              "id": "1x",
+              "birthdate": "2000-01-01",
+              "name": "Pegasus",
+              "hasMate": false
+          }, {
+              "resourceType": "Cat",
+              "id": "2x",
+              "birthdate": "2000-01-01",
+              "name": "Micro-Pego",
+              "hasMate": false
+          }],
+          "hasMate": true,
+          "ownerName": "Owner"
+        }
+        """)
+    dog = self.json_mapper.readValue(input_data, Dog)
+
+    result = self.object_mapper.writeValueAsString(dog)
+    assert result == input_data</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">@Test
+fun testSerializeGeneratedAdditionalProperty(objectMapper: ObjectMapper) {
+    val inputData = """
+        {
+          "resourceType": "Dog",
+          "id": "0x",
+          "birthdate": "2000-01-01",
+          "name": "Micronaut",
+          "nickname": "Goodie",
+          "enemies": [
+          {
+              "resourceType": "Cat",
+              "id": "1x",
+              "birthdate": "2000-01-01",
+              "name": "Pegasus",
+              "hasMate": false
+          }, {
+              "resourceType": "Cat",
+              "id": "2x",
+              "birthdate": "2000-01-01",
+              "name": "Micro-Pego",
+              "hasMate": false
+          }],
+          "hasMate": true,
+          "ownerName": "Owner"
+        }
+        """.replace(Regex("\\s"), "")
+    val dog = jsonMapper.readValue(inputData, Dog::class.java)
+
+    val result = objectMapper.writeValueAsString(dog)
+    assertEquals(inputData, result)
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">void "serialize generated additional property"() {
+    given:
+    String inputData = '''
+        {
+          "resourceType": "Dog",
+          "id": "0x",
+          "birthdate": "2000-01-01",
+          "name": "Micronaut",
+          "nickname": "Goodie",
+          "enemies": [
+          {
+              "resourceType": "Cat",
+              "id": "1x",
+              "birthdate": "2000-01-01",
+              "name": "Pegasus",
+              "hasMate": false
+          }, {
+              "resourceType": "Cat",
+              "id": "2x",
+              "birthdate": "2000-01-01",
+              "name": "Micro-Pego",
+              "hasMate": false
+          }],
+          "hasMate": true,
+          "ownerName": "Owner"
+        }
+        '''.replaceAll("\\s", "")
+
+    when:
+    def dog = jsonMapper.readValue(inputData, Dog)
+    String result = objectMapper.writeValueAsString(dog)
+
+    then:
+    result == inputData
 }</code></pre>
 </div>
 </div>
@@ -2802,6 +3175,15 @@ void testSerializeGeneratedAdditionalProperty(ObjectMapper objectMapper) throws 
     &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
     &lt;artifactId&gt;micronaut-json-schema-configuration-validator&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="pyronaut">[tool.pyronaut.dependencies]
+runtime = [
+    <span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-configuration-validator"</span>,
+]</code></pre>
 </div>
 </div>
 </p>
@@ -3197,6 +3579,13 @@ Invalid configuration often causes application startup failures (for example if 
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">    def log_configuration_errors(self) -&gt; None:
+        for error in self.configuration_errors.getCurrentErrors():
+            print(error)</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
 <pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">    fun logConfigurationErrors() {
         configurationErrors.currentErrors.forEach(::println)
     }</code></pre>
@@ -3281,6 +3670,15 @@ Invalid configuration often causes application startup failures (for example if 
     &lt;groupId&gt;io.micronaut&lt;/groupId&gt;
     &lt;artifactId&gt;micronaut-management&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="pyronaut">[tool.pyronaut.dependencies]
+runtime = [
+    <span class="hljs-string">"io.micronaut:micronaut-management"</span>,
+]</code></pre>
 </div>
 </div>
 </p>
@@ -3469,6 +3867,23 @@ Implementations are discovered using <code>ServiceLoader</code> from the same cl
 
         return errors;
     }</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">    def supportsPrefix(self, prefix: str) -&gt; bool:
+        return prefix == "jpa.default.properties"
+
+    def validate(self, context: ConfigurationValidationContext) -&gt; set[ConfigurationError]:
+        errors = set()
+
+        if not context.environment().containsProperty("datasources.default.url"):
+            errors.add(ConfigurationError.builder(
+                "datasources.default.url",
+                "Required when jpa.default.properties is set"
+            ).build())
+
+        return errors</code></pre>
 </div>
 </div>
 <div class="listingblock multi-language-sample">

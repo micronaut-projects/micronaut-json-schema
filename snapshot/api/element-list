@@ -5,10 +5,12 @@ io.micronaut.jsonschema.configuration.validator.model
 io.micronaut.jsonschema.configuration.validator.report
 io.micronaut.jsonschema.generator
 io.micronaut.jsonschema.generator.aggregator
+io.micronaut.jsonschema.generator.animals
 io.micronaut.jsonschema.generator.discovery
 io.micronaut.jsonschema.generator.loaders
 io.micronaut.jsonschema.generator.oracle
 io.micronaut.jsonschema.generator.records
+io.micronaut.jsonschema.generator.ref
 io.micronaut.jsonschema.generator.utils
 io.micronaut.jsonschema.gradle
 io.micronaut.jsonschema.info
