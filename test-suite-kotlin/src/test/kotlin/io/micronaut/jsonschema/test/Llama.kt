@@ -16,9 +16,9 @@ import jakarta.validation.constraints.PositiveOrZero
 @JsonSchema // <1>
 @Serdeable // <2>
 class Llama(
+        @field:NotBlank // <3>
         @field:JsonInclude(Include.NON_NULL)
-        @field:NotBlank
         val name: String,
-        @field:PositiveOrZero
-        val age: Int? // <3>
+        @field:PositiveOrZero // <3>
+        val age: Int?
 )

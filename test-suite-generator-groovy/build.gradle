@@ -1,0 +1,54 @@
+import io.micronaut.build.internal.generator.BeanGeneratorTask
+
+plugins {
+    id("groovy")
+    id("java-library")
+    id("io.micronaut.build.internal.test-suite-generator")
+}
+
+dependencies {
+    implementation(projects.micronautJsonSchemaGenerator)
+    implementation(mnSerde.micronaut.serde.jackson)
+    implementation(mnValidation.validation)
+
+    api(projects.micronautJsonSchemaAnnotations)
+
+    testAnnotationProcessor(mn.micronaut.inject.java)
+    testAnnotationProcessor(mnSerde.micronaut.serde.processor)
+
+    testImplementation(mn.micronaut.inject.groovy.test)
+    testImplementation(mn.micronaut.inject)
+    testImplementation(mnTest.micronaut.test.spock)
+    testRuntimeOnly(mnTest.junit.platform.launcher)
+}
+
+// The generated beans are Java sources: the generator has no Groovy target, and Groovy consumes them natively.
+def beanGenerator = tasks.register("generateAnimals", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    jsonFile.convention(schemaFixturesDir.file("animal.schema.json"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.animals")
+}
+
+def refGenerator = tasks.register("generateRef", BeanGeneratorTask) {
+    language = "java"
+    classpath.from(configurations.beanGenerator)
+    inputDirectory.convention(schemaFixturesDir.dir("ref"))
+    outputDirectory.convention(layout.buildDirectory.dir("generated/jsonSchema"))
+    packageName.convention("io.micronaut.jsonschema.generator.ref")
+    acceptedUrlPatterns.convention(["^http://127\\.0\\.0\\.1:38080/[^?]+\\.json(#.*)?\$"])
+    usesService(mockSchemaServer)
+    doFirst { mockSchemaServer.get() } // force eager start before the subprocess runs
+}
+
+sourceSets {
+    test {
+        java.srcDir(beanGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+        java.srcDir(refGenerator.map(BeanGeneratorTask::getGeneratedSourcesDirectory))
+    }
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
