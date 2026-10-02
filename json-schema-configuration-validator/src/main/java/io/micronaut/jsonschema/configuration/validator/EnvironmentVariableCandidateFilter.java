@@ -84,32 +84,29 @@ final class EnvironmentVariableCandidateFilter {
     Map<String, Object> filter(String prefix, Map<String, Object> flat) {
         Map<String, Object> filtered = null;
         for (String key : flat.keySet()) {
-            String property = prefix + "." + key;
-            Optional<PropertyEntry> entry = environment.getPropertyEntry(property);
-            if (entry.isEmpty()) {
-                continue;
+            if (isRedundantCandidate(prefix + "." + key)) {
+                if (filtered == null) {
+                    filtered = new LinkedHashMap<>(flat);
+                }
+                filtered.remove(key);
             }
-            PropertyEntry propertyEntry = entry.get();
-            String variable = propertyEntry.raw();
-            if (variable == null || !ENV_ORIGIN.equals(propertyEntry.origin().location())) {
-                continue;
-            }
-            if (keep(property, variable)) {
-                continue;
-            }
-            if (filtered == null) {
-                filtered = new LinkedHashMap<>(flat);
-            }
-            filtered.remove(key);
         }
         return filtered != null ? filtered : flat;
+    }
+
+    private boolean isRedundantCandidate(String property) {
+        Optional<PropertyEntry> entry = environment.getPropertyEntry(property);
+        if (entry.isEmpty() || !ENV_ORIGIN.equals(entry.get().origin().location())) {
+            return false;
+        }
+        return !keep(property, entry.get().raw());
     }
 
     private boolean keep(String property, String variable) {
         if (matchesSchema(property)) {
             return true;
         }
-        if (variableMatches.computeIfAbsent(variable, this::anyCandidateMatches)) {
+        if (Boolean.TRUE.equals(variableMatches.computeIfAbsent(variable, this::anyCandidateMatches))) {
             // another candidate of the same variable is the intended property
             return false;
         }
@@ -166,15 +163,17 @@ final class EnvironmentVariableCandidateFilter {
     }
 
     private boolean matchesSchema(String property) {
-        return propertyMatches.computeIfAbsent(property, p -> {
-            for (SchemaTarget target : targets) {
-                if (p.startsWith(target.prefixWithDot())
-                    && matches(target.ctx(), target.root(), p.substring(target.prefixWithDot().length()).split("\\."), 0)) {
-                    return true;
-                }
+        return Boolean.TRUE.equals(propertyMatches.computeIfAbsent(property, this::computeMatchesSchema));
+    }
+
+    private boolean computeMatchesSchema(String property) {
+        for (SchemaTarget target : targets) {
+            if (property.startsWith(target.prefixWithDot())
+                && matches(target.ctx(), target.root(), property.substring(target.prefixWithDot().length()).split("\\."), 0)) {
+                return true;
             }
-            return false;
-        });
+        }
+        return false;
     }
 
     private static boolean matches(SchemaContext ctx, ConfigurationSchemaProperty schema, String[] segments, int index) {

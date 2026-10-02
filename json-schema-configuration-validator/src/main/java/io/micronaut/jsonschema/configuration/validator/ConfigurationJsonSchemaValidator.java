@@ -435,18 +435,17 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     continue;
                 }
                 Map<String, Object> filtered = environmentVariableFilter.filter(entryPrefix, flat);
-                if (filtered.isEmpty() && !flat.isEmpty()) {
-                    // the entry only exists because of redundant environment variable candidates
-                    continue;
+                // skip entries that only exist because of redundant environment variable candidates
+                if (!filtered.isEmpty() || flat.isEmpty()) {
+                    Map<String, Object> instance = NestedPropertyMapBuilder.nest(filtered);
+                    instance = unwrapRepeatedEachPropertyEntry(instance, entry, entrySchema);
+                    Map<String, Object> effectiveInstance = removeOverlappingEachPropertySchemaKeys(instance, entrySchema, overlappingEachPropertySchemaKeys);
+
+                    SchemaValidator.validateObject(ctx, entrySchema, effectiveInstance, entryPrefix, entry, errors);
+
+                    applyRules(rules, new ConfigurationValidationContext(environment, entryPrefix, schema, entrySchema, instance), errors);
+                    applyRulesForNestedObjects(rules, environment, entryPrefix, schema, entrySchema, instance, errors);
                 }
-                Map<String, Object> instance = NestedPropertyMapBuilder.nest(filtered);
-                instance = unwrapRepeatedEachPropertyEntry(instance, entry, entrySchema);
-                Map<String, Object> effectiveInstance = removeOverlappingEachPropertySchemaKeys(instance, entrySchema, overlappingEachPropertySchemaKeys);
-
-                SchemaValidator.validateObject(ctx, entrySchema, effectiveInstance, entryPrefix, entry, errors);
-
-                applyRules(rules, new ConfigurationValidationContext(environment, entryPrefix, schema, entrySchema, instance), errors);
-                applyRulesForNestedObjects(rules, environment, entryPrefix, schema, entrySchema, instance, errors);
             }
         }
 
