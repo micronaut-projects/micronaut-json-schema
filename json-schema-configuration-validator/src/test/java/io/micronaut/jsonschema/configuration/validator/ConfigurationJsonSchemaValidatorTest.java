@@ -587,6 +587,39 @@ class ConfigurationJsonSchemaValidatorTest {
         assertEquals("ENVTEST_SERVER_PORTX", error.rawPropertyName());
     }
 
+    @Test
+    void environmentVariableCandidatesDoNotCreateEachPropertyEntries() {
+        Environment environment = createEnvironmentFromVariables(Map.of(
+            "TEST_EXECUTORS_ALPHA_N_THREADS", "4"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().noneMatch(e -> e.property().startsWith("test.executors")), () -> "Unexpected errors: " + errors);
+    }
+
+    @Test
+    void longEnvironmentVariableMatchingNoSchemaPropertyIsReportedOnce() {
+        Environment environment = createEnvironmentFromVariables(Map.of(
+            "ENVTEST_SERVER_A_B_C_D_E_F_G_H_I_J_K_L_M_N_O_P", "x"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        List<ConfigurationError> notPresent = errors.stream()
+            .filter(e -> e.message().contains("not present"))
+            .toList();
+        assertEquals(1, notPresent.size(), () -> "Unexpected errors: " + errors);
+        // unknown nested keys are reported at the first segment not present in the schema
+        assertEquals("envtest.server.a", notPresent.get(0).property());
+    }
+
     private static Environment createEnvironmentFromVariables(Map<String, Object> variables) {
         return createEnvironment(new MapPropertySource(EnvironmentPropertySource.NAME, variables) {
             @Override

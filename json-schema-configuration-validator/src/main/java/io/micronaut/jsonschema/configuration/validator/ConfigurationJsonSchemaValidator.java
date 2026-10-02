@@ -434,7 +434,12 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     errors.add(ctx.warning(entryPrefix, message));
                     continue;
                 }
-                Map<String, Object> instance = NestedPropertyMapBuilder.nest(environmentVariableFilter.filter(entryPrefix, flat));
+                Map<String, Object> filtered = environmentVariableFilter.filter(entryPrefix, flat);
+                if (filtered.isEmpty() && !flat.isEmpty()) {
+                    // the entry only exists because of redundant environment variable candidates
+                    continue;
+                }
+                Map<String, Object> instance = NestedPropertyMapBuilder.nest(filtered);
                 instance = unwrapRepeatedEachPropertyEntry(instance, entry, entrySchema);
                 Map<String, Object> effectiveInstance = removeOverlappingEachPropertySchemaKeys(instance, entrySchema, overlappingEachPropertySchemaKeys);
 

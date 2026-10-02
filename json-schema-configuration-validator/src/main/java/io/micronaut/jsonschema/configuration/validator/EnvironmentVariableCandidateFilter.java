@@ -45,10 +45,10 @@ import java.util.Optional;
 @Internal
 final class EnvironmentVariableCandidateFilter {
     /**
-     * Above this many separators the candidates are not enumerated (Micronaut generates 2^n of them)
-     * and the variable is assumed to match.
+     * Upper bound on the partial candidates explored for a single variable. When it is exceeded the
+     * variable is treated as matching no schema, so it is reported rather than silently ignored.
      */
-    private static final int MAX_SEPARATORS = 16;
+    private static final int MAX_SEARCH_STEPS = 100_000;
     private static final String ENV_ORIGIN = EnvironmentPropertySource.ORIGIN.location();
 
     private final Environment environment;
@@ -116,28 +116,52 @@ final class EnvironmentVariableCandidateFilter {
         return property.equals(variable.toLowerCase(Locale.ENGLISH).replace('_', '.'));
     }
 
+    /**
+     * Search the candidates of a variable (each {@code _} becomes {@code .} or {@code -}) for one that
+     * matches a schema. Rather than enumerating all 2^n candidates, partial candidates that cannot
+     * lead to a schema property are pruned.
+     */
     private boolean anyCandidateMatches(String variable) {
         String lower = variable.toLowerCase(Locale.ENGLISH);
         String[] tokens = lower.split("_", -1);
-        if (tokens.length - 1 > MAX_SEPARATORS) {
-            return true;
-        }
-        return anyCandidateMatches(tokens, 1, new StringBuilder(lower.length()).append(tokens[0]));
+        int[] budget = {MAX_SEARCH_STEPS};
+        return anyCandidateMatches(tokens, 1, new StringBuilder(lower.length()).append(tokens[0]), budget);
     }
 
-    private boolean anyCandidateMatches(String[] tokens, int index, StringBuilder candidate) {
+    private boolean anyCandidateMatches(String[] tokens, int index, StringBuilder candidate, int[] budget) {
         if (index == tokens.length) {
             return matchesSchema(candidate.toString());
+        }
+        if (--budget[0] < 0 || !couldMatchSchema(candidate.toString())) {
+            return false;
         }
         int length = candidate.length();
         for (char separator : new char[] {'.', '-'}) {
             candidate.setLength(length);
             candidate.append(separator).append(tokens[index]);
-            if (anyCandidateMatches(tokens, index + 1, candidate)) {
+            if (anyCandidateMatches(tokens, index + 1, candidate, budget)) {
                 return true;
             }
         }
         candidate.setLength(length);
+        return false;
+    }
+
+    /**
+     * @param partial A candidate whose last segment may still be extended
+     * @return Whether extending the partial candidate may lead to a schema property
+     */
+    private boolean couldMatchSchema(String partial) {
+        for (SchemaTarget target : targets) {
+            String prefixWithDot = target.prefixWithDot();
+            if (prefixWithDot.startsWith(partial)) {
+                return true;
+            }
+            if (partial.startsWith(prefixWithDot)
+                && matchesPartially(target.ctx(), target.root(), partial.substring(prefixWithDot.length()).split("\\.", -1), 0)) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -161,24 +185,50 @@ final class EnvironmentVariableCandidateFilter {
         if (index == segments.length) {
             return true;
         }
+        ConfigurationSchemaProperty next = step(ctx, resolved, segments[index]);
+        return next != null && matches(ctx, next, segments, index + 1);
+    }
+
+    private static boolean matchesPartially(SchemaContext ctx, ConfigurationSchemaProperty schema, String[] segments, int index) {
+        ConfigurationSchemaProperty resolved = ctx.refResolver().resolveRef(schema);
+        if (resolved == null) {
+            return false;
+        }
         String segment = segments[index];
+        if (index < segments.length - 1) {
+            ConfigurationSchemaProperty next = step(ctx, resolved, segment);
+            return next != null && matchesPartially(ctx, next, segments, index + 1);
+        }
+        // the last segment may still be extended with '-'
+        if (segment.indexOf('[') > -1) {
+            return step(ctx, resolved, segment) != null;
+        }
+        Map<String, ConfigurationSchemaProperty> properties = resolved.properties();
+        if (properties != null) {
+            if (properties.containsKey("*")) {
+                return true;
+            }
+            for (String name : properties.keySet()) {
+                if (name.startsWith(segment)) {
+                    return true;
+                }
+            }
+        }
+        return ctx.refResolver().resolveAdditionalPropertiesSchema(resolved) != null;
+    }
+
+    private static @Nullable ConfigurationSchemaProperty step(SchemaContext ctx, ConfigurationSchemaProperty resolved, String segment) {
         int bracket = segment.indexOf('[');
         String name = bracket > -1 ? segment.substring(0, bracket) : segment;
         if (name.isEmpty()) {
-            return false;
+            return null;
         }
         ConfigurationSchemaProperty next = next(ctx, resolved, name);
-        if (next == null) {
-            return false;
+        if (next == null || bracket == -1) {
+            return next;
         }
-        if (bracket > -1) {
-            ConfigurationSchemaProperty resolvedNext = ctx.refResolver().resolveRef(next);
-            if (resolvedNext == null || resolvedNext.items() == null) {
-                return false;
-            }
-            next = resolvedNext.items();
-        }
-        return matches(ctx, next, segments, index + 1);
+        ConfigurationSchemaProperty resolvedNext = ctx.refResolver().resolveRef(next);
+        return resolvedNext != null ? resolvedNext.items() : null;
     }
 
     private static @Nullable ConfigurationSchemaProperty next(SchemaContext ctx, ConfigurationSchemaProperty schema, String name) {
