@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.envvar.EnvRootConfiguration",
+  "title": "test.envvar.EnvRootConfiguration",
+  "x-micronaut": {
+    "prefix": "envtest",
+    "type": "test.envvar.EnvRootConfiguration",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "x-micronaut-path": "envtest.name"
+    }
+  }
+}

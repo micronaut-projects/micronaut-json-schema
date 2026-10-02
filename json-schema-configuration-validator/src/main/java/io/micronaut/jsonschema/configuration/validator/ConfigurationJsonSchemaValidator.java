@@ -156,6 +156,13 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
         }
 
         Map<String, Set<List<String>>> nestedSchemaPathsByPrefix = nestedSchemaPathsByPrefix(schemasByPrefix.keySet());
+        EnvironmentVariableCandidateFilter environmentVariableFilter = new EnvironmentVariableCandidateFilter(
+            environment,
+            schemasByPrefix,
+            classLoader,
+            mapper,
+            failOnNotPresent
+        );
 
         for (Map.Entry<String, List<ConfigurationSchema>> entry : schemasByPrefix.entrySet()) {
             String prefix = entry.getKey();
@@ -179,7 +186,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     errors,
                     nestedSchemaPathsByPrefix,
                     overlappingPrefixKeys,
-                    overlappingEachPropertySchemaKeys
+                    overlappingEachPropertySchemaKeys,
+                    environmentVariableFilter
                 );
             }
         }
@@ -331,15 +339,16 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             Set<ConfigurationError> errors,
             Map<String, Set<List<String>>> nestedSchemaPathsByPrefix,
             Set<String> overlappingPrefixKeys,
-            Set<String> overlappingEachPropertySchemaKeys
+            Set<String> overlappingEachPropertySchemaKeys,
+            EnvironmentVariableCandidateFilter environmentVariableFilter
         ) {
             String kind = schema.micronaut() != null ? schema.micronaut().kind() : null;
             String container = schema.micronaut() != null ? schema.micronaut().container() : null;
 
             if ("each-property".equals(kind) && "map".equals(container)) {
-                validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaPathsByPrefix, overlappingEachPropertySchemaKeys);
+                validateEachProperty(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaPathsByPrefix, overlappingEachPropertySchemaKeys, environmentVariableFilter);
             } else {
-                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaPathsByPrefix, overlappingPrefixKeys);
+                validateConfigurationProperties(prefix, schema, classLoader, environment, jsonMapper, failOnNotPresent, rules, errors, nestedSchemaPathsByPrefix, overlappingPrefixKeys, environmentVariableFilter);
             }
         }
 
@@ -353,7 +362,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             List<ConfigurationRule> rules,
             Set<ConfigurationError> errors,
             Map<String, Set<List<String>>> nestedSchemaPathsByPrefix,
-            Set<String> overlappingPrefixKeys
+            Set<String> overlappingPrefixKeys,
+            EnvironmentVariableCandidateFilter environmentVariableFilter
         ) {
             if (!environment.containsProperties(prefix)) {
                 return;
@@ -371,7 +381,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     .build());
                 return;
             }
-            Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
+            Map<String, Object> instance = NestedPropertyMapBuilder.nest(environmentVariableFilter.filter(prefix, flat));
             ConfigurationSchemaProperty root = ConfigurationSchemaPropertyAdapter.fromRoot(schema);
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
 
@@ -393,7 +403,8 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
             List<ConfigurationRule> rules,
             Set<ConfigurationError> errors,
             Map<String, Set<List<String>>> nestedSchemaPathsByPrefix,
-            Set<String> overlappingEachPropertySchemaKeys
+            Set<String> overlappingEachPropertySchemaKeys,
+            EnvironmentVariableCandidateFilter environmentVariableFilter
         ) {
             SchemaContext ctx = new SchemaContext(schema, classLoader, environment, jsonMapper, failOnNotPresent);
             ConfigurationSchemaProperty entrySchema = ctx.refResolver().resolveAdditionalPropertiesSchema(ConfigurationSchemaPropertyAdapter.fromRoot(schema));
@@ -423,7 +434,7 @@ public final class ConfigurationJsonSchemaValidator implements ConfigurationVali
                     errors.add(ctx.warning(entryPrefix, message));
                     continue;
                 }
-                Map<String, Object> instance = NestedPropertyMapBuilder.nest(flat);
+                Map<String, Object> instance = NestedPropertyMapBuilder.nest(environmentVariableFilter.filter(entryPrefix, flat));
                 instance = unwrapRepeatedEachPropertyEntry(instance, entry, entrySchema);
                 Map<String, Object> effectiveInstance = removeOverlappingEachPropertySchemaKeys(instance, entrySchema, overlappingEachPropertySchemaKeys);
 

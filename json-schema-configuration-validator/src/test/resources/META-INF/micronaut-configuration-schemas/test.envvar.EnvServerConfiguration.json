@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.envvar.EnvServerConfiguration",
+  "title": "test.envvar.EnvServerConfiguration",
+  "x-micronaut": {
+    "prefix": "envtest.server",
+    "type": "test.envvar.EnvServerConfiguration",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "port": {
+      "type": "integer",
+      "x-micronaut-javaType": "java.lang.Integer",
+      "x-micronaut-path": "envtest.server.port"
+    },
+    "max-request-size": {
+      "type": "integer",
+      "x-micronaut-javaType": "java.lang.Long",
+      "x-micronaut-path": "envtest.server.max-request-size"
+    }
+  }
+}

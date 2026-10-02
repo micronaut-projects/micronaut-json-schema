@@ -17,6 +17,8 @@ package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.ApplicationContextConfiguration;
 import io.micronaut.context.env.Environment;
+import io.micronaut.context.env.EnvironmentPropertySource;
+import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.core.util.StringUtils;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
@@ -529,11 +531,85 @@ class ConfigurationJsonSchemaValidatorTest {
             , () -> "Unexpected unknown-property error for bar, got: " + errors);
     }
 
+    @Test
+    void environmentVariableCandidatesMatchingTheSchemaValidateCleanly() {
+        Environment environment = createEnvironmentFromVariables(Map.of(
+            "ENVTEST_SERVER_PORT", "8080",
+            "ENVTEST_SERVER_MAX_REQUEST_SIZE", "1024"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().noneMatch(e -> e.property().startsWith("envtest")), () -> "Unexpected errors: " + errors);
+    }
+
+    @Test
+    void environmentVariableWithInvalidValueIsReported() {
+        Environment environment = createEnvironmentFromVariables(Map.of(
+            "ENVTEST_SERVER_PORT", "not-a-number"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        ConfigurationError error = errors.stream()
+            .filter(e -> e.property().equals("envtest.server.port") && e.message().contains("integer"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Expected an integer error, got: " + errors));
+        assertEquals(EnvironmentPropertySource.ORIGIN.location(), error.originLocation());
+        assertEquals("ENVTEST_SERVER_PORT", error.rawPropertyName());
+        assertTrue(errors.stream().noneMatch(e -> e.message().contains("not present")), () -> "Unexpected errors: " + errors);
+    }
+
+    @Test
+    void environmentVariableMatchingNoSchemaPropertyIsReportedOnce() {
+        Environment environment = createEnvironmentFromVariables(Map.of(
+            "ENVTEST_SERVER_PORTX", "8080"
+        ));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        List<ConfigurationError> notPresent = errors.stream()
+            .filter(e -> e.message().contains("not present"))
+            .toList();
+        assertEquals(1, notPresent.size(), () -> "Unexpected errors: " + errors);
+        ConfigurationError error = notPresent.get(0);
+        assertEquals("envtest.server.portx", error.property());
+        assertEquals(EnvironmentPropertySource.ORIGIN.location(), error.originLocation());
+        assertEquals("ENVTEST_SERVER_PORTX", error.rawPropertyName());
+    }
+
+    private static Environment createEnvironmentFromVariables(Map<String, Object> variables) {
+        return createEnvironment(new MapPropertySource(EnvironmentPropertySource.NAME, variables) {
+            @Override
+            public Origin getOrigin() {
+                return EnvironmentPropertySource.ORIGIN;
+            }
+
+            @Override
+            public PropertyConvention getConvention() {
+                return PropertyConvention.ENVIRONMENT_VARIABLE;
+            }
+        });
+    }
+
     private static Environment createEnvironment(Map<String, Object> properties) {
         return createEnvironment(properties, "test-origin");
     }
 
     private static Environment createEnvironment(Map<String, Object> properties, String originLocation) {
+        return createEnvironment(PropertySource.of("test", properties, PropertySource.Origin.of(originLocation)));
+    }
+
+    private static Environment createEnvironment(PropertySource propertySource) {
         ClassLoader classLoader = ConfigurationJsonSchemaValidatorTest.class.getClassLoader();
         ApplicationContextConfiguration configuration = new ApplicationContextConfiguration() {
             @Override
@@ -557,7 +633,7 @@ class ConfigurationJsonSchemaValidatorTest {
             }
         };
         Environment environment = Environment.create(configuration);
-        environment.addPropertySource(PropertySource.of("test", properties, PropertySource.Origin.of(originLocation)));
+        environment.addPropertySource(propertySource);
         return environment.start();
     }
 }
