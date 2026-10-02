@@ -17,6 +17,8 @@ package io.micronaut.jsonschema.configuration.validator;
 
 import io.micronaut.context.ApplicationContextConfiguration;
 import io.micronaut.context.env.Environment;
+import io.micronaut.context.env.EnvironmentPropertySource;
+import io.micronaut.context.env.MapPropertySource;
 import io.micronaut.context.env.PropertySource;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import org.junit.jupiter.api.Test;
@@ -92,6 +94,30 @@ class MicronautShippedSchemasTest {
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.server.ssl.port") && (e.message().contains("number") || e.message().contains("integer"))));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.server.ssl.handshake-timeout") && e.message().toLowerCase().contains("duration")));
         assertTrue(errors.stream().anyMatch(e -> e.property().equals("micronaut.server.ssl.extra") && e.message().contains("not present")));
+    }
+
+    @Test
+    void validatesMicronautServerPortEnvironmentVariable() {
+        Environment environment = createEnvironment(new MapPropertySource(EnvironmentPropertySource.NAME, Map.of(
+            "MICRONAUT_SERVER_PORT", "8080"
+        )) {
+            @Override
+            public Origin getOrigin() {
+                return EnvironmentPropertySource.ORIGIN;
+            }
+
+            @Override
+            public PropertyConvention getConvention() {
+                return PropertyConvention.ENVIRONMENT_VARIABLE;
+            }
+        });
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        validator.setFailOnNotPresent(true);
+
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.isEmpty(), () -> "Unexpected errors: " + errors);
     }
 
     @Test
@@ -207,6 +233,10 @@ class MicronautShippedSchemasTest {
     }
 
     private static Environment createEnvironment(Map<String, Object> properties) {
+        return createEnvironment(PropertySource.of("test", properties, PropertySource.Origin.of("test-origin")));
+    }
+
+    private static Environment createEnvironment(PropertySource propertySource) {
         ClassLoader classLoader = MicronautShippedSchemasTest.class.getClassLoader();
         ApplicationContextConfiguration configuration = new ApplicationContextConfiguration() {
             @Override
@@ -230,7 +260,7 @@ class MicronautShippedSchemasTest {
             }
         };
         Environment environment = Environment.create(configuration);
-        environment.addPropertySource(PropertySource.of("test", properties, PropertySource.Origin.of("test-origin")));
+        environment.addPropertySource(propertySource);
         return environment.start();
     }
 }
