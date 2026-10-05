@@ -43,7 +43,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 @Internal
 final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
+    /**
+     * The maximum number of schemas given as a String or a Map that are kept compiled.
+     */
+    static final int MAX_CACHED_SCHEMAS = 256;
     private final Map<Class<?>, Schema> jsonSchemaCache = new ConcurrentHashMap<>();
+    private final Map<String, Schema> jsonSchemaStringCache = new ConcurrentHashMap<>();
     private final JsonSchemaValidatorConfiguration config;
     private final ResourceLoader resourceLoader;
     private final JsonMapper jsonMapper;
@@ -118,7 +123,16 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
 
     @NonNull
     private Schema jsonSchema(@NonNull String jsonSchema) {
-        return schemaRegistry.getSchema(jsonSchema, InputFormat.JSON);
+        Schema schema = jsonSchemaStringCache.get(jsonSchema);
+        if (schema == null) {
+            schema = schemaRegistry.getSchema(jsonSchema, InputFormat.JSON);
+            if (jsonSchemaStringCache.size() >= MAX_CACHED_SCHEMAS) {
+                // Callers that build a new schema for every validation would otherwise grow the cache without bound
+                jsonSchemaStringCache.clear();
+            }
+            jsonSchemaStringCache.put(jsonSchema, schema);
+        }
+        return schema;
     }
 
     private Set<? extends ValidationMessage> validate(Schema schema, Object value) throws IOException {
