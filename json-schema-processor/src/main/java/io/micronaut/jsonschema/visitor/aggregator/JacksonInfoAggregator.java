@@ -59,11 +59,15 @@ import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.jsonschema.visitor.JsonSchemaVisitor;
 import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.PropertyNamingStrategy;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -80,6 +84,81 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
         JsonRootName.class, JsonTypeId.class, JsonValue.class, JsonView.class,
         JsonFilter.class
     );
+
+    /**
+     * The {@code @JsonNaming} annotation of Jackson 2 and of Jackson 3, which is part of the data binding
+     * and not of the annotations.
+     */
+    private static final List<String> JSON_NAMING_ANNOTATIONS = List.of(
+        "com.fasterxml.jackson.databind.annotation.JsonNaming",
+        "tools.jackson.databind.annotation.JsonNaming"
+    );
+
+    /**
+     * The types that are not a naming strategy by themselves, and declare the standard ones as nested types.
+     */
+    private static final Set<String> NAMING_STRATEGY_TYPES = Set.of(
+        "com.fasterxml.jackson.databind.PropertyNamingStrategy",
+        "com.fasterxml.jackson.databind.PropertyNamingStrategies",
+        "tools.jackson.databind.PropertyNamingStrategy",
+        "tools.jackson.databind.PropertyNamingStrategies"
+    );
+
+    private static final Map<String, PropertyNamingStrategy> NAMING_STRATEGIES = Map.of(
+        "LowerCamelCaseStrategy", PropertyNamingStrategies.LOWER_CAMEL_CASE,
+        "UpperCamelCaseStrategy", PropertyNamingStrategies.UPPER_CAMEL_CASE,
+        "SnakeCaseStrategy", PropertyNamingStrategies.SNAKE_CASE,
+        "UpperSnakeCaseStrategy", PropertyNamingStrategies.UPPER_SNAKE_CASE,
+        "LowerCaseStrategy", PropertyNamingStrategies.LOWER_CASE,
+        "KebabCaseStrategy", PropertyNamingStrategies.KEBAB_CASE,
+        "LowerDotCaseStrategy", PropertyNamingStrategies.LOWER_DOT_CASE
+    );
+
+    /**
+     * Resolves the name of a property in JSON. As in Jackson, a name set on the property wins over the naming
+     * strategy set with {@code @JsonNaming} on the type or a supertype.
+     *
+     * @param type The type declaring the property
+     * @param property The property
+     * @return The name of the property in JSON
+     */
+    public static String getPropertyName(ClassElement type, PropertyElement property) {
+        return getPropertyName(property, getNamingStrategy(findNamingStrategyType(type).orElse(null)));
+    }
+
+    private static String getPropertyName(PropertyElement property, @Nullable PropertyNamingStrategy namingStrategy) {
+        Optional<String> name = property.stringValue(JsonProperty.class)
+            .or(() -> property.stringValue(JsonGetter.class))
+            .or(() -> property.stringValue(JsonSetter.class));
+        if (name.isPresent() || namingStrategy == null) {
+            return name.orElse(property.getName());
+        }
+        // the standard strategies only translate the name
+        return namingStrategy.nameForField(null, null, property.getName());
+    }
+
+    private static Optional<String> findNamingStrategyType(ClassElement element) {
+        for (ClassElement type = element; type != null; type = type.getSuperType().orElse(null)) {
+            for (String annotation : JSON_NAMING_ANNOTATIONS) {
+                Optional<String> strategyType = type.stringValue(annotation);
+                if (strategyType.isPresent()) {
+                    return strategyType.map(name -> name.replace('$', '.'));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static @Nullable PropertyNamingStrategy getNamingStrategy(@Nullable String strategyType) {
+        if (strategyType == null) {
+            return null;
+        }
+        int nested = strategyType.lastIndexOf('.');
+        if (nested < 0 || !NAMING_STRATEGY_TYPES.contains(strategyType.substring(0, nested))) {
+            return null;
+        }
+        return NAMING_STRATEGIES.get(strategyType.substring(nested + 1));
+    }
 
     @Override
     public Schema addInfo(TypedElement element, Schema schema, VisitorContext visitorContext, JsonSchemaContext context) {
@@ -110,18 +189,20 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                 .collect(Collectors.toSet());
         }
 
+        String namingStrategyType = findNamingStrategyType(element).orElse(null);
+        PropertyNamingStrategy namingStrategy = getNamingStrategy(namingStrategyType);
+        if (namingStrategy == null && namingStrategyType != null && !NAMING_STRATEGY_TYPES.contains(namingStrategyType)) {
+            visitorContext.warn("Could not apply the naming strategy " + namingStrategyType + " of @JsonNaming to the schema, "
+                + "as only the strategies of PropertyNamingStrategies are supported", element);
+        }
+
         if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
             for (PropertyElement property : element.getBeanProperties()) {
                 Schema propertySchema = schema.getProperties().get(property.getName());
                 if (propertySchema == null) {
                     continue;
                 }
-                String name = property.stringValue(JsonProperty.class)
-                    .orElse(property.stringValue(JsonGetter.class)
-                        .orElse(property.stringValue(JsonSetter.class)
-                            .orElse(property.getName())
-                        )
-                    );
+                String name = getPropertyName(property, namingStrategy);
                 if (property.hasAnnotation(JsonIgnore.class)
                     || property.getGenericType().hasAnnotation(JsonIgnoreType.class)
                     || (ignoreProperties != null && ignoreProperties.contains(name))
