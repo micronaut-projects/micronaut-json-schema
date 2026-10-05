@@ -25,6 +25,7 @@ import com.networknt.schema.dialect.Dialects;
 import com.networknt.schema.resource.InputStreamSource;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.core.util.clhm.ConcurrentLinkedHashMap;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import io.micronaut.jsonschema.utils.JsonSchemaConfiguration;
@@ -48,7 +49,9 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
      */
     static final int MAX_CACHED_SCHEMAS = 256;
     private final Map<Class<?>, Schema> jsonSchemaCache = new ConcurrentHashMap<>();
-    private final Map<String, Schema> jsonSchemaStringCache = new ConcurrentHashMap<>();
+    private final Map<String, Schema> jsonSchemaStringCache = new ConcurrentLinkedHashMap.Builder<String, Schema>()
+        .maximumWeightedCapacity(MAX_CACHED_SCHEMAS)
+        .build();
     private final JsonSchemaValidatorConfiguration config;
     private final ResourceLoader resourceLoader;
     private final JsonMapper jsonMapper;
@@ -126,10 +129,6 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         Schema schema = jsonSchemaStringCache.get(jsonSchema);
         if (schema == null) {
             schema = schemaRegistry.getSchema(jsonSchema, InputFormat.JSON);
-            if (jsonSchemaStringCache.size() >= MAX_CACHED_SCHEMAS) {
-                // Callers that build a new schema for every validation would otherwise grow the cache without bound
-                jsonSchemaStringCache.clear();
-            }
             jsonSchemaStringCache.put(jsonSchema, schema);
         }
         return schema;
