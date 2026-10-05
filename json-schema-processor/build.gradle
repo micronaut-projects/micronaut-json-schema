@@ -11,8 +11,6 @@ dependencies {
     api(mn.jackson.databind)
 
     testImplementation(mnValidation.validation)
-    // the Jackson 2 flavour of @JsonNaming, which is matched by name
-    testImplementation(libs.jackson2.databind)
     testImplementation(mn.micronaut.inject.kotlin.test)
     testImplementation(mn.micronaut.inject.groovy.test)
     testImplementation(mn.micronaut.inject.java.test)

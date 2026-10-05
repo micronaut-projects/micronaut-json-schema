@@ -62,6 +62,7 @@ import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.PropertyNamingStrategy;
+import tools.jackson.databind.annotation.JsonNaming;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -86,23 +87,14 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
     );
 
     /**
-     * The {@code @JsonNaming} annotation of Jackson 2 and of Jackson 3, which is part of the data binding
-     * and not of the annotations.
+     * The default of {@code @JsonNaming}, which is not a naming strategy by itself.
      */
-    private static final List<String> JSON_NAMING_ANNOTATIONS = List.of(
-        "com.fasterxml.jackson.databind.annotation.JsonNaming",
-        "tools.jackson.databind.annotation.JsonNaming"
-    );
+    private static final String NO_NAMING_STRATEGY = PropertyNamingStrategy.class.getName();
 
     /**
-     * The types that are not a naming strategy by themselves, and declare the standard ones as nested types.
+     * The type declaring the standard naming strategies as nested types.
      */
-    private static final Set<String> NAMING_STRATEGY_TYPES = Set.of(
-        "com.fasterxml.jackson.databind.PropertyNamingStrategy",
-        "com.fasterxml.jackson.databind.PropertyNamingStrategies",
-        "tools.jackson.databind.PropertyNamingStrategy",
-        "tools.jackson.databind.PropertyNamingStrategies"
-    );
+    private static final String STANDARD_NAMING_STRATEGIES = PropertyNamingStrategies.class.getName();
 
     private static final Map<String, PropertyNamingStrategy> NAMING_STRATEGIES = Map.of(
         "LowerCamelCaseStrategy", PropertyNamingStrategies.LOWER_CAMEL_CASE,
@@ -139,11 +131,9 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
 
     private static Optional<String> findNamingStrategyType(ClassElement element) {
         for (ClassElement type = element; type != null; type = type.getSuperType().orElse(null)) {
-            for (String annotation : JSON_NAMING_ANNOTATIONS) {
-                Optional<String> strategyType = type.stringValue(annotation);
-                if (strategyType.isPresent()) {
-                    return strategyType.map(name -> name.replace('$', '.'));
-                }
+            Optional<String> strategyType = type.stringValue(JsonNaming.class);
+            if (strategyType.isPresent()) {
+                return strategyType.map(name -> name.replace('$', '.'));
             }
         }
         return Optional.empty();
@@ -154,7 +144,7 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
             return null;
         }
         int nested = strategyType.lastIndexOf('.');
-        if (nested < 0 || !NAMING_STRATEGY_TYPES.contains(strategyType.substring(0, nested))) {
+        if (nested < 0 || !STANDARD_NAMING_STRATEGIES.equals(strategyType.substring(0, nested))) {
             return null;
         }
         return NAMING_STRATEGIES.get(strategyType.substring(nested + 1));
@@ -191,7 +181,7 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
 
         String namingStrategyType = findNamingStrategyType(element).orElse(null);
         PropertyNamingStrategy namingStrategy = getNamingStrategy(namingStrategyType);
-        if (namingStrategy == null && namingStrategyType != null && !NAMING_STRATEGY_TYPES.contains(namingStrategyType)) {
+        if (namingStrategy == null && namingStrategyType != null && !NO_NAMING_STRATEGY.equals(namingStrategyType)) {
             visitorContext.warn("Could not apply the naming strategy " + namingStrategyType + " of @JsonNaming to the schema, "
                 + "as only the strategies of PropertyNamingStrategies are supported", element);
         }

@@ -541,16 +541,18 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['isLizard'].type == [Schema.Type.BOOLEAN]
     }
 
-    void "schema with JsonNaming #jackson.#strategy"() {
+    void "schema with JsonNaming #strategy"() {
         given:
         def schema = buildJsonSchema('test.Stork', 'stork', """
         package test;
 
         import com.fasterxml.jackson.annotation.*;
+        import tools.jackson.databind.*;
+        import tools.jackson.databind.annotation.JsonNaming;
         import io.micronaut.jsonschema.JsonSchema;
 
         @JsonSchema
-        @%s.annotation.JsonNaming(%s.class)
+        @JsonNaming(%s.class)
         public record Stork(
                 String fullName,
                 int yearsOld,
@@ -560,7 +562,7 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
                 String nestSite
         ) {
         }
-""", jackson, jackson + "." + strategy)
+""", strategy)
 
         expect:
         schema.properties.keySet() == [fullName, yearsOld, 'nick'] as Set
@@ -569,22 +571,15 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.required == [yearsOld]
 
         where:
-        jackson                          | strategy                                         | fullName    | yearsOld
-        'tools.jackson.databind'         | 'PropertyNamingStrategies.SnakeCaseStrategy'      | 'full_name' | 'years_old'
-        'tools.jackson.databind'         | 'PropertyNamingStrategies.UpperSnakeCaseStrategy' | 'FULL_NAME' | 'YEARS_OLD'
-        'tools.jackson.databind'         | 'PropertyNamingStrategies.KebabCaseStrategy'      | 'full-name' | 'years-old'
-        'tools.jackson.databind'         | 'PropertyNamingStrategies.LowerDotCaseStrategy'   | 'full.name' | 'years.old'
-        'tools.jackson.databind'         | 'PropertyNamingStrategies.UpperCamelCaseStrategy' | 'FullName'  | 'YearsOld'
-        'tools.jackson.databind'         | 'PropertyNamingStrategies.LowerCaseStrategy'      | 'fullname'  | 'yearsold'
-        'tools.jackson.databind'         | 'PropertyNamingStrategies.LowerCamelCaseStrategy' | 'fullName'  | 'yearsOld'
-        'tools.jackson.databind'         | 'PropertyNamingStrategy'                          | 'fullName'  | 'yearsOld'
-        'com.fasterxml.jackson.databind' | 'PropertyNamingStrategies.SnakeCaseStrategy'      | 'full_name' | 'years_old'
-        'com.fasterxml.jackson.databind' | 'PropertyNamingStrategies.UpperSnakeCaseStrategy' | 'FULL_NAME' | 'YEARS_OLD'
-        'com.fasterxml.jackson.databind' | 'PropertyNamingStrategies.KebabCaseStrategy'      | 'full-name' | 'years-old'
-        'com.fasterxml.jackson.databind' | 'PropertyNamingStrategies.LowerDotCaseStrategy'   | 'full.name' | 'years.old'
-        'com.fasterxml.jackson.databind' | 'PropertyNamingStrategies.UpperCamelCaseStrategy' | 'FullName'  | 'YearsOld'
-        'com.fasterxml.jackson.databind' | 'PropertyNamingStrategies.LowerCaseStrategy'      | 'fullname'  | 'yearsold'
-        'com.fasterxml.jackson.databind' | 'PropertyNamingStrategies.LowerCamelCaseStrategy' | 'fullName'  | 'yearsOld'
+        strategy                                          | fullName    | yearsOld
+        'PropertyNamingStrategies.SnakeCaseStrategy'      | 'full_name' | 'years_old'
+        'PropertyNamingStrategies.UpperSnakeCaseStrategy' | 'FULL_NAME' | 'YEARS_OLD'
+        'PropertyNamingStrategies.KebabCaseStrategy'      | 'full-name' | 'years-old'
+        'PropertyNamingStrategies.LowerDotCaseStrategy'   | 'full.name' | 'years.old'
+        'PropertyNamingStrategies.UpperCamelCaseStrategy' | 'FullName'  | 'YearsOld'
+        'PropertyNamingStrategies.LowerCaseStrategy'      | 'fullname'  | 'yearsold'
+        'PropertyNamingStrategies.LowerCamelCaseStrategy' | 'fullName'  | 'yearsOld'
+        'PropertyNamingStrategy'                          | 'fullName'  | 'yearsOld'
     }
 
     void "schema with JsonNaming and JsonIgnoreProperties"() {
