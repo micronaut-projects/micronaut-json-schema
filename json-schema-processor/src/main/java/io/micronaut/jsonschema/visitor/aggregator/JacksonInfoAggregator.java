@@ -66,6 +66,7 @@ import tools.jackson.databind.annotation.JsonNaming;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -187,8 +188,12 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
         }
 
         if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
+            // a property may be renamed to the name another one had: the schemas are read as they were declared,
+            // and the renamed ones are only added once every property left its former name
+            Map<String, Schema> declaredProperties = new LinkedHashMap<>(schema.getProperties());
+            Map<String, Schema> renamedProperties = new LinkedHashMap<>();
             for (PropertyElement property : element.getBeanProperties()) {
-                Schema propertySchema = schema.getProperties().get(property.getName());
+                Schema propertySchema = declaredProperties.get(property.getName());
                 if (propertySchema == null) {
                     continue;
                 }
@@ -229,15 +234,16 @@ public class JacksonInfoAggregator implements SchemaInfoAggregator {
                         }
                     }
                     if (unwrappedProperties != null) {
-                        schema.getProperties().putAll(unwrappedProperties);
+                        renamedProperties.putAll(unwrappedProperties);
                     }
                 } else if (!name.equals(property.getName())) {
                     schema.getProperties().remove(property.getName());
-                    schema.putProperty(name, propertySchema);
+                    renamedProperties.put(name, propertySchema);
                 }
 
                 ValidationInfoAggregator.addRequiredPropertyInfo(name, property, schema, context);
             }
+            schema.getProperties().putAll(renamedProperties);
         }
 
         for (MethodElement method : element.getMethods()) {

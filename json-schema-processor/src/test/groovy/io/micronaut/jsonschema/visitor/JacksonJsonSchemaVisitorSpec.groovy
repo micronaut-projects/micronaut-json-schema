@@ -582,6 +582,63 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         'PropertyNamingStrategy'                          | 'fullName'  | 'yearsOld'
     }
 
+    void "schema with JsonNaming renaming a property to the name of another one"() {
+        given:
+        def schema = buildJsonSchema('test.Heron', 'heron', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import tools.jackson.databind.PropertyNamingStrategies;
+        import tools.jackson.databind.annotation.JsonNaming;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema
+        @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+        public record Heron(
+                int yearsOld,
+                @JsonProperty("legacy")
+                String years_old
+        ) {
+        }
+""")
+
+        expect:
+        schema.properties.keySet() == ['years_old', 'legacy'] as Set
+        schema.properties['years_old'].type == [Schema.Type.INTEGER]
+        schema.properties['legacy'].type == [Schema.Type.STRING]
+        schema.required == ['years_old']
+    }
+
+    void "schema with JsonProperty renaming a property to the name of another one"() {
+        given:
+        def schema = buildJsonSchema('test.Spoonbill', 'spoonbill', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema
+        public record Spoonbill(
+                @JsonProperty("wingspan")
+                int length,
+                @JsonProperty("length")
+                String wingspan,
+                @JsonProperty("weight")
+                boolean ringed,
+                @JsonIgnore
+                String weight
+        ) {
+        }
+""")
+
+        expect:
+        schema.properties.keySet() == ['wingspan', 'length', 'weight'] as Set
+        schema.properties['wingspan'].type == [Schema.Type.INTEGER]
+        schema.properties['length'].type == [Schema.Type.STRING]
+        schema.properties['weight'].type == [Schema.Type.BOOLEAN]
+        schema.required as Set == ['wingspan', 'weight'] as Set
+    }
+
     void "schema with JsonNaming and JsonIgnoreProperties"() {
         given:
         def schema = buildJsonSchema('test.Crane', 'crane', """
