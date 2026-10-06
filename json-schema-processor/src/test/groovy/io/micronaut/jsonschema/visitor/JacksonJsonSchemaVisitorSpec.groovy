@@ -541,4 +541,234 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['isLizard'].type == [Schema.Type.BOOLEAN]
     }
 
+    void "schema with JsonNaming #strategy"() {
+        given:
+        def schema = buildJsonSchema('test.Stork', 'stork', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import tools.jackson.databind.*;
+        import tools.jackson.databind.annotation.JsonNaming;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema
+        @JsonNaming(%s.class)
+        public record Stork(
+                String fullName,
+                int yearsOld,
+                @JsonProperty("nick")
+                String nickName,
+                @JsonIgnore
+                String nestSite
+        ) {
+        }
+""", strategy)
+
+        expect:
+        schema.properties.keySet() == [fullName, yearsOld, 'nick'] as Set
+        schema.properties[fullName].type == [Schema.Type.STRING]
+        schema.properties[yearsOld].type == [Schema.Type.INTEGER]
+        schema.required == [yearsOld]
+
+        where:
+        strategy                                          | fullName    | yearsOld
+        'PropertyNamingStrategies.SnakeCaseStrategy'      | 'full_name' | 'years_old'
+        'PropertyNamingStrategies.UpperSnakeCaseStrategy' | 'FULL_NAME' | 'YEARS_OLD'
+        'PropertyNamingStrategies.KebabCaseStrategy'      | 'full-name' | 'years-old'
+        'PropertyNamingStrategies.LowerDotCaseStrategy'   | 'full.name' | 'years.old'
+        'PropertyNamingStrategies.UpperCamelCaseStrategy' | 'FullName'  | 'YearsOld'
+        'PropertyNamingStrategies.LowerCaseStrategy'      | 'fullname'  | 'yearsold'
+        'PropertyNamingStrategies.LowerCamelCaseStrategy' | 'fullName'  | 'yearsOld'
+        'PropertyNamingStrategy'                          | 'fullName'  | 'yearsOld'
+    }
+
+    void "schema with JsonNaming renaming a property to the name of another one"() {
+        given:
+        def schema = buildJsonSchema('test.Heron', 'heron', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import tools.jackson.databind.PropertyNamingStrategies;
+        import tools.jackson.databind.annotation.JsonNaming;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema
+        @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+        public record Heron(
+                int yearsOld,
+                @JsonProperty("legacy")
+                String years_old
+        ) {
+        }
+""")
+
+        expect:
+        schema.properties.keySet() == ['years_old', 'legacy'] as Set
+        schema.properties['years_old'].type == [Schema.Type.INTEGER]
+        schema.properties['legacy'].type == [Schema.Type.STRING]
+        schema.required == ['years_old']
+    }
+
+    void "schema with JsonProperty renaming a property to the name of another one"() {
+        given:
+        def schema = buildJsonSchema('test.Spoonbill', 'spoonbill', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema
+        public record Spoonbill(
+                @JsonProperty("wingspan")
+                int length,
+                @JsonProperty("length")
+                String wingspan,
+                @JsonProperty("weight")
+                boolean ringed,
+                @JsonIgnore
+                String weight
+        ) {
+        }
+""")
+
+        expect:
+        schema.properties.keySet() == ['wingspan', 'length', 'weight'] as Set
+        schema.properties['wingspan'].type == [Schema.Type.INTEGER]
+        schema.properties['length'].type == [Schema.Type.STRING]
+        schema.properties['weight'].type == [Schema.Type.BOOLEAN]
+        schema.required as Set == ['wingspan', 'weight'] as Set
+    }
+
+    void "schema with JsonNaming and JsonIgnoreProperties"() {
+        given:
+        def schema = buildJsonSchema('test.Crane', 'crane', """
+        package test;
+
+        import com.fasterxml.jackson.annotation.*;
+        import tools.jackson.databind.PropertyNamingStrategies;
+        import tools.jackson.databind.annotation.JsonNaming;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema
+        @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+        @JsonIgnoreProperties("nest_site")
+        public record Crane(
+                String fullName,
+                String nestSite
+        ) {
+        }
+""")
+
+        expect:
+        schema.properties.keySet() == ['full_name'] as Set
+    }
+
+    void "schema with JsonNaming keeps the record documentation"() {
+        given:
+        def schema = buildJsonSchema('test.Egret', 'egret', """
+        package test;
+
+        import tools.jackson.databind.PropertyNamingStrategies;
+        import tools.jackson.databind.annotation.JsonNaming;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        /**
+         * A white heron.
+         *
+         * @param fullName The full name.
+         * @param age The age.
+         */
+        @JsonSchema
+        @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+        public record Egret(
+                String fullName,
+                int age
+        ) {
+        }
+""")
+
+        expect:
+        schema.description == "A white heron."
+        schema.properties['full_name'].description == "The full name."
+        schema.properties['age'].description == "The age."
+    }
+
+    void "schema with JsonNaming on a supertype and on a property type"() {
+        given:
+        def schema = buildJsonSchema('test.Ibis', 'ibis', """
+        package test;
+
+        import tools.jackson.databind.PropertyNamingStrategies;
+        import tools.jackson.databind.annotation.JsonNaming;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema
+        public class Ibis extends Bird {
+
+            private Nest currentNest;
+
+            public Nest getCurrentNest() {
+                return currentNest;
+            }
+
+            public void setCurrentNest(Nest currentNest) {
+                this.currentNest = currentNest;
+            }
+        }
+
+        @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+        class Bird {
+
+            private String fullName;
+
+            public String getFullName() {
+                return fullName;
+            }
+
+            public void setFullName(String fullName) {
+                this.fullName = fullName;
+            }
+        }
+
+        @JsonNaming(PropertyNamingStrategies.KebabCaseStrategy.class)
+        record Nest(
+                int eggCount
+        ) {
+        }
+""")
+
+        expect:
+        schema.properties.keySet() == ['full_name', 'current_nest'] as Set
+        schema.properties['current_nest'].properties.keySet() == ['egg-count'] as Set
+        schema.properties['current_nest'].required == ['egg-count']
+    }
+
+    void "schema with a custom JsonNaming strategy keeps the property names"() {
+        given:
+        def schema = buildJsonSchema('test.Bittern', 'bittern', """
+        package test;
+
+        import tools.jackson.databind.PropertyNamingStrategies;
+        import tools.jackson.databind.annotation.JsonNaming;
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema
+        @JsonNaming(Shouting.class)
+        public record Bittern(
+                String fullName
+        ) {
+        }
+
+        class Shouting extends PropertyNamingStrategies.NamingBase {
+            @Override
+            public String translate(String propertyName) {
+                return propertyName.toUpperCase();
+            }
+        }
+""")
+
+        expect:
+        schema.properties.keySet() == ['fullName'] as Set
+    }
+
 }

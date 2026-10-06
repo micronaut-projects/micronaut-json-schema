@@ -85,7 +85,8 @@ public class DocumentationInfoAggregator implements SchemaInfoAggregator {
 
         if (schema.getProperties() != null && !schema.getProperties().isEmpty()) {
             for (PropertyElement property: element.getBeanProperties()) {
-                Schema propertySchema = schema.getProperties().get(property.getName());
+                // the Jackson annotations may have renamed the property
+                Schema propertySchema = schema.getProperties().get(JacksonInfoAggregator.getPropertyName(element, property));
                 if (propertySchema != null && propertiesDescription.containsKey(property.getName())) {
                     propertySchema.setDescription(propertiesDescription.get(property.getName()));
                 }

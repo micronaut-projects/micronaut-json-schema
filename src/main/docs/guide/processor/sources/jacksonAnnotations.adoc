@@ -40,6 +40,12 @@ The following `com.fasterxml.jackson.annotation` annotations are supported:
 | `JsonView` | ❌ |
 |===
 
+The `@JsonNaming` annotation of the Jackson data binding (`tools.jackson.databind.annotation.JsonNaming`) is supported
+too. The names of the properties follow the naming strategy when it is one of the strategies declared in
+`PropertyNamingStrategies`, such as `SnakeCaseStrategy`. A name set with `@JsonProperty`, `@JsonGetter` or `@JsonSetter`
+is kept as is. A custom naming strategy cannot be applied at build time: the names of the properties are left unchanged
+and a warning is reported.
+
 NOTE: *Custom serializers and deserializers cannot be supported, as this information is implementation-specific
 and not available during build time. This also applies to some other features, like the `JsonFilter` annotation
 which allows defining custom filters.
