@@ -68,6 +68,7 @@ loadScripts(document, 'script');</script>
 </li>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
+<li><a href="#getPropertyName(io.micronaut.inject.ast.ClassElement,io.micronaut.inject.ast.PropertyElement)" tabindex="0">getPropertyName(ClassElement, PropertyElement)</a></li>
 <li><a href="#addInfo(io.micronaut.inject.ast.TypedElement,io.micronaut.jsonschema.model.Schema,io.micronaut.inject.visitor.VisitorContext,io.micronaut.jsonschema.visitor.context.JsonSchemaContext)" tabindex="0">addInfo(TypedElement, Schema, VisitorContext, JsonSchemaContext)</a></li>
 </ol>
 </li>
@@ -130,7 +131,7 @@ implements <a href="SchemaInfoAggregator.html" title="interface in io.micronaut.
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
 <div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
@@ -143,6 +144,12 @@ implements <a href="SchemaInfoAggregator.html" title="interface in io.micronaut.
  <a href="../context/JsonSchemaContext.html" title="class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext</a>&nbsp;context)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">A method that is called for adding JSON schema info.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#getPropertyName(io.micronaut.inject.ast.ClassElement,io.micronaut.inject.ast.PropertyElement)" class="member-name-link">getPropertyName</a><wbr>(io.micronaut.inject.ast.ClassElement&nbsp;type,
+ io.micronaut.inject.ast.PropertyElement&nbsp;property)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Resolves the name of a property in JSON.</div>
 </div>
 </div>
 </div>
@@ -193,6 +200,24 @@ implements <a href="SchemaInfoAggregator.html" title="interface in io.micronaut.
 <section class="method-details" id="method-detail">
 <h2>Method Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="getPropertyName(io.micronaut.inject.ast.ClassElement,io.micronaut.inject.ast.PropertyElement)">
+<h3>getPropertyName</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getPropertyName</span><wbr><span class="parameters">(io.micronaut.inject.ast.ClassElement&nbsp;type,
+ io.micronaut.inject.ast.PropertyElement&nbsp;property)</span></div>
+<div class="block">Resolves the name of a property in JSON. As in Jackson, a name set on the property wins over the naming
+strategy set with <code>@JsonNaming</code> on the type or a supertype.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>type</code> - The type declaring the property</dd>
+<dd><code>property</code> - The property</dd>
+<dt>Returns:</dt>
+<dd>The name of the property in JSON</dd>
+</dl>
+</div>
+</section>
+</li>
 <li>
 <section class="detail" id="addInfo(io.micronaut.inject.ast.TypedElement,io.micronaut.jsonschema.model.Schema,io.micronaut.inject.visitor.VisitorContext,io.micronaut.jsonschema.visitor.context.JsonSchemaContext)">
 <h3>addInfo</h3>

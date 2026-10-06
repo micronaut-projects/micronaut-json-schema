@@ -1295,6 +1295,13 @@ Custom validators cannot be supported, as this information is implementation-spe
 </tr>
 </tbody>
 </table>
+<div class="paragraph">
+<p>The <code>@JsonNaming</code> annotation of the Jackson data binding (<code>tools.jackson.databind.annotation.JsonNaming</code>) is supported
+too. The names of the properties follow the naming strategy when it is one of the strategies declared in
+<code>PropertyNamingStrategies</code>, such as <code>SnakeCaseStrategy</code>. A name set with <code>@JsonProperty</code>, <code>@JsonGetter</code> or <code>@JsonSetter</code>
+is kept as is. A custom naming strategy cannot be applied at build time: the names of the properties are left unchanged
+and a warning is reported.</p>
+</div>
 <div class="admonitionblock note">
 <table>
 <tr>
