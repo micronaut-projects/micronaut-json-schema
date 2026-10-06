@@ -126,12 +126,7 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
 
     @NonNull
     private Schema jsonSchema(@NonNull String jsonSchema) {
-        Schema schema = jsonSchemaStringCache.get(jsonSchema);
-        if (schema == null) {
-            schema = schemaRegistry.getSchema(jsonSchema, InputFormat.JSON);
-            jsonSchemaStringCache.put(jsonSchema, schema);
-        }
-        return schema;
+        return jsonSchemaStringCache.computeIfAbsent(jsonSchema, json -> schemaRegistry.getSchema(json, InputFormat.JSON));
     }
 
     private Set<? extends ValidationMessage> validate(Schema schema, Object value) throws IOException {
