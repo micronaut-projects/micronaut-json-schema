@@ -147,6 +147,10 @@ class ValueCoercerTest {
         assertEquals(ConfigurationSchemaType.INTEGER, SchemaTypes.typeOf(readableBytesProperty(List.of("integer", "string"))));
         assertEquals(ConfigurationSchemaType.INTEGER, SchemaTypes.typeOf(readableBytesProperty(List.of("string", "integer"))));
         assertEquals(ConfigurationSchemaType.STRING, SchemaTypes.typeOf(readableBytesProperty(List.of("string"))));
+        assertEquals(ConfigurationSchemaType.INTEGER, SchemaTypes.typeOf(readableBytesProperty("integer")));
+        assertEquals(ConfigurationSchemaType.STRING, SchemaTypes.typeOf(readableBytesProperty("string")));
+        assertEquals(ConfigurationSchemaType.INTEGER, SchemaTypes.typeOf(readableBytesProperty(List.of(1, "integer"))));
+        assertNull(SchemaTypes.typeOf(readableBytesProperty(null)));
         assertEquals(ConfigurationSchemaType.STRING, SchemaTypes.typeOf(schemaProperty(List.of("string", "integer"), null)));
     }
 
