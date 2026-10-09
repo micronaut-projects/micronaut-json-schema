@@ -474,6 +474,76 @@ class ConfigurationJsonSchemaValidatorTest {
     }
 
     @Test
+    void acceptsReadableByteSizesForReadableBytesFormat() {
+        for (Object value : List.of("6MB", "512kb", "1GB", "1024", 1024, 1024L)) {
+            Environment environment = createEnvironment(Map.of(
+                "test.bytes.max-request-size", value,
+                "test.bytes.string-first-size", value
+            ));
+
+            ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+            validator.setFailOnNotPresent(true);
+            Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+            assertTrue(errors.stream().noneMatch(e -> e.property().startsWith("test.bytes")),
+                () -> "Unexpected errors for " + value + ": " + errors);
+        }
+    }
+
+    @Test
+    void rejectsInvalidReadableByteSizesWithByteSizeMessage() {
+        for (String value : List.of("6 parsecs", "6TB", "6.5MB", "MB", "six", " 6MB")) {
+            Environment environment = createEnvironment(Map.of(
+                "test.bytes.max-request-size", value,
+                "test.bytes.string-first-size", value
+            ));
+
+            ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+            Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+            assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.bytes.max-request-size")
+                    && e.message().equals("Expected integer or byte size such as 10MB")),
+                () -> "Expected byte size error for '" + value + "', got: " + errors);
+            assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.bytes.string-first-size")
+                    && e.message().equals("Expected integer or byte size such as 10MB")),
+                () -> "Expected byte size error for '" + value + "' with a string-first type union, got: " + errors);
+        }
+    }
+
+    @Test
+    void appliesNumericConstraintsToConvertedReadableByteSizes() {
+        Environment withinBounds = createEnvironment(Map.of("test.bytes.bounded-size", "10MB"));
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        Set<ConfigurationError> withinErrors = validator.validate(getClass().getClassLoader(), withinBounds);
+        assertTrue(withinErrors.stream().noneMatch(e -> e.property().startsWith("test.bytes")),
+            () -> "Unexpected errors: " + withinErrors);
+
+        Environment tooLarge = createEnvironment(Map.of("test.bytes.bounded-size", "11MB"));
+        Set<ConfigurationError> tooLargeErrors = validator.validate(getClass().getClassLoader(), tooLarge);
+        assertTrue(tooLargeErrors.stream().anyMatch(e -> e.property().equals("test.bytes.bounded-size")
+                && e.message().equals("Value must be <= 10485760")),
+            () -> "Expected maximum error, got: " + tooLargeErrors);
+
+        Environment tooSmall = createEnvironment(Map.of("test.bytes.bounded-size", "512"));
+        Set<ConfigurationError> tooSmallErrors = validator.validate(getClass().getClassLoader(), tooSmall);
+        assertTrue(tooSmallErrors.stream().anyMatch(e -> e.property().equals("test.bytes.bounded-size")
+                && e.message().equals("Value must be >= 1024")),
+            () -> "Expected minimum error, got: " + tooSmallErrors);
+    }
+
+    @Test
+    void plainIntegerPropertiesStillRejectByteSizes() {
+        Environment environment = createEnvironment(Map.of("test.bytes.plain-size", "6MB"));
+
+        ConfigurationJsonSchemaValidator validator = new ConfigurationJsonSchemaValidator();
+        Set<ConfigurationError> errors = validator.validate(getClass().getClassLoader(), environment);
+
+        assertTrue(errors.stream().anyMatch(e -> e.property().equals("test.bytes.plain-size")
+                && e.message().equals("Expected integer")),
+            () -> "Expected integer error, got: " + errors);
+    }
+
+    @Test
     void validatesMinPropertiesForObjects() {
         Environment environment = createEnvironment(Map.of(
             "test.config.enabled", StringUtils.TRUE,

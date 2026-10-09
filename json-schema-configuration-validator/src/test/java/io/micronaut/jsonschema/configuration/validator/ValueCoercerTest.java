@@ -143,6 +143,47 @@ class ValueCoercerTest {
     }
 
     @Test
+    void schemaTypesResolveReadableBytesTypeUnionsToInteger() {
+        assertEquals(ConfigurationSchemaType.INTEGER, SchemaTypes.typeOf(readableBytesProperty(List.of("integer", "string"))));
+        assertEquals(ConfigurationSchemaType.INTEGER, SchemaTypes.typeOf(readableBytesProperty(List.of("string", "integer"))));
+        assertEquals(ConfigurationSchemaType.STRING, SchemaTypes.typeOf(readableBytesProperty(List.of("string"))));
+        assertEquals(ConfigurationSchemaType.STRING, SchemaTypes.typeOf(schemaProperty(List.of("string", "integer"), null)));
+    }
+
+    @Test
+    void coerceConvertsReadableByteSizes() {
+        SchemaContext ctx = newContext();
+        Set<ConfigurationError> errors = new LinkedHashSet<>();
+        ConfigurationSchemaProperty schema = readableBytesProperty(List.of("integer", "string"));
+
+        assertEquals(6L * 1024 * 1024, ValueCoercer.coerce(ctx, schema, "p", null, "6MB", errors));
+        assertEquals(512L * 1024, ValueCoercer.coerce(ctx, schema, "p", null, "512kb", errors));
+        assertEquals(1024L * 1024 * 1024, ValueCoercer.coerce(ctx, schema, "p", null, "1GB", errors));
+        assertEquals(1024L, ValueCoercer.coerce(ctx, schema, "p", null, "1024", errors));
+        assertEquals(2048L, ((Number) ValueCoercer.coerce(ctx, schema, "p", null, 2048, errors)).longValue());
+        assertTrue(errors.isEmpty());
+    }
+
+    @Test
+    void coerceLeavesInvalidReadableByteSizesUnchanged() {
+        SchemaContext ctx = newContext();
+        Set<ConfigurationError> errors = new LinkedHashSet<>();
+        ConfigurationSchemaProperty schema = readableBytesProperty(List.of("integer", "string"));
+
+        for (String value : List.of("6 parsecs", "6TB", "6.5MB", "MB", "")) {
+            assertEquals(value, ValueCoercer.coerce(ctx, schema, "p", null, value, errors));
+        }
+    }
+
+    @Test
+    void coerceDoesNotConvertByteSizesWithoutReadableBytesFormat() {
+        SchemaContext ctx = newContext();
+        Set<ConfigurationError> errors = new LinkedHashSet<>();
+
+        assertEquals("6MB", ValueCoercer.coerce(ctx, schemaProperty("integer", "long"), "p", null, "6MB", errors));
+    }
+
+    @Test
     void coerceIgnoresUnknownJavaType() {
         SchemaContext ctx = newContext();
         Set<ConfigurationError> errors = new LinkedHashSet<>();
@@ -157,10 +198,18 @@ class ValueCoercerTest {
     }
 
     private static ConfigurationSchemaProperty schemaProperty(Object type, String javaType) {
+        return schemaProperty(type, null, javaType);
+    }
+
+    private static ConfigurationSchemaProperty readableBytesProperty(Object type) {
+        return schemaProperty(type, SchemaTypes.READABLE_BYTES_FORMAT, "long");
+    }
+
+    private static ConfigurationSchemaProperty schemaProperty(Object type, String format, String javaType) {
         return new ConfigurationSchemaProperty(
             type,
             null,
-            null,
+            format,
             null,
             null,
             null,
