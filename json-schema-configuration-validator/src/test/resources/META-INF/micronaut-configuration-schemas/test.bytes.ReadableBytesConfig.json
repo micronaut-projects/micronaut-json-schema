@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:micronaut:config:test.bytes.ReadableBytesConfig",
+  "title": "test.bytes.ReadableBytesConfig",
+  "x-micronaut": {
+    "prefix": "test.bytes",
+    "type": "test.bytes.ReadableBytesConfig",
+    "kind": "configuration-properties"
+  },
+  "type": "object",
+  "properties": {
+    "max-request-size": {
+      "type": ["integer", "string"],
+      "format": "readable-bytes",
+      "pattern": "^[+-]?[0-9]+([kKmMgG][bB])?$",
+      "x-micronaut-javaType": "long",
+      "x-micronaut-path": "test.bytes.max-request-size"
+    },
+    "bounded-size": {
+      "type": ["integer", "string"],
+      "format": "readable-bytes",
+      "pattern": "^[+-]?[0-9]+([kKmMgG][bB])?$",
+      "minimum": 1024,
+      "maximum": 10485760,
+      "x-micronaut-javaType": "long",
+      "x-micronaut-path": "test.bytes.bounded-size"
+    },
+    "string-first-size": {
+      "type": ["string", "integer"],
+      "format": "readable-bytes",
+      "x-micronaut-javaType": "int",
+      "x-micronaut-path": "test.bytes.string-first-size"
+    },
+    "plain-size": {
+      "type": "integer",
+      "x-micronaut-javaType": "long",
+      "x-micronaut-path": "test.bytes.plain-size"
+    }
+  }
+}

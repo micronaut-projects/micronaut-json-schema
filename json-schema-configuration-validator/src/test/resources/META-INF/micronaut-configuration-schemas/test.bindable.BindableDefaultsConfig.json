@@ -51,6 +51,20 @@
       "description": "Defaults to HS256",
       "x-micronaut-javaType": "java.lang.String",
       "x-micronaut-path": "test.bindable.invalid-documented-mode"
+    },
+    "documented-size": {
+      "type": ["integer", "string"],
+      "format": "readable-bytes",
+      "description": "Default value 10MB",
+      "x-micronaut-javaType": "long",
+      "x-micronaut-path": "test.bindable.documented-size"
+    },
+    "invalid-documented-size": {
+      "type": ["integer", "string"],
+      "format": "readable-bytes",
+      "description": "Default value lots",
+      "x-micronaut-javaType": "long",
+      "x-micronaut-path": "test.bindable.invalid-documented-size"
     }
   },
   "required": [
@@ -59,6 +73,8 @@
     "documented-mode",
     "documented-host",
     "documented-ratio",
-    "invalid-documented-mode"
+    "invalid-documented-mode",
+    "documented-size",
+    "invalid-documented-size"
   ]
 }

@@ -27,6 +27,10 @@ Schemas are grouped by the Micronaut metadata prefix (`x-micronaut.prefix`).
 
 Configuration is read from Micronaut's api:context.env.Environment[]; placeholder values (for example `${some.other.property}`) are validated after Micronaut resolves them.
 
+=== Byte size values
+
+Properties that Micronaut binds with `@ReadableBytes` (for example `micronaut.server.max-request-size`) use the `readable-bytes` schema format. The validator accepts the same values Micronaut does: a whole number of bytes, or a whole number with a case-insensitive `KB`, `MB` or `GB` suffix (for example `10MB`). The value is converted to a number of bytes before `minimum`/`maximum` constraints are checked. Other values, such as `6.5MB` or `6TB`, are reported as errors.
+
 === Deprecated properties
 
 If a schema property is marked as deprecated (`"deprecated": true`), the validator emits a WARNING when the property is present.

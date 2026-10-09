@@ -49,10 +49,16 @@ final class ValueCoercer {
             return null;
         }
 
-        ConfigurationSchemaType type = SchemaTypes.toType(schema.type());
+        ConfigurationSchemaType type = SchemaTypes.typeOf(schema);
         if (type == ConfigurationSchemaType.OBJECT) {
             // Keep objects as maps; don't attempt to instantiate configuration classes.
             return value;
+        }
+
+        if (type == ConfigurationSchemaType.INTEGER && value instanceof String s && SchemaTypes.isReadableBytes(schema)) {
+            // @ReadableBytes properties accept sizes such as 10MB; validate the resulting byte count.
+            Number bytes = SchemaTypes.parseReadableBytes(s);
+            return bytes != null ? bytes : value;
         }
 
         if (value instanceof String s) {
