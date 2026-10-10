@@ -40,7 +40,8 @@ class JsonSchemaValidatorEngineTest {
         assertEquals("/name: must be at least 1 characters long", message.getMessage());
         assertEquals("/name", message.getInstanceLocation());
         assertEquals("minLength", message.getKeyword());
-        assertEquals("http://localhost:8080/schemas/llama.schema.json#/properties/name/minLength", message.getSchemaLocation());
+        // the default base URI of the generated schemas is classpath:META-INF/schemas (#429)
+        assertEquals("classpath:META-INF/schemas/llama.schema.json#/properties/name/minLength", message.getSchemaLocation());
         assertEquals("ValidationMessageAdapter{message=/name: must be at least 1 characters long}", message.toString());
     }
 

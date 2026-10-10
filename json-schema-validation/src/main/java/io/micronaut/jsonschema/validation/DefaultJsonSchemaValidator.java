@@ -196,10 +196,19 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
 
         @Nullable JsonNode retrieve(String uri) throws IOException {
             String path = uri;
-            if (baseUri != null && !baseUri.isEmpty() && path.startsWith(baseUri)) {
+            String classpathFolder = JsonSchemaResourceUtils.generatedSchemasFolder(jsonSchemaConfiguration);
+            if (path.startsWith(JsonSchemaResourceUtils.CLASSPATH_PREFIX)) {
+                // the default base URI of the generated schemas, classpath:META-INF/<outputLocation>
+                String resource = path.substring(JsonSchemaResourceUtils.CLASSPATH_PREFIX.length());
+                while (resource.startsWith("/")) {
+                    resource = resource.substring(1);
+                }
+                if (resource.startsWith(classpathFolder)) {
+                    path = resource.substring(classpathFolder.length());
+                }
+            } else if (baseUri != null && !baseUri.isEmpty() && path.startsWith(baseUri)) {
                 path = path.substring(baseUri.length());
             }
-            String classpathFolder = JsonSchemaResourceUtils.generatedSchemasFolder(jsonSchemaConfiguration);
             String filePath = JsonSchemaResourceUtils.resolvePathWithinFolder(
                 classpathFolder,
                 path,
