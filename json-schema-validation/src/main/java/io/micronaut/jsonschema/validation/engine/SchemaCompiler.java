@@ -23,6 +23,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -46,6 +47,34 @@ import java.util.regex.Pattern;
 final class SchemaCompiler {
 
     private static final int MAX_META_SCHEMA_DEPTH = 8;
+    private static final String REF = "$ref";
+    private static final String DYNAMIC_REF = "$dynamicRef";
+    private static final String RECURSIVE_REF = "$recursiveRef";
+    private static final String ALL_OF = "allOf";
+    private static final String ANY_OF = "anyOf";
+    private static final String ONE_OF = "oneOf";
+    private static final String NOT = "not";
+    private static final String IF = "if";
+    private static final String THEN = "then";
+    private static final String ELSE = "else";
+    private static final String PROPERTIES = "properties";
+    private static final String PATTERN_PROPERTIES = "patternProperties";
+    private static final String ADDITIONAL_PROPERTIES = "additionalProperties";
+    private static final String PROPERTY_NAMES = "propertyNames";
+    private static final String DEPENDENT_SCHEMAS = "dependentSchemas";
+    private static final String DEPENDENCIES = "dependencies";
+    private static final String ITEMS = "items";
+    private static final String PREFIX_ITEMS = "prefixItems";
+    private static final String ADDITIONAL_ITEMS = "additionalItems";
+    private static final String CONTAINS = "contains";
+    private static final String UNEVALUATED_PROPERTIES = "unevaluatedProperties";
+    private static final String UNEVALUATED_ITEMS = "unevaluatedItems";
+    private static final String MAXIMUM = "maximum";
+    private static final String MINIMUM = "minimum";
+    private static final String EXCLUSIVE_MAXIMUM = "exclusiveMaximum";
+    private static final String EXCLUSIVE_MINIMUM = "exclusiveMinimum";
+    private static final String CONTENT_ENCODING = "contentEncoding";
+    private static final String CONTENT_MEDIA_TYPE = "contentMediaType";
 
     private final JsonSchemaEngine engine;
     private final Map<String, SchemaResource> localResources = new HashMap<>();
@@ -110,106 +139,121 @@ final class SchemaCompiler {
             }
             return;
         }
-        boolean documentRoot = resource == null;
-        Vocabularies vocab = vocabularies;
-        JsonNode schemaKeyword = node.get("$schema");
-        if (schemaKeyword != null && schemaKeyword.isString()
-            && (documentRoot || (vocab.dialect().atLeast(Dialect.DRAFT_2019_09) && node.get("$id") != null))) {
-            vocab = vocabulariesFor(schemaKeyword.getStringValue(), 0);
-        }
+        Vocabularies vocab = resourceVocabularies(node, vocabularies, resource == null);
         Dialect dialect = vocab.dialect();
-        String id = null;
-        JsonNode idNode = node.get(dialect.idKeyword());
-        if (idNode != null && idNode.isString() && !(dialect.refOverridesSiblings() && node.get("$ref") != null)) {
-            id = idNode.getStringValue();
-        }
-        String newBase = base;
-        String idAnchor = null;
-        boolean newResource = documentRoot;
-        if (id != null) {
-            String withoutFragment = Uris.stripFragment(id);
-            String fragment = Uris.fragment(id);
-            if (!withoutFragment.isEmpty()) {
-                newBase = Uris.resolve(base, withoutFragment);
-                newResource = true;
-            }
-            if (fragment != null && !fragment.isEmpty() && !dialect.atLeast(Dialect.DRAFT_2019_09)) {
-                idAnchor = fragment;
-            }
-        }
+        String id = identifier(node, dialect);
+        String idBase = id == null ? "" : Uris.stripFragment(id);
+        String newBase = idBase.isEmpty() ? base : Uris.resolve(base, idBase);
         SchemaResource current = resource;
         String currentPointer = pointer;
-        if (newResource || current == null) {
+        if (current == null || !idBase.isEmpty()) {
             current = new SchemaResource(newBase, node, vocab, document);
             document.resources.put(newBase, current);
             registration.register(newBase, current);
             currentPointer = "";
         }
         document.nodes.put(node, new NodeInfo(current, currentPointer));
-        if (idAnchor != null) {
-            current.anchors.put(idAnchor, node);
-        }
-        if (dialect.atLeast(Dialect.DRAFT_2019_09)) {
-            JsonNode anchor = node.get("$anchor");
-            if (anchor != null && anchor.isString()) {
-                current.anchors.put(anchor.getStringValue(), node);
-            }
-        }
-        if (dialect == Dialect.DRAFT_2020_12) {
-            JsonNode dynamicAnchor = node.get("$dynamicAnchor");
-            if (dynamicAnchor != null && dynamicAnchor.isString()) {
-                current.anchors.putIfAbsent(dynamicAnchor.getStringValue(), node);
-                current.dynamicAnchorNodes.put(dynamicAnchor.getStringValue(), node);
-            }
-        }
+        registerAnchors(node, current, dialect, id);
         if (dialect == Dialect.DRAFT_2019_09 && currentPointer.isEmpty()) {
-            JsonNode recursiveAnchor = node.get("$recursiveAnchor");
-            if (recursiveAnchor != null && recursiveAnchor.isBoolean() && recursiveAnchor.getBooleanValue()) {
-                current.recursiveAnchor = true;
-            }
+            registerRecursiveAnchor(node, current);
         }
+        IndexScope scope = new IndexScope(document, newBase, vocab, current, registration);
         for (Map.Entry<String, JsonNode> entry : node.entries()) {
-            String keyword = entry.getKey();
-            JsonNode value = entry.getValue();
-            String childPointer = currentPointer + "/" + Uris.escapePointerToken(keyword);
-            switch (keyword) {
-                case "additionalProperties", "additionalItems", "unevaluatedProperties", "unevaluatedItems", "contains",
-                     "propertyNames", "not", "if", "then", "else", "contentSchema" ->
-                    index(document, value, newBase, vocab, current, childPointer, registration);
-                case "items" -> {
-                    if (value.isArray()) {
-                        indexArray(document, value, newBase, vocab, current, childPointer, registration);
-                    } else {
-                        index(document, value, newBase, vocab, current, childPointer, registration);
-                    }
+            indexKeyword(scope, entry.getKey(), entry.getValue(), currentPointer + "/" + Uris.escapePointerToken(entry.getKey()));
+        }
+    }
+
+    /**
+     * Determines the vocabularies of a schema object, which may declare its own {@code $schema} if it is a resource root.
+     */
+    private Vocabularies resourceVocabularies(JsonNode node, Vocabularies vocabularies, boolean documentRoot) {
+        JsonNode schemaKeyword = node.get("$schema");
+        boolean resourceRoot = documentRoot || (vocabularies.dialect().atLeast(Dialect.DRAFT_2019_09) && node.get("$id") != null);
+        if (resourceRoot && schemaKeyword != null && schemaKeyword.isString()) {
+            return vocabulariesFor(schemaKeyword.getStringValue(), 0);
+        }
+        return vocabularies;
+    }
+
+    /**
+     * @return The identifier of a schema object, or null if it has none (or if draft-07 and earlier ignore it next to {@code $ref})
+     */
+    private static @Nullable String identifier(JsonNode node, Dialect dialect) {
+        JsonNode idNode = node.get(dialect.idKeyword());
+        boolean ignored = dialect.refOverridesSiblings() && node.get(REF) != null;
+        return idNode != null && idNode.isString() && !ignored ? idNode.getStringValue() : null;
+    }
+
+    private static void registerAnchors(JsonNode node, SchemaResource resource, Dialect dialect, @Nullable String id) {
+        String idFragment = id == null ? null : Uris.fragment(id);
+        if (idFragment != null && !idFragment.isEmpty() && !dialect.atLeast(Dialect.DRAFT_2019_09)) {
+            // draft-07 and earlier: plain-name fragments in $id are anchors
+            resource.anchors.put(idFragment, node);
+        }
+        String anchor = dialect.atLeast(Dialect.DRAFT_2019_09) ? stringValue(node, "$anchor") : null;
+        if (anchor != null) {
+            resource.anchors.put(anchor, node);
+        }
+        String dynamicAnchor = dialect == Dialect.DRAFT_2020_12 ? stringValue(node, "$dynamicAnchor") : null;
+        if (dynamicAnchor != null) {
+            resource.anchors.putIfAbsent(dynamicAnchor, node);
+            resource.dynamicAnchorNodes.put(dynamicAnchor, node);
+        }
+    }
+
+    private static void registerRecursiveAnchor(JsonNode node, SchemaResource resource) {
+        JsonNode recursiveAnchor = node.get("$recursiveAnchor");
+        if (recursiveAnchor != null && recursiveAnchor.isBoolean() && recursiveAnchor.getBooleanValue()) {
+            resource.recursiveAnchor = true;
+        }
+    }
+
+    private static @Nullable String stringValue(JsonNode node, String key) {
+        JsonNode value = node.get(key);
+        return value != null && value.isString() ? value.getStringValue() : null;
+    }
+
+    private void indexKeyword(IndexScope scope, String keyword, JsonNode value, String pointer) {
+        switch (keyword) {
+            case ADDITIONAL_PROPERTIES, ADDITIONAL_ITEMS, UNEVALUATED_PROPERTIES, UNEVALUATED_ITEMS, CONTAINS,
+                 PROPERTY_NAMES, NOT, IF, THEN, ELSE, "contentSchema" -> indexSubschema(scope, value, pointer);
+            case ITEMS -> {
+                if (value.isArray()) {
+                    indexArray(scope, value, pointer);
+                } else {
+                    indexSubschema(scope, value, pointer);
                 }
-                case "allOf", "anyOf", "oneOf", "prefixItems" -> {
-                    if (value.isArray()) {
-                        indexArray(document, value, newBase, vocab, current, childPointer, registration);
-                    }
-                }
-                case "properties", "patternProperties", "$defs", "definitions", "dependentSchemas", "dependencies" -> {
-                    if (value.isObject()) {
-                        for (Map.Entry<String, JsonNode> child : value.entries()) {
-                            if (!child.getValue().isArray()) {
-                                index(document, child.getValue(), newBase, vocab, current,
-                                    childPointer + "/" + Uris.escapePointerToken(child.getKey()), registration);
-                            }
-                        }
-                    }
-                }
-                default -> {
-                    // not a subschema location
-                }
+            }
+            case ALL_OF, ANY_OF, ONE_OF, PREFIX_ITEMS -> indexArray(scope, value, pointer);
+            case PROPERTIES, PATTERN_PROPERTIES, "$defs", "definitions", DEPENDENT_SCHEMAS, DEPENDENCIES -> indexMap(scope, value, pointer);
+            default -> {
+                // not a subschema location
             }
         }
     }
 
-    private void indexArray(Document document, JsonNode array, String base, Vocabularies vocabularies,
-                            SchemaResource resource, String pointer, Registration registration) {
+    private void indexSubschema(IndexScope scope, JsonNode value, String pointer) {
+        index(scope.document(), value, scope.base(), scope.vocabularies(), scope.resource(), pointer, scope.registration());
+    }
+
+    private void indexArray(IndexScope scope, JsonNode array, String pointer) {
+        if (!array.isArray()) {
+            return;
+        }
         int i = 0;
         for (JsonNode value : array.values()) {
-            index(document, value, base, vocabularies, resource, pointer + "/" + i++, registration);
+            indexSubschema(scope, value, pointer + "/" + i++);
+        }
+    }
+
+    private void indexMap(IndexScope scope, JsonNode map, String pointer) {
+        if (!map.isObject()) {
+            return;
+        }
+        for (Map.Entry<String, JsonNode> child : map.entries()) {
+            if (!child.getValue().isArray()) {
+                indexSubschema(scope, child.getValue(), pointer + "/" + Uris.escapePointerToken(child.getKey()));
+            }
         }
     }
 
@@ -290,41 +334,53 @@ final class SchemaCompiler {
         String fragment = Uris.fragment(absolute);
         SchemaResource resource = findResource(base, owner.resource.dialect(), owner.resource.document == rootDocument);
         if (resource == null) {
-            throw new UnresolvableReferenceException("Unable to resolve reference '" + reference + "' (" + absolute + ") from " + owner.location
-                + ": no schema found for " + base, null);
+            throw unresolvable(owner, reference, absolute, "no schema found for " + base);
         }
         if (fragment == null || fragment.isEmpty()) {
             return compile(resource.root, new NodeInfo(resource, ""));
         }
         String decoded = Uris.percentDecode(fragment);
         if (decoded.startsWith("/")) {
-            JsonNode current = resource.root;
-            NodeInfo info = new NodeInfo(resource, "");
-            for (String token : Uris.pointerTokens(decoded)) {
-                JsonNode next = null;
-                if (current.isObject()) {
-                    next = current.get(token);
-                } else if (current.isArray()) {
-                    int index = Uris.parseIndex(token);
-                    next = index < 0 ? null : current.get(index);
-                }
-                if (next == null) {
-                    throw new UnresolvableReferenceException("Unable to resolve reference '" + reference + "' (" + absolute + ") from " + owner.location
-                        + ": no value at JSON pointer " + decoded, null);
-                }
-                NodeInfo known = next.isObject() ? resource.document.nodes.get(next) : null;
-                info = known != null ? known : new NodeInfo(info.resource(), info.pointer() + "/" + Uris.escapePointerToken(token));
-                current = next;
-            }
-            return compile(current, info);
+            return resolvePointer(owner, reference, absolute, resource, decoded);
         }
         JsonNode anchored = resource.anchors.get(decoded);
         if (anchored == null) {
-            throw new UnresolvableReferenceException("Unable to resolve reference '" + reference + "' (" + absolute + ") from " + owner.location
-                + ": no anchor named '" + decoded + "'", null);
+            throw unresolvable(owner, reference, absolute, "no anchor named '" + decoded + "'");
         }
         NodeInfo info = resource.document.nodes.get(anchored);
         return compile(anchored, info != null ? info : new NodeInfo(resource, ""));
+    }
+
+    private Schema resolvePointer(Schema owner, String reference, String absolute, SchemaResource resource, String pointer) {
+        JsonNode current = resource.root;
+        NodeInfo info = new NodeInfo(resource, "");
+        for (String token : Uris.pointerTokens(pointer)) {
+            JsonNode next = child(current, token);
+            if (next == null) {
+                throw unresolvable(owner, reference, absolute, "no value at JSON pointer " + pointer);
+            }
+            // keep the base URI of embedded resources the pointer passes through
+            NodeInfo known = next.isObject() ? resource.document.nodes.get(next) : null;
+            info = known != null ? known : new NodeInfo(info.resource(), info.pointer() + "/" + Uris.escapePointerToken(token));
+            current = next;
+        }
+        return compile(current, info);
+    }
+
+    private static @Nullable JsonNode child(JsonNode node, String token) {
+        if (node.isObject()) {
+            return node.get(token);
+        }
+        if (node.isArray()) {
+            int index = Uris.parseIndex(token);
+            return index < 0 ? null : node.get(index);
+        }
+        return null;
+    }
+
+    private static UnresolvableReferenceException unresolvable(Schema owner, String reference, String absolute, String reason) {
+        return new UnresolvableReferenceException("Unable to resolve reference '" + reference + "' (" + absolute + ") from " + owner.location
+            + ": " + reason, null);
     }
 
     private Keyword reference(Schema owner, String name, String reference) {
@@ -335,7 +391,7 @@ final class SchemaCompiler {
         } catch (UnresolvableReferenceException e) {
             failure = e;
         }
-        if (name.equals("$dynamicRef")) {
+        if (name.equals(DYNAMIC_REF)) {
             String anchor = null;
             String fragment = Uris.fragment(reference);
             if (target != null && fragment != null && !fragment.isEmpty() && !fragment.startsWith("/")) {
@@ -346,7 +402,7 @@ final class SchemaCompiler {
             }
             return new ReferenceKeywords.DynamicRef(owner, reference, target, failure, anchor);
         }
-        if (name.equals("$recursiveRef")) {
+        if (name.equals(RECURSIVE_REF)) {
             boolean dynamic = target != null && target.resource.recursiveAnchor && target.resource.rootSchema == target;
             return new ReferenceKeywords.RecursiveRef(owner, reference, target, failure, dynamic);
         }
@@ -426,52 +482,59 @@ final class SchemaCompiler {
 
     private Keyword[] compileKeywords(JsonNode node, Schema schema, NodeInfo info) {
         Vocabularies vocab = info.resource().vocabularies;
-        Dialect dialect = vocab.dialect();
-        List<Keyword> keywords = new ArrayList<>(node.size());
-        JsonNode ref = node.get("$ref");
-        if (dialect.refOverridesSiblings() && ref != null) {
-            if (ref.isString()) {
-                keywords.add(reference(schema, "$ref", ref.getStringValue()));
-            }
-            return keywords.toArray(new Keyword[0]);
+        JsonNode ref = node.get(REF);
+        if (vocab.dialect().refOverridesSiblings() && ref != null) {
+            return ref.isString() ? new Keyword[]{reference(schema, REF, ref.getStringValue())} : new Keyword[0];
         }
+        KeywordContext context = new KeywordContext(node, schema, info, vocab, new HashMap<>());
+        List<Keyword> keywords = new ArrayList<>(node.size());
         List<Keyword> late = new ArrayList<>(0);
-        Map<String, Pattern> patterns = new LinkedHashMap<>();
         for (Map.Entry<String, JsonNode> entry : node.entries()) {
-            String keyword = entry.getKey();
-            JsonNode value = entry.getValue();
-            Keyword compiled = compileCore(keyword, value, schema);
-            if (compiled == null && vocab.applicator()) {
-                compiled = compileApplicator(keyword, value, node, schema, info, dialect, patterns);
-            }
-            if (compiled == null && vocab.validation()) {
-                compiled = compileValidation(keyword, value, node, schema, dialect);
-            }
-            if (compiled == null && (engine.assertFormats || vocab.formatAssertion()) && keyword.equals("format") && value.isString()) {
-                Predicate<String> validator = Formats.forName(value.getStringValue(), dialect);
-                if (validator != null) {
-                    compiled = new ValidationKeywords.Format(schema, value.getStringValue(), validator);
-                }
-            }
-            if (compiled == null && dialect == Dialect.DRAFT_7 && (keyword.equals("contentMediaType") || keyword.equals("contentEncoding"))
-                && value.isString()) {
-                compiled = content(keyword, value.getStringValue(), node, schema);
-            }
+            Keyword compiled = compileKeyword(entry.getKey(), entry.getValue(), context);
             if (compiled != null) {
                 keywords.add(compiled);
-            } else if (unevaluatedEnabled(vocab) && (keyword.equals("unevaluatedProperties") || keyword.equals("unevaluatedItems"))) {
-                Schema subschema = sub(value, info, keyword);
-                schema.hasUnevaluated = true;
-                late.add(keyword.equals("unevaluatedProperties")
-                    ? new ApplicatorKeywords.UnevaluatedProperties(schema, subschema)
-                    : new ApplicatorKeywords.UnevaluatedItems(schema, subschema));
+            } else {
+                Keyword unevaluated = compileUnevaluated(entry.getKey(), entry.getValue(), context);
+                if (unevaluated != null) {
+                    late.add(unevaluated);
+                }
             }
         }
-        if (!late.isEmpty()) {
-            late.sort((a, b) -> a.name.compareTo(b.name));
-            keywords.addAll(late);
-        }
+        // unevaluated* need the annotations of all other keywords of the schema object
+        late.sort(Comparator.comparing(keyword -> keyword.name));
+        keywords.addAll(late);
         return keywords.toArray(new Keyword[0]);
+    }
+
+    private @Nullable Keyword compileKeyword(String keyword, JsonNode value, KeywordContext context) {
+        Vocabularies vocab = context.vocabularies();
+        Keyword compiled = compileCore(keyword, value, context.schema());
+        if (compiled == null && vocab.applicator()) {
+            compiled = compileApplicator(keyword, value, context);
+        }
+        if (compiled == null && vocab.validation()) {
+            compiled = compileValidation(keyword, value, context);
+        }
+        if (compiled == null && keyword.equals("format") && (engine.assertFormats || vocab.formatAssertion())) {
+            compiled = format(value, context);
+        }
+        if (compiled == null && vocab.dialect() == Dialect.DRAFT_7 && (keyword.equals(CONTENT_MEDIA_TYPE) || keyword.equals(CONTENT_ENCODING))) {
+            compiled = content(keyword, value, context);
+        }
+        return compiled;
+    }
+
+    private @Nullable Keyword compileUnevaluated(String keyword, JsonNode value, KeywordContext context) {
+        boolean properties = keyword.equals(UNEVALUATED_PROPERTIES);
+        if (!(properties || keyword.equals(UNEVALUATED_ITEMS)) || !unevaluatedEnabled(context.vocabularies())) {
+            return null;
+        }
+        Schema schema = context.schema();
+        Schema subschema = sub(value, context.info(), keyword);
+        schema.hasUnevaluated = true;
+        return properties
+            ? new ApplicatorKeywords.UnevaluatedProperties(schema, subschema)
+            : new ApplicatorKeywords.UnevaluatedItems(schema, subschema);
     }
 
     private static boolean unevaluatedEnabled(Vocabularies vocab) {
@@ -488,158 +551,134 @@ final class SchemaCompiler {
         }
         Dialect dialect = schema.resource.dialect();
         return switch (keyword) {
-            case "$ref" -> reference(schema, "$ref", value.getStringValue());
-            case "$dynamicRef" -> dialect == Dialect.DRAFT_2020_12 ? reference(schema, "$dynamicRef", value.getStringValue()) : null;
-            case "$recursiveRef" -> dialect == Dialect.DRAFT_2019_09 ? reference(schema, "$recursiveRef", value.getStringValue()) : null;
+            case REF -> reference(schema, REF, value.getStringValue());
+            case DYNAMIC_REF -> dialect == Dialect.DRAFT_2020_12 ? reference(schema, DYNAMIC_REF, value.getStringValue()) : null;
+            case RECURSIVE_REF -> dialect == Dialect.DRAFT_2019_09 ? reference(schema, RECURSIVE_REF, value.getStringValue()) : null;
             default -> null;
         };
     }
 
-    private @Nullable Keyword compileApplicator(String keyword, JsonNode value, JsonNode node, Schema schema, NodeInfo info,
-                                                Dialect dialect, Map<String, Pattern> patterns) {
-        switch (keyword) {
-            case "allOf" -> {
-                return value.isArray() ? new ApplicatorKeywords.AllOf(schema, subArray(value, info, keyword)) : null;
-            }
-            case "anyOf" -> {
-                return value.isArray() ? new ApplicatorKeywords.AnyOf(schema, subArray(value, info, keyword), value) : null;
-            }
-            case "oneOf" -> {
-                return value.isArray() ? new ApplicatorKeywords.OneOf(schema, subArray(value, info, keyword)) : null;
-            }
-            case "not" -> {
-                return new ApplicatorKeywords.Not(schema, sub(value, info, keyword), value);
-            }
-            case "if" -> {
-                if (!dialect.atLeast(Dialect.DRAFT_7)) {
-                    return null;
-                }
-                JsonNode then = node.get("then");
-                JsonNode otherwise = node.get("else");
-                return new ApplicatorKeywords.IfThenElse(schema, sub(value, info, keyword),
-                    then != null ? sub(then, info, "then") : null,
-                    otherwise != null ? sub(otherwise, info, "else") : null);
-            }
-            case "properties" -> {
-                if (!value.isObject()) {
-                    return null;
-                }
-                String[] names = new String[value.size()];
-                Schema[] schemas = new Schema[value.size()];
-                int i = 0;
-                for (Map.Entry<String, JsonNode> property : value.entries()) {
-                    names[i] = property.getKey();
-                    schemas[i] = sub(property.getValue(), info, keyword, property.getKey());
-                    i++;
-                }
-                return new ApplicatorKeywords.Properties(schema, names, schemas);
-            }
-            case "patternProperties" -> {
-                if (!value.isObject()) {
-                    return null;
-                }
-                Pattern[] compiledPatterns = new Pattern[value.size()];
-                Schema[] schemas = new Schema[value.size()];
-                int i = 0;
-                for (Map.Entry<String, JsonNode> property : value.entries()) {
-                    compiledPatterns[i] = pattern(property.getKey(), schema, patterns);
-                    schemas[i] = sub(property.getValue(), info, keyword, property.getKey());
-                    i++;
-                }
-                return new ApplicatorKeywords.PatternProperties(schema, compiledPatterns, schemas);
-            }
-            case "additionalProperties" -> {
-                JsonNode properties = node.get("properties");
-                Set<String> names = new HashSet<>();
-                if (properties != null && properties.isObject()) {
-                    for (Map.Entry<String, JsonNode> property : properties.entries()) {
-                        names.add(property.getKey());
-                    }
-                }
-                JsonNode patternProperties = node.get("patternProperties");
-                List<Pattern> compiledPatterns = new ArrayList<>();
-                if (patternProperties != null && patternProperties.isObject()) {
-                    for (Map.Entry<String, JsonNode> property : patternProperties.entries()) {
-                        compiledPatterns.add(pattern(property.getKey(), schema, patterns));
-                    }
-                }
-                return new ApplicatorKeywords.AdditionalProperties(schema, names, compiledPatterns.toArray(new Pattern[0]), sub(value, info, keyword));
-            }
-            case "propertyNames" -> {
-                return dialect.atLeast(Dialect.DRAFT_6) ? new ApplicatorKeywords.PropertyNames(schema, sub(value, info, keyword)) : null;
-            }
-            case "dependentSchemas" -> {
-                if (!dialect.atLeast(Dialect.DRAFT_2019_09) || !value.isObject()) {
-                    return null;
-                }
-                List<String> names = new ArrayList<>();
-                List<Schema> schemas = new ArrayList<>();
-                for (Map.Entry<String, JsonNode> dependency : value.entries()) {
-                    names.add(dependency.getKey());
-                    schemas.add(sub(dependency.getValue(), info, keyword, dependency.getKey()));
-                }
-                return new ApplicatorKeywords.DependentSchemas(schema, keyword, names.toArray(new String[0]), schemas.toArray(new Schema[0]));
-            }
-            case "dependencies" -> {
-                return value.isObject() ? dependencies(value, schema, info) : null;
-            }
-            case "items" -> {
-                if (dialect == Dialect.DRAFT_2020_12) {
-                    if (value.isArray()) {
-                        return null;
-                    }
-                    JsonNode prefixItems = node.get("prefixItems");
-                    int start = prefixItems != null && prefixItems.isArray() ? prefixItems.size() : 0;
-                    return new ApplicatorKeywords.Items(schema, keyword, start, sub(value, info, keyword));
-                }
-                if (value.isArray()) {
-                    return new ApplicatorKeywords.PrefixItems(schema, keyword, subArray(value, info, keyword));
-                }
-                return new ApplicatorKeywords.Items(schema, keyword, 0, sub(value, info, keyword));
-            }
-            case "prefixItems" -> {
-                return dialect == Dialect.DRAFT_2020_12 && value.isArray()
-                    ? new ApplicatorKeywords.PrefixItems(schema, keyword, subArray(value, info, keyword))
-                    : null;
-            }
-            case "additionalItems" -> {
-                if (dialect == Dialect.DRAFT_2020_12) {
-                    return null;
-                }
-                JsonNode items = node.get("items");
-                if (items == null || !items.isArray()) {
-                    return null;
-                }
-                return new ApplicatorKeywords.Items(schema, keyword, items.size(), sub(value, info, keyword));
-            }
-            case "contains" -> {
-                if (!dialect.atLeast(Dialect.DRAFT_6)) {
-                    return null;
-                }
-                long min = 1;
-                long max = -1;
-                boolean explicitMin = false;
-                if (dialect.atLeast(Dialect.DRAFT_2019_09)) {
-                    JsonNode minContains = node.get("minContains");
-                    if (minContains != null && minContains.isNumber()) {
-                        min = limit(minContains.getNumberValue());
-                        explicitMin = true;
-                    }
-                    JsonNode maxContains = node.get("maxContains");
-                    if (maxContains != null && maxContains.isNumber()) {
-                        max = limit(maxContains.getNumberValue());
-                    }
-                }
-                return new ApplicatorKeywords.Contains(schema, sub(value, info, keyword), value, min, explicitMin, max,
-                    dialect == Dialect.DRAFT_2020_12);
-            }
-            default -> {
-                return null;
-            }
-        }
+    private @Nullable Keyword compileApplicator(String keyword, JsonNode value, KeywordContext context) {
+        Schema schema = context.schema();
+        NodeInfo info = context.info();
+        Dialect dialect = context.dialect();
+        return switch (keyword) {
+            case ALL_OF -> value.isArray() ? new ApplicatorKeywords.AllOf(schema, subArray(value, info, keyword)) : null;
+            case ANY_OF -> value.isArray() ? new ApplicatorKeywords.AnyOf(schema, subArray(value, info, keyword), value) : null;
+            case ONE_OF -> value.isArray() ? new ApplicatorKeywords.OneOf(schema, subArray(value, info, keyword)) : null;
+            case NOT -> new ApplicatorKeywords.Not(schema, sub(value, info, keyword), value);
+            case IF -> dialect.atLeast(Dialect.DRAFT_7) ? ifThenElse(value, context) : null;
+            case PROPERTIES -> value.isObject() ? properties(value, context) : null;
+            case PATTERN_PROPERTIES -> value.isObject() ? patternProperties(value, context) : null;
+            case ADDITIONAL_PROPERTIES -> additionalProperties(value, context);
+            case PROPERTY_NAMES -> dialect.atLeast(Dialect.DRAFT_6) ? new ApplicatorKeywords.PropertyNames(schema, sub(value, info, keyword)) : null;
+            case DEPENDENT_SCHEMAS -> dialect.atLeast(Dialect.DRAFT_2019_09) && value.isObject() ? dependentSchemas(value, context) : null;
+            case DEPENDENCIES -> value.isObject() ? dependencies(value, context) : null;
+            case ITEMS -> items(value, context);
+            case PREFIX_ITEMS -> dialect == Dialect.DRAFT_2020_12 && value.isArray()
+                ? new ApplicatorKeywords.PrefixItems(schema, keyword, subArray(value, info, keyword))
+                : null;
+            case ADDITIONAL_ITEMS -> additionalItems(value, context);
+            case CONTAINS -> dialect.atLeast(Dialect.DRAFT_6) ? contains(value, context) : null;
+            default -> null;
+        };
     }
 
-    private Keyword dependencies(JsonNode value, Schema schema, NodeInfo info) {
+    private Keyword ifThenElse(JsonNode value, KeywordContext context) {
+        NodeInfo info = context.info();
+        JsonNode then = context.node().get(THEN);
+        JsonNode otherwise = context.node().get(ELSE);
+        return new ApplicatorKeywords.IfThenElse(context.schema(), sub(value, info, IF),
+            then != null ? sub(then, info, THEN) : null,
+            otherwise != null ? sub(otherwise, info, ELSE) : null);
+    }
+
+    private Keyword properties(JsonNode value, KeywordContext context) {
+        String[] names = new String[value.size()];
+        Schema[] schemas = new Schema[value.size()];
+        int i = 0;
+        for (Map.Entry<String, JsonNode> property : value.entries()) {
+            names[i] = property.getKey();
+            schemas[i] = sub(property.getValue(), context.info(), PROPERTIES, property.getKey());
+            i++;
+        }
+        return new ApplicatorKeywords.Properties(context.schema(), names, schemas);
+    }
+
+    private Keyword patternProperties(JsonNode value, KeywordContext context) {
+        Pattern[] patterns = new Pattern[value.size()];
+        Schema[] schemas = new Schema[value.size()];
+        int i = 0;
+        for (Map.Entry<String, JsonNode> property : value.entries()) {
+            patterns[i] = pattern(property.getKey(), context);
+            schemas[i] = sub(property.getValue(), context.info(), PATTERN_PROPERTIES, property.getKey());
+            i++;
+        }
+        return new ApplicatorKeywords.PatternProperties(context.schema(), patterns, schemas);
+    }
+
+    private Keyword additionalProperties(JsonNode value, KeywordContext context) {
+        Set<String> names = new HashSet<>();
+        JsonNode properties = context.node().get(PROPERTIES);
+        if (properties != null && properties.isObject()) {
+            properties.entries().forEach(property -> names.add(property.getKey()));
+        }
+        List<Pattern> patterns = new ArrayList<>();
+        JsonNode patternProperties = context.node().get(PATTERN_PROPERTIES);
+        if (patternProperties != null && patternProperties.isObject()) {
+            patternProperties.entries().forEach(property -> patterns.add(pattern(property.getKey(), context)));
+        }
+        return new ApplicatorKeywords.AdditionalProperties(context.schema(), names, patterns.toArray(new Pattern[0]),
+            sub(value, context.info(), ADDITIONAL_PROPERTIES));
+    }
+
+    private Keyword dependentSchemas(JsonNode value, KeywordContext context) {
+        List<String> names = new ArrayList<>();
+        List<Schema> schemas = new ArrayList<>();
+        for (Map.Entry<String, JsonNode> dependency : value.entries()) {
+            names.add(dependency.getKey());
+            schemas.add(sub(dependency.getValue(), context.info(), DEPENDENT_SCHEMAS, dependency.getKey()));
+        }
+        return new ApplicatorKeywords.DependentSchemas(context.schema(), DEPENDENT_SCHEMAS, names.toArray(new String[0]), schemas.toArray(new Schema[0]));
+    }
+
+    private @Nullable Keyword items(JsonNode value, KeywordContext context) {
+        Schema schema = context.schema();
+        NodeInfo info = context.info();
+        if (context.dialect() != Dialect.DRAFT_2020_12) {
+            return value.isArray()
+                ? new ApplicatorKeywords.PrefixItems(schema, ITEMS, subArray(value, info, ITEMS))
+                : new ApplicatorKeywords.Items(schema, ITEMS, 0, sub(value, info, ITEMS));
+        }
+        if (value.isArray()) {
+            return null;
+        }
+        JsonNode prefixItems = context.node().get(PREFIX_ITEMS);
+        int start = prefixItems != null && prefixItems.isArray() ? prefixItems.size() : 0;
+        return new ApplicatorKeywords.Items(schema, ITEMS, start, sub(value, info, ITEMS));
+    }
+
+    private @Nullable Keyword additionalItems(JsonNode value, KeywordContext context) {
+        JsonNode items = context.node().get(ITEMS);
+        if (context.dialect() == Dialect.DRAFT_2020_12 || items == null || !items.isArray()) {
+            return null;
+        }
+        return new ApplicatorKeywords.Items(context.schema(), ADDITIONAL_ITEMS, items.size(), sub(value, context.info(), ADDITIONAL_ITEMS));
+    }
+
+    private Keyword contains(JsonNode value, KeywordContext context) {
+        boolean bounded = context.dialect().atLeast(Dialect.DRAFT_2019_09);
+        JsonNode minContains = bounded ? context.node().get("minContains") : null;
+        JsonNode maxContains = bounded ? context.node().get("maxContains") : null;
+        boolean explicitMin = minContains != null && minContains.isNumber();
+        long min = explicitMin ? limit(minContains.getNumberValue()) : 1;
+        long max = maxContains != null && maxContains.isNumber() ? limit(maxContains.getNumberValue()) : -1;
+        return new ApplicatorKeywords.Contains(context.schema(), sub(value, context.info(), CONTAINS), value, min, explicitMin, max,
+            context.dialect() == Dialect.DRAFT_2020_12);
+    }
+
+    private Keyword dependencies(JsonNode value, KeywordContext context) {
+        Schema schema = context.schema();
         Map<String, String[]> required = new LinkedHashMap<>();
         List<String> names = new ArrayList<>();
         List<Schema> schemas = new ArrayList<>();
@@ -649,33 +688,44 @@ final class SchemaCompiler {
                 required.put(dependency.getKey(), strings(dependencyValue));
             } else {
                 names.add(dependency.getKey());
-                schemas.add(sub(dependencyValue, info, "dependencies", dependency.getKey()));
+                schemas.add(sub(dependencyValue, context.info(), DEPENDENCIES, dependency.getKey()));
             }
         }
-        Keyword schemaDependencies = new ApplicatorKeywords.DependentSchemas(schema, "dependencies", names.toArray(new String[0]), schemas.toArray(new Schema[0]));
+        Keyword schemaDependencies = new ApplicatorKeywords.DependentSchemas(schema, DEPENDENCIES, names.toArray(new String[0]), schemas.toArray(new Schema[0]));
         if (required.isEmpty()) {
             return schemaDependencies;
         }
-        Keyword requiredDependencies = new ValidationKeywords.DependentRequired(schema, "dependencies", required);
+        Keyword requiredDependencies = new ValidationKeywords.DependentRequired(schema, DEPENDENCIES, required);
         if (names.isEmpty()) {
             return requiredDependencies;
         }
-        return new ApplicatorKeywords.AllOfKeywords(schema, "dependencies", new Keyword[]{requiredDependencies, schemaDependencies});
+        return new ApplicatorKeywords.AllOfKeywords(schema, DEPENDENCIES, new Keyword[]{requiredDependencies, schemaDependencies});
     }
 
-    private @Nullable Keyword content(String keyword, String value, JsonNode node, Schema schema) {
-        JsonNode encoding = node.get("contentEncoding");
-        boolean base64 = encoding != null && encoding.isString() && encoding.getStringValue().equalsIgnoreCase("base64");
-        if (keyword.equals("contentEncoding")) {
-            return base64 ? new ValidationKeywords.ContentEncoding(schema, value) : null;
+    private static @Nullable Keyword format(JsonNode value, KeywordContext context) {
+        if (!value.isString()) {
+            return null;
         }
-        String mediaType = value.toLowerCase(Locale.ROOT);
+        Predicate<String> validator = Formats.forName(value.getStringValue(), context.dialect());
+        return validator != null ? new ValidationKeywords.Format(context.schema(), value.getStringValue(), validator) : null;
+    }
+
+    private @Nullable Keyword content(String keyword, JsonNode value, KeywordContext context) {
+        if (!value.isString()) {
+            return null;
+        }
+        JsonNode encoding = context.node().get(CONTENT_ENCODING);
+        boolean base64 = encoding != null && encoding.isString() && encoding.getStringValue().equalsIgnoreCase("base64");
+        if (keyword.equals(CONTENT_ENCODING)) {
+            return base64 ? new ValidationKeywords.ContentEncoding(context.schema(), value.getStringValue()) : null;
+        }
+        String mediaType = value.getStringValue().toLowerCase(Locale.ROOT);
         int semicolon = mediaType.indexOf(';');
         if (semicolon >= 0) {
             mediaType = mediaType.substring(0, semicolon).trim();
         }
         if (mediaType.equals("application/json") || mediaType.endsWith("+json")) {
-            return new ValidationKeywords.ContentMediaType(schema, value, base64, engine.jsonMapper);
+            return new ValidationKeywords.ContentMediaType(context.schema(), value.getStringValue(), base64, engine.jsonMapper);
         }
         return null;
     }
@@ -690,87 +740,66 @@ final class SchemaCompiler {
         return values.toArray(new String[0]);
     }
 
-    private static Pattern pattern(String regex, Schema schema, Map<String, Pattern> cache) {
-        Pattern pattern = cache.get(regex);
-        if (pattern == null) {
+    private static Pattern pattern(String regex, KeywordContext context) {
+        return context.patterns().computeIfAbsent(regex, r -> {
             try {
-                pattern = EcmaRegex.compile(regex);
+                return EcmaRegex.compile(r);
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid regular expression '" + regex + "' in schema " + schema.location + ": " + e.getMessage(), e);
+                throw new IllegalArgumentException("Invalid regular expression '" + r + "' in schema " + context.schema().location + ": " + e.getMessage(), e);
             }
-            cache.put(regex, pattern);
-        }
-        return pattern;
+        });
     }
 
-    private @Nullable Keyword compileValidation(String keyword, JsonNode value, JsonNode node, Schema schema, Dialect dialect) {
-        switch (keyword) {
-            case "type" -> {
-                return type(value, schema, dialect == Dialect.DRAFT_4);
-            }
-            case "enum" -> {
-                return value.isArray() ? new ValidationKeywords.Enum(schema, value) : null;
-            }
-            case "const" -> {
-                return dialect.atLeast(Dialect.DRAFT_6) ? new ValidationKeywords.Const(schema, value) : null;
-            }
-            case "multipleOf" -> {
-                return value.isNumber() ? new ValidationKeywords.MultipleOf(schema, value.getNumberValue()) : null;
-            }
-            case "maximum", "minimum" -> {
-                if (!value.isNumber()) {
-                    return null;
-                }
-                boolean exclusive = false;
-                if (dialect == Dialect.DRAFT_4) {
-                    JsonNode flag = node.get(keyword.equals("maximum") ? "exclusiveMaximum" : "exclusiveMinimum");
-                    exclusive = flag != null && flag.isBoolean() && flag.getBooleanValue();
-                }
-                return new ValidationKeywords.Bound(schema, keyword, value.getNumberValue(), keyword.equals("maximum"), exclusive);
-            }
-            case "exclusiveMaximum", "exclusiveMinimum" -> {
-                return value.isNumber() && dialect.atLeast(Dialect.DRAFT_6)
-                    ? new ValidationKeywords.Bound(schema, keyword, value.getNumberValue(), keyword.equals("exclusiveMaximum"), true)
-                    : null;
-            }
-            case "maxLength", "minLength" -> {
-                return value.isNumber() ? new ValidationKeywords.Length(schema, keyword, limit(value.getNumberValue()), keyword.equals("maxLength")) : null;
-            }
-            case "pattern" -> {
-                return value.isString()
-                    ? new ValidationKeywords.PatternKeyword(schema, pattern(value.getStringValue(), schema, new HashMap<>()), value.getStringValue())
-                    : null;
-            }
-            case "maxItems", "minItems" -> {
-                return value.isNumber() ? new ValidationKeywords.ItemCount(schema, keyword, limit(value.getNumberValue()), keyword.equals("maxItems")) : null;
-            }
-            case "uniqueItems" -> {
-                return value.isBoolean() && value.getBooleanValue() ? new ValidationKeywords.UniqueItems(schema) : null;
-            }
-            case "maxProperties", "minProperties" -> {
-                return value.isNumber()
-                    ? new ValidationKeywords.PropertyCount(schema, keyword, limit(value.getNumberValue()), keyword.equals("maxProperties"))
-                    : null;
-            }
-            case "required" -> {
-                return value.isArray() ? new ValidationKeywords.Required(schema, strings(value)) : null;
-            }
-            case "dependentRequired" -> {
-                if (!dialect.atLeast(Dialect.DRAFT_2019_09) || !value.isObject()) {
-                    return null;
-                }
-                Map<String, String[]> dependencies = new LinkedHashMap<>();
-                for (Map.Entry<String, JsonNode> dependency : value.entries()) {
-                    if (dependency.getValue().isArray()) {
-                        dependencies.put(dependency.getKey(), strings(dependency.getValue()));
-                    }
-                }
-                return new ValidationKeywords.DependentRequired(schema, keyword, dependencies);
-            }
-            default -> {
-                return null;
+    private @Nullable Keyword compileValidation(String keyword, JsonNode value, KeywordContext context) {
+        Schema schema = context.schema();
+        Dialect dialect = context.dialect();
+        return switch (keyword) {
+            case "type" -> type(value, schema, dialect == Dialect.DRAFT_4);
+            case "enum" -> value.isArray() ? new ValidationKeywords.Enum(schema, value) : null;
+            case "const" -> dialect.atLeast(Dialect.DRAFT_6) ? new ValidationKeywords.Const(schema, value) : null;
+            case "multipleOf" -> value.isNumber() ? new ValidationKeywords.MultipleOf(schema, value.getNumberValue()) : null;
+            case MAXIMUM, MINIMUM -> value.isNumber() ? bound(keyword, value, context) : null;
+            case EXCLUSIVE_MAXIMUM, EXCLUSIVE_MINIMUM -> value.isNumber() && dialect.atLeast(Dialect.DRAFT_6)
+                ? new ValidationKeywords.Bound(schema, keyword, value.getNumberValue(), keyword.equals(EXCLUSIVE_MAXIMUM), true)
+                : null;
+            case "maxLength", "minLength" -> value.isNumber()
+                ? new ValidationKeywords.Length(schema, keyword, limit(value.getNumberValue()), keyword.equals("maxLength"))
+                : null;
+            case "pattern" -> value.isString()
+                ? new ValidationKeywords.PatternKeyword(schema, pattern(value.getStringValue(), context), value.getStringValue())
+                : null;
+            case "maxItems", "minItems" -> value.isNumber()
+                ? new ValidationKeywords.ItemCount(schema, keyword, limit(value.getNumberValue()), keyword.equals("maxItems"))
+                : null;
+            case "uniqueItems" -> value.isBoolean() && value.getBooleanValue() ? new ValidationKeywords.UniqueItems(schema) : null;
+            case "maxProperties", "minProperties" -> value.isNumber()
+                ? new ValidationKeywords.PropertyCount(schema, keyword, limit(value.getNumberValue()), keyword.equals("maxProperties"))
+                : null;
+            case "required" -> value.isArray() ? new ValidationKeywords.Required(schema, strings(value)) : null;
+            case "dependentRequired" -> dialect.atLeast(Dialect.DRAFT_2019_09) && value.isObject() ? dependentRequired(keyword, value, schema) : null;
+            default -> null;
+        };
+    }
+
+    private static Keyword bound(String keyword, JsonNode value, KeywordContext context) {
+        boolean maximum = keyword.equals(MAXIMUM);
+        boolean exclusive = false;
+        if (context.dialect() == Dialect.DRAFT_4) {
+            // draft-04: exclusiveMaximum and exclusiveMinimum are boolean modifiers
+            JsonNode flag = context.node().get(maximum ? EXCLUSIVE_MAXIMUM : EXCLUSIVE_MINIMUM);
+            exclusive = flag != null && flag.isBoolean() && flag.getBooleanValue();
+        }
+        return new ValidationKeywords.Bound(context.schema(), keyword, value.getNumberValue(), maximum, exclusive);
+    }
+
+    private static Keyword dependentRequired(String keyword, JsonNode value, Schema schema) {
+        Map<String, String[]> dependencies = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonNode> dependency : value.entries()) {
+            if (dependency.getValue().isArray()) {
+                dependencies.put(dependency.getKey(), strings(dependency.getValue()));
             }
         }
+        return new ValidationKeywords.DependentRequired(schema, keyword, dependencies);
     }
 
     /**
@@ -840,6 +869,33 @@ final class SchemaCompiler {
     private static final class UnresolvableReferenceException extends IllegalArgumentException {
         UnresolvableReferenceException(String message, @Nullable Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    /**
+     * The state shared by the indexing of the subschemas of one schema object.
+     *
+     * @param document The document
+     * @param base The base URI
+     * @param vocabularies The vocabularies
+     * @param resource The enclosing resource
+     * @param registration Where new resources are registered
+     */
+    private record IndexScope(Document document, String base, Vocabularies vocabularies, SchemaResource resource, Registration registration) {
+    }
+
+    /**
+     * The schema object whose keywords are being compiled.
+     *
+     * @param node The schema object
+     * @param schema The compiled schema
+     * @param info The location of the schema object
+     * @param vocabularies The vocabularies of the schema object
+     * @param patterns The regular expressions compiled for the schema object
+     */
+    private record KeywordContext(JsonNode node, Schema schema, NodeInfo info, Vocabularies vocabularies, Map<String, Pattern> patterns) {
+        Dialect dialect() {
+            return vocabularies.dialect();
         }
     }
 }

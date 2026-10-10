@@ -86,38 +86,36 @@ final class Idna {
         List<int[]> unicodeLabels = new ArrayList<>(labels.length);
         int length = 0;
         for (String label : labels) {
-            if (label.isEmpty()) {
+            int[] unicode = idnLabel(label);
+            if (unicode == null) {
                 return false;
             }
-            String ascii;
-            int[] unicode;
-            String mapped = map(label);
-            if (mapped.isEmpty()) {
-                return false;
-            }
-            if (isAscii(mapped)) {
-                if (!isLdhLabel(mapped)) {
-                    return false;
-                }
-                unicode = checkReservedLabel(mapped);
-                if (unicode == null) {
-                    return false;
-                }
-                ascii = mapped;
-            } else {
-                unicode = mapped.codePoints().toArray();
-                if (!isULabel(unicode)) {
-                    return false;
-                }
-                ascii = "xn--" + encode(unicode);
-            }
-            if (ascii.length() > MAX_LABEL) {
+            int asciiLength = isAscii(unicode) ? unicode.length : 4 + encode(unicode).length();
+            if (asciiLength > MAX_LABEL) {
                 return false;
             }
             unicodeLabels.add(unicode);
-            length += ascii.length() + 1;
+            length += asciiLength + 1;
         }
         return length - 1 <= MAX_HOST && satisfiesBidiRule(unicodeLabels);
+    }
+
+    /**
+     * Maps and validates one label of an internationalized host name.
+     *
+     * @param label The label
+     * @return The Unicode form of the label, or null if invalid
+     */
+    private static int @Nullable [] idnLabel(String label) {
+        String mapped = label.isEmpty() ? "" : map(label);
+        if (mapped.isEmpty()) {
+            return null;
+        }
+        if (isAscii(mapped)) {
+            return isLdhLabel(mapped) ? checkReservedLabel(mapped) : null;
+        }
+        int[] unicode = mapped.codePoints().toArray();
+        return isULabel(unicode) ? unicode : null;
     }
 
     /**
@@ -191,82 +189,56 @@ final class Idna {
 
     private static boolean isULabel(int[] cps) {
         int n = cps.length;
-        if (n == 0 || cps[0] == '-' || cps[n - 1] == '-' || (n >= 4 && cps[2] == '-' && cps[3] == '-')) {
+        if (n == 0 || cps[0] == '-' || cps[n - 1] == '-' || (n >= 4 && cps[2] == '-' && cps[3] == '-') || isMark(cps[0])) {
             return false;
         }
-        if (isMark(cps[0])) {
-            return false;
-        }
-        boolean katakanaMiddleDot = false;
-        boolean hiraganaKatakanaHan = false;
-        boolean arabicIndic = false;
-        boolean extendedArabicIndic = false;
+        LabelScripts scripts = new LabelScripts();
         for (int i = 0; i < n; i++) {
-            int cp = cps[i];
-            switch (cp) {
-                case 0x200C -> {
-                    if (!(i > 0 && isVirama(cps[i - 1])) && !zeroWidthNonJoinerContext(cps, i)) {
-                        return false;
-                    }
-                }
-                case 0x200D -> {
-                    if (!(i > 0 && isVirama(cps[i - 1]))) {
-                        return false;
-                    }
-                }
-                case 0x00B7 -> {
-                    if (i == 0 || i == n - 1 || cps[i - 1] != 'l' || cps[i + 1] != 'l') {
-                        return false;
-                    }
-                }
-                case 0x0375 -> {
-                    if (i == n - 1 || Character.UnicodeScript.of(cps[i + 1]) != Character.UnicodeScript.GREEK) {
-                        return false;
-                    }
-                }
-                case 0x05F3, 0x05F4 -> {
-                    if (i == 0 || Character.UnicodeScript.of(cps[i - 1]) != Character.UnicodeScript.HEBREW) {
-                        return false;
-                    }
-                }
-                case 0x30FB -> katakanaMiddleDot = true;
-                default -> {
-                    if (!isPermitted(cp)) {
-                        return false;
-                    }
-                    if (cp >= 0x0660 && cp <= 0x0669) {
-                        arabicIndic = true;
-                    } else if (cp >= 0x06F0 && cp <= 0x06F9) {
-                        extendedArabicIndic = true;
-                    }
-                    Character.UnicodeScript script = Character.UnicodeScript.of(cp);
-                    if (script == Character.UnicodeScript.HIRAGANA || script == Character.UnicodeScript.KATAKANA
-                        || script == Character.UnicodeScript.HAN) {
-                        hiraganaKatakanaHan = true;
-                    }
-                }
+            if (!isValidInContext(cps, i, scripts)) {
+                return false;
             }
         }
-        return !(katakanaMiddleDot && !hiraganaKatakanaHan) && !(arabicIndic && extendedArabicIndic);
+        return scripts.isValid();
+    }
+
+    /**
+     * Checks a code point, including the contextual rules (CONTEXTJ and CONTEXTO) of RFC 5892 appendix A.
+     */
+    private static boolean isValidInContext(int[] cps, int i, LabelScripts scripts) {
+        int cp = cps[i];
+        return switch (cp) {
+            // ZERO WIDTH NON-JOINER
+            case 0x200C -> followsVirama(cps, i) || zeroWidthNonJoinerContext(cps, i);
+            // ZERO WIDTH JOINER
+            case 0x200D -> followsVirama(cps, i);
+            // MIDDLE DOT: must be between two 'l'
+            case 0x00B7 -> i > 0 && i < cps.length - 1 && cps[i - 1] == 'l' && cps[i + 1] == 'l';
+            // GREEK KERAIA: must be followed by Greek
+            case 0x0375 -> i < cps.length - 1 && Character.UnicodeScript.of(cps[i + 1]) == Character.UnicodeScript.GREEK;
+            // HEBREW GERESH / GERSHAYIM: must be preceded by Hebrew
+            case 0x05F3, 0x05F4 -> i > 0 && Character.UnicodeScript.of(cps[i - 1]) == Character.UnicodeScript.HEBREW;
+            // KATAKANA MIDDLE DOT: requires Hiragana, Katakana or Han in the label
+            case 0x30FB -> scripts.katakanaMiddleDot();
+            default -> isPermitted(cp) && scripts.record(cp);
+        };
+    }
+
+    private static boolean followsVirama(int[] cps, int i) {
+        return i > 0 && isVirama(cps[i - 1]);
     }
 
     private static boolean isPermitted(int cp) {
         if (cp < 0x80) {
             return (cp >= 'a' && cp <= 'z') || (cp >= '0' && cp <= '9') || cp == '-';
         }
-        switch (cp) {
-            case 0x00DF, 0x03C2, 0x06FD, 0x06FE, 0x0F0B, 0x3007:
-                return true;
-            case 0x0640, 0x07FA, 0x302E, 0x302F, 0x3031, 0x3032, 0x3033, 0x3034, 0x3035, 0x303B:
-                return false;
-            default:
-                break;
-        }
-        int type = Character.getType(cp);
-        return switch (type) {
-            case Character.LOWERCASE_LETTER, Character.OTHER_LETTER, Character.MODIFIER_LETTER,
-                 Character.NON_SPACING_MARK, Character.COMBINING_SPACING_MARK, Character.DECIMAL_DIGIT_NUMBER -> true;
-            default -> false;
+        return switch (cp) {
+            case 0x00DF, 0x03C2, 0x06FD, 0x06FE, 0x0F0B, 0x3007 -> true;
+            case 0x0640, 0x07FA, 0x302E, 0x302F, 0x3031, 0x3032, 0x3033, 0x3034, 0x3035, 0x303B -> false;
+            default -> switch (Character.getType(cp)) {
+                case Character.LOWERCASE_LETTER, Character.OTHER_LETTER, Character.MODIFIER_LETTER,
+                     Character.NON_SPACING_MARK, Character.COMBINING_SPACING_MARK, Character.DECIMAL_DIGIT_NUMBER -> true;
+                default -> false;
+            };
         };
     }
 
@@ -315,36 +287,28 @@ final class Idna {
     // ---- Bidi rule (RFC 5893) ----
 
     private static boolean satisfiesBidiRule(List<int[]> labels) {
-        boolean bidiDomain = false;
-        for (int[] label : labels) {
-            for (int cp : label) {
-                byte d = Character.getDirectionality(cp);
-                if (d == Character.DIRECTIONALITY_RIGHT_TO_LEFT || d == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC
-                    || d == Character.DIRECTIONALITY_ARABIC_NUMBER) {
-                    bidiDomain = true;
-                    break;
-                }
+        boolean bidiDomain = labels.stream().anyMatch(Idna::hasRightToLeft);
+        return !bidiDomain || labels.stream().allMatch(Idna::satisfiesBidiRule);
+    }
+
+    private static boolean hasRightToLeft(int[] label) {
+        for (int cp : label) {
+            byte d = Character.getDirectionality(cp);
+            if (isRightToLeft(d) || d == Character.DIRECTIONALITY_ARABIC_NUMBER) {
+                return true;
             }
         }
-        if (!bidiDomain) {
-            return true;
-        }
-        for (int[] label : labels) {
-            if (!satisfiesBidiRule(label)) {
-                return false;
-            }
-        }
-        return true;
+        return false;
+    }
+
+    private static boolean isRightToLeft(byte directionality) {
+        return directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT || directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC;
     }
 
     private static boolean satisfiesBidiRule(int[] label) {
         byte first = Character.getDirectionality(label[0]);
-        boolean rtl;
-        if (first == Character.DIRECTIONALITY_RIGHT_TO_LEFT || first == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC) {
-            rtl = true;
-        } else if (first == Character.DIRECTIONALITY_LEFT_TO_RIGHT) {
-            rtl = false;
-        } else {
+        boolean rtl = isRightToLeft(first);
+        if (!rtl && first != Character.DIRECTIONALITY_LEFT_TO_RIGHT) {
             return false;
         }
         boolean europeanNumber = false;
@@ -352,34 +316,33 @@ final class Idna {
         byte last = first;
         for (int cp : label) {
             byte d = Character.getDirectionality(cp);
-            boolean allowed = switch (d) {
-                case Character.DIRECTIONALITY_EUROPEAN_NUMBER, Character.DIRECTIONALITY_EUROPEAN_NUMBER_SEPARATOR,
-                     Character.DIRECTIONALITY_COMMON_NUMBER_SEPARATOR, Character.DIRECTIONALITY_EUROPEAN_NUMBER_TERMINATOR,
-                     Character.DIRECTIONALITY_OTHER_NEUTRALS, Character.DIRECTIONALITY_BOUNDARY_NEUTRAL,
-                     Character.DIRECTIONALITY_NONSPACING_MARK -> true;
-                case Character.DIRECTIONALITY_RIGHT_TO_LEFT, Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC,
-                     Character.DIRECTIONALITY_ARABIC_NUMBER -> rtl;
-                case Character.DIRECTIONALITY_LEFT_TO_RIGHT -> !rtl;
-                default -> false;
-            };
-            if (!allowed) {
+            if (!isAllowedInLabel(d, rtl)) {
                 return false;
             }
-            if (d == Character.DIRECTIONALITY_EUROPEAN_NUMBER) {
-                europeanNumber = true;
-            } else if (d == Character.DIRECTIONALITY_ARABIC_NUMBER) {
-                arabicNumber = true;
-            }
+            europeanNumber |= d == Character.DIRECTIONALITY_EUROPEAN_NUMBER;
+            arabicNumber |= d == Character.DIRECTIONALITY_ARABIC_NUMBER;
             if (d != Character.DIRECTIONALITY_NONSPACING_MARK) {
                 last = d;
             }
         }
         if (rtl) {
-            return !(europeanNumber && arabicNumber)
-                && (last == Character.DIRECTIONALITY_RIGHT_TO_LEFT || last == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC
+            return !(europeanNumber && arabicNumber) && (isRightToLeft(last)
                 || last == Character.DIRECTIONALITY_EUROPEAN_NUMBER || last == Character.DIRECTIONALITY_ARABIC_NUMBER);
         }
         return last == Character.DIRECTIONALITY_LEFT_TO_RIGHT || last == Character.DIRECTIONALITY_EUROPEAN_NUMBER;
+    }
+
+    private static boolean isAllowedInLabel(byte directionality, boolean rtl) {
+        return switch (directionality) {
+            case Character.DIRECTIONALITY_EUROPEAN_NUMBER, Character.DIRECTIONALITY_EUROPEAN_NUMBER_SEPARATOR,
+                 Character.DIRECTIONALITY_COMMON_NUMBER_SEPARATOR, Character.DIRECTIONALITY_EUROPEAN_NUMBER_TERMINATOR,
+                 Character.DIRECTIONALITY_OTHER_NEUTRALS, Character.DIRECTIONALITY_BOUNDARY_NEUTRAL,
+                 Character.DIRECTIONALITY_NONSPACING_MARK -> true;
+            case Character.DIRECTIONALITY_RIGHT_TO_LEFT, Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC,
+                 Character.DIRECTIONALITY_ARABIC_NUMBER -> rtl;
+            case Character.DIRECTIONALITY_LEFT_TO_RIGHT -> !rtl;
+            default -> false;
+        };
     }
 
     // ---- Punycode (RFC 3492) ----
@@ -418,49 +381,7 @@ final class Idna {
             }
             output.add((int) c);
         }
-        long n = INITIAL_N;
-        long i = 0;
-        int bias = INITIAL_BIAS;
-        int in = delimiter > 0 ? delimiter + 1 : 0;
-        while (in < input.length()) {
-            long oldi = i;
-            long w = 1;
-            for (int k = BASE; ; k += BASE) {
-                if (in >= input.length()) {
-                    return null;
-                }
-                int digit = digitValue(input.charAt(in++));
-                if (digit < 0) {
-                    return null;
-                }
-                i += digit * w;
-                if (i > Integer.MAX_VALUE) {
-                    return null;
-                }
-                int t = threshold(k, bias);
-                if (digit < t) {
-                    break;
-                }
-                w *= BASE - t;
-                if (w > Integer.MAX_VALUE) {
-                    return null;
-                }
-            }
-            int size = output.size() + 1;
-            bias = adapt(i - oldi, size, oldi == 0);
-            n += i / size;
-            if (n > Character.MAX_CODE_POINT) {
-                return null;
-            }
-            i %= size;
-            output.add((int) i, (int) n);
-            i++;
-        }
-        int[] result = new int[output.size()];
-        for (int j = 0; j < result.length; j++) {
-            result[j] = output.get(j);
-        }
-        return result;
+        return new PunycodeDecoder(input, delimiter > 0 ? delimiter + 1 : 0).decode(output);
     }
 
     private static int digitValue(char c) {
@@ -498,29 +419,14 @@ final class Idna {
         long delta = 0;
         int bias = INITIAL_BIAS;
         while (handled < input.length) {
-            long m = Long.MAX_VALUE;
-            for (int cp : input) {
-                if (cp >= n && cp < m) {
-                    m = cp;
-                }
-            }
+            long m = smallestAtLeast(input, n);
             delta += (m - n) * (handled + 1);
             n = m;
             for (int cp : input) {
                 if (cp < n) {
                     delta++;
-                }
-                if (cp == n) {
-                    long q = delta;
-                    for (int k = BASE; ; k += BASE) {
-                        int t = threshold(k, bias);
-                        if (q < t) {
-                            break;
-                        }
-                        output.append(digit((int) (t + (q - t) % (BASE - t))));
-                        q = (q - t) / (BASE - t);
-                    }
-                    output.append(digit((int) q));
+                } else if (cp == n) {
+                    appendInteger(output, delta, bias);
                     bias = adapt(delta, handled + 1, handled == basic);
                     delta = 0;
                     handled++;
@@ -532,7 +438,122 @@ final class Idna {
         return output.toString();
     }
 
+    private static long smallestAtLeast(int[] input, long n) {
+        long m = Long.MAX_VALUE;
+        for (int cp : input) {
+            if (cp >= n && cp < m) {
+                m = cp;
+            }
+        }
+        return m;
+    }
+
+    /**
+     * Appends a generalized variable-length integer.
+     */
+    private static void appendInteger(StringBuilder output, long value, int bias) {
+        long q = value;
+        for (int k = BASE; ; k += BASE) {
+            int t = threshold(k, bias);
+            if (q < t) {
+                break;
+            }
+            output.append(digit((int) (t + (q - t) % (BASE - t))));
+            q = (q - t) / (BASE - t);
+        }
+        output.append(digit((int) q));
+    }
+
     private static char digit(int d) {
         return (char) (d < 26 ? 'a' + d : '0' + d - 26);
+    }
+
+    /**
+     * Tracks the label-wide contextual rules.
+     */
+    private static final class LabelScripts {
+        private boolean katakanaMiddleDot;
+        private boolean hiraganaKatakanaHan;
+        private boolean arabicIndic;
+        private boolean extendedArabicIndic;
+
+        boolean katakanaMiddleDot() {
+            katakanaMiddleDot = true;
+            return true;
+        }
+
+        boolean record(int cp) {
+            if (cp >= 0x0660 && cp <= 0x0669) {
+                arabicIndic = true;
+            } else if (cp >= 0x06F0 && cp <= 0x06F9) {
+                extendedArabicIndic = true;
+            }
+            Character.UnicodeScript script = Character.UnicodeScript.of(cp);
+            hiraganaKatakanaHan |= script == Character.UnicodeScript.HIRAGANA || script == Character.UnicodeScript.KATAKANA
+                || script == Character.UnicodeScript.HAN;
+            return true;
+        }
+
+        boolean isValid() {
+            return !(katakanaMiddleDot && !hiraganaKatakanaHan) && !(arabicIndic && extendedArabicIndic);
+        }
+    }
+
+    /**
+     * The state of the Punycode decoding loop (RFC 3492 section 6.2).
+     */
+    private static final class PunycodeDecoder {
+        private final String input;
+        private int pos;
+        private long n = INITIAL_N;
+        private long i;
+        private int bias = INITIAL_BIAS;
+
+        PunycodeDecoder(String input, int start) {
+            this.input = input;
+            this.pos = start;
+        }
+
+        int @Nullable [] decode(List<Integer> output) {
+            while (pos < input.length()) {
+                long oldi = i;
+                if (!readInteger()) {
+                    return null;
+                }
+                int size = output.size() + 1;
+                bias = adapt(i - oldi, size, oldi == 0);
+                n += i / size;
+                if (n > Character.MAX_CODE_POINT) {
+                    return null;
+                }
+                i %= size;
+                output.add((int) i, (int) n);
+                i++;
+            }
+            return output.stream().mapToInt(Integer::intValue).toArray();
+        }
+
+        /**
+         * Reads one generalized variable-length integer and adds it to {@link #i}.
+         */
+        private boolean readInteger() {
+            long w = 1;
+            for (int k = BASE; pos < input.length(); k += BASE) {
+                int digit = digitValue(input.charAt(pos++));
+                if (digit < 0) {
+                    return false;
+                }
+                i += digit * w;
+                int t = threshold(k, bias);
+                if (i > Integer.MAX_VALUE || digit < t) {
+                    return i <= Integer.MAX_VALUE;
+                }
+                w *= BASE - t;
+                if (w > Integer.MAX_VALUE) {
+                    return false;
+                }
+            }
+            return false;
+        }
     }
 }

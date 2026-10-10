@@ -157,7 +157,7 @@ final class EvaluationContext {
             return false;
         }
         if (scopeDepth == scope.length) {
-            scope = Arrays.copyOf(scope, scopeDepth * 2);
+            scope = Arrays.copyOf(scope, Math.max(8, scopeDepth * 2));
         }
         scope[scopeDepth++] = resource;
         return true;

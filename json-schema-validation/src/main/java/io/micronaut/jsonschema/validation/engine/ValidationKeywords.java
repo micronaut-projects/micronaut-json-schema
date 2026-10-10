@@ -43,6 +43,8 @@ final class ValidationKeywords {
     static final int STRING = 1 << 5;
     static final int INTEGER = 1 << 6;
 
+    private static final String MUST_HAVE = "must have ";
+
     private ValidationKeywords() {
     }
 
@@ -129,7 +131,7 @@ final class ValidationKeywords {
         @Override
         boolean evaluate(JsonNode instance, EvaluationContext ctx, @Nullable Annotations annotations) {
             for (JsonNode value : values.values()) {
-                if (JsonValues.equal(value, instance)) {
+                if (JsonValues.jsonEquals(value, instance)) {
                     return true;
                 }
             }
@@ -151,7 +153,7 @@ final class ValidationKeywords {
 
         @Override
         boolean evaluate(JsonNode instance, EvaluationContext ctx, @Nullable Annotations annotations) {
-            if (JsonValues.equal(value, instance)) {
+            if (JsonValues.jsonEquals(value, instance)) {
                 return true;
             }
             ctx.error(this, "must be the constant value '" + JsonValues.text(value) + "'");
@@ -173,7 +175,7 @@ final class ValidationKeywords {
             this.limit = limit;
             this.maximum = maximum;
             this.exclusive = exclusive;
-            this.message = "must have " + (exclusive ? "an exclusive " : "a ") + (maximum ? "maximum" : "minimum") + " value of " + JsonValues.text(limit);
+            this.message = MUST_HAVE + (exclusive ? "an exclusive " : "a ") + (maximum ? "maximum" : "minimum") + " value of " + JsonValues.text(limit);
         }
 
         @Override
@@ -378,7 +380,7 @@ final class ValidationKeywords {
             if (maximum ? size <= limit : size >= limit) {
                 return true;
             }
-            ctx.error(this, "must have " + (maximum ? "at most " : "at least ") + limit + " items but found " + size);
+            ctx.error(this, MUST_HAVE + (maximum ? "at most " : "at least ") + limit + " items but found " + size);
             return false;
         }
     }
@@ -400,7 +402,7 @@ final class ValidationKeywords {
             for (int i = 0; i < size; i++) {
                 JsonNode a = instance.get(i);
                 for (int j = i + 1; j < size; j++) {
-                    if (a != null && JsonValues.equal(a, instance.get(j))) {
+                    if (a != null && JsonValues.jsonEquals(a, instance.get(j))) {
                         ctx.error(this, "must have only unique items in the array");
                         return false;
                     }
@@ -432,7 +434,7 @@ final class ValidationKeywords {
             if (maximum ? size <= limit : size >= limit) {
                 return true;
             }
-            ctx.error(this, "must have " + (maximum ? "at most " : "at least ") + limit + " properties");
+            ctx.error(this, MUST_HAVE + (maximum ? "at most " : "at least ") + limit + " properties");
             return false;
         }
     }

@@ -47,7 +47,7 @@ final class ReferenceKeywords {
             this.failure = failure;
         }
 
-        Schema target(EvaluationContext ctx) {
+        Schema resolve(EvaluationContext ctx) {
             Schema t = target;
             if (t == null) {
                 RuntimeException e = failure;
@@ -59,7 +59,7 @@ final class ReferenceKeywords {
 
         @Override
         final boolean evaluate(JsonNode instance, EvaluationContext ctx, @Nullable Annotations annotations) {
-            Schema t = target(ctx);
+            Schema t = resolve(ctx);
             ctx.enterRef(t, instance);
             boolean valid = t.evaluateInPlace(instance, ctx, annotations);
             ctx.exitRef();
@@ -86,8 +86,8 @@ final class ReferenceKeywords {
         }
 
         @Override
-        Schema target(EvaluationContext ctx) {
-            Schema initial = super.target(ctx);
+        Schema resolve(EvaluationContext ctx) {
+            Schema initial = super.resolve(ctx);
             if (anchor != null) {
                 Schema dynamic = ctx.findDynamicAnchor(anchor);
                 if (dynamic != null) {
@@ -110,8 +110,8 @@ final class ReferenceKeywords {
         }
 
         @Override
-        Schema target(EvaluationContext ctx) {
-            Schema initial = super.target(ctx);
+        Schema resolve(EvaluationContext ctx) {
+            Schema initial = super.resolve(ctx);
             if (dynamic) {
                 Schema outermost = ctx.findRecursiveAnchor();
                 if (outermost != null) {

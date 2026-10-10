@@ -35,6 +35,9 @@ import java.util.regex.Pattern;
  */
 final class ApplicatorKeywords {
 
+    private static final String PROPERTY = "property '";
+    private static final String INDEX = "index '";
+
     private ApplicatorKeywords() {
     }
 
@@ -45,6 +48,26 @@ final class ApplicatorKeywords {
             }
         }
         return false;
+    }
+
+    /**
+     * Evaluates a schema against the value of an object property.
+     */
+    private static boolean evaluateProperty(Schema schema, String name, JsonNode value, EvaluationContext ctx) {
+        ctx.pushProperty(name);
+        boolean valid = schema.evaluateChild(value, ctx);
+        ctx.pop();
+        return valid;
+    }
+
+    /**
+     * Evaluates a schema against an array item.
+     */
+    private static boolean evaluateItem(Schema schema, int index, JsonNode value, EvaluationContext ctx) {
+        ctx.pushIndex(index);
+        boolean valid = schema.evaluateChild(value, ctx);
+        ctx.pop();
+        return valid;
     }
 
     /**
@@ -170,41 +193,53 @@ final class ApplicatorKeywords {
         @Override
         boolean evaluate(JsonNode instance, EvaluationContext ctx, @Nullable Annotations annotations) {
             List<ValidationMessage> sink = ctx.swapErrors(false);
-            int count = 0;
-            Annotations matched = null;
-            StringJoiner indexes = sink != null ? new StringJoiner(", ") : null;
-            for (int i = 0; i < schemas.length; i++) {
-                Annotations local = ctx.newAnnotations();
-                if (schemas[i].evaluate(instance, ctx, local)) {
-                    count++;
-                    if (indexes != null) {
-                        indexes.add(Integer.toString(i));
-                    }
-                    if (count == 1) {
-                        matched = local;
-                    } else if (sink == null) {
-                        break;
-                    }
-                }
-            }
+            Matches matches = match(instance, ctx, sink == null);
             ctx.restoreErrors(sink);
-            if (count == 1) {
+            if (matches.count() == 1) {
+                Annotations matched = matches.annotations();
                 if (annotations != null && matched != null) {
                     annotations.merge(matched);
                 }
                 return true;
             }
             if (sink != null) {
-                if (count == 0) {
-                    ctx.error(this, "must be valid to one and only one schema, but 0 are valid");
-                    for (Schema schema : schemas) {
-                        schema.evaluate(instance, ctx, ctx.newAnnotations());
-                    }
-                } else {
-                    ctx.error(this, "must be valid to one and only one schema, but " + count + " are valid with indexes '" + indexes + "'");
-                }
+                reportErrors(instance, ctx, matches);
             }
             return false;
+        }
+
+        /**
+         * Evaluates the subschemas, stopping at the second match when only a boolean result is needed.
+         */
+        private Matches match(JsonNode instance, EvaluationContext ctx, boolean failFast) {
+            int count = 0;
+            Annotations matched = null;
+            StringJoiner indexes = new StringJoiner(", ");
+            for (int i = 0; i < schemas.length; i++) {
+                Annotations local = ctx.newAnnotations();
+                if (!schemas[i].evaluate(instance, ctx, local)) {
+                    continue;
+                }
+                count++;
+                indexes.add(Integer.toString(i));
+                if (count == 1) {
+                    matched = local;
+                } else if (failFast) {
+                    break;
+                }
+            }
+            return new Matches(count, matched, indexes.toString());
+        }
+
+        private void reportErrors(JsonNode instance, EvaluationContext ctx, Matches matches) {
+            if (matches.count() == 0) {
+                ctx.error(this, "must be valid to one and only one schema, but 0 are valid");
+                for (Schema schema : schemas) {
+                    schema.evaluate(instance, ctx, ctx.newAnnotations());
+                }
+            } else {
+                ctx.error(this, "must be valid to one and only one schema, but " + matches.count() + " are valid with indexes '" + matches.indexes() + "'");
+            }
         }
 
         @Override
@@ -212,6 +247,16 @@ final class ApplicatorKeywords {
             for (Schema schema : schemas) {
                 consumer.accept(schema);
             }
+        }
+
+        /**
+         * The result of evaluating the subschemas.
+         *
+         * @param count The number of matching subschemas
+         * @param annotations The annotations of the first matching subschema
+         * @param indexes The indexes of the matching subschemas
+         */
+        private record Matches(int count, @Nullable Annotations annotations, String indexes) {
         }
     }
 
@@ -316,10 +361,7 @@ final class ApplicatorKeywords {
                 if (annotations != null) {
                     annotations.addProperty(name);
                 }
-                ctx.pushProperty(name);
-                boolean ok = schemas[i].evaluateChild(value, ctx);
-                ctx.pop();
-                if (!ok) {
+                if (!evaluateProperty(schemas[i], name, value, ctx)) {
                     valid = false;
                     if (ctx.failFast()) {
                         return false;
@@ -357,22 +399,29 @@ final class ApplicatorKeywords {
             }
             boolean valid = true;
             for (Map.Entry<String, JsonNode> entry : instance.entries()) {
-                String name = entry.getKey();
-                for (int i = 0; i < patterns.length; i++) {
-                    if (!patterns[i].matcher(name).find()) {
-                        continue;
+                if (!evaluateMatchingPatterns(entry.getKey(), entry.getValue(), ctx, annotations)) {
+                    valid = false;
+                    if (ctx.failFast()) {
+                        return false;
                     }
-                    if (annotations != null) {
-                        annotations.addProperty(name);
-                    }
-                    ctx.pushProperty(name);
-                    boolean ok = schemas[i].evaluateChild(entry.getValue(), ctx);
-                    ctx.pop();
-                    if (!ok) {
-                        valid = false;
-                        if (ctx.failFast()) {
-                            return false;
-                        }
+                }
+            }
+            return valid;
+        }
+
+        private boolean evaluateMatchingPatterns(String name, JsonNode value, EvaluationContext ctx, @Nullable Annotations annotations) {
+            boolean valid = true;
+            for (int i = 0; i < patterns.length; i++) {
+                if (!patterns[i].matcher(name).find()) {
+                    continue;
+                }
+                if (annotations != null) {
+                    annotations.addProperty(name);
+                }
+                if (!evaluateProperty(schemas[i], name, value, ctx)) {
+                    valid = false;
+                    if (ctx.failFast()) {
+                        return false;
                     }
                 }
             }
@@ -416,16 +465,7 @@ final class ApplicatorKeywords {
                 if (annotations != null) {
                     annotations.addProperty(name);
                 }
-                boolean ok;
-                if (schema.isFalse()) {
-                    ctx.error(this, "property '" + name + "' is not defined in the schema and the schema does not allow additional properties");
-                    ok = false;
-                } else {
-                    ctx.pushProperty(name);
-                    ok = schema.evaluateChild(entry.getValue(), ctx);
-                    ctx.pop();
-                }
-                if (!ok) {
+                if (!evaluateAdditional(name, entry.getValue(), ctx)) {
                     valid = false;
                     if (ctx.failFast()) {
                         return false;
@@ -433,6 +473,14 @@ final class ApplicatorKeywords {
                 }
             }
             return valid;
+        }
+
+        private boolean evaluateAdditional(String name, JsonNode value, EvaluationContext ctx) {
+            if (schema.isFalse()) {
+                ctx.error(this, PROPERTY + name + "' is not defined in the schema and the schema does not allow additional properties");
+                return false;
+            }
+            return evaluateProperty(schema, name, value, ctx);
         }
 
         @Override
@@ -459,27 +507,31 @@ final class ApplicatorKeywords {
             }
             boolean valid = true;
             for (Map.Entry<String, JsonNode> entry : instance.entries()) {
-                String name = entry.getKey();
-                JsonNode nameNode = JsonNode.createStringNode(name);
-                List<ValidationMessage> sink = ctx.swapErrors(false);
-                boolean ok = schema.evaluate(nameNode, ctx, ctx.newAnnotations());
-                if (ok) {
-                    ctx.restoreErrors(sink);
-                    continue;
+                if (!evaluateName(entry.getKey(), ctx)) {
+                    valid = false;
+                    if (ctx.failFast()) {
+                        return false;
+                    }
                 }
-                valid = false;
-                if (sink == null) {
-                    ctx.restoreErrors(null);
-                    return false;
-                }
-                ctx.swapErrors(true);
-                schema.evaluate(nameNode, ctx, ctx.newAnnotations());
-                List<ValidationMessage> nested = ctx.errors;
-                ctx.restoreErrors(sink);
-                String detail = nested == null || nested.isEmpty() ? "schema for property names is false" : detail(nested.get(0));
-                ctx.error(this, "property '" + name + "' name is not valid: " + detail);
             }
             return valid;
+        }
+
+        private boolean evaluateName(String name, EvaluationContext ctx) {
+            JsonNode nameNode = JsonNode.createStringNode(name);
+            List<ValidationMessage> sink = ctx.swapErrors(false);
+            boolean valid = schema.evaluate(nameNode, ctx, ctx.newAnnotations());
+            if (valid || sink == null) {
+                ctx.restoreErrors(sink);
+                return valid;
+            }
+            ctx.swapErrors(true);
+            schema.evaluate(nameNode, ctx, ctx.newAnnotations());
+            List<ValidationMessage> nested = ctx.errors;
+            ctx.restoreErrors(sink);
+            String detail = nested == null || nested.isEmpty() ? "schema for property names is false" : detail(nested.get(0));
+            ctx.error(this, PROPERTY + name + "' name is not valid: " + detail);
+            return false;
         }
 
         private static String detail(ValidationMessage message) {
@@ -555,10 +607,7 @@ final class ApplicatorKeywords {
             }
             boolean valid = true;
             for (int i = 0; i < count; i++) {
-                ctx.pushIndex(i);
-                boolean ok = schemas[i].evaluateChild(instance.get(i), ctx);
-                ctx.pop();
-                if (!ok) {
+                if (!evaluateItem(schemas[i], i, instance.get(i), ctx)) {
                     valid = false;
                     if (ctx.failFast()) {
                         return false;
@@ -600,16 +649,7 @@ final class ApplicatorKeywords {
             }
             boolean valid = true;
             for (int i = start; i < size; i++) {
-                boolean ok;
-                if (schema.isFalse()) {
-                    ctx.error(this, "index '" + i + "' is not defined in the schema and the schema does not allow additional items");
-                    ok = false;
-                } else {
-                    ctx.pushIndex(i);
-                    ok = schema.evaluateChild(instance.get(i), ctx);
-                    ctx.pop();
-                }
-                if (!ok) {
+                if (!evaluateAdditional(i, instance.get(i), ctx)) {
                     valid = false;
                     if (ctx.failFast()) {
                         return false;
@@ -617,6 +657,14 @@ final class ApplicatorKeywords {
                 }
             }
             return valid;
+        }
+
+        private boolean evaluateAdditional(int index, JsonNode item, EvaluationContext ctx) {
+            if (schema.isFalse()) {
+                ctx.error(this, INDEX + index + "' is not defined in the schema and the schema does not allow additional items");
+                return false;
+            }
+            return evaluateItem(schema, index, item, ctx);
         }
 
         @Override
@@ -652,23 +700,7 @@ final class ApplicatorKeywords {
                 return true;
             }
             List<ValidationMessage> sink = ctx.swapErrors(false);
-            int size = instance.size();
-            long count = 0;
-            boolean needAll = max >= 0 || (annotate && annotations != null);
-            for (int i = 0; i < size; i++) {
-                ctx.pushIndex(i);
-                boolean ok = schema.evaluateChild(instance.get(i), ctx);
-                ctx.pop();
-                if (ok) {
-                    count++;
-                    if (annotate && annotations != null) {
-                        annotations.evaluateItem(i);
-                    }
-                    if (!needAll && count >= min) {
-                        break;
-                    }
-                }
-            }
+            long count = countMatches(instance, ctx, annotate ? annotations : null);
             ctx.restoreErrors(sink);
             if (count < min) {
                 if (explicitMin) {
@@ -683,6 +715,26 @@ final class ApplicatorKeywords {
                 return false;
             }
             return true;
+        }
+
+        /**
+         * Counts the matching items, stopping once the minimum is reached unless all items must be evaluated.
+         *
+         * @param annotations The annotations to record matching items into, or null
+         */
+        private long countMatches(JsonNode array, EvaluationContext ctx, @Nullable Annotations annotations) {
+            int size = array.size();
+            long count = 0;
+            boolean needAll = max >= 0 || annotations != null;
+            for (int i = 0; i < size && (needAll || count < min); i++) {
+                if (evaluateItem(schema, i, array.get(i), ctx)) {
+                    count++;
+                    if (annotations != null) {
+                        annotations.evaluateItem(i);
+                    }
+                }
+            }
+            return count;
         }
 
         @Override
@@ -713,16 +765,7 @@ final class ApplicatorKeywords {
                 if (annotations != null && annotations.isPropertyEvaluated(name)) {
                     continue;
                 }
-                boolean ok;
-                if (schema.isFalse()) {
-                    ctx.error(this, "property '" + name + "' is not evaluated and the schema does not allow unevaluated properties");
-                    ok = false;
-                } else {
-                    ctx.pushProperty(name);
-                    ok = schema.evaluateChild(entry.getValue(), ctx);
-                    ctx.pop();
-                }
-                if (!ok) {
+                if (!evaluateUnevaluated(name, entry.getValue(), ctx)) {
                     valid = false;
                     if (ctx.failFast()) {
                         return false;
@@ -735,6 +778,14 @@ final class ApplicatorKeywords {
                 }
             }
             return valid;
+        }
+
+        private boolean evaluateUnevaluated(String name, JsonNode value, EvaluationContext ctx) {
+            if (schema.isFalse()) {
+                ctx.error(this, PROPERTY + name + "' is not evaluated and the schema does not allow unevaluated properties");
+                return false;
+            }
+            return evaluateProperty(schema, name, value, ctx);
         }
 
         @Override
@@ -765,16 +816,7 @@ final class ApplicatorKeywords {
                 if (annotations != null && annotations.isItemEvaluated(i)) {
                     continue;
                 }
-                boolean ok;
-                if (schema.isFalse()) {
-                    ctx.error(this, "index '" + i + "' is not evaluated and the schema does not allow unevaluated items");
-                    ok = false;
-                } else {
-                    ctx.pushIndex(i);
-                    ok = schema.evaluateChild(instance.get(i), ctx);
-                    ctx.pop();
-                }
-                if (!ok) {
+                if (!evaluateUnevaluated(i, instance.get(i), ctx)) {
                     valid = false;
                     if (ctx.failFast()) {
                         return false;
@@ -785,6 +827,14 @@ final class ApplicatorKeywords {
                 annotations.evaluateAllItems();
             }
             return valid;
+        }
+
+        private boolean evaluateUnevaluated(int index, JsonNode item, EvaluationContext ctx) {
+            if (schema.isFalse()) {
+                ctx.error(this, INDEX + index + "' is not evaluated and the schema does not allow unevaluated items");
+                return false;
+            }
+            return evaluateItem(schema, index, item, ctx);
         }
 
         @Override

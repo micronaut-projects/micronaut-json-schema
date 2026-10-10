@@ -124,22 +124,28 @@ final class JsonValues {
         if (isSmallIntegral(a) && isSmallIntegral(b)) {
             return Long.compare(a.longValue(), b.longValue());
         }
-        if (isFloating(a) && isFloating(b)) {
+        if (isExactDouble(a) && isExactDouble(b)) {
             return compareDoubles(a.doubleValue(), b.doubleValue());
         }
-        if (isFloating(a) && isSmallIntegral(b) && Math.abs(b.longValue()) <= MAX_EXACT_DOUBLE) {
-            return compareDoubles(a.doubleValue(), b.longValue());
-        }
-        if (isSmallIntegral(a) && isFloating(b) && Math.abs(a.longValue()) <= MAX_EXACT_DOUBLE) {
-            return compareDoubles(a.longValue(), b.doubleValue());
-        }
-        if (isFloating(a) && !Double.isFinite(a.doubleValue())) {
+        if (isNonFinite(a)) {
             return a.doubleValue() > 0 ? 1 : -1;
         }
-        if (isFloating(b) && !Double.isFinite(b.doubleValue())) {
+        if (isNonFinite(b)) {
             return b.doubleValue() > 0 ? -1 : 1;
         }
         return toBigDecimal(a).compareTo(toBigDecimal(b));
+    }
+
+    /**
+     * @param n The number
+     * @return Whether the number is a double or float, or an integral value that a double represents exactly
+     */
+    private static boolean isExactDouble(Number n) {
+        return isFloating(n) || (isSmallIntegral(n) && Math.abs(n.longValue()) <= MAX_EXACT_DOUBLE);
+    }
+
+    private static boolean isNonFinite(Number n) {
+        return isFloating(n) && !Double.isFinite(n.doubleValue());
     }
 
     private static int compareDoubles(double a, double b) {
@@ -180,7 +186,7 @@ final class JsonValues {
      * @param b The second value
      * @return true if equal
      */
-    static boolean equal(JsonNode a, JsonNode b) {
+    static boolean jsonEquals(JsonNode a, JsonNode b) {
         if (a == b) {
             return true;
         }
@@ -197,31 +203,36 @@ final class JsonValues {
             return b.isNull();
         }
         if (a.isArray()) {
-            if (!b.isArray() || a.size() != b.size()) {
+            return b.isArray() && arrayEquals(a, b);
+        }
+        return a.isObject() && b.isObject() && objectEquals(a, b);
+    }
+
+    private static boolean arrayEquals(JsonNode a, JsonNode b) {
+        if (a.size() != b.size()) {
+            return false;
+        }
+        for (int i = 0; i < a.size(); i++) {
+            JsonNode ai = a.get(i);
+            JsonNode bi = b.get(i);
+            if (ai == null || bi == null || !jsonEquals(ai, bi)) {
                 return false;
             }
-            for (int i = 0; i < a.size(); i++) {
-                JsonNode ai = a.get(i);
-                JsonNode bi = b.get(i);
-                if (ai == null || bi == null || !equal(ai, bi)) {
-                    return false;
-                }
-            }
-            return true;
         }
-        if (a.isObject()) {
-            if (!b.isObject() || a.size() != b.size()) {
+        return true;
+    }
+
+    private static boolean objectEquals(JsonNode a, JsonNode b) {
+        if (a.size() != b.size()) {
+            return false;
+        }
+        for (Map.Entry<String, JsonNode> entry : a.entries()) {
+            JsonNode other = b.get(entry.getKey());
+            if (other == null || !jsonEquals(entry.getValue(), other)) {
                 return false;
             }
-            for (Map.Entry<String, JsonNode> entry : a.entries()) {
-                JsonNode other = b.get(entry.getKey());
-                if (other == null || !equal(entry.getValue(), other)) {
-                    return false;
-                }
-            }
-            return true;
         }
-        return false;
+        return true;
     }
 
     /**
@@ -266,32 +277,40 @@ final class JsonValues {
         } else if (node.isBoolean()) {
             sb.append(node.getBooleanValue());
         } else if (node.isArray()) {
-            sb.append('[');
-            boolean first = true;
-            for (JsonNode value : node.values()) {
-                if (!first) {
-                    sb.append(',');
-                }
-                first = false;
-                write(value, sb);
-            }
-            sb.append(']');
+            writeArray(node, sb);
         } else if (node.isObject()) {
-            sb.append('{');
-            boolean first = true;
-            for (Map.Entry<String, JsonNode> entry : node.entries()) {
-                if (!first) {
-                    sb.append(',');
-                }
-                first = false;
-                writeString(entry.getKey(), sb);
-                sb.append(':');
-                write(entry.getValue(), sb);
-            }
-            sb.append('}');
+            writeObject(node, sb);
         } else {
             sb.append("null");
         }
+    }
+
+    private static void writeArray(JsonNode node, StringBuilder sb) {
+        sb.append('[');
+        boolean first = true;
+        for (JsonNode value : node.values()) {
+            if (!first) {
+                sb.append(',');
+            }
+            first = false;
+            write(value, sb);
+        }
+        sb.append(']');
+    }
+
+    private static void writeObject(JsonNode node, StringBuilder sb) {
+        sb.append('{');
+        boolean first = true;
+        for (Map.Entry<String, JsonNode> entry : node.entries()) {
+            if (!first) {
+                sb.append(',');
+            }
+            first = false;
+            writeString(entry.getKey(), sb);
+            sb.append(':');
+            write(entry.getValue(), sb);
+        }
+        sb.append('}');
     }
 
     private static void writeString(String s, StringBuilder sb) {

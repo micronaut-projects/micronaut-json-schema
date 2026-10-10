@@ -106,145 +106,27 @@ final class EcmaRegex {
         }
     }
 
-    private static String translate(String p, boolean strict) {
-        StringBuilder sb = new StringBuilder(p.length() + 16);
-        boolean inClass = false;
-        int len = p.length();
-        for (int i = 0; i < len; i++) {
-            char c = p.charAt(i);
-            if (c == '\\') {
-                if (i + 1 >= len) {
-                    throw new IllegalArgumentException("Trailing backslash in pattern: " + p);
-                }
-                char n = p.charAt(++i);
-                switch (n) {
-                    case 's' -> sb.append(inClass ? WHITESPACE : "[" + WHITESPACE + "]");
-                    case 'S' -> sb.append(inClass ? "[^" + WHITESPACE + "]" : "[^" + WHITESPACE + "]");
-                    case 'v' -> sb.append("\\x0B");
-                    case '0' -> {
-                        if (i + 1 < len && Character.isDigit(p.charAt(i + 1))) {
-                            throw new IllegalArgumentException("Invalid octal escape in pattern: " + p);
-                        }
-                        sb.append("\\x00");
-                    }
-                    case 'b' -> sb.append(inClass ? "\\x08" : "\\b");
-                    case 'd', 'D', 'w', 'W', 'B', 'f', 'n', 'r', 't', 'k' -> sb.append('\\').append(n);
-                    case 'c' -> {
-                        if (i + 1 < len && isAsciiLetter(p.charAt(i + 1))) {
-                            sb.append(String.format("\\x%02X", p.charAt(++i) % 32));
-                        } else if (strict) {
-                            throw new IllegalArgumentException("Invalid control escape in pattern: " + p);
-                        } else {
-                            sb.append("\\\\c");
-                        }
-                    }
-                    case 'x' -> sb.append("\\x");
-                    case 'u' -> {
-                        if (i + 1 < len && p.charAt(i + 1) == '{') {
-                            int close = p.indexOf('}', i);
-                            if (close < 0) {
-                                throw new IllegalArgumentException("Invalid unicode escape in pattern: " + p);
-                            }
-                            sb.append("\\x{").append(p, i + 2, close).append('}');
-                            i = close;
-                        } else {
-                            sb.append("\\u");
-                        }
-                    }
-                    case 'p', 'P' -> i = appendProperty(p, i, n, sb);
-                    default -> {
-                        if (isAsciiLetter(n)) {
-                            if (strict && ECMA_LETTER_ESCAPES.indexOf(n) < 0) {
-                                throw new IllegalArgumentException("Invalid escape \\" + n + " in pattern: " + p);
-                            }
-                            sb.append('\\').append(n);
-                        } else if (n >= '1' && n <= '9') {
-                            sb.append('\\').append(n);
-                        } else {
-                            appendLiteral(n, sb);
-                        }
-                    }
-                }
-            } else if (inClass) {
-                if (c == ']') {
-                    inClass = false;
-                    sb.append(c);
-                } else if (c == '[' || c == '&') {
-                    sb.append('\\').append(c);
-                } else {
-                    sb.append(c);
-                }
-            } else if (c == '[') {
-                if (p.startsWith("[^]", i)) {
-                    sb.append("[\\s\\S]");
-                    i += 2;
-                } else if (p.startsWith("[]", i)) {
-                    sb.append("(?!)");
-                    i += 1;
-                } else {
-                    inClass = true;
-                    sb.append(c);
-                    if (i + 1 < len && p.charAt(i + 1) == '^') {
-                        sb.append('^');
-                        i++;
-                    }
-                    if (i + 1 < len && p.charAt(i + 1) == ']') {
-                        sb.append("\\]");
-                        i++;
-                    }
-                }
-            } else if (strict && c == '(' && isGlobalFlagGroup(p, i)) {
-                throw new IllegalArgumentException("Inline flag groups are not supported by ECMA-262: " + p);
-            } else if (c == '$') {
-                sb.append("\\z");
-            } else {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
+    private static String translate(String pattern, boolean strict) {
+        return new Translator(pattern, strict).translate();
     }
 
-    private static void appendLiteral(char c, StringBuilder sb) {
-        if (Character.isLetterOrDigit(c)) {
-            sb.append(c);
-        } else {
-            sb.append('\\').append(c);
-        }
-    }
-
-    private static int appendProperty(String p, int i, char n, StringBuilder sb) {
-        if (i + 1 >= p.length() || p.charAt(i + 1) != '{') {
-            sb.append('\\').append(n);
-            return i;
-        }
-        int close = p.indexOf('}', i);
-        if (close < 0) {
-            throw new IllegalArgumentException("Invalid property escape in pattern: " + p);
-        }
-        String name = p.substring(i + 2, close);
-        String javaName;
+    private static String javaPropertyName(String name) {
         int eq = name.indexOf('=');
         if (eq > 0) {
             String key = name.substring(0, eq);
             String value = name.substring(eq + 1);
-            javaName = switch (key) {
+            return switch (key) {
                 case "General_Category", "gc" -> "gc=" + CATEGORY_NAMES.getOrDefault(value, value);
                 case "Script", "sc", "Script_Extensions", "scx" -> "sc=" + value;
                 default -> name;
             };
-        } else {
-            String category = CATEGORY_NAMES.get(name);
-            if (category != null) {
-                javaName = category;
-            } else if (isJavaProperty(name)) {
-                // also keeps Java specific classes such as \p{Alpha} working, as before
-                javaName = name;
-            } else {
-                javaName = "Is" + name;
-            }
         }
-        sb.append('\\').append(n).append('{').append(javaName).append('}');
-        return close;
+        String category = CATEGORY_NAMES.get(name);
+        if (category != null) {
+            return category;
+        }
+        // also keeps Java specific classes such as \p{Alpha} working, as before
+        return isJavaProperty(name) ? name : "Is" + name;
     }
 
     private static boolean isGlobalFlagGroup(String p, int open) {
@@ -269,5 +151,162 @@ final class EcmaRegex {
 
     private static boolean isAsciiLetter(char c) {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    }
+
+    /**
+     * Translates one pattern; {@link #pos} always points at the next character to read.
+     */
+    private static final class Translator {
+        private final String pattern;
+        private final boolean strict;
+        private final StringBuilder sb;
+        private int pos;
+        private boolean inClass;
+
+        Translator(String pattern, boolean strict) {
+            this.pattern = pattern;
+            this.strict = strict;
+            this.sb = new StringBuilder(pattern.length() + 16);
+        }
+
+        String translate() {
+            while (pos < pattern.length()) {
+                char c = pattern.charAt(pos++);
+                if (c == '\\') {
+                    escape();
+                } else if (inClass) {
+                    classCharacter(c);
+                } else if (c == '[') {
+                    openClass();
+                } else if (c == '$') {
+                    sb.append("\\z");
+                } else if (strict && c == '(' && isGlobalFlagGroup(pattern, pos - 1)) {
+                    throw invalid("Inline flag groups are not supported by ECMA-262");
+                } else {
+                    sb.append(c);
+                }
+            }
+            return sb.toString();
+        }
+
+        private IllegalArgumentException invalid(String reason) {
+            return new IllegalArgumentException(reason + " in pattern: " + pattern);
+        }
+
+        private boolean nextIs(char c) {
+            return pos < pattern.length() && pattern.charAt(pos) == c;
+        }
+
+        private void escape() {
+            if (pos >= pattern.length()) {
+                throw invalid("Trailing backslash");
+            }
+            char n = pattern.charAt(pos++);
+            switch (n) {
+                case 's' -> sb.append(inClass ? WHITESPACE : "[" + WHITESPACE + "]");
+                case 'S' -> sb.append("[^" + WHITESPACE + "]");
+                case 'v' -> sb.append("\\x0B");
+                case '0' -> nullEscape();
+                case 'b' -> sb.append(inClass ? "\\x08" : "\\b");
+                case 'd', 'D', 'w', 'W', 'B', 'f', 'n', 'r', 't', 'k', 'x' -> sb.append('\\').append(n);
+                case 'c' -> controlEscape();
+                case 'u' -> unicodeEscape();
+                case 'p', 'P' -> propertyEscape(n);
+                default -> otherEscape(n);
+            }
+        }
+
+        private void nullEscape() {
+            if (pos < pattern.length() && Character.isDigit(pattern.charAt(pos))) {
+                throw invalid("Invalid octal escape");
+            }
+            sb.append("\\x00");
+        }
+
+        private void controlEscape() {
+            if (pos < pattern.length() && isAsciiLetter(pattern.charAt(pos))) {
+                sb.append(String.format("\\x%02X", pattern.charAt(pos++) % 32));
+            } else if (strict) {
+                throw invalid("Invalid control escape");
+            } else {
+                sb.append("\\\\c");
+            }
+        }
+
+        private void unicodeEscape() {
+            if (!nextIs('{')) {
+                sb.append("\\u");
+                return;
+            }
+            int close = pattern.indexOf('}', pos);
+            if (close < 0) {
+                throw invalid("Invalid unicode escape");
+            }
+            sb.append("\\x{").append(pattern, pos + 1, close).append('}');
+            pos = close + 1;
+        }
+
+        private void propertyEscape(char n) {
+            if (!nextIs('{')) {
+                sb.append('\\').append(n);
+                return;
+            }
+            int close = pattern.indexOf('}', pos);
+            if (close < 0) {
+                throw invalid("Invalid property escape");
+            }
+            String name = pattern.substring(pos + 1, close);
+            sb.append('\\').append(n).append('{').append(javaPropertyName(name)).append('}');
+            pos = close + 1;
+        }
+
+        private void otherEscape(char n) {
+            if (isAsciiLetter(n)) {
+                if (strict && ECMA_LETTER_ESCAPES.indexOf(n) < 0) {
+                    throw invalid("Invalid escape \\" + n);
+                }
+                sb.append('\\').append(n);
+            } else if (n >= '1' && n <= '9') {
+                // back reference
+                sb.append('\\').append(n);
+            } else if (Character.isLetterOrDigit(n)) {
+                // non-ASCII identity escape
+                sb.append(n);
+            } else {
+                sb.append('\\').append(n);
+            }
+        }
+
+        private void classCharacter(char c) {
+            if (c == ']') {
+                inClass = false;
+                sb.append(c);
+            } else if (c == '[' || c == '&') {
+                sb.append('\\').append(c);
+            } else {
+                sb.append(c);
+            }
+        }
+
+        private void openClass() {
+            if (pattern.startsWith("^]", pos)) {
+                sb.append("[\\s\\S]");
+                pos += 2;
+            } else if (nextIs(']')) {
+                sb.append("(?!)");
+                pos++;
+            } else {
+                inClass = true;
+                sb.append('[');
+                if (nextIs('^')) {
+                    sb.append('^');
+                    pos++;
+                }
+                if (nextIs(']')) {
+                    sb.append("\\]");
+                    pos++;
+                }
+            }
+        }
     }
 }

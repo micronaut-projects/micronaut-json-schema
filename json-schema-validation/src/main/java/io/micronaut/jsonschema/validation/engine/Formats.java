@@ -39,6 +39,9 @@ final class Formats {
     private static final Pattern RELATIVE_JSON_POINTER = Pattern.compile("^(0|[1-9][0-9]*)(#|(/.*)?)$", Pattern.DOTALL);
     private static final String ATEXT = "!#$%&'*+-/=?^_`{|}~";
     private static final String SUB_DELIMS = "!$&'()*+,;=";
+    private static final String TEMPLATE_OPERATORS = "+#./;?&=,!@|";
+    private static final Pattern IP_FUTURE = Pattern.compile("[vV][0-9A-Fa-f]+\\.[A-Za-z0-9\\-._~!$&'()*+,;=:]+");
+    private static final Pattern INVALID_POINTER_ESCAPE = Pattern.compile("~(?![01])");
 
     private Formats() {
     }
@@ -182,39 +185,21 @@ final class Formats {
     }
 
     static boolean isIpv6(String s) {
-        if (s.isEmpty()) {
-            return false;
-        }
         int doubleColon = s.indexOf("::");
-        if (doubleColon >= 0 && s.indexOf("::", doubleColon + 1) >= 0) {
+        if (s.isEmpty() || (doubleColon >= 0 && s.indexOf("::", doubleColon + 1) >= 0)) {
             return false;
         }
-        String head;
-        String tail;
-        if (doubleColon >= 0) {
-            head = s.substring(0, doubleColon);
-            tail = s.substring(doubleColon + 2);
-        } else {
-            head = s;
-            tail = null;
+        if (doubleColon < 0) {
+            return countGroups(s, true) == 8;
         }
-        int groups = 0;
-        int headGroups = countGroups(head, tail == null);
-        if (headGroups < 0) {
-            return false;
-        }
-        groups += headGroups;
-        if (tail != null) {
-            int tailGroups = countGroups(tail, true);
-            if (tailGroups < 0) {
-                return false;
-            }
-            groups += tailGroups;
-            return groups <= 7;
-        }
-        return groups == 8;
+        int head = countGroups(s.substring(0, doubleColon), false);
+        int tail = countGroups(s.substring(doubleColon + 2), true);
+        return head >= 0 && tail >= 0 && head + tail <= 7;
     }
 
+    /**
+     * @return The number of 16-bit groups, or -1 if invalid
+     */
     private static int countGroups(String part, boolean allowIpv4Suffix) {
         if (part.isEmpty()) {
             return 0;
@@ -222,25 +207,36 @@ final class Formats {
         String[] groups = part.split(":", -1);
         int count = 0;
         for (int i = 0; i < groups.length; i++) {
-            String group = groups[i];
-            if (i == groups.length - 1 && allowIpv4Suffix && group.indexOf('.') >= 0) {
-                if (!isIpv4(group)) {
-                    return -1;
-                }
-                count += 2;
-                continue;
-            }
-            if (group.isEmpty() || group.length() > 4) {
+            int size = groupSize(groups[i], allowIpv4Suffix && i == groups.length - 1);
+            if (size < 0) {
                 return -1;
             }
-            for (int j = 0; j < group.length(); j++) {
-                if (Character.digit(group.charAt(j), 16) < 0 || group.charAt(j) > 'f') {
-                    return -1;
-                }
-            }
-            count++;
+            count += size;
         }
         return count;
+    }
+
+    private static int groupSize(String group, boolean allowIpv4) {
+        if (allowIpv4 && group.indexOf('.') >= 0) {
+            return isIpv4(group) ? 2 : -1;
+        }
+        return isHexGroup(group) ? 1 : -1;
+    }
+
+    private static boolean isHexGroup(String group) {
+        if (group.isEmpty() || group.length() > 4) {
+            return false;
+        }
+        for (int i = 0; i < group.length(); i++) {
+            if (!isHexDigit(group.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isHexDigit(char c) {
+        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
     }
 
     // ---- email (RFC 5321 / RFC 6531) ----
@@ -267,68 +263,76 @@ final class Formats {
 
     private static boolean isLocalPart(String local, boolean international) {
         if (local.length() >= 2 && local.charAt(0) == '"' && local.charAt(local.length() - 1) == '"') {
-            for (int i = 1; i < local.length() - 1; i++) {
-                char c = local.charAt(i);
-                if (c == '\\') {
-                    i++;
-                    if (i >= local.length() - 1) {
-                        return false;
-                    }
-                    char escaped = local.charAt(i);
-                    if (escaped < 0x20 || escaped > 0x7E) {
-                        return false;
-                    }
-                } else if (c == '"' || (c < 0x20 && c != '\t') || (c > 0x7E && !international)) {
-                    return false;
-                }
-            }
-            return true;
+            return isQuotedString(local.substring(1, local.length() - 1), international);
         }
         if (local.charAt(0) == '.' || local.charAt(local.length() - 1) == '.' || local.contains("..")) {
             return false;
         }
-        for (int i = 0; i < local.length(); i++) {
-            char c = local.charAt(i);
-            boolean ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.'
-                || ATEXT.indexOf(c) >= 0 || (international && c >= 0x80);
-            if (!ok) {
+        return local.chars().allMatch(c -> c == '.' || isAtext(c, international));
+    }
+
+    private static boolean isAtext(int c, boolean international) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+            || ATEXT.indexOf(c) >= 0 || (international && c >= 0x80);
+    }
+
+    private static boolean isQuotedString(String content, boolean international) {
+        boolean escaped = false;
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (escaped) {
+                if (c < 0x20 || c > 0x7E) {
+                    return false;
+                }
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == '"' || (c < 0x20 && c != '\t') || (c > 0x7E && !international)) {
                 return false;
             }
         }
-        return true;
+        return !escaped;
     }
 
     // ---- URIs (RFC 3986) and IRIs (RFC 3987) ----
 
     static boolean isUri(String s, boolean allowRelative, boolean iri) {
-        int length = s.length();
-        int schemeEnd = -1;
-        for (int i = 0; i < length; i++) {
-            char c = s.charAt(i);
-            if (c == ':') {
-                schemeEnd = i;
-                break;
-            }
-            if (c == '/' || c == '?' || c == '#') {
-                break;
-            }
-        }
-        int pos = 0;
-        boolean hasScheme = false;
-        if (schemeEnd > 0 && isScheme(s.substring(0, schemeEnd))) {
-            hasScheme = true;
-            pos = schemeEnd + 1;
-        } else if (!allowRelative) {
+        int schemeEnd = schemeEnd(s);
+        boolean hasScheme = schemeEnd > 0;
+        if (!hasScheme && !allowRelative) {
             return false;
         }
+        int pos = hasScheme ? schemeEnd + 1 : 0;
         int fragmentStart = s.indexOf('#', pos);
-        int end = fragmentStart >= 0 ? fragmentStart : length;
+        int end = fragmentStart >= 0 ? fragmentStart : s.length();
         int queryStart = s.indexOf('?', pos);
         if (queryStart > end) {
             queryStart = -1;
         }
-        int hierEnd = queryStart >= 0 ? queryStart : end;
-        String hier = s.substring(pos, hierEnd);
+        String hier = s.substring(pos, queryStart >= 0 ? queryStart : end);
+        return isHierPart(hier, hasScheme, iri)
+            && (queryStart < 0 || isValidChars(s.substring(queryStart + 1, end), "/:@?", iri, true))
+            && (fragmentStart < 0 || isValidChars(s.substring(fragmentStart + 1), "/:@?", iri, false));
+    }
+
+    /**
+     * @return The index of the colon that ends a valid scheme, or -1 if the URI has no scheme
+     */
+    private static int schemeEnd(String s) {
+        int colon = -1;
+        for (int i = 0; i < s.length() && colon < 0; i++) {
+            char c = s.charAt(i);
+            if (c == '/' || c == '?' || c == '#') {
+                return -1;
+            }
+            if (c == ':') {
+                colon = i;
+            }
+        }
+        return colon > 0 && isScheme(s.substring(0, colon)) ? colon : -1;
+    }
+
+    private static boolean isHierPart(String hier, boolean hasScheme, boolean iri) {
         String path = hier;
         if (hier.startsWith("//")) {
             int pathStart = hier.indexOf('/', 2);
@@ -344,13 +348,7 @@ final class Formats {
                 return false;
             }
         }
-        if (!isValidChars(path, "/:@", iri)) {
-            return false;
-        }
-        if (queryStart >= 0 && !isValidChars(s.substring(queryStart + 1, end), "/:@?", iri, true)) {
-            return false;
-        }
-        return fragmentStart < 0 || isValidChars(s.substring(fragmentStart + 1), "/:@?", iri);
+        return isValidChars(path, "/:@", iri, false);
     }
 
     private static boolean isScheme(String scheme) {
@@ -367,39 +365,30 @@ final class Formats {
     }
 
     private static boolean isAuthority(String authority, boolean iri) {
-        String hostPort = authority;
         int at = authority.lastIndexOf('@');
-        if (at >= 0) {
-            if (!isValidChars(authority.substring(0, at), ":", iri)) {
-                return false;
-            }
-            hostPort = authority.substring(at + 1);
+        if (at >= 0 && !isValidChars(authority.substring(0, at), ":", iri, false)) {
+            return false;
         }
-        String host = hostPort;
+        String hostPort = authority.substring(at + 1);
         if (hostPort.startsWith("[")) {
-            int close = hostPort.indexOf(']');
-            if (close < 0) {
-                return false;
-            }
-            String literal = hostPort.substring(1, close);
-            if (literal.startsWith("v") || literal.startsWith("V")) {
-                if (!literal.matches("[vV][0-9A-Fa-f]+\\.[A-Za-z0-9\\-._~!$&'()*+,;=:]+")) {
-                    return false;
-                }
-            } else if (!isIpv6(literal)) {
-                return false;
-            }
-            String rest = hostPort.substring(close + 1);
-            return rest.isEmpty() || (rest.charAt(0) == ':' && isDigits(rest.substring(1)));
+            return isIpLiteralHostPort(hostPort);
         }
         int colon = hostPort.lastIndexOf(':');
-        if (colon >= 0) {
-            if (!isDigits(hostPort.substring(colon + 1))) {
-                return false;
-            }
-            host = hostPort.substring(0, colon);
+        if (colon >= 0 && !isDigits(hostPort.substring(colon + 1))) {
+            return false;
         }
-        return isValidChars(host, "", iri);
+        return isValidChars(colon >= 0 ? hostPort.substring(0, colon) : hostPort, "", iri, false);
+    }
+
+    private static boolean isIpLiteralHostPort(String hostPort) {
+        int close = hostPort.indexOf(']');
+        if (close < 0) {
+            return false;
+        }
+        String literal = hostPort.substring(1, close);
+        boolean valid = literal.startsWith("v") || literal.startsWith("V") ? IP_FUTURE.matcher(literal).matches() : isIpv6(literal);
+        String rest = hostPort.substring(close + 1);
+        return valid && (rest.isEmpty() || (rest.charAt(0) == ':' && isDigits(rest.substring(1))));
     }
 
     private static boolean isDigits(String s) {
@@ -412,32 +401,35 @@ final class Formats {
         return true;
     }
 
-    private static boolean isValidChars(String s, String extra, boolean iri) {
-        return isValidChars(s, extra, iri, false);
-    }
-
     private static boolean isValidChars(String s, String extra, boolean iri, boolean allowPrivate) {
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c == '%') {
-                if (i + 2 >= s.length() || Character.digit(s.charAt(i + 1), 16) < 0 || Character.digit(s.charAt(i + 2), 16) < 0) {
-                    return false;
-                }
-                i += 2;
-            } else if (c >= 0x80) {
-                if (!iri) {
-                    return false;
-                }
-                int cp = s.codePointAt(i);
-                if (!isUcsChar(cp) && !(allowPrivate && isPrivate(cp))) {
-                    return false;
-                }
-                i += Character.charCount(cp) - 1;
-            } else if (!(isUnreserved(c) || SUB_DELIMS.indexOf(c) >= 0 || extra.indexOf(c) >= 0)) {
+        int i = 0;
+        while (i < s.length()) {
+            int length = validCharLength(s, i, extra, iri, allowPrivate);
+            if (length <= 0) {
                 return false;
             }
+            i += length;
         }
         return true;
+    }
+
+    /**
+     * @return The number of chars of the valid character (or percent-encoded octet) at the index, or -1 if invalid
+     */
+    private static int validCharLength(String s, int index, String extra, boolean iri, boolean allowPrivate) {
+        char c = s.charAt(index);
+        if (c == '%') {
+            return isPercentEncoded(s, index) ? 3 : -1;
+        }
+        if (c >= 0x80) {
+            int cp = s.codePointAt(index);
+            return iri && (isUcsChar(cp) || (allowPrivate && isPrivate(cp))) ? Character.charCount(cp) : -1;
+        }
+        return isUnreserved(c) || SUB_DELIMS.indexOf(c) >= 0 || extra.indexOf(c) >= 0 ? 1 : -1;
+    }
+
+    private static boolean isPercentEncoded(String s, int index) {
+        return index + 2 < s.length() && isHexDigit(s.charAt(index + 1)) && isHexDigit(s.charAt(index + 2));
     }
 
     private static boolean isUcsChar(int cp) {
@@ -462,82 +454,86 @@ final class Formats {
     static boolean isUriTemplate(String s) {
         int i = 0;
         while (i < s.length()) {
-            char c = s.charAt(i);
-            if (c == '{') {
-                int close = s.indexOf('}', i);
-                if (close < 0) {
-                    return false;
-                }
-                if (!isTemplateExpression(s.substring(i + 1, close))) {
-                    return false;
-                }
-                i = close + 1;
-                continue;
-            }
-            if (c == '}' || c <= 0x20 || (c >= 0x7F && c <= 0x9F) || "\"<>\\^`|".indexOf(c) >= 0) {
+            int length = templatePartLength(s, i);
+            if (length <= 0) {
                 return false;
             }
-            if (c == '%') {
-                if (i + 2 >= s.length() || Character.digit(s.charAt(i + 1), 16) < 0 || Character.digit(s.charAt(i + 2), 16) < 0) {
-                    return false;
-                }
-                i += 3;
-                continue;
-            }
-            i++;
+            i += length;
         }
         return true;
     }
 
+    /**
+     * @return The length of the expression, literal or percent-encoded octet at the index, or -1 if invalid
+     */
+    private static int templatePartLength(String s, int index) {
+        char c = s.charAt(index);
+        if (c == '{') {
+            int close = s.indexOf('}', index);
+            return close >= 0 && isTemplateExpression(s.substring(index + 1, close)) ? close + 1 - index : -1;
+        }
+        if (c == '%') {
+            return isPercentEncoded(s, index) ? 3 : -1;
+        }
+        boolean literal = c != '}' && c > 0x20 && !(c >= 0x7F && c <= 0x9F) && "\"<>\\^`|".indexOf(c) < 0;
+        return literal ? 1 : -1;
+    }
+
     private static boolean isTemplateExpression(String expression) {
-        if (expression.isEmpty()) {
-            return false;
-        }
-        String vars = expression;
-        if ("+#./;?&=,!@|".indexOf(expression.charAt(0)) >= 0) {
-            vars = expression.substring(1);
-        }
+        String vars = !expression.isEmpty() && TEMPLATE_OPERATORS.indexOf(expression.charAt(0)) >= 0 ? expression.substring(1) : expression;
         if (vars.isEmpty()) {
             return false;
         }
         for (String varspec : vars.split(",", -1)) {
-            String name = varspec;
-            if (name.endsWith("*")) {
-                name = name.substring(0, name.length() - 1);
-            } else {
-                int colon = name.indexOf(':');
-                if (colon >= 0) {
-                    String prefix = name.substring(colon + 1);
-                    if (prefix.isEmpty() || prefix.length() > 4 || prefix.charAt(0) == '0' || !isDigits(prefix)) {
-                        return false;
-                    }
-                    name = name.substring(0, colon);
-                }
-            }
-            if (!name.matches("(?:[A-Za-z0-9_]|%[0-9A-Fa-f]{2})+(?:\\.?(?:[A-Za-z0-9_]|%[0-9A-Fa-f]{2}))*")) {
+            if (!isVarspec(varspec)) {
                 return false;
             }
         }
         return true;
+    }
+
+    private static boolean isVarspec(String varspec) {
+        if (varspec.endsWith("*")) {
+            return isVarname(varspec.substring(0, varspec.length() - 1));
+        }
+        int colon = varspec.indexOf(':');
+        if (colon < 0) {
+            return isVarname(varspec);
+        }
+        String prefix = varspec.substring(colon + 1);
+        boolean validPrefix = !prefix.isEmpty() && prefix.length() <= 4 && prefix.charAt(0) != '0' && isDigits(prefix);
+        return validPrefix && isVarname(varspec.substring(0, colon));
+    }
+
+    /**
+     * Checks {@code varname = varchar *( ["."] varchar )} where {@code varchar = ALPHA / DIGIT / "_" / pct-encoded}.
+     */
+    private static boolean isVarname(String name) {
+        int i = 0;
+        boolean expectVarchar = true;
+        while (i < name.length()) {
+            char c = name.charAt(i);
+            int length;
+            if (c == '.') {
+                length = expectVarchar ? -1 : 1;
+            } else if (c == '%') {
+                length = isPercentEncoded(name, i) ? 3 : -1;
+            } else {
+                length = isAsciiLetter(c) || (c >= '0' && c <= '9') || c == '_' ? 1 : -1;
+            }
+            if (length < 0) {
+                return false;
+            }
+            expectVarchar = c == '.';
+            i += length;
+        }
+        return !name.isEmpty() && !expectVarchar;
     }
 
     // ---- JSON pointers ----
 
     static boolean isJsonPointer(String s) {
-        if (s.isEmpty()) {
-            return true;
-        }
-        if (s.charAt(0) != '/') {
-            return false;
-        }
-        for (int i = 0; i < s.length(); i++) {
-            if (s.charAt(i) == '~') {
-                if (i + 1 >= s.length() || (s.charAt(i + 1) != '0' && s.charAt(i + 1) != '1')) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        return s.isEmpty() || (s.charAt(0) == '/' && !INVALID_POINTER_ESCAPE.matcher(s).find());
     }
 
     static boolean isRelativeJsonPointer(String s) {
