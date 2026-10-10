@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 original authors
+ * Copyright 2017-2026 original authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.jsonschema.visitor;
-
-import io.micronaut.core.annotation.Internal;
-import io.micronaut.jsonschema.naming.JsonSchemaNaming;
-
 /**
- * A utility class for name conversions.
+ * The naming of the JSON schemas generated for {@link io.micronaut.jsonschema.JsonSchema} types, shared by the
+ * annotation processor that writes the schemas and the runtime that loads them.
+ *
+ * @since 2.3.2
  */
-@Internal
-public class NameUtils {
+@NullMarked
+package io.micronaut.jsonschema.naming;
 
-    /**
-     * Convert from camel case to kebab case.
-     *
-     * @param value The value
-     * @return The converted value
-     */
-    public static String camelCaseToKebabCase(String value) {
-        return JsonSchemaNaming.camelCaseToKebabCase(value);
-    }
-
-}
+import org.jspecify.annotations.NullMarked;

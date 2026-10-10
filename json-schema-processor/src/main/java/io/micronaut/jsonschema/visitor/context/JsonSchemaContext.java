@@ -19,6 +19,7 @@ import io.micronaut.core.util.StringUtils;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.jsonschema.model.Schema;
+import io.micronaut.jsonschema.naming.JsonSchemaNaming;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +32,8 @@ import java.util.Set;
  *
  * @param outputLocation The location where JSON schemas will be generated inside the build {@code META-INF/} directory.
  * @param baseUrl The base URI to be used for schemas.
+ *                It defaults to {@code classpath:META-INF/<outputLocation>}, so that the references between the
+ *                generated schemas resolve from the classpath.
  * @param binaryAsArray Whether to encode byte array as a JSON array.
  *                      The default and preferred behavior is to encode it as a Base64 string.
  * @param draft An enum for JSON Schema draft versions.
@@ -62,7 +65,6 @@ public record JsonSchemaContext(
 
     public static final String DEFAULT_OUTPUT_LOCATION = "schemas";
     public static final boolean DEFAULT_BINARY_AS_ARRAY = false;
-    private static final String DEFAULT_BASE_URL = "http://localhost:8080/schemas";
     private static final JsonSchemaDraft DEFAULT_DRAFT = JsonSchemaDraft.DRAFT_2020_12;
     private static final boolean DEFAULT_STRICT_MODE = false;
 
@@ -73,7 +75,7 @@ public record JsonSchemaContext(
 
     public static JsonSchemaContext createDefault(Map<String, String> options) {
         String outputLocation = options.getOrDefault(OUTPUT_LOCATION_PARAMETER, DEFAULT_OUTPUT_LOCATION);
-        String baseUrl = options.getOrDefault(BASE_URI_PARAMETER, DEFAULT_BASE_URL);
+        String baseUrl = options.getOrDefault(BASE_URI_PARAMETER, JsonSchemaNaming.defaultBaseUri(outputLocation));
         boolean binaryAsArray = options.getOrDefault(BINARY_AS_ARRAY_PARAMETER, String.valueOf(DEFAULT_BINARY_AS_ARRAY)).equals(StringUtils.TRUE);
         JsonSchemaDraft draft = options.get(JSON_SCHEMA_DRAFT_PARAMETER) == null ?
             DEFAULT_DRAFT : JsonSchemaDraft.valueOf(JSON_SCHEMA_DRAFT_PARAMETER);

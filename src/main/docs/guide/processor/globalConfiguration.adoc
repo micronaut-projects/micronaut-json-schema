@@ -19,7 +19,7 @@ All the supported options are:
 |===
 | Option | Description
 | `micronaut.jsonschema.baseUri`
-    | Set the base URL for all the schemas. It will be prepended to all relative schema URLs.
+    | Set the base URL for all the schemas. It will be prepended to all relative schema URLs. Defaults to `classpath:META-INF/<outputLocation>`, so that the references between the generated schemas resolve from the classpath (see <<schemaIds, Schema IDs and References>>).
 | `micronaut.jsonschema.outputLocation`
     | The location where JSON schemas will be generated inside the build `META-INF/` directory.
 | `micronaut.jsonschema.binaryAsArray`

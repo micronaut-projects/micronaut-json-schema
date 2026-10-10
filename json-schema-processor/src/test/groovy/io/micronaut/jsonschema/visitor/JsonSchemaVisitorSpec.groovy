@@ -1,6 +1,8 @@
 package io.micronaut.jsonschema.visitor
 
 import io.micronaut.jsonschema.model.Schema
+import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory
+import io.micronaut.jsonschema.visitor.context.JsonSchemaContext
 
 class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
 
@@ -439,6 +441,30 @@ class JsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties['age'].description == "The age."
         schema.properties['color'].description == "The feather color."
         schema.properties['beakColor'].description == "The color of the beak."
+    }
+
+
+    void "the default base URI is on the classpath at the output location"() {
+        given:
+        System.setProperty(JsonSchemaContext.OUTPUT_LOCATION_PARAMETER, "custom")
+        ClassLoader classLoader = buildClassLoader('test.Salamander', """
+        package test;
+
+        import io.micronaut.jsonschema.JsonSchema;
+
+        @JsonSchema(title = "GreenSalamander")
+        public record Salamander(Salamander mate) {
+        }
+""")
+        Schema schema = JsonSchemaMapperFactory.createMapper()
+            .readValue(readResource(classLoader, "META-INF/custom/green-salamander.schema.json"), Schema)
+
+        expect:
+        schema.$id == "classpath:META-INF/custom/green-salamander.schema.json"
+        schema.properties['mate'].$ref == "classpath:META-INF/custom/green-salamander.schema.json"
+
+        cleanup:
+        System.clearProperty(JsonSchemaContext.OUTPUT_LOCATION_PARAMETER)
     }
 
 }
