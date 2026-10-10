@@ -6,6 +6,7 @@ quickStart:
 processor:
   title: Creating Schema From Beans
   globalConfiguration: JSON Schema Configuration
+  schemaIds: Schema IDs and References
   configuration:
     title: JSON Schema Annotation Members
   serving:
