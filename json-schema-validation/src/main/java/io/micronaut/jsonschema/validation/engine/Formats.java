@@ -513,14 +513,7 @@ final class Formats {
         boolean expectVarchar = true;
         while (i < name.length()) {
             char c = name.charAt(i);
-            int length;
-            if (c == '.') {
-                length = expectVarchar ? -1 : 1;
-            } else if (c == '%') {
-                length = isPercentEncoded(name, i) ? 3 : -1;
-            } else {
-                length = isAsciiLetter(c) || (c >= '0' && c <= '9') || c == '_' ? 1 : -1;
-            }
+            int length = c == '.' && expectVarchar ? -1 : varnamePartLength(name, i);
             if (length < 0) {
                 return false;
             }
@@ -528,6 +521,17 @@ final class Formats {
             i += length;
         }
         return !name.isEmpty() && !expectVarchar;
+    }
+
+    /**
+     * @return The length of the dot, varchar or percent-encoded octet at the index, or -1 if invalid
+     */
+    private static int varnamePartLength(String name, int index) {
+        char c = name.charAt(index);
+        if (c == '%') {
+            return isPercentEncoded(name, index) ? 3 : -1;
+        }
+        return c == '.' || isAsciiLetter(c) || (c >= '0' && c <= '9') || c == '_' ? 1 : -1;
     }
 
     // ---- JSON pointers ----
