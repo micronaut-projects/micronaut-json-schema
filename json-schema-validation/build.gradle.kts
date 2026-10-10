@@ -4,7 +4,6 @@ plugins {
 dependencies {
     api(mn.micronaut.json.core)
     api(projects.micronautJsonSchemaUtils)
-    api(libs.managed.json.schema.validator)
 
     // JSON Schema
     testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
@@ -21,6 +20,9 @@ dependencies {
 }
 micronautBuild {
     testFramework = io.micronaut.build.TestFramework.JUNIT6
+    // 2.3.2 removes the internal NetworkNT based JsonSchemaValidationFactory (and its generated bean definitions)
+    // and changes the constructor of the internal ValidationMessageAdapter; the public API is unchanged
+    binaryCompatibility.enabledAfter("2.3.2")
 }
 
 micronautBuild {

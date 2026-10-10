@@ -1,0 +1,22 @@
+This section documents breaking changes between Micronaut JSON Schema versions.
+
+=== 2.3.2
+
+==== Built-in JSON Schema validator
+
+`micronaut-json-schema-validation` no longer depends on the https://github.com/networknt/json-schema-validator[NetworkNT JSON Schema Validator] (`com.networknt:json-schema-validator`). Validation is now implemented by the module itself (see <<validation, JSON Schema Validation>>). The Micronaut JSON Schema BOM no longer manages a NetworkNT version.
+
+This removes the classpath conflict with libraries that require another NetworkNT version (for example Apache Camel's `camel-json-validator`, which uses NetworkNT 2.x on Jackson 2). Because both NetworkNT versions share the `com.networknt.schema` package, the conflict caused `NoSuchMethodError` at runtime.
+
+The public API (api:jsonschema.validation.JsonSchemaValidator[], api:jsonschema.validation.ValidationMessage[] and api:jsonschema.validation.JsonSchemaValidatorConfiguration[]) is unchanged, with these exceptions:
+
+* If your application used NetworkNT classes that were previously available transitively, add `com.networknt:json-schema-validator` to your build.
+* `ValidationMessageAdapter` (internal API) no longer wraps a NetworkNT `Error`, and `getError()` has been removed. Use the new `ValidationMessage` methods `getInstanceLocation()`, `getKeyword()` and `getSchemaLocation()` instead.
+* The internal `SchemaRegistryConfig` bean used to configure NetworkNT has been removed.
+
+Validation messages keep the previous format (`<JSON Pointer>: <message>`) and wording. Minor differences:
+
+* `anyOf` failures report the errors of each subschema.
+* `oneOf` failures with several matching subschemas list the indexes of the matching subschemas.
+* Regular expressions follow ECMA-262 more closely. For example, `$` no longer matches before a trailing line break.
+* A `$ref` that cannot be resolved throws an `IllegalArgumentException` when it is evaluated, as before. A schema that is itself invalid (for example a malformed `pattern`) is rejected when it is first used.

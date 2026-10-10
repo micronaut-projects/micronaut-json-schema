@@ -15,160 +15,213 @@
  */
 package io.micronaut.jsonschema.validation;
 
-import com.networknt.schema.AbsoluteIri;
-import com.networknt.schema.Error;
-import com.networknt.schema.InputFormat;
-import com.networknt.schema.Schema;
-import com.networknt.schema.SchemaRegistry;
-import com.networknt.schema.SchemaRegistryConfig;
-import com.networknt.schema.dialect.Dialects;
-import com.networknt.schema.resource.InputStreamSource;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.core.type.Argument;
 import io.micronaut.json.JsonMapper;
+import io.micronaut.json.tree.JsonNode;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import io.micronaut.jsonschema.utils.JsonSchemaConfiguration;
 import io.micronaut.jsonschema.utils.JsonSchemaResourceUtils;
+import io.micronaut.jsonschema.validation.engine.CompiledJsonSchema;
+import io.micronaut.jsonschema.validation.engine.Dialect;
+import io.micronaut.jsonschema.validation.engine.JsonSchemaEngine;
 import jakarta.inject.Singleton;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
-import java.net.URI;
+import java.io.InputStream;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
+/**
+ * Default {@link JsonSchemaValidator} backed by the built-in {@link JsonSchemaEngine}.
+ * Schemas are compiled lazily on first use and cached: per type, and per schema string or map
+ * for the ad-hoc variants (bounded).
+ */
 @Singleton
 @Internal
 final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
-    private final Map<Class<?>, Schema> jsonSchemaCache = new ConcurrentHashMap<>();
-    private final JsonSchemaValidatorConfiguration config;
-    private final ResourceLoader resourceLoader;
+    private static final Argument<JsonNode> JSON_NODE = Argument.of(JsonNode.class);
+    private static final int MAX_CACHED_SCHEMAS = 256;
+
+    private final Map<Class<?>, CompiledJsonSchema> typeSchemaCache = new ConcurrentHashMap<>();
+    private final Map<Object, CompiledJsonSchema> schemaCache = new ConcurrentHashMap<>();
     private final JsonMapper jsonMapper;
-    private final SchemaRegistry schemaRegistry;
     private final JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader;
+    private final JsonSchemaEngine engine;
 
     DefaultJsonSchemaValidator(
         JsonSchemaValidatorConfiguration config,
         ResourceLoader resourceLoader,
         JsonMapper jsonMapper,
-        SchemaRegistryConfig schemaRegistryConfig,
         JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader,
         JsonSchemaConfiguration jsonSchemaConfiguration
     ) {
-        this.config = config;
-        this.resourceLoader = resourceLoader;
         this.jsonMapper = jsonMapper;
         this.jsonSchemaClassPathResourceLoader = jsonSchemaClassPathResourceLoader;
-        this.schemaRegistry = SchemaRegistry.withDialect(Dialects.getDraft202012(), builder -> builder
-                .schemaRegistryConfig(schemaRegistryConfig)
-                .resourceLoaders(resourceLoaders -> resourceLoaders.add(new ClasspathSchemaResourceLoader(
-                        jsonSchemaConfiguration,
-                        config.baseUri(),
-                        config.classpathFolder(),
-                        resourceLoader
-                ))));
+        ClasspathSchemaRetriever retriever = new ClasspathSchemaRetriever(
+            jsonSchemaConfiguration,
+            config.baseUri(),
+            config.classpathFolder(),
+            resourceLoader,
+            jsonMapper
+        );
+        this.engine = new JsonSchemaEngine(jsonMapper, retriever::retrieve, Dialect.DRAFT_2020_12, directoryUri(config.baseUri()));
+    }
+
+    private static @Nullable String directoryUri(@Nullable String baseUri) {
+        if (baseUri == null || baseUri.isEmpty() || baseUri.endsWith("/")) {
+            return baseUri;
+        }
+        // relative references in schemas without $id resolve to files inside the base URI "folder"
+        return baseUri + "/";
     }
 
     @Override
-    public <T> Set<? extends ValidationMessage> validate(@NonNull String json, @NonNull Class<T> type) {
-        Schema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchema);
-        return validate(schema, json);
+    public <T> Set<? extends ValidationMessage> validate(String json, Class<T> type) throws IOException {
+        return validate(schemaForType(type), parse(json));
     }
 
     @Override
-    @NonNull
-    public Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull Map<String, Object> jsonSchema) throws IOException {
-        Schema schema = jsonSchema(jsonSchema);
-        return validate(schema, value);
+    public Set<? extends ValidationMessage> validate(Object value, Map<String, Object> jsonSchema) throws IOException {
+        JsonNode schemaNode = schemaTree(jsonSchema);
+        CompiledJsonSchema schema = cached(schemaNode, () -> engine.compile(schemaNode));
+        return validate(schema, tree(value));
     }
 
     @Override
-    @NonNull
-    public Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull String jsonSchema) throws IOException {
-        Schema schema = jsonSchema(jsonSchema);
-        return validate(schema, value);
+    public Set<? extends ValidationMessage> validate(Object value, String jsonSchema) throws IOException {
+        CompiledJsonSchema schema = schemaCache.get(jsonSchema);
+        if (schema == null) {
+            JsonNode schemaNode = parse(jsonSchema);
+            schema = cached(jsonSchema, () -> engine.compile(schemaNode));
+        }
+        return validate(schema, tree(value));
     }
 
     @Override
-    @NonNull
-    public <T> Set<? extends ValidationMessage> validate(@NonNull Object value, @NonNull Class<T> type) throws IOException {
-        Schema schema = jsonSchemaCache.computeIfAbsent(type, this::jsonSchema);
-        return validate(schema, value);
+    public <T> Set<? extends ValidationMessage> validate(Object value, Class<T> type) throws IOException {
+        return validate(schemaForType(type), tree(value));
     }
 
-    private <T> Schema jsonSchema(@NonNull Class<T> type) {
+    private CompiledJsonSchema schemaForType(Class<?> type) {
+        CompiledJsonSchema schema = typeSchemaCache.get(type);
+        if (schema == null) {
+            schema = typeSchemaCache.computeIfAbsent(type, this::compileTypeSchema);
+        }
+        return schema;
+    }
+
+    private CompiledJsonSchema compileTypeSchema(Class<?> type) {
         String jsonSchema = jsonSchemaClassPathResourceLoader.jsonSchemaStringForClass(type).orElse(null);
         if (jsonSchema == null) {
             throw new IllegalArgumentException("No schema found for type: " + type);
         }
-        return jsonSchema(jsonSchema);
-    }
-
-    @NonNull
-    private Schema jsonSchema(@NonNull Map<String, Object> jsonSchema) {
         try {
-            return jsonSchema(jsonMapper.writeValueAsString(jsonSchema));
+            return engine.compile(parse(jsonSchema));
         } catch (IOException e) {
-            throw new IllegalArgumentException("could not serialize JSON Schema from: " + jsonSchema, e);
+            throw new IllegalArgumentException("Could not parse JSON Schema for type: " + type, e);
         }
     }
 
-    @NonNull
-    private Schema jsonSchema(@NonNull String jsonSchema) {
-        return schemaRegistry.getSchema(jsonSchema, InputFormat.JSON);
-    }
-
-    private Set<? extends ValidationMessage> validate(Schema schema, Object value) throws IOException {
-        String json = value instanceof String s ? s : jsonMapper.writeValueAsString(value);
-        return validate(schema, json);
-    }
-
-    private static Set<? extends ValidationMessage> validate(Schema schema, String json) {
-        return adapt(schema.validate(json, InputFormat.JSON));
-    }
-
-    private static Set<ValidationMessage> adapt(List<Error> errors) {
-        Set<ValidationMessage> messages = new LinkedHashSet<>(errors.size());
-        for (Error error : errors) {
-            messages.add(new ValidationMessageAdapter(error));
+    private CompiledJsonSchema cached(Object key, Supplier<CompiledJsonSchema> compiler) {
+        CompiledJsonSchema schema = schemaCache.get(key);
+        if (schema != null) {
+            return schema;
         }
-        return messages;
+        schema = compiler.get();
+        if (schemaCache.size() >= MAX_CACHED_SCHEMAS) {
+            schemaCache.clear();
+        }
+        schemaCache.put(key, schema);
+        return schema;
     }
 
-    private static final class ClasspathSchemaResourceLoader implements com.networknt.schema.resource.ResourceLoader {
+    private JsonNode schemaTree(Map<String, Object> jsonSchema) throws IOException {
+        try {
+            return JsonNode.from(jsonSchema);
+        } catch (IllegalStateException e) {
+            // the map contains values that are not plain JSON values, let the mapper convert them
+            return jsonMapper.writeValueToTree(jsonSchema);
+        }
+    }
+
+    private JsonNode tree(Object value) throws IOException {
+        if (value instanceof JsonNode node) {
+            return node;
+        }
+        if (value instanceof String json) {
+            return parse(json);
+        }
+        return jsonMapper.writeValueToTree(value);
+    }
+
+    private JsonNode parse(String json) throws IOException {
+        return jsonMapper.readValue(json, JSON_NODE);
+    }
+
+    private Set<? extends ValidationMessage> validate(CompiledJsonSchema schema, JsonNode value) {
+        List<ValidationMessage> errors = engine.validate(schema, value);
+        return errors.isEmpty() ? Set.of() : new LinkedHashSet<>(errors);
+    }
+
+    /**
+     * Resolves schema URIs to JSON schema files on the classpath. URIs that start with the configured
+     * base URI are resolved relative to the generated schemas folder.
+     */
+    private static final class ClasspathSchemaRetriever {
         private final JsonSchemaConfiguration jsonSchemaConfiguration;
-        private final String baseUri;
+        private final @Nullable String baseUri;
         private final String fallbackClasspathFolder;
         private final ResourceLoader resourceLoader;
+        private final JsonMapper jsonMapper;
 
-        private ClasspathSchemaResourceLoader(JsonSchemaConfiguration jsonSchemaConfiguration,
-                                             String baseUri,
-                                             String fallbackClasspathFolder,
-                                             ResourceLoader resourceLoader) {
+        private ClasspathSchemaRetriever(JsonSchemaConfiguration jsonSchemaConfiguration,
+                                         @Nullable String baseUri,
+                                         String fallbackClasspathFolder,
+                                         ResourceLoader resourceLoader,
+                                         JsonMapper jsonMapper) {
             this.jsonSchemaConfiguration = jsonSchemaConfiguration;
             this.baseUri = baseUri;
             this.fallbackClasspathFolder = fallbackClasspathFolder;
             this.resourceLoader = resourceLoader;
+            this.jsonMapper = jsonMapper;
         }
 
-        @Override
-        public InputStreamSource getResource(AbsoluteIri absoluteIri) {
-            String path = URI.create(absoluteIri.toString()).toString();
-            if (baseUri != null && !baseUri.isEmpty() && path.startsWith(baseUri)) {
+        @Nullable JsonNode retrieve(String uri) throws IOException {
+            String path = uri;
+            String classpathFolder = JsonSchemaResourceUtils.generatedSchemasFolder(jsonSchemaConfiguration);
+            if (path.startsWith(JsonSchemaResourceUtils.CLASSPATH_PREFIX)) {
+                // the default base URI of the generated schemas, classpath:META-INF/<outputLocation>
+                String resource = path.substring(JsonSchemaResourceUtils.CLASSPATH_PREFIX.length());
+                while (resource.startsWith("/")) {
+                    resource = resource.substring(1);
+                }
+                if (resource.startsWith(classpathFolder)) {
+                    path = resource.substring(classpathFolder.length());
+                }
+            } else if (baseUri != null && !baseUri.isEmpty() && path.startsWith(baseUri)) {
                 path = path.substring(baseUri.length());
             }
-            String classpathFolder = JsonSchemaResourceUtils.generatedSchemasFolder(jsonSchemaConfiguration);
             String filePath = JsonSchemaResourceUtils.resolvePathWithinFolder(
                 classpathFolder,
                 path,
-                absoluteIri.toString(),
+                uri,
                 fallbackClasspathFolder
             );
-            return () -> resourceLoader.getResourceAsStream(JsonSchemaResourceUtils.CLASSPATH_PREFIX + filePath)
-                .orElseThrow(() -> new IllegalArgumentException("No schema found for uri: " + absoluteIri + " at path: " + filePath));
+            Optional<InputStream> resource = resourceLoader.getResourceAsStream(JsonSchemaResourceUtils.CLASSPATH_PREFIX + filePath);
+            if (resource.isEmpty()) {
+                return null;
+            }
+            try (InputStream in = resource.get()) {
+                return jsonMapper.readValue(in, JSON_NODE);
+            }
         }
     }
 }
