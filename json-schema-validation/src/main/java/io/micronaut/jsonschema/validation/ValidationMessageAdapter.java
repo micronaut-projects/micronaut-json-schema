@@ -15,39 +15,67 @@
  */
 package io.micronaut.jsonschema.validation;
 
-import com.networknt.schema.Error;
 import io.micronaut.core.annotation.Internal;
-import org.jspecify.annotations.NonNull;
 
 /**
- * Adapter from {@link Error} into {@link ValidationMessage}.
+ * Default {@link ValidationMessage} implementation produced by {@link JsonSchemaValidator}.
+ * Prior to 2.3.2 this type adapted a NetworkNT {@code com.networknt.schema.Error}; validation is now
+ * implemented by Micronaut JSON Schema itself and this type carries the error details directly.
  *
  * @author Sergio del Amo
  * @since 1.0.0
  */
 @Internal
 public class ValidationMessageAdapter implements ValidationMessage {
-    private final Error error;
+    private final String instanceLocation;
+    private final String keyword;
+    private final String schemaLocation;
+    private final String detail;
 
     /**
-     * @param error Original validation error.
+     * Creates a validation message.
+     *
+     * @param instanceLocation The JSON Pointer of the invalid instance location
+     * @param keyword The keyword that failed
+     * @param schemaLocation The absolute location of the keyword in the schema
+     * @param detail The message, without the instance location
+     * @since 2.3.2
      */
-    public ValidationMessageAdapter(Error error) {
-        this.error = error;
+    public ValidationMessageAdapter(String instanceLocation, String keyword, String schemaLocation, String detail) {
+        this.instanceLocation = instanceLocation;
+        this.keyword = keyword;
+        this.schemaLocation = schemaLocation;
+        this.detail = detail;
     }
 
     @Override
-    @NonNull
     public String getMessage() {
-        return error.toString();
+        return instanceLocation + ": " + detail;
+    }
+
+    @Override
+    public String getInstanceLocation() {
+        return instanceLocation;
+    }
+
+    @Override
+    public String getKeyword() {
+        return keyword;
+    }
+
+    @Override
+    public String getSchemaLocation() {
+        return schemaLocation;
     }
 
     /**
-     * @return Original validation error.
+     * Returns the message without the instance location.
+     *
+     * @return The message without the instance location prefix
+     * @since 2.3.2
      */
-    @NonNull
-    public Error getError() {
-        return error;
+    public String getDetail() {
+        return detail;
     }
 
     @Override
