@@ -25,7 +25,7 @@ class JsonSchemaValidatorTest {
     JsonMapper objectMapper;
 
     private final String schemaAsString = """
-        {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"http://localhost:8080/schemas/bird.schema.json","title":"Bird","description":"A bird.","type":"object","oneOf":[{"title":"Ostrich","description":"An ostrich.","type":"object","properties":{"@type":{"type":"string","const":"ostrich-bird"},"name":{"description":"The name","type":"string"},"runSpeed":{"description":"The run speed","type":"number","exclusiveMinimum":0}},"required":["@type"]},{"title":"Eagle","description":"The eagle.","type":"object","properties":{"@type":{"type":"string","const":"eagle-bird"},"flySpeed":{"description":"The fly speed","type":"number","minimum":1},"name":{"description":"The name","type":"string"}},"required":["@type"]}]}
+        {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"classpath:META-INF/schemas/bird.schema.json","title":"Bird","description":"A bird.","type":"object","oneOf":[{"title":"Ostrich","description":"An ostrich.","type":"object","properties":{"@type":{"type":"string","const":"ostrich-bird"},"name":{"description":"The name","type":"string"},"runSpeed":{"description":"The run speed","type":"number","exclusiveMinimum":0}},"required":["@type"]},{"title":"Eagle","description":"The eagle.","type":"object","properties":{"@type":{"type":"string","const":"eagle-bird"},"flySpeed":{"description":"The fly speed","type":"number","minimum":1},"name":{"description":"The name","type":"string"}},"required":["@type"]}]}
         """;
     private Map<String, Object> schemaAsMap;
 
