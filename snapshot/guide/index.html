@@ -3230,6 +3230,12 @@ runtime = [
 </div>
 </div>
 <div class="sect2">
+<h3 id="_byte_size_values">Byte size values</h3>
+<div class="paragraph">
+<p>Properties that Micronaut binds with <code>@ReadableBytes</code> (for example <code>micronaut.server.max-request-size</code>) use the <code>readable-bytes</code> schema format. The validator accepts the same values Micronaut does: a whole number of bytes, or a whole number with a case-insensitive <code>KB</code>, <code>MB</code> or <code>GB</code> suffix (for example <code>10MB</code>). The value is converted to a number of bytes before <code>minimum</code>/<code>maximum</code> constraints are checked. Other values, such as <code>6.5MB</code> or <code>6TB</code>, are reported as errors.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_deprecated_properties">Deprecated properties</h3>
 <div class="paragraph">
 <p>If a schema property is marked as deprecated (<code>"deprecated": true</code>), the validator emits a WARNING when the property is present.</p>
