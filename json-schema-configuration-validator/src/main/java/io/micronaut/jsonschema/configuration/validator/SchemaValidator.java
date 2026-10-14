@@ -212,7 +212,7 @@ final class SchemaValidator {
             errors.add(ctx.warning(resolvedPropertyName, "Deprecated property"));
         }
 
-        ConfigurationSchemaType type = SchemaTypes.toType(resolved.type());
+        ConfigurationSchemaType type = SchemaTypes.typeOf(resolved);
         if (type == null) {
             if (resolved.properties() != null || resolved.additionalProperties() != null) {
                 type = ConfigurationSchemaType.OBJECT;
@@ -364,7 +364,9 @@ final class SchemaValidator {
         if (type == ConfigurationSchemaType.INTEGER) {
             BigDecimal number = toBigDecimal(value);
             if (number == null || number.stripTrailingZeros().scale() > 0) {
-                errors.add(ctx.error(resolvedPropertyName, "Expected integer"));
+                errors.add(ctx.error(resolvedPropertyName, SchemaTypes.isReadableBytes(resolved)
+                    ? "Expected integer or byte size such as 10MB"
+                    : "Expected integer"));
                 return;
             }
             BigDecimal multipleOf = resolved.multipleOf();
@@ -517,7 +519,7 @@ final class SchemaValidator {
             return false;
         }
 
-        ConfigurationSchemaType type = SchemaTypes.toType(property.type());
+        ConfigurationSchemaType type = SchemaTypes.typeOf(property);
         if (type == null) {
             return true;
         }
@@ -525,6 +527,9 @@ final class SchemaValidator {
             case STRING -> true;
             case BOOLEAN -> "true".equalsIgnoreCase(documentedDefault) || "false".equalsIgnoreCase(documentedDefault);
             case INTEGER -> {
+                if (SchemaTypes.isReadableBytes(property) && SchemaTypes.parseReadableBytes(documentedDefault) != null) {
+                    yield true;
+                }
                 BigDecimal value = toBigDecimal(documentedDefault);
                 yield value != null && value.stripTrailingZeros().scale() <= 0;
             }
