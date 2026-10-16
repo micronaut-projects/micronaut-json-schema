@@ -1,0 +1,19 @@
+This section documents breaking changes between Micronaut JSON Schema versions.
+
+=== 2.3.2
+
+==== JSON Schema validator modules
+
+The classes of `micronaut-json-schema-validation` have moved to two new artifacts:
+
+* `micronaut-json-schema-validator`, which contains the API and a built-in validator without third-party dependencies;
+* `micronaut-json-schema-validator-networknt`, which contains the validator based on the https://github.com/networknt/json-schema-validator[NetworkNT JSON Schema Validator].
+
+`micronaut-json-schema-validation` depends on both. It still validates with NetworkNT, and the public API (api:jsonschema.validation.JsonSchemaValidator[], api:jsonschema.validation.ValidationMessage[] and api:jsonschema.validation.JsonSchemaValidatorConfiguration[]) is unchanged. See <<validation, JSON Schema Validation>> to choose an implementation.
+
+The Micronaut JSON Schema BOM no longer manages the version of `com.networknt:json-schema-validator`. If you used it, declare the version of NetworkNT in your build. Managing the version would force NetworkNT 3 on applications that need NetworkNT 2, such as those using Apache Camel's `camel-json-validator`.
+
+Changes to internal APIs:
+
+* `ValidationMessageAdapter` no longer wraps a NetworkNT `Error`. The messages of the NetworkNT validator are `NetworkNtValidationMessage` instances (package `io.micronaut.jsonschema.validation.networknt`), and `getError()` returns the NetworkNT `Error`. The new `ValidationMessage` methods `getInstanceLocation()`, `getKeyword()` and `getSchemaLocation()` work with both implementations.
+* The factory of the NetworkNT `SchemaRegistryConfig` bean has moved to the `io.micronaut.jsonschema.validation.networknt` package. The bean itself is unchanged.
