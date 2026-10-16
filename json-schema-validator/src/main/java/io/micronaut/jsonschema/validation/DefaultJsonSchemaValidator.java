@@ -19,6 +19,7 @@ import io.micronaut.context.annotation.Value;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.core.type.Argument;
+import io.micronaut.core.util.clhm.ConcurrentLinkedHashMap;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.json.tree.JsonNode;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
@@ -34,7 +35,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -56,7 +56,10 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
     private static final int MAX_CACHED_SCHEMAS = 256;
 
     private final Map<Class<?>, CompiledJsonSchema> typeSchemaCache = new ConcurrentHashMap<>();
-    private final Map<Object, CompiledJsonSchema> schemaCache = new ConcurrentHashMap<>();
+    // least recently used schemas are evicted first
+    private final Map<Object, CompiledJsonSchema> schemaCache = new ConcurrentLinkedHashMap.Builder<Object, CompiledJsonSchema>()
+        .maximumWeightedCapacity(MAX_CACHED_SCHEMAS)
+        .build();
     private final JsonMapper jsonMapper;
     private final JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader;
     private final JsonSchemaEngine engine;
@@ -142,14 +145,6 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
             return schema;
         }
         schema = compiling(compiler);
-        if (schemaCache.size() >= MAX_CACHED_SCHEMAS) {
-            // evict a single entry rather than recompiling every cached schema
-            Iterator<Object> keys = schemaCache.keySet().iterator();
-            if (keys.hasNext()) {
-                keys.next();
-                keys.remove();
-            }
-        }
         schemaCache.put(key, schema);
         return schema;
     }

@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.stream.Stream;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest(startApplication = false)
@@ -50,6 +51,28 @@ class JsonSchemaValidatorTest {
     void validateWithSchemaAsMap(Bird bird) throws IOException {
         var assertions = validator.validate(bird, schemaAsMap);
         assertEquals(0, assertions.size());
+    }
+
+    @Test
+    void repeatedValidationsAgainstTheSameSchemaReportTheSameResult() throws IOException {
+        Map<String, Object> invalid = Map.of("@type", "eagle-bird", "flySpeed", 0);
+        for (int i = 0; i < 3; i++) {
+            assertEquals(0, validator.validate(new Eagle("Blob", 31.2f), schemaAsMap).size());
+            assertFalse(validator.validate(invalid, schemaAsMap).isEmpty());
+            assertFalse(validator.validate(invalid, schemaAsString).isEmpty());
+        }
+    }
+
+    @Test
+    void schemasBeyondTheCacheLimitAreStillApplied() throws IOException {
+        // more schemas than the implementations keep compiled (256)
+        for (int i = 0; i <= 300; i++) {
+            String schema = """
+                {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"count":{"type":"integer","maximum":%d}}}
+                """.formatted(i);
+            assertEquals(0, validator.validate(Map.of("count", i), schema).size());
+            assertFalse(validator.validate(Map.of("count", i + 1), schema).isEmpty());
+        }
     }
 
     private static Stream<Arguments> provideValidBirds() {

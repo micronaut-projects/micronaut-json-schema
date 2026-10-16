@@ -27,8 +27,9 @@ import java.util.Set;
  * It is configurable with {@link JsonSchemaValidatorConfiguration}.
  *
  * <p>The value to validate can be any object that the application's {@link io.micronaut.json.JsonMapper} can serialize, a
- * {@link io.micronaut.json.tree.JsonNode}, or a {@link String}, which is parsed as JSON text. The built-in
- * implementation compiles a schema when it is first used and caches it. The returned sets are mutable and keep the order in which the errors were found.</p>
+ * {@link io.micronaut.json.tree.JsonNode}, or a {@link String}, which is parsed as JSON text. Implementations
+ * compile a schema when it is first used and keep it compiled (schemas given as a {@link String} or a {@link Map} are
+ * kept in a bounded cache). The returned sets are mutable and keep the order in which the errors were found.</p>
  *
  * <p>Besides {@link IOException}s, implementations throw an {@link IllegalArgumentException} when no schema was
  * generated for a type, when a schema is invalid, or when a reference in a schema cannot be resolved.</p>

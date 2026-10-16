@@ -26,6 +26,7 @@ import com.networknt.schema.resource.InputStreamSource;
 import com.networknt.schema.resource.ResourceLoader;
 import io.micronaut.context.annotation.Replaces;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.util.clhm.ConcurrentLinkedHashMap;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.jsonschema.utils.JsonSchemaClassPathResourceLoader;
 import io.micronaut.jsonschema.utils.JsonSchemaConfiguration;
@@ -55,7 +56,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Replaces(JsonSchemaValidator.class)
 @Internal
 final class NetworkNtJsonSchemaValidator implements JsonSchemaValidator {
+    /**
+     * The maximum number of schemas given as a String or a Map that are kept compiled.
+     */
+    static final int MAX_CACHED_SCHEMAS = 256;
     private final Map<Class<?>, Schema> jsonSchemaCache = new ConcurrentHashMap<>();
+    private final Map<String, Schema> jsonSchemaStringCache = new ConcurrentLinkedHashMap.Builder<String, Schema>()
+        .maximumWeightedCapacity(MAX_CACHED_SCHEMAS)
+        .build();
     private final JsonMapper jsonMapper;
     private final SchemaRegistry schemaRegistry;
     private final JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader;
@@ -121,7 +129,7 @@ final class NetworkNtJsonSchemaValidator implements JsonSchemaValidator {
     }
 
     private Schema jsonSchema(String jsonSchema) {
-        return schemaRegistry.getSchema(jsonSchema, InputFormat.JSON);
+        return jsonSchemaStringCache.computeIfAbsent(jsonSchema, json -> schemaRegistry.getSchema(json, InputFormat.JSON));
     }
 
     private Set<? extends ValidationMessage> validate(Schema schema, Object value) throws IOException {
