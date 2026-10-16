@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.validation;
 
+import io.micronaut.context.annotation.Value;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.core.type.Argument;
@@ -31,6 +32,10 @@ import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +66,8 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         ResourceLoader resourceLoader,
         JsonMapper jsonMapper,
         JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader,
-        JsonSchemaConfiguration jsonSchemaConfiguration
+        JsonSchemaConfiguration jsonSchemaConfiguration,
+        @Value("${" + JsonSchemaValidatorConfiguration.PREFIX + ".assert-formats:true}") boolean assertFormats
     ) {
         this.jsonMapper = jsonMapper;
         this.jsonSchemaClassPathResourceLoader = jsonSchemaClassPathResourceLoader;
@@ -72,7 +78,7 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
             resourceLoader,
             jsonMapper
         );
-        this.engine = new JsonSchemaEngine(jsonMapper, retriever::retrieve, Dialect.DRAFT_2020_12, directoryUri(config.baseUri()));
+        this.engine = new JsonSchemaEngine(jsonMapper, retriever::retrieve, Dialect.DRAFT_2020_12, directoryUri(config.baseUri()), assertFormats);
     }
 
     private static @Nullable String directoryUri(@Nullable String baseUri) {
@@ -110,10 +116,10 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         return validate(schemaForType(type), tree(value));
     }
 
-    private CompiledJsonSchema schemaForType(Class<?> type) {
+    private CompiledJsonSchema schemaForType(Class<?> type) throws IOException {
         CompiledJsonSchema schema = typeSchemaCache.get(type);
         if (schema == null) {
-            schema = typeSchemaCache.computeIfAbsent(type, this::compileTypeSchema);
+            schema = compiling(() -> typeSchemaCache.computeIfAbsent(type, this::compileTypeSchema));
         }
         return schema;
     }
@@ -130,17 +136,34 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         }
     }
 
-    private CompiledJsonSchema cached(Object key, Supplier<CompiledJsonSchema> compiler) {
+    private CompiledJsonSchema cached(Object key, Supplier<CompiledJsonSchema> compiler) throws IOException {
         CompiledJsonSchema schema = schemaCache.get(key);
         if (schema != null) {
             return schema;
         }
-        schema = compiler.get();
+        schema = compiling(compiler);
         if (schemaCache.size() >= MAX_CACHED_SCHEMAS) {
-            schemaCache.clear();
+            // evict a single entry rather than recompiling every cached schema
+            Iterator<Object> keys = schemaCache.keySet().iterator();
+            if (keys.hasNext()) {
+                keys.next();
+                keys.remove();
+            }
         }
         schemaCache.put(key, schema);
         return schema;
+    }
+
+    /**
+     * Compiles a schema. A schema that references a document that could not be read (an I/O error, not a missing
+     * document) is not cached, and the error is reported as an {@link IOException}.
+     */
+    private static CompiledJsonSchema compiling(Supplier<CompiledJsonSchema> compiler) throws IOException {
+        try {
+            return compiler.get();
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
     private JsonNode schemaTree(Map<String, Object> jsonSchema) throws IOException {
@@ -159,7 +182,7 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         if (value instanceof String json) {
             return parse(json);
         }
-        return orNull(jsonMapper.writeValueToTree(value));
+        return nonFiniteAsStrings(orNull(jsonMapper.writeValueToTree(value)));
     }
 
     private JsonNode parse(String json) throws IOException {
@@ -173,9 +196,44 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         return node == null ? JsonNode.nullNode() : node;
     }
 
+    /**
+     * JSON has no NaN or infinite numbers: like the JSON text written by the mappers, they are validated as the
+     * strings {@code "NaN"}, {@code "Infinity"} and {@code "-Infinity"}.
+     *
+     * @param node The tree of a value
+     * @return The tree, or a copy where the non-finite numbers are strings
+     */
+    static JsonNode nonFiniteAsStrings(JsonNode node) {
+        if (node.isNumber()) {
+            Number n = node.getNumberValue();
+            boolean nonFinite = (n instanceof Double || n instanceof Float) && !Double.isFinite(n.doubleValue());
+            return nonFinite ? JsonNode.createStringNode(n.toString()) : node;
+        }
+        if (node.isArray()) {
+            List<JsonNode> values = new ArrayList<>(node.size());
+            boolean changed = false;
+            for (JsonNode value : node.values()) {
+                JsonNode converted = nonFiniteAsStrings(value);
+                changed |= converted != value;
+                values.add(converted);
+            }
+            return changed ? JsonNode.createArrayNode(values) : node;
+        }
+        if (node.isObject()) {
+            Map<String, JsonNode> values = new LinkedHashMap<>();
+            boolean changed = false;
+            for (Map.Entry<String, JsonNode> entry : node.entries()) {
+                JsonNode converted = nonFiniteAsStrings(entry.getValue());
+                changed |= converted != entry.getValue();
+                values.put(entry.getKey(), converted);
+            }
+            return changed ? JsonNode.createObjectNode(values) : node;
+        }
+        return node;
+    }
+
     private Set<? extends ValidationMessage> validate(CompiledJsonSchema schema, JsonNode value) {
-        List<ValidationMessage> errors = engine.validate(schema, value);
-        return errors.isEmpty() ? Set.of() : new LinkedHashSet<>(errors);
+        return new LinkedHashSet<>(engine.validate(schema, value));
     }
 
     /**
@@ -210,9 +268,11 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
                 while (resource.startsWith("/")) {
                     resource = resource.substring(1);
                 }
-                if (resource.startsWith(classpathFolder)) {
-                    path = resource.substring(classpathFolder.length());
+                if (!resource.startsWith(classpathFolder)) {
+                    // any other classpath resource, as NetworkNT resolves classpath: URIs
+                    return resource.startsWith("../") ? null : read(JsonSchemaResourceUtils.CLASSPATH_PREFIX + resource);
                 }
+                path = resource.substring(classpathFolder.length());
             } else if (baseUri != null && !baseUri.isEmpty() && path.startsWith(baseUri)) {
                 path = path.substring(baseUri.length());
             }
@@ -222,7 +282,11 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
                 uri,
                 fallbackClasspathFolder
             );
-            Optional<InputStream> resource = resourceLoader.getResourceAsStream(JsonSchemaResourceUtils.CLASSPATH_PREFIX + filePath);
+            return read(JsonSchemaResourceUtils.CLASSPATH_PREFIX + filePath);
+        }
+
+        private @Nullable JsonNode read(String location) throws IOException {
+            Optional<InputStream> resource = resourceLoader.getResourceAsStream(location);
             if (resource.isEmpty()) {
                 return null;
             }

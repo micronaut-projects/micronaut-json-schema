@@ -55,7 +55,8 @@ public interface ValidationMessage {
     /**
      * Returns the location of the failing keyword in the schema.
      *
-     * @return The absolute location of the failing keyword within the schema (base URI plus JSON Pointer fragment), if known
+     * @return The location of the failing keyword within the schema (the base URI of the schema plus a JSON Pointer
+     * fragment), if known. It is absolute when the schema has an absolute base URI
      * @since 2.3.2
      */
     default @Nullable String getSchemaLocation() {

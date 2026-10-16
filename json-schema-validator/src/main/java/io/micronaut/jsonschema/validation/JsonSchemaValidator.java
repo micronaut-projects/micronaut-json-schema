@@ -26,6 +26,16 @@ import java.util.Set;
  * JSON Schema Validator.
  * It is configurable with {@link JsonSchemaValidatorConfiguration}.
  *
+ * <p>The value to validate can be any object that the application's {@link io.micronaut.json.JsonMapper} can serialize, a
+ * {@link io.micronaut.json.tree.JsonNode}, or a {@link String}, which is parsed as JSON text. The built-in
+ * implementation compiles a schema when it is first used and caches it. The returned sets are mutable and keep the order in which the errors were found.</p>
+ *
+ * <p>Besides {@link IOException}s, implementations throw an {@link IllegalArgumentException} when no schema was
+ * generated for a type, when a schema is invalid, or when a reference in a schema cannot be resolved.</p>
+ *
+ * <p>The built-in implementation is provided by {@code micronaut-json-schema-validator}; the module
+ * {@code micronaut-json-schema-validator-networknt} replaces it with one based on the NetworkNT JSON Schema Validator.</p>
+ *
  * @author Sergio del Amo
  * @since 1.0.0
  */
@@ -35,7 +45,7 @@ public interface JsonSchemaValidator {
     /**
      * Validate JSON based on a types JSON schema.
      *
-     * @param value JSON value to validate
+     * @param value JSON text to validate
      * @param type The type used to generate the JSON Schema
      * @return A set of validation messages. Empty if valid.
      * @param <T> Type used to generate the JSON Schema
@@ -70,7 +80,7 @@ public interface JsonSchemaValidator {
      * Validate Object against a JSON schema.
      *
      * @param value Object to validate against a JSON schema
-     * @param jsonSchema The JSON Schema expressed as a Map
+     * @param jsonSchema The JSON Schema expressed as JSON text
      * @return A set of validation messages. Empty if valid.
      * @throws IOException If an error occurs validating the JSON against the schema.
      */

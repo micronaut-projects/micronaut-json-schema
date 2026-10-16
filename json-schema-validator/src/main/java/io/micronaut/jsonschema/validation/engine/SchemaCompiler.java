@@ -20,6 +20,7 @@ import io.micronaut.jsonschema.validation.engine.SchemaResource.Document;
 import io.micronaut.jsonschema.validation.engine.SchemaResource.NodeInfo;
 import org.jspecify.annotations.Nullable;
 
+import java.io.UncheckedIOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -273,6 +274,8 @@ final class SchemaCompiler {
         JsonNode metaSchema;
         try {
             metaSchema = engine.retrieve(uri);
+        } catch (UncheckedIOException e) {
+            throw e;
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Unsupported $schema '" + metaSchemaUri + "': the meta-schema could not be loaded", e);
         }
@@ -280,11 +283,13 @@ final class SchemaCompiler {
             throw new IllegalArgumentException("Unsupported $schema '" + metaSchemaUri + "': the meta-schema could not be loaded");
         }
         JsonNode parent = metaSchema.get("$schema");
-        if (parent == null || !parent.isString() || Uris.stripFragment(parent.getStringValue()).equals(uri)) {
+        JsonNode vocabulary = metaSchema.get("$vocabulary");
+        boolean selfDescribing = parent == null || !parent.isString() || Uris.stripFragment(parent.getStringValue()).equals(uri);
+        // a meta-schema describing itself is identified by the vocabularies it declares
+        Dialect base = selfDescribing ? Vocabularies.dialectOf(vocabulary) : vocabulariesFor(parent.getStringValue(), depth + 1).dialect();
+        if (base == null) {
             throw new IllegalArgumentException("Unsupported $schema '" + metaSchemaUri + "': the meta-schema does not declare a known dialect");
         }
-        Dialect base = vocabulariesFor(parent.getStringValue(), depth + 1).dialect();
-        JsonNode vocabulary = metaSchema.get("$vocabulary");
         Vocabularies vocabularies = vocabulary != null && vocabulary.isObject() && base.atLeast(Dialect.DRAFT_2019_09)
             ? Vocabularies.of(base, vocabulary)
             : Vocabularies.of(base);
@@ -310,6 +315,9 @@ final class SchemaCompiler {
         JsonNode json;
         try {
             json = engine.retrieve(uri);
+        } catch (UncheckedIOException e) {
+            // an I/O error may be transient: fail the compilation rather than caching an unresolvable reference
+            throw e;
         } catch (RuntimeException e) {
             throw new UnresolvableReferenceException("Unable to load schema " + uri + ": " + e.getMessage(), e);
         }
@@ -671,8 +679,8 @@ final class SchemaCompiler {
         JsonNode minContains = bounded ? context.node().get("minContains") : null;
         JsonNode maxContains = bounded ? context.node().get("maxContains") : null;
         boolean explicitMin = minContains != null && minContains.isNumber();
-        long min = explicitMin ? limit(minContains.getNumberValue()) : 1;
-        long max = maxContains != null && maxContains.isNumber() ? limit(maxContains.getNumberValue()) : -1;
+        long min = explicitMin ? count(minContains.getNumberValue(), "minContains", context.schema()) : 1;
+        long max = maxContains != null && maxContains.isNumber() ? count(maxContains.getNumberValue(), "maxContains", context.schema()) : -1;
         return new ApplicatorKeywords.Contains(context.schema(), sub(value, context.info(), CONTAINS), value, min, explicitMin, max,
             context.dialect() == Dialect.DRAFT_2020_12);
     }
@@ -763,17 +771,17 @@ final class SchemaCompiler {
                 ? new ValidationKeywords.Bound(schema, keyword, value.getNumberValue(), keyword.equals(EXCLUSIVE_MAXIMUM), true)
                 : null;
             case "maxLength", "minLength" -> value.isNumber()
-                ? new ValidationKeywords.Length(schema, keyword, limit(value.getNumberValue()), keyword.equals("maxLength"))
+                ? new ValidationKeywords.Length(schema, keyword, count(value.getNumberValue(), keyword, schema), keyword.equals("maxLength"))
                 : null;
             case "pattern" -> value.isString()
                 ? new ValidationKeywords.PatternKeyword(schema, pattern(value.getStringValue(), context), value.getStringValue())
                 : null;
             case "maxItems", "minItems" -> value.isNumber()
-                ? new ValidationKeywords.ItemCount(schema, keyword, limit(value.getNumberValue()), keyword.equals("maxItems"))
+                ? new ValidationKeywords.ItemCount(schema, keyword, count(value.getNumberValue(), keyword, schema), keyword.equals("maxItems"))
                 : null;
             case "uniqueItems" -> value.isBoolean() && value.getBooleanValue() ? new ValidationKeywords.UniqueItems(schema) : null;
             case "maxProperties", "minProperties" -> value.isNumber()
-                ? new ValidationKeywords.PropertyCount(schema, keyword, limit(value.getNumberValue()), keyword.equals("maxProperties"))
+                ? new ValidationKeywords.PropertyCount(schema, keyword, count(value.getNumberValue(), keyword, schema), keyword.equals("maxProperties"))
                 : null;
             case "required" -> value.isArray() ? new ValidationKeywords.Required(schema, strings(value)) : null;
             case "dependentRequired" -> dialect.atLeast(Dialect.DRAFT_2019_09) && value.isObject() ? dependentRequired(keyword, value, schema) : null;
@@ -803,16 +811,17 @@ final class SchemaCompiler {
     }
 
     /**
-     * Converts a non-negative integer keyword value to a long, saturating values that do not fit.
+     * Converts the value of a keyword that must be a non-negative integer (such as {@code maxItems}) to a long,
+     * saturating values that do not fit.
+     *
+     * @throws IllegalArgumentException If the value is negative or not an integer
      */
-    private static long limit(Number value) {
-        if (JsonValues.compare(value, Long.MAX_VALUE) >= 0) {
-            return Long.MAX_VALUE;
+    private static long count(Number value, String keyword, Schema schema) {
+        if (JsonValues.isNaN(value) || !JsonValues.isInteger(value) || JsonValues.compare(value, 0) < 0) {
+            throw new IllegalArgumentException("Invalid schema at " + schema.location + ": " + keyword
+                + " must be a non-negative integer but was " + JsonValues.text(value));
         }
-        if (JsonValues.compare(value, Long.MIN_VALUE) <= 0) {
-            return Long.MIN_VALUE;
-        }
-        return value.longValue();
+        return JsonValues.compare(value, Long.MAX_VALUE) >= 0 ? Long.MAX_VALUE : value.longValue();
     }
 
     private static @Nullable Keyword type(JsonNode value, Schema schema, boolean strictInteger) {

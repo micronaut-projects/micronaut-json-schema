@@ -31,6 +31,8 @@ import java.nio.charset.StandardCharsets;
  */
 final class Uris {
 
+    private static final String CLASSPATH = "classpath:";
+
     private Uris() {
     }
 
@@ -68,7 +70,7 @@ final class Uris {
      */
     static String resolve(@Nullable String base, String ref) {
         if (isAbsolute(ref)) {
-            return normalize(ref);
+            return isClasspath(ref) ? resolveClasspath(ref, "") : normalize(ref);
         }
         if (base == null || base.isEmpty()) {
             return ref;
@@ -78,6 +80,9 @@ final class Uris {
         }
         if (ref.charAt(0) == '#') {
             return stripFragment(base) + ref;
+        }
+        if (isClasspath(base)) {
+            return resolveClasspath(base, ref);
         }
         try {
             URI baseUri = new URI(base);
@@ -92,6 +97,33 @@ final class Uris {
             String stripped = stripFragment(base);
             int slash = stripped.lastIndexOf('/');
             return (slash >= 0 ? stripped.substring(0, slash + 1) : "") + ref;
+        }
+    }
+
+    private static boolean isClasspath(String uri) {
+        return uri.startsWith(CLASSPATH);
+    }
+
+    /**
+     * Resolves a reference against a {@code classpath:} URI. Such URIs are opaque, so their path is resolved like the
+     * path of a hierarchical URI, including the removal of dot segments.
+     */
+    private static String resolveClasspath(String base, String ref) {
+        String path = base.substring(CLASSPATH.length());
+        while (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        try {
+            URI hierarchical = new URI("classpath", null, "/" + stripFragment(path), null);
+            if (Uris.fragment(path) != null) {
+                hierarchical = new URI(hierarchical + "#" + Uris.fragment(path));
+            }
+            URI resolved = ref.isEmpty() ? hierarchical.normalize() : hierarchical.resolve(new URI(ref)).normalize();
+            String resolvedPath = resolved.toString().substring((CLASSPATH + "/").length());
+            return CLASSPATH + resolvedPath;
+        } catch (URISyntaxException | IllegalArgumentException e) {
+            int slash = path.lastIndexOf('/');
+            return CLASSPATH + (slash >= 0 ? path.substring(0, slash + 1) : "") + ref;
         }
     }
 

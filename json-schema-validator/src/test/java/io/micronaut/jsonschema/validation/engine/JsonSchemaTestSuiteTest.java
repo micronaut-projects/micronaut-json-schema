@@ -1,6 +1,7 @@
 package io.micronaut.jsonschema.validation.engine;
 
 import io.micronaut.core.type.Argument;
+import io.micronaut.jackson.databind.JacksonDatabindMapper;
 import io.micronaut.json.JsonMapper;
 import io.micronaut.json.tree.JsonNode;
 import io.micronaut.jsonschema.validation.ValidationMessage;
@@ -17,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,56 +25,49 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Runs the official <a href="https://github.com/json-schema-org/JSON-Schema-Test-Suite">JSON-Schema-Test-Suite</a>
- * (vendored under {@code src/test/resources/JSON-Schema-Test-Suite}) against {@link JsonSchemaEngine}.
- * Tests listed in {@link #UNSUPPORTED} are skipped; the list is documented in the guide.
+ * (vendored in the validator TCK) against {@link JsonSchemaEngine} with the JSON trees of Jackson Databind
+ * (test-suite runs it with those of Micronaut Serialization).
  */
 class JsonSchemaTestSuiteTest {
 
-    private static final JsonMapper MAPPER = JsonMapper.createDefault();
+    private static final JsonMapper MAPPER = new JacksonDatabindMapper();
     private static final Argument<JsonNode> JSON_NODE = Argument.of(JsonNode.class);
     private static final String REMOTES_BASE = "http://localhost:1234/";
 
-    /**
-     * Unsupported tests. Keys are {@code <draft>/<file>}, optionally followed by {@code #<case description>}
-     * and {@code #<test description>}.
-     */
-    static final Map<String, String> UNSUPPORTED = Map.ofEntries(
-    );
-
     @TestFactory
     Stream<DynamicNode> draft2020_12() {
-        return suite("draft2020-12", Dialect.DRAFT_2020_12);
+        return suite("draft2020-12", Dialect.DRAFT_2020_12, MAPPER);
     }
 
     @TestFactory
     Stream<DynamicNode> draft2019_09() {
-        return suite("draft2019-09", Dialect.DRAFT_2019_09);
+        return suite("draft2019-09", Dialect.DRAFT_2019_09, MAPPER);
     }
 
     @TestFactory
     Stream<DynamicNode> draft7() {
-        return suite("draft7", Dialect.DRAFT_7);
+        return suite("draft7", Dialect.DRAFT_7, MAPPER);
     }
 
     @TestFactory
     Stream<DynamicNode> draft6() {
-        return suite("draft6", Dialect.DRAFT_6);
+        return suite("draft6", Dialect.DRAFT_6, MAPPER);
     }
 
     @TestFactory
     Stream<DynamicNode> draft4() {
-        return suite("draft4", Dialect.DRAFT_4);
+        return suite("draft4", Dialect.DRAFT_4, MAPPER);
     }
 
-    private static JsonNode read(Path path) {
+    private static JsonNode read(Path path, JsonMapper mapper) {
         try (InputStream in = Files.newInputStream(path)) {
-            return MAPPER.readValue(in, JSON_NODE);
+            return mapper.readValue(in, JSON_NODE);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private static Stream<DynamicNode> suite(String draft, Dialect dialect) {
+    private static Stream<DynamicNode> suite(String draft, Dialect dialect, JsonMapper mapper) {
         Path root = TestSuiteFiles.root();
         Path remotes = root.resolve("remotes");
         SchemaRetriever retriever = uri -> {
@@ -85,11 +78,11 @@ class JsonSchemaTestSuiteTest {
             if (!file.startsWith(remotes) || !Files.isRegularFile(file)) {
                 return null;
             }
-            return read(file);
+            return read(file, mapper);
         };
         // format is an annotation by default; the optional format tests check format assertions
-        JsonSchemaEngine engine = new JsonSchemaEngine(MAPPER, retriever, dialect, null, false);
-        JsonSchemaEngine formatEngine = new JsonSchemaEngine(MAPPER, retriever, dialect, null, true);
+        JsonSchemaEngine engine = new JsonSchemaEngine(mapper, retriever, dialect, null, false);
+        JsonSchemaEngine formatEngine = new JsonSchemaEngine(mapper, retriever, dialect, null, true);
         Path tests = root.resolve("tests").resolve(draft);
         List<Path> files;
         try (Stream<Path> walk = Files.walk(tests)) {
@@ -101,7 +94,7 @@ class JsonSchemaTestSuiteTest {
         for (Path file : files) {
             String fileKey = draft + "/" + tests.relativize(file).toString().replace('\\', '/');
             JsonSchemaEngine fileEngine = fileKey.contains("/optional/format/") ? formatEngine : engine;
-            nodes.add(DynamicContainer.dynamicContainer(fileKey, file.toUri(), cases(fileEngine, fileKey, read(file))));
+            nodes.add(DynamicContainer.dynamicContainer(fileKey, file.toUri(), cases(fileEngine, fileKey, read(file, mapper))));
         }
         return nodes.stream();
     }
@@ -118,9 +111,6 @@ class JsonSchemaTestSuiteTest {
                 boolean valid = test.get("valid").getBooleanValue();
                 JsonNode data = test.get("data");
                 String key = fileKey + "#" + description + "#" + testDescription;
-                if (isUnsupported(fileKey, description, testDescription)) {
-                    continue;
-                }
                 tests.add(DynamicTest.dynamicTest(testDescription, () -> {
                     if (compiled[0] == null) {
                         compiled[0] = engine.compile(schema);
@@ -139,11 +129,5 @@ class JsonSchemaTestSuiteTest {
             }
         }
         return nodes.stream();
-    }
-
-    static boolean isUnsupported(String fileKey, String caseDescription, String testDescription) {
-        return UNSUPPORTED.containsKey(fileKey)
-            || UNSUPPORTED.containsKey(fileKey + "#" + caseDescription)
-            || UNSUPPORTED.containsKey(fileKey + "#" + caseDescription + "#" + testDescription);
     }
 }

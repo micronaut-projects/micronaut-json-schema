@@ -172,11 +172,78 @@ final class JsonValues {
             // an overflowed divisor: only zero is a multiple
             return compare(value, 0) == 0;
         }
-        BigDecimal d = toBigDecimal(divisor);
+        BigDecimal d = toBigDecimal(divisor).stripTrailingZeros();
+        BigDecimal v = toBigDecimal(value).stripTrailingZeros();
         if (d.signum() == 0) {
             return false;
         }
-        return toBigDecimal(value).remainder(d).signum() == 0;
+        if (v.signum() == 0) {
+            return true;
+        }
+        // v = a * 10^-scale(v) and d = b * 10^-scale(d), so v / d = (a / b) * 10^k: modular arithmetic keeps
+        // values with huge exponents (1e1000000) cheap
+        BigInteger a = v.unscaledValue().abs();
+        BigInteger b = d.unscaledValue().abs();
+        long k = (long) d.scale() - v.scale();
+        if (k >= 0) {
+            return a.multiply(BigInteger.TEN.modPow(BigInteger.valueOf(k), b)).mod(b).signum() == 0;
+        }
+        if (-k >= v.precision()) {
+            // a < 10^-k, so a is not a multiple of b * 10^-k
+            return false;
+        }
+        return a.mod(b.multiply(BigInteger.TEN.pow((int) -k))).signum() == 0;
+    }
+
+    /**
+     * @param n The number
+     * @return Whether the number is NaN, which JSON cannot represent
+     */
+    static boolean isNaN(Number n) {
+        return isFloating(n) && Double.isNaN(n.doubleValue());
+    }
+
+    /**
+     * Computes a hash code consistent with {@link #jsonEquals(JsonNode, JsonNode)}.
+     *
+     * @param node The node
+     * @return The hash code
+     */
+    static int jsonHash(JsonNode node) {
+        if (node.isNumber()) {
+            return numberHash(node.getNumberValue());
+        }
+        if (node.isArray()) {
+            int hash = 1;
+            for (JsonNode value : node.values()) {
+                hash = 31 * hash + jsonHash(value);
+            }
+            return hash;
+        }
+        if (node.isObject()) {
+            int hash = 0;
+            for (Map.Entry<String, JsonNode> entry : node.entries()) {
+                hash += entry.getKey().hashCode() ^ jsonHash(entry.getValue());
+            }
+            return hash;
+        }
+        return node.hashCode();
+    }
+
+    private static int numberHash(Number n) {
+        if (isSmallIntegral(n)) {
+            return Long.hashCode(n.longValue());
+        }
+        if (isFloating(n) && !Double.isFinite(n.doubleValue())) {
+            return Double.hashCode(n.doubleValue());
+        }
+        BigDecimal value = toBigDecimal(n).stripTrailingZeros();
+        if (value.signum() == 0) {
+            return 0;
+        }
+        // integral values that fit a long hash like the small integral types
+        boolean fitsLong = value.scale() <= 0 && value.precision() - value.scale() <= 18;
+        return fitsLong ? Long.hashCode(value.longValueExact()) : value.hashCode();
     }
 
     /**
@@ -191,7 +258,8 @@ final class JsonValues {
             return true;
         }
         if (a.isNumber()) {
-            return b.isNumber() && compare(a.getNumberValue(), b.getNumberValue()) == 0;
+            return b.isNumber() && !isNaN(a.getNumberValue()) && !isNaN(b.getNumberValue())
+                && compare(a.getNumberValue(), b.getNumberValue()) == 0;
         }
         if (a.isString()) {
             return b.isString() && a.getStringValue().equals(b.getStringValue());

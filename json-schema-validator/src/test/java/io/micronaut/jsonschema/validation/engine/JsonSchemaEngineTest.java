@@ -7,6 +7,9 @@ import io.micronaut.jsonschema.validation.ValidationMessage;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +19,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JsonSchemaEngineTest {
@@ -241,6 +246,135 @@ class JsonSchemaEngineTest {
         assertFalse(engine.isValid(javaProperty, json("\"ab1\"")));
         CompiledJsonSchema whitespace = engine.compile(json("{\"pattern\":\"^\\\\s$\"}"));
         assertTrue(engine.isValid(whitespace, json("\"\\u00a0\"")));
+    }
+
+    @Test
+    void multipleOfWithHugeExponentsIsCheap() throws IOException {
+        CompiledJsonSchema schema = engine.compile(json("{\"multipleOf\":0.01}"));
+        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
+            assertTrue(engine.isValid(schema, JsonNode.createNumberNode(new BigDecimal("1e1000000"))));
+            assertFalse(engine.isValid(schema, JsonNode.createNumberNode(new BigDecimal("1e-1000000"))));
+            assertTrue(engine.isValid(schema, JsonNode.createNumberNode(new BigDecimal("123.45"))));
+            assertFalse(engine.isValid(schema, JsonNode.createNumberNode(new BigDecimal("123.456"))));
+        });
+    }
+
+    @Test
+    void notANumberNeverSatisfiesNumericKeywords() throws IOException {
+        JsonNode nan = JsonNode.createNumberNode(Double.NaN);
+        assertFalse(engine.isValid(engine.compile(json("{\"minimum\":0}")), nan));
+        assertFalse(engine.isValid(engine.compile(json("{\"maximum\":100}")), nan));
+        assertFalse(engine.isValid(engine.compile(json("{\"enum\":[1, 2]}")), nan));
+        assertTrue(engine.isValid(engine.compile(json("{\"uniqueItems\":true}")), JsonNode.createArrayNode(List.of(nan, JsonNode.createNumberNode(Double.NaN)))));
+    }
+
+    @Test
+    void uniqueItemsHashesLargeArrays() throws IOException {
+        CompiledJsonSchema schema = engine.compile(json("{\"uniqueItems\":true}"));
+        List<JsonNode> items = new ArrayList<>();
+        for (int i = 0; i < 50_000; i++) {
+            items.add(JsonNode.createObjectNode(Map.of("id", JsonNode.createNumberNode(i))));
+        }
+        assertTimeoutPreemptively(Duration.ofSeconds(2), () -> assertTrue(engine.isValid(schema, JsonNode.createArrayNode(items))));
+        List<JsonNode> duplicates = new ArrayList<>(items);
+        duplicates.add(JsonNode.createObjectNode(Map.of("id", JsonNode.createNumberNode(42.0))));
+        assertFalse(engine.isValid(schema, JsonNode.createArrayNode(duplicates)));
+    }
+
+    @Test
+    void countsMustBeNonNegativeIntegers() {
+        assertThrows(IllegalArgumentException.class, () -> engine.compile(json("{\"maxItems\":-1}")));
+        assertThrows(IllegalArgumentException.class, () -> engine.compile(json("{\"minLength\":1.5}")));
+        assertDoesNotThrow(() -> engine.compile(json("{\"maxLength\":2.0}")));
+    }
+
+    @Test
+    void relativeReferencesResolveAgainstClasspathUris() throws IOException {
+        Map<String, String> documents = Map.of(
+            "classpath:META-INF/schemas/sub/a.json", "{\"properties\":{\"b\":{\"$ref\":\"b.json\"},\"c\":{\"$ref\":\"../c.json\"}}}",
+            "classpath:META-INF/schemas/sub/b.json", "{\"type\":\"integer\"}",
+            "classpath:META-INF/schemas/c.json", "{\"type\":\"string\"}"
+        );
+        JsonSchemaEngine classpathEngine = new JsonSchemaEngine(MAPPER, uri -> documents.containsKey(uri) ? json(documents.get(uri)) : null,
+            Dialect.DRAFT_2020_12, null);
+        CompiledJsonSchema schema = classpathEngine.compile(json("{\"$ref\":\"classpath:META-INF/schemas/sub/a.json\"}"));
+        assertTrue(classpathEngine.isValid(schema, json("{\"b\":1,\"c\":\"x\"}")));
+        List<ValidationMessage> errors = classpathEngine.validate(schema, json("{\"b\":\"x\",\"c\":1}"));
+        assertEquals(List.of("classpath:META-INF/schemas/sub/b.json#/type", "classpath:META-INF/schemas/c.json#/type"),
+            errors.stream().map(ValidationMessage::getSchemaLocation).toList());
+    }
+
+    @Test
+    void relativeReferencesResolveAgainstTheDefaultBaseUri() throws IOException {
+        JsonSchemaEngine defaultEngine = new JsonSchemaEngine(MAPPER,
+            uri -> uri.equals("mem:/item.json") ? json("{\"type\":\"integer\"}") : null, Dialect.DRAFT_2020_12, null);
+        CompiledJsonSchema schema = defaultEngine.compile(json("{\"items\":{\"$ref\":\"item.json\"}}"));
+        assertTrue(defaultEngine.isValid(schema, json("[1, 2]")));
+        assertFalse(defaultEngine.isValid(schema, json("[1, \"2\"]")));
+    }
+
+    @Test
+    void retrievalErrorsFailTheCompilationAndAreNotCached() throws IOException {
+        AtomicInteger attempts = new AtomicInteger();
+        JsonSchemaEngine flakyEngine = new JsonSchemaEngine(MAPPER, uri -> {
+            if (attempts.incrementAndGet() == 1) {
+                throw new IOException("connection reset");
+            }
+            return json("{\"type\":\"integer\"}");
+        }, Dialect.DRAFT_2020_12, null);
+        JsonNode schema = json("{\"$ref\":\"https://example.com/integer.json\"}");
+        UncheckedIOException e = assertThrows(UncheckedIOException.class, () -> flakyEngine.compile(schema));
+        assertEquals("connection reset", e.getCause().getMessage());
+        CompiledJsonSchema compiled = flakyEngine.compile(schema);
+        assertTrue(flakyEngine.isValid(compiled, json("1")));
+    }
+
+    @Test
+    void requiredVocabulariesMustBeSupported() throws IOException {
+        JsonSchemaEngine metaEngine = new JsonSchemaEngine(MAPPER, uri -> switch (uri) {
+            case "https://example.com/unknown-vocabulary" -> json("""
+                {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://example.com/unknown-vocabulary",
+                 "$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/core":true,"https://example.com/vocab/custom":true}}
+                """);
+            case "https://example.com/self-describing" -> json("""
+                {"$schema":"https://example.com/self-describing","$id":"https://example.com/self-describing",
+                 "$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/core":true,"https://json-schema.org/draft/2020-12/vocab/applicator":true}}
+                """);
+            default -> null;
+        }, Dialect.DRAFT_2020_12, null);
+        assertThrows(IllegalArgumentException.class, () -> metaEngine.compile(json("{\"$schema\":\"https://example.com/unknown-vocabulary\"}")));
+        // no validation vocabulary: minimum is not asserted, properties is
+        CompiledJsonSchema schema = metaEngine.compile(json("""
+            {"$schema":"https://example.com/self-describing","properties":{"n":{"minimum":10}},"additionalProperties":false}
+            """));
+        assertTrue(metaEngine.isValid(schema, json("{\"n\":1}")));
+        assertFalse(metaEngine.isValid(schema, json("{\"other\":1}")));
+    }
+
+    @Test
+    void compilationsSharingRetrievedDocumentsCanRunConcurrentlyWithValidation() throws Exception {
+        JsonSchemaEngine sharedEngine = new JsonSchemaEngine(MAPPER, uri -> uri.equals("https://example.com/shared.json")
+            ? json("{\"$defs\":{\"positive\":{\"type\":\"integer\",\"minimum\":1}},\"$ref\":\"#/$defs/positive\"}")
+            : null, Dialect.DRAFT_2020_12, null);
+        CompiledJsonSchema first = sharedEngine.compile(json("{\"items\":{\"$ref\":\"https://example.com/shared.json\"}}"));
+        ExecutorService executor = Executors.newFixedThreadPool(8);
+        try {
+            List<Future<Boolean>> results = new ArrayList<>();
+            for (int i = 0; i < 200; i++) {
+                int n = i;
+                results.add(executor.submit(() -> {
+                    CompiledJsonSchema other = sharedEngine.compile(json("{\"properties\":{\"p" + n + "\":{\"$ref\":\"https://example.com/shared.json\"}}}"));
+                    return sharedEngine.isValid(first, json("[1, 2, 3]")) && !sharedEngine.isValid(first, json("[0]"))
+                        && !sharedEngine.isValid(other, json("{\"p" + n + "\":0}"));
+                }));
+            }
+            for (Future<Boolean> result : results) {
+                assertTrue(result.get());
+            }
+        } finally {
+            executor.shutdown();
+            assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
+        }
     }
 
     @Test

@@ -23,6 +23,9 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -183,9 +186,12 @@ final class ValidationKeywords {
             if (!instance.isNumber()) {
                 return true;
             }
-            int cmp = JsonValues.compare(instance.getNumberValue(), limit);
+            Number number = instance.getNumberValue();
+            int cmp = JsonValues.compare(number, limit);
             boolean valid;
-            if (maximum) {
+            if (JsonValues.isNaN(number)) {
+                valid = false;
+            } else if (maximum) {
                 valid = exclusive ? cmp < 0 : cmp <= 0;
             } else {
                 valid = exclusive ? cmp > 0 : cmp >= 0;
@@ -398,15 +404,17 @@ final class ValidationKeywords {
             if (!instance.isArray()) {
                 return true;
             }
-            int size = instance.size();
-            for (int i = 0; i < size; i++) {
-                JsonNode a = instance.get(i);
-                for (int j = i + 1; j < size; j++) {
-                    if (a != null && JsonValues.jsonEquals(a, instance.get(j))) {
+            // buckets by a hash consistent with JSON equality, so that large arrays are not compared pairwise
+            Map<Integer, List<JsonNode>> seen = new HashMap<>();
+            for (JsonNode item : instance.values()) {
+                List<JsonNode> bucket = seen.computeIfAbsent(JsonValues.jsonHash(item), hash -> new ArrayList<>(1));
+                for (JsonNode other : bucket) {
+                    if (JsonValues.jsonEquals(other, item)) {
                         ctx.error(this, "must have only unique items in the array");
                         return false;
                     }
                 }
+                bucket.add(item);
             }
             return true;
         }

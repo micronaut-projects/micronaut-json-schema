@@ -47,7 +47,7 @@ public final class JsonSchemaEngine {
     /**
      * The base URI used for schemas that do not declare {@code $id} when no base URI was configured.
      */
-    public static final String DEFAULT_BASE_URI = "urn:micronaut:json-schema:root";
+    public static final String DEFAULT_BASE_URI = "mem:/root";
 
     private static final String META_SCHEMA_RESOURCE_PREFIX = "META-INF/micronaut-json-schema-validation/metaschemas/";
     private static final Argument<JsonNode> JSON_NODE = Argument.of(JsonNode.class);

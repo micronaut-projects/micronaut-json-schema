@@ -207,7 +207,7 @@ final class EvaluationContext {
                 throw new IllegalStateException("Maximum schema reference depth exceeded evaluating " + target.location);
             }
             for (int i = 0; i < refDepth; i += 2) {
-                if (refStack[i] == target && refStack[i + 1] == instance) {
+                if (refStack[i] == target && sameInstance(refStack[i + 1], instance)) {
                     throw new IllegalStateException("Infinite recursion detected evaluating " + target.location
                         + " at instance location '" + instanceLocation() + "'");
                 }
@@ -218,6 +218,11 @@ final class EvaluationContext {
         }
         refStack[refDepth++] = target;
         refStack[refDepth++] = instance;
+    }
+
+    private static boolean sameInstance(@Nullable Object seen, JsonNode instance) {
+        // value nodes may be recreated for the same value (for example the property names checked by propertyNames)
+        return seen == instance || (instance.isValueNode() && instance.equals(seen));
     }
 
     void exitRef() {
