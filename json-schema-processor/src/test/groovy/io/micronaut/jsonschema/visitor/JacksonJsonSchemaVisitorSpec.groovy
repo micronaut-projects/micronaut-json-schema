@@ -211,8 +211,8 @@ class JacksonJsonSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.properties == null
         schema.oneOf.size() == 2
 
-        schema.oneOf[0].$ref == 'http://localhost:8080/schemas/salamander.schema.json'
-        schema.oneOf[1].$ref == 'http://localhost:8080/schemas/alligator.schema.json'
+        schema.oneOf[0].$ref == 'classpath:META-INF/schemas/salamander.schema.json'
+        schema.oneOf[1].$ref == 'classpath:META-INF/schemas/alligator.schema.json'
     }
 
     void "schema with JsonIgnore"() {

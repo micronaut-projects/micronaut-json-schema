@@ -25,8 +25,8 @@ import io.micronaut.core.beans.exceptions.IntrospectionException;
 import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.core.io.scan.ClassPathResourceLoader;
 import io.micronaut.context.env.Environment;
-import io.micronaut.core.naming.NameUtils;
 import io.micronaut.jsonschema.JsonSchema;
+import io.micronaut.jsonschema.naming.JsonSchemaNaming;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ import static io.micronaut.jsonschema.utils.JsonSchemaResourceUtils.CLASSPATH_PR
 @Internal
 class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathResourceLoader {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultJsonSchemaClassPathResourceLoader.class);
-    private static final String SUFFIX = ".schema.json";
+    private static final String MEMBER_TITLE = "title";
     private static final String MEMBER_URI = "uri";
     private static final String META_INF = "META-INF";
     private static final String SLASH = "/";
@@ -111,7 +111,8 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
     }
 
     private <T> Optional<String> jsonSchemaPath(@NonNull Class<T> type) {
-        String className = NameUtils.hyphenate(type.getSimpleName());
+        String title = null;
+        String uri = null;
         try {
             BeanIntrospection<T> introspection = BeanIntrospection.getIntrospection(type);
             AnnotationValue<JsonSchema> jsonSchemaAnnotationValue = introspection.getAnnotation(io.micronaut.jsonschema.JsonSchema.class);
@@ -121,14 +122,20 @@ class DefaultJsonSchemaClassPathResourceLoader implements JsonSchemaClassPathRes
                 }
                 return Optional.empty();
             }
-            Optional<String> uriOptional = jsonSchemaAnnotationValue.stringValue(MEMBER_URI);
-            if (uriOptional.isPresent()) {
-                className = uriOptional.get().replace(SLASH, "");
-            }
+            title = jsonSchemaAnnotationValue.stringValue(MEMBER_TITLE).orElse(null);
+            uri = jsonSchemaAnnotationValue.stringValue(MEMBER_URI).orElse(null);
         } catch (IntrospectionException e) {
             LOG.debug("Introspection exception for class {}.}", type, e);
+            JsonSchema jsonSchema = type.getAnnotation(JsonSchema.class);
+            if (jsonSchema != null) {
+                title = jsonSchema.title();
+                uri = jsonSchema.uri();
+            }
         }
-        String name = className + SUFFIX;
-        return Optional.of(CLASSPATH_PREFIX + String.join(SLASH, META_INF, jsonSchemaConfiguration.getOutputLocation(), name));
+        // the same naming as the annotation processor that generates the schema
+        String outputLocation = jsonSchemaConfiguration.getOutputLocation();
+        String schemaUri = JsonSchemaNaming.uri(JsonSchemaNaming.title(title, JsonSchemaNaming.simpleName(type)), uri);
+        String name = JsonSchemaNaming.fileName(schemaUri, null, outputLocation);
+        return Optional.of(CLASSPATH_PREFIX + String.join(SLASH, META_INF, outputLocation, name));
     }
 }

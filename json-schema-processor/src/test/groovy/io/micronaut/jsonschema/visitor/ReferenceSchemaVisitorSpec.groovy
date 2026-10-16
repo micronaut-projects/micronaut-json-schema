@@ -25,7 +25,7 @@ class ReferenceSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.title == "Possum"
         schema.properties.size() == 1
         schema.properties['children'].type == [Schema.Type.ARRAY]
-        schema.properties['children'].items.$ref == 'http://localhost:8080/schemas/possum.schema.json'
+        schema.properties['children'].items.$ref == 'classpath:META-INF/schemas/possum.schema.json'
     }
 
     void "schema reference"() {
@@ -58,7 +58,7 @@ class ReferenceSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.title == "Player"
         schema.properties.size() == 2
         schema.properties['name'].type == [Schema.Type.STRING]
-        schema.properties['pos'].$ref == 'http://localhost:8080/schemas/position.schema.json'
+        schema.properties['pos'].$ref == 'classpath:META-INF/schemas/position.schema.json'
     }
 
     void "property schema reference"() {
@@ -82,7 +82,34 @@ class ReferenceSchemaVisitorSpec extends AbstractJsonSchemaSpec {
         schema.title == "Player"
         schema.properties.size() == 2
         schema.properties['name'].type == [Schema.Type.STRING]
-        schema.properties['pos'].$ref == 'http://localhost:8080/schemas/position.schema.json'
+        schema.properties['pos'].$ref == 'classpath:META-INF/schemas/position.schema.json'
+    }
+
+
+    void "nested schema reference"() {
+        given:
+        def schema = buildJsonSchema('test.Order', 'order', """
+        package test;
+
+        import io.micronaut.jsonschema.JsonSchema;
+        import java.util.List;
+
+        @JsonSchema
+        public record Order(
+                List<Line> lines
+        ) {
+
+            @JsonSchema
+            public record Line(
+                    String product
+            ) {
+            }
+        }
+""")
+
+        expect:
+        schema.$id == 'classpath:META-INF/schemas/order.schema.json'
+        schema.properties['lines'].items.$ref == 'classpath:META-INF/schemas/order-line.schema.json'
     }
 
 }

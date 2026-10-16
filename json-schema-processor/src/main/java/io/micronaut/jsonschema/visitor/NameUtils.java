@@ -16,6 +16,7 @@
 package io.micronaut.jsonschema.visitor;
 
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.jsonschema.naming.JsonSchemaNaming;
 
 /**
  * A utility class for name conversions.
@@ -30,23 +31,7 @@ public class NameUtils {
      * @return The converted value
      */
     public static String camelCaseToKebabCase(String value) {
-        StringBuilder result = new StringBuilder();
-        boolean prevNewWord = true;
-        for (int i = 0; i < value.length(); ++i) {
-            if (value.charAt(i) == '.') {
-                continue;
-            }
-            if (Character.isUpperCase(value.charAt(i))) {
-                if (!prevNewWord) {
-                    result.append("-");
-                }
-                prevNewWord = true;
-            } else {
-                prevNewWord = false;
-            }
-            result.append(Character.toLowerCase(value.charAt(i)));
-        }
-        return result.toString();
+        return JsonSchemaNaming.camelCaseToKebabCase(value);
     }
 
 }
