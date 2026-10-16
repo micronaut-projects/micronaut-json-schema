@@ -19,3 +19,11 @@ dependencies {
     annotationProcessor(mnValidation.micronaut.validation.processor)
     annotationProcessor(mn.micronaut.inject.java)
 }
+
+// The TCK keeps its tests in src/main so that the implementations can run them: like the other test suites, it is
+// not production code to analyse
+rootProject.pluginManager.withPlugin("org.sonarqube") {
+    sonar {
+        skipProject = true
+    }
+}
