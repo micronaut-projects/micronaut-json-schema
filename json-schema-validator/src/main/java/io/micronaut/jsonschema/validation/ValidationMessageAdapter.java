@@ -18,9 +18,10 @@ package io.micronaut.jsonschema.validation;
 import io.micronaut.core.annotation.Internal;
 
 /**
- * Default {@link ValidationMessage} implementation produced by {@link JsonSchemaValidator}.
- * Prior to 2.3.2 this type adapted a NetworkNT {@code com.networknt.schema.Error}; validation is now
- * implemented by Micronaut JSON Schema itself and this type carries the error details directly.
+ * The {@link ValidationMessage} implementation of the {@link JsonSchemaValidator} implementations. It carries the
+ * details of an error: the messages of the NetworkNT based validator are a subclass that also gives access to the
+ * NetworkNT error ({@code NetworkNtValidationMessage}, in {@code micronaut-json-schema-validator-networknt}). Prior to
+ * 2.3.2 this type wrapped the NetworkNT {@code com.networknt.schema.Error}.
  *
  * @author Sergio del Amo
  * @since 1.0.0

@@ -41,13 +41,31 @@ final class ApplicatorKeywords {
     private ApplicatorKeywords() {
     }
 
-    private static boolean matchesAny(Pattern[] patterns, String name) {
+    private static boolean matchesAny(Pattern[] patterns, String name, Keyword keyword, EvaluationContext ctx) {
         for (Pattern pattern : patterns) {
-            if (pattern.matcher(name).find()) {
+            if (find(pattern, name, keyword, ctx)) {
                 return true;
+            }
+            if (ctx.patternLimitExceeded) {
+                return false;
             }
         }
         return false;
+    }
+
+    /**
+     * Matches a property name within the evaluation limit of regular expressions. When the limit is exceeded, an error
+     * is reported, {@link EvaluationContext#patternLimitExceeded} is set and false is returned.
+     */
+    private static boolean find(Pattern pattern, String name, Keyword keyword, EvaluationContext ctx) {
+        try {
+            return EcmaRegex.find(pattern, name);
+        } catch (EcmaRegex.LimitExceededException e) {
+            ctx.error(keyword, PROPERTY + name + "' could not be matched against the regex pattern " + pattern.pattern()
+                + " within the evaluation limit");
+            ctx.patternLimitExceeded = true;
+            return false;
+        }
     }
 
     /**
@@ -412,7 +430,11 @@ final class ApplicatorKeywords {
         private boolean evaluateMatchingPatterns(String name, JsonNode value, EvaluationContext ctx, @Nullable Annotations annotations) {
             boolean valid = true;
             for (int i = 0; i < patterns.length; i++) {
-                if (!patterns[i].matcher(name).find()) {
+                if (!find(patterns[i], name, this, ctx)) {
+                    if (ctx.patternLimitExceeded) {
+                        ctx.patternLimitExceeded = false;
+                        return false;
+                    }
                     continue;
                 }
                 if (annotations != null) {
@@ -459,7 +481,15 @@ final class ApplicatorKeywords {
             boolean valid = true;
             for (Map.Entry<String, JsonNode> entry : instance.entries()) {
                 String name = entry.getKey();
-                if (properties.contains(name) || matchesAny(patterns, name)) {
+                if (properties.contains(name) || matchesAny(patterns, name, this, ctx)) {
+                    continue;
+                }
+                if (ctx.patternLimitExceeded) {
+                    ctx.patternLimitExceeded = false;
+                    valid = false;
+                    if (ctx.failFast()) {
+                        return false;
+                    }
                     continue;
                 }
                 if (annotations != null) {

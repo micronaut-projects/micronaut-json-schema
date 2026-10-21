@@ -378,6 +378,68 @@ class JsonSchemaEngineTest {
     }
 
     @Test
+    void catastrophicBacktrackingIsBounded() throws IOException {
+        // Java handles ^(a+)+$ well, but nested repetitions of .* still backtrack polynomially (minutes for this input)
+        String input = "\"" + "a".repeat(60) + "!\"";
+        CompiledJsonSchema pattern = engine.compile(json("{\"pattern\":\"^(.*a){20}$\"}"));
+        CompiledJsonSchema patternProperties = engine.compile(json("{\"patternProperties\":{\"^(.*a){20}$\":true},\"additionalProperties\":false}"));
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            assertFalse(engine.isValid(pattern, json(input)));
+            List<ValidationMessage> errors = engine.validate(pattern, json(input));
+            assertEquals(List.of(": could not be matched against the regex pattern ^(.*a){20}$ within the evaluation limit"),
+                errors.stream().map(ValidationMessage::getMessage).toList());
+            assertFalse(engine.isValid(patternProperties, json("{" + input + ":1}")));
+        });
+        assertTrue(engine.isValid(pattern, json("\"" + "a".repeat(10_000) + "\"")));
+    }
+
+    @Test
+    void dotMatchesAnyCharacterButLineTerminators() throws IOException {
+        CompiledJsonSchema schema = engine.compile(json("{\"pattern\":\"^.$\"}"));
+        assertTrue(engine.isValid(schema, JsonNode.createStringNode("\u0085")));
+        assertFalse(engine.isValid(schema, JsonNode.createStringNode("\n")));
+        assertFalse(engine.isValid(schema, JsonNode.createStringNode(" ")));
+    }
+
+    @Test
+    void floatsAreComparedByTheirDecimalValue() throws IOException {
+        JsonNode floatValue = JsonNode.createNumberNode(0.1f);
+        assertTrue(engine.isValid(engine.compile(json("{\"const\":0.1}")), floatValue));
+        assertTrue(engine.isValid(engine.compile(json("{\"maximum\":0.1}")), floatValue));
+        assertTrue(engine.isValid(engine.compile(json("{\"minimum\":0.1}")), floatValue));
+    }
+
+    @Test
+    void deeplyNestedInstances() throws Exception {
+        CompiledJsonSchema schema = engine.compile(json("{\"properties\":{\"c\":{\"$ref\":\"#\"},\"n\":{\"type\":\"integer\"}}}"));
+        assertTrue(engine.isValid(schema, nested(1000, JsonNode.createNumberNode(1))));
+        List<ValidationMessage> errors = engine.validate(schema, nested(1000, JsonNode.createStringNode("x")));
+        assertEquals(1, errors.size());
+        assertEquals("/c".repeat(1000) + "/n", errors.get(0).getInstanceLocation());
+        // on a thread with a small stack, a deeper instance fails with an exception rather than a StackOverflowError
+        Throwable[] failure = new Throwable[1];
+        Thread thread = new Thread(null, () -> {
+            try {
+                engine.isValid(schema, nested(20_000, JsonNode.createNumberNode(1)));
+            } catch (Throwable t) {
+                failure[0] = t;
+            }
+        }, "small-stack", 256 * 1024);
+        thread.start();
+        thread.join();
+        assertTrue(failure[0] == null || failure[0] instanceof IllegalStateException, () -> String.valueOf(failure[0]));
+    }
+
+    private static JsonNode nested(int depth, JsonNode leaf) {
+        JsonNode node = JsonNode.createObjectNode(Map.of("n", leaf));
+        for (int i = 0; i < depth; i++) {
+            node = JsonNode.createObjectNode(Map.of("c", node));
+        }
+        // the innermost "n" is depth levels deep
+        return node;
+    }
+
+    @Test
     void numbersAreComparedByValue() throws IOException {
         assertTrue(engine.isValid(engine.compile(json("{\"const\":1}")), json("1.0")));
         assertTrue(engine.isValid(engine.compile(json("{\"type\":\"integer\"}")), json("1.0")));

@@ -1,5 +1,6 @@
 package io.micronaut.jsonschema.validation.tck;
 
+import io.micronaut.context.annotation.Property;
 import io.micronaut.jsonschema.validation.JsonSchemaValidator;
 import io.micronaut.jsonschema.validation.ValidationMessage;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -17,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * References with the {@code classpath:} scheme, inside and outside the folder of the generated schemas.
  */
+// the built-in validator only loads classpath: references from the generated schemas folder and the allowed folders
+@Property(name = "micronaut.jsonschema.validation.classpath-folders", value = "tck-schemas")
 @MicronautTest(startApplication = false)
 class ClasspathReferencesTest {
 

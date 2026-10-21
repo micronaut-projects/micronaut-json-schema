@@ -15,6 +15,7 @@
  */
 package io.micronaut.jsonschema.validation;
 
+import io.micronaut.context.annotation.Property;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.core.annotation.Internal;
 import io.micronaut.core.io.ResourceLoader;
@@ -70,7 +71,8 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         JsonMapper jsonMapper,
         JsonSchemaClassPathResourceLoader jsonSchemaClassPathResourceLoader,
         JsonSchemaConfiguration jsonSchemaConfiguration,
-        @Value("${" + JsonSchemaValidatorConfiguration.PREFIX + ".assert-formats:true}") boolean assertFormats
+        @Value("${" + JsonSchemaValidatorConfiguration.PREFIX + ".assert-formats:true}") boolean assertFormats,
+        @Property(name = JsonSchemaValidatorConfiguration.PREFIX + ".classpath-folders") @Nullable List<String> classpathFolders
     ) {
         this.jsonMapper = jsonMapper;
         this.jsonSchemaClassPathResourceLoader = jsonSchemaClassPathResourceLoader;
@@ -79,7 +81,8 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
             config.baseUri(),
             config.classpathFolder(),
             resourceLoader,
-            jsonMapper
+            jsonMapper,
+            classpathFolders == null ? List.of() : classpathFolders
         );
         this.engine = new JsonSchemaEngine(jsonMapper, retriever::retrieve, Dialect.DRAFT_2020_12, directoryUri(config.baseUri()), assertFormats);
     }
@@ -233,7 +236,9 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
 
     /**
      * Resolves schema URIs to JSON schema files on the classpath. URIs that start with the configured
-     * base URI are resolved relative to the generated schemas folder.
+     * base URI are resolved relative to the generated schemas folder. {@code classpath:} URIs are resolved from the
+     * generated schemas folder, or from the folders allowed with {@code micronaut.jsonschema.validation.classpath-folders}:
+     * an ad-hoc schema cannot read other JSON resources of the classpath.
      */
     private static final class ClasspathSchemaRetriever {
         private final JsonSchemaConfiguration jsonSchemaConfiguration;
@@ -241,17 +246,28 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         private final String fallbackClasspathFolder;
         private final ResourceLoader resourceLoader;
         private final JsonMapper jsonMapper;
+        private final List<String> allowedFolders;
 
         private ClasspathSchemaRetriever(JsonSchemaConfiguration jsonSchemaConfiguration,
                                          @Nullable String baseUri,
                                          String fallbackClasspathFolder,
                                          ResourceLoader resourceLoader,
-                                         JsonMapper jsonMapper) {
+                                         JsonMapper jsonMapper,
+                                         List<String> allowedFolders) {
             this.jsonSchemaConfiguration = jsonSchemaConfiguration;
             this.baseUri = baseUri;
             this.fallbackClasspathFolder = fallbackClasspathFolder;
             this.resourceLoader = resourceLoader;
             this.jsonMapper = jsonMapper;
+            this.allowedFolders = allowedFolders.stream().map(ClasspathSchemaRetriever::folder).toList();
+        }
+
+        private static String folder(String folder) {
+            String f = folder;
+            while (f.startsWith("/")) {
+                f = f.substring(1);
+            }
+            return f.isEmpty() || f.endsWith("/") ? f : f + "/";
         }
 
         @Nullable JsonNode retrieve(String uri) throws IOException {
@@ -264,8 +280,7 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
                     resource = resource.substring(1);
                 }
                 if (!resource.startsWith(classpathFolder)) {
-                    // any other classpath resource, as NetworkNT resolves classpath: URIs
-                    return resource.startsWith("../") ? null : read(JsonSchemaResourceUtils.CLASSPATH_PREFIX + resource);
+                    return readAllowed(resource, uri);
                 }
                 path = resource.substring(classpathFolder.length());
             } else if (baseUri != null && !baseUri.isEmpty() && path.startsWith(baseUri)) {
@@ -278,6 +293,15 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
                 fallbackClasspathFolder
             );
             return read(JsonSchemaResourceUtils.CLASSPATH_PREFIX + filePath);
+        }
+
+        private @Nullable JsonNode readAllowed(String resource, String uri) throws IOException {
+            boolean allowed = !resource.startsWith("../") && allowedFolders.stream().anyMatch(resource::startsWith);
+            if (!allowed) {
+                throw new IllegalArgumentException("The classpath resource of " + uri + " is outside the generated schemas folder: "
+                    + "allow its folder with " + JsonSchemaValidatorConfiguration.PREFIX + ".classpath-folders");
+            }
+            return read(JsonSchemaResourceUtils.CLASSPATH_PREFIX + resource);
         }
 
         private @Nullable JsonNode read(String location) throws IOException {

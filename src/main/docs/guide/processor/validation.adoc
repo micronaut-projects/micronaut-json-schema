@@ -69,15 +69,17 @@ The built-in validator implements the following JSON Schema dialects. The dialec
 References (`$ref`) are resolved as follows by the built-in validator:
 
 * Within the schema document, using JSON Pointers (`#/$defs/item`), anchors (`$anchor`, `$dynamicAnchor`) and embedded resources identified by `$id`.
-* `classpath:` URIs, the default base URI of the generated schemas, are loaded from the classpath.
+* `classpath:` URIs, the default base URI of the generated schemas, are loaded from the generated schemas folder on the classpath. Relative references resolve against the `classpath:` URI of the schema that contains them. To allow references to JSON schemas in other folders of the classpath, list the folders in `micronaut.jsonschema.validation.classpath-folders` (for example `schemas/common`). Other classpath resources cannot be loaded, so a schema given as a String or a Map cannot read arbitrary JSON files of the application.
 * URIs that start with the configured base URI (`micronaut.jsonschema.validation.base-uri`, `http://localhost:8080/schemas/` by default) are loaded from the generated schemas folder on the classpath (`META-INF/schemas/` by default). Relative references in schemas without an `$id`, such as `{"$ref": "environment.schema.json"}`, are resolved against the base URI too.
 * The meta-schemas of all supported dialects are bundled, so references to `https://json-schema.org/draft/2020-12/schema` and similar work without network access.
 
 The validator never loads schemas over the network.
 
+The built-in validator bounds the work done for untrusted input: matching a regular expression is stopped after a number of steps proportional to the length of the input. A value that cannot be matched within that limit is invalid; this only happens with patterns that backtrack catastrophically, such as `^(.*a){20}$`. An instance nested so deeply that it would overflow the stack of the calling thread is reported with an `IllegalStateException`.
+
 The `format` keyword is asserted for strings by both implementations, as in previous versions. To use `format` as an annotation only with the built-in validator, set `micronaut.jsonschema.validation.assert-formats` to `false`; it is then only asserted for schemas whose meta-schema enables the 2020-12 format-assertion vocabulary. The NetworkNT validator is configured by its `com.networknt.schema.SchemaRegistryConfig` bean. The following formats are validated: `date-time`, `date`, `time`, `duration`, `email`, `idn-email`, `hostname`, `idn-hostname`, `ipv4`, `ipv6`, `uri`, `uri-reference`, `iri`, `iri-reference`, `uri-template`, `uuid`, `json-pointer`, `relative-json-pointer` and `regex`. Unknown formats are ignored. `idn-hostname` follows IDNA2008, with the Unicode derived properties approximated from Unicode general categories.
 
-Regular expressions (`pattern`, `patternProperties` and the `regex` format) use ECMA-262 syntax and are translated to `java.util.regex` patterns. For example, `$` only matches at the end of the input and `\s` matches Unicode white space.
+Regular expressions (`pattern`, `patternProperties` and the `regex` format) use ECMA-262 syntax and are translated to `java.util.regex` patterns. For example, `$` only matches at the end of the input, `.` matches any character but a line terminator, and `\s` matches Unicode white space.
 
 The built-in validator is verified against the official https://github.com/json-schema-org/JSON-Schema-Test-Suite[JSON-Schema-Test-Suite]. All required and optional tests for draft-04, draft-06, draft-07, 2019-09 and 2020-12 pass, including the optional `format`, `ecmascript-regex`, `bignum`, `float-overflow`, `cross-draft`, `refOfUnknownKeyword` and `dependencies-compatibility` tests. The 2020-12 tests that expect `format` to be an annotation only are run with format assertions disabled.
 

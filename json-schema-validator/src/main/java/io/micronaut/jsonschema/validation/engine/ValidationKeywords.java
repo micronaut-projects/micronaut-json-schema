@@ -275,10 +275,17 @@ final class ValidationKeywords {
 
         @Override
         boolean evaluate(JsonNode instance, EvaluationContext ctx, @Nullable Annotations annotations) {
-            if (!instance.isString() || pattern.matcher(instance.getStringValue()).find()) {
+            if (!instance.isString()) {
                 return true;
             }
-            ctx.error(this, "does not match the regex pattern " + source);
+            try {
+                if (EcmaRegex.find(pattern, instance.getStringValue())) {
+                    return true;
+                }
+                ctx.error(this, "does not match the regex pattern " + source);
+            } catch (EcmaRegex.LimitExceededException e) {
+                ctx.error(this, "could not be matched against the regex pattern " + source + " within the evaluation limit");
+            }
             return false;
         }
     }

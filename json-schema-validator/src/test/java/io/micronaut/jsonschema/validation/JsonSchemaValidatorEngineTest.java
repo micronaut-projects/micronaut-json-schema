@@ -10,6 +10,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Behaviour specific to the built-in validator; the behaviour shared with other implementations is in the TCK.
@@ -36,6 +37,14 @@ class JsonSchemaValidatorEngineTest {
         ValidationMessage message = validator.validate(invalid, Llama.class).iterator().next();
         // the default base URI of the generated schemas is classpath:META-INF/schemas (#429)
         assertEquals("classpath:META-INF/schemas/llama.schema.json#/properties/name/minLength", message.getSchemaLocation());
+    }
+
+    @Test
+    void classpathReferencesOutsideTheSchemasFolderMustBeAllowed() {
+        // tck-schemas/code.json is on the classpath, but its folder is not allowed by micronaut.jsonschema.validation.classpath-folders
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> validator.validate("\"ab\"", "{\"$ref\":\"classpath:tck-schemas/code.json\"}"));
+        assertTrue(e.getMessage().contains("micronaut.jsonschema.validation.classpath-folders"), e.getMessage());
     }
 
     @Test

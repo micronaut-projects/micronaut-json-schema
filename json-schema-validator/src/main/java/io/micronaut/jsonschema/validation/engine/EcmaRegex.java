@@ -33,6 +33,9 @@ final class EcmaRegex {
 
     private static final String WHITESPACE = "\\t\\n\\x0B\\f\\r \\x{A0}\\x{1680}\\x{2000}-\\x{200A}\\x{2028}\\x{2029}\\x{202F}\\x{205F}\\x{3000}\\x{FEFF}";
     private static final String ECMA_LETTER_ESCAPES = "bBcdDfknpPrsStuvwWx";
+    // the reads of a regular expression match: generous for linear matching, small enough to stop catastrophic backtracking
+    private static final long STEP_BUDGET = 1_000_000L;
+    private static final long STEP_BUDGET_PER_CHAR = 1_000L;
     private static final Map<String, String> CATEGORY_NAMES = Map.ofEntries(
         Map.entry("Letter", "L"),
         Map.entry("Cased_Letter", "LC"),
@@ -89,6 +92,19 @@ final class EcmaRegex {
      */
     static Pattern compile(String ecmaPattern) {
         return Pattern.compile(translate(ecmaPattern, false));
+    }
+
+    /**
+     * Finds the pattern in the input within a budget of character reads, so that a pattern with catastrophic
+     * backtracking (for example {@code ^(a+)+$}) cannot pin a thread on untrusted input.
+     *
+     * @param pattern The pattern
+     * @param input The input
+     * @return Whether the pattern is found
+     * @throws LimitExceededException If the budget is exhausted
+     */
+    static boolean find(Pattern pattern, String input) {
+        return pattern.matcher(new BudgetedCharSequence(input, STEP_BUDGET + STEP_BUDGET_PER_CHAR * input.length())).find();
     }
 
     /**
@@ -178,6 +194,9 @@ final class EcmaRegex {
                     classCharacter(c);
                 } else if (c == '[') {
                     openClass();
+                } else if (c == '.') {
+                    // ECMA-262: any character but a line terminator (Java's . also excludes U+0085)
+                    sb.append("[^\\n\\r\\u2028\\u2029]");
                 } else if (c == '$') {
                     sb.append("\\z");
                 } else if (strict && c == '(' && isGlobalFlagGroup(pattern, pos - 1)) {
@@ -307,6 +326,52 @@ final class EcmaRegex {
                     pos++;
                 }
             }
+        }
+    }
+
+    /**
+     * Thrown when the evaluation of a regular expression exceeds its budget.
+     */
+    static final class LimitExceededException extends RuntimeException {
+        LimitExceededException() {
+            super("Regular expression evaluation exceeded its limit", null, false, false);
+        }
+    }
+
+    /**
+     * A character sequence that counts the reads of the regular expression engine.
+     */
+    private static final class BudgetedCharSequence implements CharSequence {
+        private final String value;
+        private final long budget;
+        private long reads;
+
+        BudgetedCharSequence(String value, long budget) {
+            this.value = value;
+            this.budget = budget;
+        }
+
+        @Override
+        public int length() {
+            return value.length();
+        }
+
+        @Override
+        public char charAt(int index) {
+            if (++reads > budget) {
+                throw new LimitExceededException();
+            }
+            return value.charAt(index);
+        }
+
+        @Override
+        public CharSequence subSequence(int start, int end) {
+            return value.substring(start, end);
+        }
+
+        @Override
+        public String toString() {
+            return value;
         }
     }
 }

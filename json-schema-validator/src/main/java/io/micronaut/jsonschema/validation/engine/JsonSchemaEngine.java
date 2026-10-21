@@ -131,7 +131,7 @@ public final class JsonSchemaEngine {
         }
         List<ValidationMessage> errors = new ArrayList<>(4);
         EvaluationContext ctx = new EvaluationContext(errors, schema.collectAnnotations);
-        schema.root.evaluate(instance, ctx, ctx.newAnnotations());
+        evaluate(schema, instance, ctx);
         return errors;
     }
 
@@ -144,7 +144,16 @@ public final class JsonSchemaEngine {
      */
     public boolean isValid(CompiledJsonSchema schema, JsonNode instance) {
         EvaluationContext ctx = new EvaluationContext(null, schema.collectAnnotations);
-        return schema.root.evaluate(instance, ctx, ctx.newAnnotations());
+        return evaluate(schema, instance, ctx);
+    }
+
+    private static boolean evaluate(CompiledJsonSchema schema, JsonNode instance, EvaluationContext ctx) {
+        try {
+            return schema.root.evaluate(instance, ctx, ctx.newAnnotations());
+        } catch (StackOverflowError e) {
+            // a recursive schema applied to a very deeply nested instance: report it rather than failing the thread
+            throw new IllegalStateException("The instance is too deeply nested to be validated against " + schema.root.location, e);
+        }
     }
 
     static String resourceKey(Dialect dialect, String uri) {

@@ -38,6 +38,8 @@ final class EvaluationContext {
     private static final int MAX_REF_DEPTH = 2048;
 
     @Nullable List<ValidationMessage> errors;
+    // set when a property name could not be matched against a pattern within the evaluation limit
+    boolean patternLimitExceeded;
     final boolean collectAnnotations;
 
     private String[] names = new String[16];

@@ -125,7 +125,7 @@ final class JsonValues {
             return Long.compare(a.longValue(), b.longValue());
         }
         if (isExactDouble(a) && isExactDouble(b)) {
-            return compareDoubles(a.doubleValue(), b.doubleValue());
+            return compareDoubles(asDouble(a), asDouble(b));
         }
         if (isNonFinite(a)) {
             return a.doubleValue() > 0 ? 1 : -1;
@@ -146,6 +146,15 @@ final class JsonValues {
 
     private static boolean isNonFinite(Number n) {
         return isFloating(n) && !Double.isFinite(n.doubleValue());
+    }
+
+    /**
+     * @param n An integral or floating point number
+     * @return The number as a double. A float is converted by its decimal representation, as in {@link #toBigDecimal(Number)},
+     * so that {@code 0.1f} equals {@code 0.1}
+     */
+    private static double asDouble(Number n) {
+        return n instanceof Float f ? Double.parseDouble(Float.toString(f)) : n.doubleValue();
     }
 
     private static int compareDoubles(double a, double b) {
