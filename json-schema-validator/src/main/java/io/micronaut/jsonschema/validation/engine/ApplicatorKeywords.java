@@ -480,22 +480,7 @@ final class ApplicatorKeywords {
             }
             boolean valid = true;
             for (Map.Entry<String, JsonNode> entry : instance.entries()) {
-                String name = entry.getKey();
-                if (properties.contains(name) || matchesAny(patterns, name, this, ctx)) {
-                    continue;
-                }
-                if (ctx.patternLimitExceeded) {
-                    ctx.patternLimitExceeded = false;
-                    valid = false;
-                    if (ctx.failFast()) {
-                        return false;
-                    }
-                    continue;
-                }
-                if (annotations != null) {
-                    annotations.addProperty(name);
-                }
-                if (!evaluateAdditional(name, entry.getValue(), ctx)) {
+                if (!evaluateEntry(entry.getKey(), entry.getValue(), ctx, annotations)) {
                     valid = false;
                     if (ctx.failFast()) {
                         return false;
@@ -503,6 +488,20 @@ final class ApplicatorKeywords {
                 }
             }
             return valid;
+        }
+
+        private boolean evaluateEntry(String name, JsonNode value, EvaluationContext ctx, @Nullable Annotations annotations) {
+            if (properties.contains(name) || matchesAny(patterns, name, this, ctx)) {
+                return true;
+            }
+            if (ctx.patternLimitExceeded) {
+                ctx.patternLimitExceeded = false;
+                return false;
+            }
+            if (annotations != null) {
+                annotations.addProperty(name);
+            }
+            return evaluateAdditional(name, value, ctx);
         }
 
         private boolean evaluateAdditional(String name, JsonNode value, EvaluationContext ctx) {
