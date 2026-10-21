@@ -251,8 +251,14 @@ final class JsonValues {
             return 0;
         }
         // integral values that fit a long hash like the small integral types
-        boolean fitsLong = value.scale() <= 0 && value.precision() - value.scale() <= 18;
-        return fitsLong ? Long.hashCode(value.longValueExact()) : value.hashCode();
+        if (value.scale() <= 0 && value.precision() - value.scale() <= 19) {
+            try {
+                return Long.hashCode(value.longValueExact());
+            } catch (ArithmeticException e) {
+                // a 19 digit value outside the long range
+            }
+        }
+        return value.hashCode();
     }
 
     /**

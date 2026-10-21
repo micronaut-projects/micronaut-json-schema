@@ -76,6 +76,17 @@ class ValidationInputsTest {
     }
 
     @Test
+    void numericallyEqualItemsAreNotUnique() throws IOException {
+        String schema = "{\"uniqueItems\":true}";
+        assertEquals(1, validator.validate("[1000000000000000000,1000000000000000000.0]", schema).size());
+        assertEquals(1, validator.validate("[-1000000000000000000,-1000000000000000000.0]", schema).size());
+        assertEquals(1, validator.validate("[[1000000000000000000],[1000000000000000000.0]]", schema).size());
+        assertEquals(1, validator.validate("[{\"a\":1000000000000000000},{\"a\":1000000000000000000.0}]", schema).size());
+        assertEquals(1, validator.validate("[9223372036854775807,9223372036854775807]", schema).size());
+        assertTrue(validator.validate("[1000000000000000000,1000000000000000001]", schema).isEmpty());
+    }
+
+    @Test
     void unknownTypesAreRejected() {
         assertThrows(IllegalArgumentException.class, () -> validator.validate(Map.of(), ValidationInputsTest.class));
     }
