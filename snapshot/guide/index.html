@@ -101,21 +101,23 @@
         
         <div class="toc-item" style="margin-left:10px" id="toc-item-globalConfiguration"><a href="#globalConfiguration"><strong>4.1</strong><span>JSON Schema Configuration</span></a></div>
         
-        <div class="toc-item" style="margin-left:10px" id="toc-item-configuration"><a href="#configuration"><strong>4.2</strong><span>JSON Schema Annotation Members</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-schemaIds"><a href="#schemaIds"><strong>4.2</strong><span>Schema IDs and References</span></a></div>
         
-        <div class="toc-item" style="margin-left:10px" id="toc-item-serving"><a href="#serving"><strong>4.3</strong><span>Serving JSON Schemas</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-configuration"><a href="#configuration"><strong>4.3</strong><span>JSON Schema Annotation Members</span></a></div>
         
-        <div class="toc-item" style="margin-left:10px" id="toc-item-loading"><a href="#loading"><strong>4.4</strong><span>Loading JSON Schemas</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-serving"><a href="#serving"><strong>4.4</strong><span>Serving JSON Schemas</span></a></div>
         
-        <div class="toc-item" style="margin-left:10px" id="toc-item-validation"><a href="#validation"><strong>4.5</strong><span>JSON Schema Validation</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-loading"><a href="#loading"><strong>4.5</strong><span>Loading JSON Schemas</span></a></div>
         
-        <div class="toc-item" style="margin-left:10px" id="toc-item-sources"><a href="#sources"><strong>4.6</strong><span>Supported Information Sources</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-validation"><a href="#validation"><strong>4.6</strong><span>JSON Schema Validation</span></a></div>
         
-        <div class="toc-item" style="margin-left:20px" id="toc-item-javadoc"><a href="#javadoc"><strong>4.6.1</strong><span>JavaDoc</span></a></div>
+        <div class="toc-item" style="margin-left:10px" id="toc-item-sources"><a href="#sources"><strong>4.7</strong><span>Supported Information Sources</span></a></div>
         
-        <div class="toc-item" style="margin-left:20px" id="toc-item-validationAnnotations"><a href="#validationAnnotations"><strong>4.6.2</strong><span>Validation Annotations</span></a></div>
+        <div class="toc-item" style="margin-left:20px" id="toc-item-javadoc"><a href="#javadoc"><strong>4.7.1</strong><span>JavaDoc</span></a></div>
         
-        <div class="toc-item" style="margin-left:20px" id="toc-item-jacksonAnnotations"><a href="#jacksonAnnotations"><strong>4.6.3</strong><span>Jackson Annotations</span></a></div>
+        <div class="toc-item" style="margin-left:20px" id="toc-item-validationAnnotations"><a href="#validationAnnotations"><strong>4.7.2</strong><span>Validation Annotations</span></a></div>
+        
+        <div class="toc-item" style="margin-left:20px" id="toc-item-jacksonAnnotations"><a href="#jacksonAnnotations"><strong>4.7.3</strong><span>Jackson Annotations</span></a></div>
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-generator"><a href="#generator"><strong>5</strong><span>Generating Beans from Schema</span></a></div>
         
@@ -431,7 +433,7 @@ documentation and add <code>Serdeable</code> annotation to the bean.</td>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
   "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "$id":"http://localhost:8080/schemas/llama.schema.json",
+  "$id":"classpath:META-INF/schemas/llama.schema.json",
   "title":"Llama",
   "description":"A llama. &lt;4&gt;",
   "type":"object",
@@ -570,7 +572,7 @@ kapt {
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.baseUri</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Set the base URL for all the schemas. It will be prepended to all relative schema URLs.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set the base URL for all the schemas. It will be prepended to all relative schema URLs. Defaults to <code>classpath:META-INF/&lt;outputLocation&gt;</code>, so that the references between the generated schemas resolve from the classpath (see <a href="#schemaIds">Schema IDs and References</a>).</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.outputLocation</code></p></td>
@@ -591,7 +593,41 @@ kapt {
 </tbody>
 </table>
 
-<h2 id="configuration"><a class="anchor" href="#configuration"></a>4.2 JSON Schema Annotation Members</h2>
+<h2 id="schemaIds"><a class="anchor" href="#schemaIds"></a>4.2 Schema IDs and References</h2>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/processor/schemaIds.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>Each generated schema has an <code>$id</code> made of the base URI and the schema&#8217;s URI. Unless the <code>uri</code> member of the <a href="../api/io/micronaut/jsonschema/JsonSchema.html">JsonSchema</a> annotation is set, the URI is the kebab case of the title, which defaults to the simple name of the class. The simple name of a nested class includes the classes it is nested in, so the schema of <code>Order.Line</code> is <code>/order-line.schema.json</code>, and the schema of a class annotated with <code>@JsonSchema(title = "RedWingedBlackbird")</code> is <code>/red-winged-blackbird.schema.json</code>. The schema is written to the same path under <code>META-INF/&lt;outputLocation&gt;/</code>, where <a href="../api/io/micronaut/jsonschema/utils/JsonSchemaClassPathResourceLoader.html">JsonSchemaClassPathResourceLoader</a> and <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a> find the schema of a class.</p>
+</div>
+<div class="paragraph">
+<p>A property whose type is another <code>@JsonSchema</code> type references that schema with a <code>$ref</code> to its <code>$id</code>.</p>
+</div>
+<div class="paragraph">
+<p>By default, the base URI is <code>classpath:META-INF/&lt;outputLocation&gt;</code> (<code>classpath:META-INF/schemas</code> unless <code>micronaut.jsonschema.outputLocation</code> is set), which is where the schema files are written. JSON Schema validators that resolve <code>classpath:</code> URIs, such as <a href="https://github.com/networknt/json-schema-validator">NetworkNT JSON Schema Validator</a> (used by <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a> and by Apache Camel&#8217;s JSON Validator component), therefore resolve the references between generated schemas from the classpath without any configuration and without network access.</p>
+</div>
+<div class="paragraph">
+<p>Set <code>micronaut.jsonschema.baseUri</code> when the schemas are published at a URL, for example when you <a href="#serving">serve them from your application</a>, so that the <code>$id</code> and the `$ref`s point to that URL.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Before Micronaut JSON Schema 2.3.2, the default base URI was <code><a href="http://localhost:8080/schemas" class="bare">http://localhost:8080/schemas</a></code>, which made validators fetch referenced schemas over HTTP. To keep the previous IDs, set the <code>micronaut.jsonschema.baseUri</code> annotation processor option to <code><a href="http://localhost:8080/schemas" class="bare">http://localhost:8080/schemas</a></code>. <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a> still maps <code><a href="http://localhost:8080/schemas/" class="bare">http://localhost:8080/schemas/</a></code> (configurable with <code>micronaut.jsonschema.validation.base-uri</code>) to the classpath, so schemas generated by earlier versions keep validating.
+</td>
+</tr>
+</table>
+</div>
+
+<h2 id="configuration"><a class="anchor" href="#configuration"></a>4.3 JSON Schema Annotation Members</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/processor/configuration.adoc"'>
@@ -693,7 +729,7 @@ This will affect the file name as well as the id by which this schema can be ref
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
   "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "$id":"http://localhost:8080/schemas/red-winged-blackbird.schema.json",
+  "$id":"classpath:META-INF/schemas/red-winged-blackbird.schema.json",
   "title":"RedWingedBlackbird",
   "description":"A species of blackbird with red wings",
   "type":"object",
@@ -711,7 +747,7 @@ This will affect the file name as well as the id by which this schema can be ref
 </div>
 </div>
 
-<h2 id="serving"><a class="anchor" href="#serving"></a>4.3 Serving JSON Schemas</h2>
+<h2 id="serving"><a class="anchor" href="#serving"></a>4.4 Serving JSON Schemas</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/processor/serving.adoc"'>
@@ -830,8 +866,11 @@ baseUri = "https://example.com/schemas"</code></pre>
 </tr>
 </table>
 </div>
+<div class="paragraph">
+<p>When you serve the schemas, set the <code>micronaut.jsonschema.baseUri</code> annotation processor option (see <a href="#globalConfiguration">JSON Schema Configuration</a>) to the URL they are served at, for example <code><a href="https://example.com/schemas" class="bare">https://example.com/schemas</a></code>, so that the <code>$id</code> and the <code>$ref`s of the served schemas point to that URL instead of the classpath, and set `micronaut.jsonschema.validation.baseUri</code> to the same URL so that <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a> still resolves the references from the classpath.</p>
+</div>
 
-<h2 id="loading"><a class="anchor" href="#loading"></a>4.4 Loading JSON Schemas</h2>
+<h2 id="loading"><a class="anchor" href="#loading"></a>4.5 Loading JSON Schemas</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/processor/loading.adoc"'>
@@ -870,7 +909,7 @@ runtime = [
 </p>
 </div>
 
-<h2 id="validation"><a class="anchor" href="#validation"></a>4.5 JSON Schema Validation</h2>
+<h2 id="validation"><a class="anchor" href="#validation"></a>4.6 JSON Schema Validation</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/processor/validation.adoc"'>
@@ -909,7 +948,7 @@ runtime = [
 </p>
 </div>
 
-<h2 id="sources"><a class="anchor" href="#sources"></a>4.6 Supported Information Sources</h2>
+<h2 id="sources"><a class="anchor" href="#sources"></a>4.7 Supported Information Sources</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/sources.adoc"'>
@@ -922,7 +961,7 @@ runtime = [
 <p>Information for JSON schema is aggregated from multiple sources.</p>
 </div>
 
-<h2 id="javadoc"><a class="anchor" href="#javadoc"></a>4.6.1 JavaDoc</h2>
+<h2 id="javadoc"><a class="anchor" href="#javadoc"></a>4.7.1 JavaDoc</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/processor/sources/javadoc.adoc"'>
@@ -936,7 +975,7 @@ runtime = [
 descriptions and record parameter descriptions.</p>
 </div>
 
-<h2 id="validationAnnotations"><a class="anchor" href="#validationAnnotations"></a>4.6.2 Validation Annotations</h2>
+<h2 id="validationAnnotations"><a class="anchor" href="#validationAnnotations"></a>4.7.2 Validation Annotations</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/processor/sources/validationAnnotations.adoc"'>
@@ -1092,7 +1131,7 @@ Custom validators cannot be supported, as this information is implementation-spe
 </table>
 </div>
 
-<h2 id="jacksonAnnotations"><a class="anchor" href="#jacksonAnnotations"></a>4.6.3 Jackson Annotations</h2>
+<h2 id="jacksonAnnotations"><a class="anchor" href="#jacksonAnnotations"></a>4.7.3 Jackson Annotations</h2>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/processor/sources/jacksonAnnotations.adoc"'>

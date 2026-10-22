@@ -90,7 +90,8 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>Record Components:</dt>
-<dd><code><span id="param-baseUri">baseUri</span></code> - The base URI for JSON schemas to be validated</dd>
+<dd><code><span id="param-baseUri">baseUri</span></code> - The base URI for JSON schemas to be validated. It defaults to <code>http://localhost:8080/schemas/</code>,
+               the default base URI of schemas generated before 2.3.2.</dd>
 <dd><code><span id="param-classpathFolder">classpathFolder</span></code> - THe folder where the JSON schemas are located, on the classpath. Deprecated. Not used. Use <a href="../utils/JsonSchemaConfiguration.html#getOutputLocation()"><code>JsonSchemaConfiguration.getOutputLocation()</code></a> instead.</dd>
 </dl>
 <hr>
@@ -100,7 +101,8 @@ loadScripts(document, 'script');</script>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Record.html" title="class or interface in java.lang" class="external-link">Record</a></span></div>
 <div class="block">A configuration for <a href="JsonSchemaValidator.html" title="interface in io.micronaut.jsonschema.validation"><code>JsonSchemaValidator</code></a>.
 The validator will resolve URIs that start with base URI to JSON schemas in the specified
-folder on the classpath.</div>
+folder on the classpath. URIs with the <code>classpath:</code> scheme, the default base URI of the
+generated schemas, are always resolved from the classpath.</div>
 <dl class="notes">
 <dt>Since:</dt>
 <dd>1.0.0</dd>

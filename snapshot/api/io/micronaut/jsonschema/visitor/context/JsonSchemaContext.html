@@ -107,7 +107,9 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Record Components:</dt>
 <dd><code><span id="param-outputLocation">outputLocation</span></code> - The location where JSON schemas will be generated inside the build <code>META-INF/</code> directory.</dd>
-<dd><code><span id="param-baseUrl">baseUrl</span></code> - The base URI to be used for schemas.</dd>
+<dd><code><span id="param-baseUrl">baseUrl</span></code> - The base URI to be used for schemas.
+               It defaults to <code>classpath:META-INF/&lt;outputLocation&gt;</code>, so that the references between the
+               generated schemas resolve from the classpath.</dd>
 <dd><code><span id="param-binaryAsArray">binaryAsArray</span></code> - Whether to encode byte array as a JSON array.
                      The default and preferred behavior is to encode it as a Base64 string.</dd>
 <dd><code><span id="param-draft">draft</span></code> - An enum for JSON Schema draft versions.
