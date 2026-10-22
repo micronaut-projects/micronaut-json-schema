@@ -22,9 +22,11 @@ import io.micronaut.jsonschema.utils.JsonSchemaConfiguration;
 /**
  * A configuration for {@link JsonSchemaValidator}.
  * The validator will resolve URIs that start with base URI to JSON schemas in the specified
- * folder on the classpath.
+ * folder on the classpath. URIs with the {@code classpath:} scheme, the default base URI of the
+ * generated schemas, are always resolved from the classpath.
  *
- * @param baseUri The base URI for JSON schemas to be validated
+ * @param baseUri The base URI for JSON schemas to be validated. It defaults to {@code http://localhost:8080/schemas/},
+ *                the default base URI of schemas generated before 2.3.2.
  * @param classpathFolder THe folder where the JSON schemas are located, on the classpath. Deprecated. Not used. Use {@link JsonSchemaConfiguration#getOutputLocation()} instead.
  *
  * @author Andriy Dmytruk

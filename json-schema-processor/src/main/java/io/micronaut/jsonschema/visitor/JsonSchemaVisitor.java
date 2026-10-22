@@ -29,6 +29,7 @@ import io.micronaut.inject.visitor.TypeElementVisitor;
 import io.micronaut.inject.visitor.VisitorContext;
 import io.micronaut.inject.writer.GeneratedFile;
 import io.micronaut.jsonschema.JsonSchema;
+import io.micronaut.jsonschema.naming.JsonSchemaNaming;
 import io.micronaut.jsonschema.model.Schema;
 import io.micronaut.jsonschema.model.Schema.Type;
 import io.micronaut.jsonschema.serialization.JsonSchemaMapperFactory;
@@ -40,14 +41,12 @@ import io.micronaut.jsonschema.visitor.context.JsonSchemaContext;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.net.URI;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static io.micronaut.jsonschema.visitor.context.JsonSchemaContext.JSON_SCHEMA_CONTEXT_PROPERTY;
@@ -67,7 +66,6 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
         new ValidationInfoAggregator(),
         new DocumentationInfoAggregator()
     );
-    private static final String SUFFIX = ".schema.json";
     private static final String SLASH = "/";
 
     @Override
@@ -113,8 +111,8 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
 
         AnnotationValue<JsonSchema> schemaAnn = element.getGenericType().getDeclaredAnnotation(JsonSchema.class);
         if (schemaAnn != null) {
-            schema.setTitle(schemaAnn.stringValue("title")
-                .orElse(element.getGenericType().getSimpleName().replace('$', '.')));
+            schema.setTitle(JsonSchemaNaming.title(schemaAnn.stringValue("title").orElse(null),
+                element.getGenericType().getSimpleName()));
             schemaAnn.stringValue("description").ifPresent(schema::setDescription);
             schema.set$id(createSchemaId(element, schemaAnn, visitorContext, context));
             schema.set$schema(context.draft().getDraftUrl());
@@ -167,28 +165,14 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
         TypedElement element, AnnotationValue<JsonSchema> schemaAnn,
         VisitorContext visitorContext, JsonSchemaContext context
     ) {
-        String title = schemaAnn.stringValue("title")
-            .orElse(element.getGenericType().getSimpleName().replace('$', '.'));
-
-        Optional<String> uriOptional = schemaAnn.stringValue("uri");
-        String uri;
-        if (uriOptional.isPresent()) {
-            uri = uriOptional.get();
-            if (!uri.contains("://")) {
-                uri = uri + SUFFIX;
-            }
-        } else {
-            uri = SLASH + NameUtils.camelCaseToKebabCase(title) + SUFFIX;
+        String title = JsonSchemaNaming.title(schemaAnn.stringValue("title").orElse(null),
+            element.getGenericType().getSimpleName());
+        String uri = JsonSchemaNaming.uri(title, schemaAnn.stringValue("uri").orElse(null));
+        if (!JsonSchemaNaming.isAbsolute(uri) && context.baseUrl() == null) {
+            visitorContext.warn("The JSON schema for type " + element.getName()
+                + " does not have a resolvable URI", element);
         }
-        if (!uri.contains("://")) {
-            if (context.baseUrl() != null) {
-                uri = context.baseUrl() + uri;
-            } else {
-                visitorContext.warn("The JSON schema for type " + element.getName()
-                    + " does not have a resolvable URI", element);
-            }
-        }
-        return uri;
+        return JsonSchemaNaming.id(uri, context.baseUrl());
     }
 
     private static void setSchemaType(TypedElement element, VisitorContext visitorContext, JsonSchemaContext context, Schema schema) {
@@ -293,19 +277,7 @@ public final class JsonSchemaVisitor implements TypeElementVisitor<JsonSchema, O
     }
 
     private static String getFileName(Schema schema, JsonSchemaContext context) {
-        String id = Objects.requireNonNull(schema.get$id());
-        if (context.baseUrl() != null && id.startsWith(context.baseUrl())) {
-            id = id.substring(context.baseUrl().length());
-        } else if (id.contains(":" + SLASH + SLASH)) {
-            id = URI.create(id).getPath().substring(1);
-            if (id.startsWith(context.outputLocation())) {
-                id = id.substring(context.outputLocation().length());
-            }
-        }
-        if (id.startsWith(SLASH)) {
-            id = id.substring(1);
-        }
-        return id;
+        return JsonSchemaNaming.fileName(Objects.requireNonNull(schema.get$id()), context.baseUrl(), context.outputLocation());
     }
 
 }

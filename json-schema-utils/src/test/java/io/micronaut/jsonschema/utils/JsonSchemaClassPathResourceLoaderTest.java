@@ -19,6 +19,32 @@ class JsonSchemaClassPathResourceLoaderTest {
     }
 
     @Test
+    void theSchemaOfANestedTypeIsNamedAfterTheOuterType(JsonSchemaClassPathResourceLoader resourceLoader) {
+        String schema = resourceLoader.jsonSchemaStringForClass(Catalog.Item.class).orElseThrow();
+        assertTrue(schema.contains("catalog-item.schema.json"), schema);
+        assertTrue(schema.contains("Catalog.Item"), schema);
+    }
+
+    @Test
+    void theSchemaOfATitledTypeIsNamedAfterTheTitle(JsonSchemaClassPathResourceLoader resourceLoader) {
+        String schema = resourceLoader.jsonSchemaStringForClass(Widget.class).orElseThrow();
+        assertTrue(schema.contains("fancy-widget.schema.json"), schema);
+        assertTrue(schema.contains("FancyWidget"), schema);
+    }
+
+    @Test
+    void theSchemaOfANestedTitledTypeWithoutIntrospectionIsFound(JsonSchemaClassPathResourceLoader resourceLoader) {
+        String schema = resourceLoader.jsonSchemaStringForClass(Catalog.Bin.class).orElseThrow();
+        assertTrue(schema.contains("storage-bin.schema.json"), schema);
+    }
+
+    @Test
+    void theSchemaOfATypeWithARelativeUriIsFoundInItsFolder(JsonSchemaClassPathResourceLoader resourceLoader) {
+        String schema = resourceLoader.jsonSchemaStringForClass(Gadget.class).orElseThrow();
+        assertTrue(schema.contains("shop/gadget.schema.json"), schema);
+    }
+
+    @Test
     void itIsPossibleToLoadAllJsonSchemas(JsonSchemaClassPathResourceLoader resourceLoader) throws IOException {
         var schemas = resourceLoader.jsonSchemas();
         assertFalse(schemas.isEmpty());
