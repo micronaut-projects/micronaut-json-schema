@@ -2,3 +2,12 @@ plugins {
     id 'io.micronaut.build.internal.json-schema-base'
     id "io.micronaut.build.internal.bom"
 }
+
+micronautBom {
+    suppressions {
+        // NetworkNT is no longer used: managing it would force its 3.x line on applications (e.g. Apache Camel's
+        // json-validator requires 2.x, with which it shares the com.networknt.schema package)
+        acceptedVersionRegressions.add("json-schema-validator")
+        acceptedLibraryRegressions.add("json-schema-validator")
+    }
+}
