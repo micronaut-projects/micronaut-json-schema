@@ -18,7 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * References with the {@code classpath:} scheme, inside and outside the folder of the generated schemas.
  */
-// the built-in validator only loads classpath: references from the generated schemas folder and the allowed folders
+// the built-in validator only loads classpath: references from the generated schemas folder and the allowed folders;
+// NetworkNT loads any classpath resource and ignores this property
 @Property(name = "micronaut.jsonschema.validation.classpath-folders", value = "tck-schemas")
 @MicronautTest(startApplication = false)
 class ClasspathReferencesTest {

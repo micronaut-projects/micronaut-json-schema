@@ -259,7 +259,8 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
             this.fallbackClasspathFolder = fallbackClasspathFolder;
             this.resourceLoader = resourceLoader;
             this.jsonMapper = jsonMapper;
-            this.allowedFolders = allowedFolders.stream().map(ClasspathSchemaRetriever::folder).toList();
+            // an empty entry would allow the whole classpath
+            this.allowedFolders = allowedFolders.stream().map(ClasspathSchemaRetriever::folder).filter(folder -> !folder.isEmpty()).toList();
         }
 
         private static String folder(String folder) {
@@ -296,7 +297,8 @@ final class DefaultJsonSchemaValidator implements JsonSchemaValidator {
         }
 
         private @Nullable JsonNode readAllowed(String resource, String uri) throws IOException {
-            boolean allowed = !resource.startsWith("../") && allowedFolders.stream().anyMatch(resource::startsWith);
+            // a reference that is not a valid URI is not normalized, so it can still contain parent segments
+            boolean allowed = !resource.contains("../") && allowedFolders.stream().anyMatch(resource::startsWith);
             if (!allowed) {
                 throw new IllegalArgumentException("The classpath resource of " + uri + " is outside the generated schemas folder: "
                     + "allow its folder with " + JsonSchemaValidatorConfiguration.PREFIX + ".classpath-folders");
