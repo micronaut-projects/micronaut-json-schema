@@ -1,0 +1,29 @@
+plugins {
+    id 'java-library'
+    id 'io.micronaut.build.internal.json-schema-base'
+}
+
+// Technology compatibility kit of JsonSchemaValidator implementations: the tests are in src/main and are run by the
+// test suites of micronaut-json-schema-validator and micronaut-json-schema-validator-networknt.
+dependencies {
+    api(projects.micronautJsonSchemaValidator)
+    api(projects.micronautJsonSchemaAnnotations)
+    api(mnValidation.micronaut.validation)
+    // the runners choose the JsonMapper (the fixtures use Jackson annotations)
+    compileOnly(mn.micronaut.jackson.databind)
+    api(mnTest.micronaut.test.junit5)
+    api(mnTest.junit.jupiter.api)
+    api(mnTest.junit.jupiter.params)
+
+    annotationProcessor(projects.micronautJsonSchemaProcessor)
+    annotationProcessor(mnValidation.micronaut.validation.processor)
+    annotationProcessor(mn.micronaut.inject.java)
+}
+
+// The TCK keeps its tests in src/main so that the implementations can run them: like the other test suites, it is
+// not production code to analyse
+rootProject.pluginManager.withPlugin("org.sonarqube") {
+    sonar {
+        skipProject = true
+    }
+}

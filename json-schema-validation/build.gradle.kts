@@ -2,25 +2,19 @@ plugins {
     id("io.micronaut.build.internal.json-schema-module")
 }
 dependencies {
-    api(mn.micronaut.json.core)
-    api(projects.micronautJsonSchemaUtils)
-    api(libs.managed.json.schema.validator)
-
-    // JSON Schema
-    testAnnotationProcessor(projects.micronautJsonSchemaProcessor)
-
-    // Validation
-    testAnnotationProcessor(mnValidation.micronaut.validation.processor)
-    testImplementation(mnValidation.micronaut.validation)
-
-    // Serialization
-    testImplementation(mn.micronaut.jackson.databind)
+    // micronaut-json-schema-validation keeps validating with NetworkNT, as before 2.3.2. Depend on
+    // micronaut-json-schema-validator instead to use the built-in validator without NetworkNT.
+    api(projects.micronautJsonSchemaValidator)
+    api(projects.micronautJsonSchemaValidatorNetworknt)
 
     testAnnotationProcessor(mn.micronaut.inject.java)
-    testImplementation(mnTest.junit.jupiter.params)
+    testImplementation(mn.micronaut.jackson.databind)
 }
 micronautBuild {
     testFramework = io.micronaut.build.TestFramework.JUNIT6
+    // 2.3.2 moves the classes of this module to micronaut-json-schema-validator and
+    // micronaut-json-schema-validator-networknt, which it depends on
+    binaryCompatibility.enabledAfter("2.3.2")
 }
 
 micronautBuild {
