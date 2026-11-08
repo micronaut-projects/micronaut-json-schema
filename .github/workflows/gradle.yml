@@ -119,6 +119,11 @@ jobs:
           report_paths: '**/build/test-results/test/TEST-*.xml'
           check_retries: 'true'
 
+      - name: "TEMP print binary compatibility reports"
+        if: ${{ !cancelled() && matrix.java == '25' }}
+        run: |
+          for f in $(find . -name 'binary-compatibility-*.html'); do echo "== $f"; sed -e 's/<[^>]*>/ /g' "$f" | grep -v '^\s*$' | head -150; done
+
       - name: "📜 Upload binary compatibility check results"
         if: ${{ !cancelled() && matrix.java == '25' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
