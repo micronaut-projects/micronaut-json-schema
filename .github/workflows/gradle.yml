@@ -122,7 +122,7 @@ jobs:
       - name: "TEMP print binary compatibility reports"
         if: ${{ !cancelled() && matrix.java == '25' }}
         run: |
-          for f in $(find . -name 'binary-compatibility-*.html'); do echo "== $f"; sed -e 's/<[^>]*>/ /g' "$f" | grep -v '^\s*$' | grep -B2 -A1 -E '^\s*(Error|Warning)\s*$' | cut -c1-400 | head -80; done
+          for f in $(find . -name 'binary-compatibility-*.html'); do echo "== $f"; sed -e 's/<[^>]*>/ /g' "$f" | grep -v '^\s*$' | grep -A1 -E '^\s*Error\s*$' | cut -c1-400 | head -80; done
 
       - name: "📜 Upload binary compatibility check results"
         if: ${{ !cancelled() && matrix.java == '25' }}

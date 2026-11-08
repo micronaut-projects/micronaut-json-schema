@@ -1,0 +1,7 @@
+[
+  {
+    "type": "io.micronaut.jsonschema.configuration.validator.model.$SerdeMicronautMetadataSerializer$Definition",
+    "member": "Method io.micronaut.jsonschema.configuration.validator.model.$SerdeMicronautMetadataSerializer$Definition.instantiate(io.micronaut.context.BeanResolutionContext,io.micronaut.context.BeanContext)",
+    "reason": "Generated bean definition of an internal type, which changes with the Micronaut Serialization version"
+  }
+]
