@@ -1315,6 +1315,18 @@ https://github.com/cheat/cheat#cheatpaths</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Cheatsheet.Style.html#COMPAT" class="member-name-link">COMPAT</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Cheatsheet.Style.html" title="enum class in io.micronaut.jsonschema.generator.ref">Cheatsheet.Style</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html#compile(io.micronaut.json.tree.JsonNode)" class="member-name-link">compile(JsonNode)</a> - Method in class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html" title="class in io.micronaut.jsonschema.validation.engine">JsonSchemaEngine</a></dt>
+<dd>
+<div class="block">Compiles a schema whose base URI is the engine's default base URI.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html#compile(io.micronaut.json.tree.JsonNode,java.lang.String)" class="member-name-link">compile(JsonNode, String)</a> - Method in class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html" title="class in io.micronaut.jsonschema.validation.engine">JsonSchemaEngine</a></dt>
+<dd>
+<div class="block">Compiles a schema.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/CompiledJsonSchema.html" class="type-name-link" title="class in io.micronaut.jsonschema.validation.engine">CompiledJsonSchema</a> - Class in <a href="io/micronaut/jsonschema/validation/engine/package-summary.html">io.micronaut.jsonschema.validation.engine</a></dt>
+<dd>
+<div class="block">A compiled, immutable and thread-safe JSON Schema produced by <a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html#compile(io.micronaut.json.tree.JsonNode)"><code>JsonSchemaEngine.compile(JsonNode)</code></a>.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Achievement.Type.html#CONFERENCE" class="member-name-link">CONFERENCE</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Achievement.Type.html" title="enum class in io.micronaut.jsonschema.generator.ref">Achievement.Type</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/ConfigurationError.html" class="type-name-link" title="class in io.micronaut.jsonschema.configuration.validator">ConfigurationError</a> - Record Class in <a href="io/micronaut/jsonschema/configuration/validator/package-summary.html">io.micronaut.jsonschema.configuration.validator</a></dt>
@@ -1538,6 +1550,10 @@ custom logic that goes beyond JSON Schema keywords.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#DEF_SCHEMA_REF_PREFIX" class="member-name-link">DEF_SCHEMA_REF_PREFIX</a> - Static variable in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html#DEFAULT_BASE_URI" class="member-name-link">DEFAULT_BASE_URI</a> - Static variable in class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html" title="class in io.micronaut.jsonschema.validation.engine">JsonSchemaEngine</a></dt>
+<dd>
+<div class="block">The base URI used for schemas that do not declare <code>$id</code> when no base URI was configured.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.html#DEFAULT_BINARY_AS_ARRAY" class="member-name-link">DEFAULT_BINARY_AS_ARRAY</a> - Static variable in record class io.micronaut.jsonschema.visitor.context.<a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.html" title="class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html#DEFAULT_CACHE" class="member-name-link">DEFAULT_CACHE</a> - Static variable in class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/ConfigurationValidatorConfiguration.html" title="class in io.micronaut.jsonschema.configuration.validator">ConfigurationValidatorConfiguration</a></dt>
@@ -1637,6 +1653,10 @@ runtime classpath and environment set, then validates bean wiring metadata.</div
 <dt><a href="io/micronaut/jsonschema/generator/ref/TargetJob.html#desiredSkills()" class="member-name-link">desiredSkills()</a> - Method in record class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/TargetJob.html" title="class in io.micronaut.jsonschema.generator.ref">TargetJob</a></dt>
 <dd>
 <div class="block">Returns the value of the <code>desiredSkills</code> record component.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html" class="type-name-link" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a> - Enum Class in <a href="io/micronaut/jsonschema/validation/engine/package-summary.html">io.micronaut.jsonschema.validation.engine</a></dt>
+<dd>
+<div class="block">The JSON Schema dialects (specification drafts) supported by the engine.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/OsiLicense.html#DIGIT_BSD" class="member-name-link">DIGIT_BSD</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/OsiLicense.html" title="enum class in io.micronaut.jsonschema.generator.ref">OsiLicense</a></dt>
 <dd>&nbsp;</dd>
@@ -1746,8 +1766,28 @@ runtime classpath and environment set, then validates bean wiring metadata.</div
 <dd>
 <div class="block">Returns the value of the <a href="./io/micronaut/jsonschema/visitor/context/JsonSchemaContext.html#param-draft"><code>draft</code></a> record component.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html#DRAFT_2019_09" class="member-name-link">DRAFT_2019_09</a> - Enum constant in enum class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/Dialect.html" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a></dt>
+<dd>
+<div class="block">JSON Schema 2019-09.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html#DRAFT_2020_12" class="member-name-link">DRAFT_2020_12</a> - Enum constant in enum class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/Dialect.html" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a></dt>
+<dd>
+<div class="block">JSON Schema 2020-12.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.JsonSchemaDraft.html#DRAFT_2020_12" class="member-name-link">DRAFT_2020_12</a> - Enum constant in enum class io.micronaut.jsonschema.visitor.context.<a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.JsonSchemaDraft.html" title="enum class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext.JsonSchemaDraft</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html#DRAFT_4" class="member-name-link">DRAFT_4</a> - Enum constant in enum class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/Dialect.html" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a></dt>
+<dd>
+<div class="block">JSON Schema draft-04.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html#DRAFT_6" class="member-name-link">DRAFT_6</a> - Enum constant in enum class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/Dialect.html" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a></dt>
+<dd>
+<div class="block">JSON Schema draft-06.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html#DRAFT_7" class="member-name-link">DRAFT_7</a> - Enum constant in enum class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/Dialect.html" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a></dt>
+<dd>
+<div class="block">JSON Schema draft-07.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/DrivingLicense.html" class="type-name-link" title="class in io.micronaut.jsonschema.generator.ref">DrivingLicense</a> - Record Class in <a href="io/micronaut/jsonschema/generator/ref/package-summary.html">io.micronaut.jsonschema.generator.ref</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/DrivingLicense.html#%3Cinit%3E(java.lang.String,java.lang.String)" class="member-name-link">DrivingLicense(String, String)</a> - Constructor for record class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/DrivingLicense.html" title="class in io.micronaut.jsonschema.generator.ref">DrivingLicense</a></dt>
@@ -2440,6 +2480,10 @@ runtime classpath and environment set, then validates bean wiring metadata.</div
 <dd>
 <div class="block">Returns the value of the <a href="./io/micronaut/jsonschema/generator/ref/Project.html#param-From"><code>From</code></a> record component.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html#fromMetaSchemaUri(java.lang.String)" class="member-name-link">fromMetaSchemaUri(String)</a> - Static method in enum class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/Dialect.html" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a></dt>
+<dd>
+<div class="block">Resolves a dialect from the value of a <code>$schema</code> keyword.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Cheatsheet.Style.html#FRUITY" class="member-name-link">FRUITY</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Cheatsheet.Style.html" title="enum class in io.micronaut.jsonschema.generator.ref">Cheatsheet.Style</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Reference.html#fullName()" class="member-name-link">fullName()</a> - Method in record class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Reference.html" title="class in io.micronaut.jsonschema.generator.ref">Reference</a></dt>
@@ -2613,6 +2657,14 @@ injection consistency.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getDescription()" class="member-name-link">getDescription()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#getDetail()" class="member-name-link">getDetail()</a> - Method in class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
+<dd>
+<div class="block">Returns the message without the instance location.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/CompiledJsonSchema.html#getDialect()" class="member-name-link">getDialect()</a> - Method in class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/CompiledJsonSchema.html" title="class in io.micronaut.jsonschema.validation.engine">CompiledJsonSchema</a></dt>
+<dd>
+<div class="block">Returns the dialect of the schema.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getDiscriminator()" class="member-name-link">getDiscriminator()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.JsonSchemaDraft.html#getDraftUrl()" class="member-name-link">getDraftUrl()</a> - Method in enum class io.micronaut.jsonschema.visitor.context.<a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.JsonSchemaDraft.html" title="enum class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext.JsonSchemaDraft</a></dt>
@@ -2623,7 +2675,7 @@ injection consistency.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getEnumValues()" class="member-name-link">getEnumValues()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#getError()" class="member-name-link">getError()</a> - Method in class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
+<dt><a href="io/micronaut/jsonschema/validation/networknt/NetworkNtValidationMessage.html#getError()" class="member-name-link">getError()</a> - Method in class io.micronaut.jsonschema.validation.networknt.<a href="io/micronaut/jsonschema/validation/networknt/NetworkNtValidationMessage.html" title="class in io.micronaut.jsonschema.validation.networknt">NetworkNtValidationMessage</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getExamples()" class="member-name-link">getExamples()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
@@ -2669,6 +2721,12 @@ injection consistency.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/utils/SourceGeneratorConfig.html#getInputName()" class="member-name-link">getInputName()</a> - Method in record class io.micronaut.jsonschema.generator.utils.<a href="io/micronaut/jsonschema/generator/utils/SourceGeneratorConfig.html" title="class in io.micronaut.jsonschema.generator.utils">SourceGeneratorConfig</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessage.html#getInstanceLocation()" class="member-name-link">getInstanceLocation()</a> - Method in interface io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></dt>
+<dd>
+<div class="block">Returns the location of the invalid value.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#getInstanceLocation()" class="member-name-link">getInstanceLocation()</a> - Method in class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getItems()" class="member-name-link">getItems()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/gradle/GenerateFromJsonSchemaSourcesTask.html#getJdbcClasspath()" class="member-name-link">getJdbcClasspath()</a> - Method in class io.micronaut.jsonschema.gradle.<a href="io/micronaut/jsonschema/gradle/GenerateFromJsonSchemaSourcesTask.html" title="class in io.micronaut.jsonschema.gradle">GenerateFromJsonSchemaSourcesTask</a></dt>
@@ -2697,6 +2755,12 @@ injection consistency.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/aggregator/AnnotationsAggregator.html#getJsonTypeInfoAnn(java.lang.String)" class="member-name-link">getJsonTypeInfoAnn(String)</a> - Static method in class io.micronaut.jsonschema.generator.aggregator.<a href="io/micronaut/jsonschema/generator/aggregator/AnnotationsAggregator.html" title="class in io.micronaut.jsonschema.generator.aggregator">AnnotationsAggregator</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessage.html#getKeyword()" class="member-name-link">getKeyword()</a> - Method in interface io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></dt>
+<dd>
+<div class="block">Returns the keyword that failed.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#getKeyword()" class="member-name-link">getKeyword()</a> - Method in class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/SourceGenerator.html#getLanguage()" class="member-name-link">getLanguage()</a> - Static method in class io.micronaut.jsonschema.generator.<a href="io/micronaut/jsonschema/generator/SourceGenerator.html" title="class in io.micronaut.jsonschema.generator">SourceGenerator</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/gradle/AbstractGenerateFromJsonSchemaSourcesTask.html#getLanguage()" class="member-name-link">getLanguage()</a> - Method in class io.micronaut.jsonschema.gradle.<a href="io/micronaut/jsonschema/gradle/AbstractGenerateFromJsonSchemaSourcesTask.html" title="class in io.micronaut.jsonschema.gradle">AbstractGenerateFromJsonSchemaSourcesTask</a></dt>
@@ -2717,6 +2781,10 @@ injection consistency.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/animals/Human.html#getLastName()" class="member-name-link">getLastName()</a> - Method in class io.micronaut.jsonschema.generator.animals.<a href="io/micronaut/jsonschema/generator/animals/Human.html" title="class in io.micronaut.jsonschema.generator.animals">Human</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/CompiledJsonSchema.html#getLocation()" class="member-name-link">getLocation()</a> - Method in class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/CompiledJsonSchema.html" title="class in io.micronaut.jsonschema.validation.engine">CompiledJsonSchema</a></dt>
+<dd>
+<div class="block">Returns the location of the schema.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getMaxContains()" class="member-name-link">getMaxContains()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getMaximum()" class="member-name-link">getMaximum()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
@@ -2725,10 +2793,18 @@ injection consistency.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getMaxLength()" class="member-name-link">getMaxLength()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="io/micronaut/jsonschema/validation/ValidationMessage.html#getMessage()" class="member-name-link">getMessage()</a> - Method in interface io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></dt>
+<dt><a href="io/micronaut/jsonschema/validation/networknt/NetworkNtValidationMessage.html#getMessage()" class="member-name-link">getMessage()</a> - Method in class io.micronaut.jsonschema.validation.networknt.<a href="io/micronaut/jsonschema/validation/networknt/NetworkNtValidationMessage.html" title="class in io.micronaut.jsonschema.validation.networknt">NetworkNtValidationMessage</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessage.html#getMessage()" class="member-name-link">getMessage()</a> - Method in interface io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></dt>
+<dd>
+<div class="block">Returns the validation message.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#getMessage()" class="member-name-link">getMessage()</a> - Method in class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html#getMetaSchemaUri()" class="member-name-link">getMetaSchemaUri()</a> - Method in enum class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/Dialect.html" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a></dt>
+<dd>
+<div class="block">Returns the meta-schema URI.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getMinContains()" class="member-name-link">getMinContains()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#getMinimum()" class="member-name-link">getMinimum()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
@@ -2824,6 +2900,12 @@ injection consistency.</div>
 <dt><a href="io/micronaut/jsonschema/maven/AbstractGenerateFromJsonSchemaSourcesMojo.html#getSchemaCacheDir()" class="member-name-link">getSchemaCacheDir()</a> - Method in class io.micronaut.jsonschema.maven.<a href="io/micronaut/jsonschema/maven/AbstractGenerateFromJsonSchemaSourcesMojo.html" title="class in io.micronaut.jsonschema.maven">AbstractGenerateFromJsonSchemaSourcesMojo</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/maven/GenerateFromJsonSchemaSourcesMojo.html#getSchemaCacheDir()" class="member-name-link">getSchemaCacheDir()</a> - Method in class io.micronaut.jsonschema.maven.<a href="io/micronaut/jsonschema/maven/GenerateFromJsonSchemaSourcesMojo.html" title="class in io.micronaut.jsonschema.maven">GenerateFromJsonSchemaSourcesMojo</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessage.html#getSchemaLocation()" class="member-name-link">getSchemaLocation()</a> - Method in interface io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></dt>
+<dd>
+<div class="block">Returns the location of the failing keyword in the schema.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#getSchemaLocation()" class="member-name-link">getSchemaLocation()</a> - Method in class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/maven/GenerateFromJsonSchemaSourcesMojo.html#getServerId()" class="member-name-link">getServerId()</a> - Method in class io.micronaut.jsonschema.maven.<a href="io/micronaut/jsonschema/maven/GenerateFromJsonSchemaSourcesMojo.html" title="class in io.micronaut.jsonschema.maven">GenerateFromJsonSchemaSourcesMojo</a></dt>
 <dd>&nbsp;</dd>
@@ -3479,6 +3561,15 @@ annotation processor that writes the schemas and the runtime that loads them.</d
 <dd>
 <div class="block">Classes related to JSON Schema Validation.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/package-summary.html">io.micronaut.jsonschema.validation.engine</a> - package io.micronaut.jsonschema.validation.engine</dt>
+<dd>
+<div class="block">Internal JSON Schema validation engine operating on Micronaut's <code>JsonNode</code> tree.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/networknt/package-summary.html">io.micronaut.jsonschema.validation.networknt</a> - package io.micronaut.jsonschema.validation.networknt</dt>
+<dd>
+<div class="block"><a href="io/micronaut/jsonschema/validation/JsonSchemaValidator.html" title="interface in io.micronaut.jsonschema.validation"><code>JsonSchemaValidator</code></a> implemented with the
+<a href="https://github.com/networknt/json-schema-validator">NetworkNT JSON Schema Validator</a>.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/package-summary.html">io.micronaut.jsonschema.visitor</a> - package io.micronaut.jsonschema.visitor</dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/aggregator/package-summary.html">io.micronaut.jsonschema.visitor.aggregator</a> - package io.micronaut.jsonschema.visitor.aggregator</dt>
@@ -3547,6 +3638,10 @@ annotation processor that writes the schemas and the runtime that loads them.</d
 </dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.html#isUniqueItems()" class="member-name-link">isUniqueItems()</a> - Method in class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.html" title="class in io.micronaut.jsonschema.model">Schema</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html#isValid(io.micronaut.jsonschema.validation.engine.CompiledJsonSchema,io.micronaut.json.tree.JsonNode)" class="member-name-link">isValid(CompiledJsonSchema, JsonNode)</a> - Method in class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html" title="class in io.micronaut.jsonschema.validation.engine">JsonSchemaEngine</a></dt>
+<dd>
+<div class="block">Checks whether an instance is valid, stopping at the first error.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/loaders/UrlLoader.html#isValidUrl(java.lang.String)" class="member-name-link">isValidUrl(String)</a> - Static method in class io.micronaut.jsonschema.generator.loaders.<a href="io/micronaut/jsonschema/generator/loaders/UrlLoader.html" title="class in io.micronaut.jsonschema.generator.loaders">UrlLoader</a></dt>
 <dd>
 <div class="block">Validates if the provided URL matches any of the allowed patterns.</div>
@@ -3666,6 +3761,18 @@ annotation processor that writes the schemas and the runtime that loads them.</d
 <dt><a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.JsonSchemaDraft.html" class="type-name-link" title="enum class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext.JsonSchemaDraft</a> - Enum Class in <a href="io/micronaut/jsonschema/visitor/context/package-summary.html">io.micronaut.jsonschema.visitor.context</a></dt>
 <dd>
 <div class="block">An enum for JSON Schema draft versions.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html" class="type-name-link" title="class in io.micronaut.jsonschema.validation.engine">JsonSchemaEngine</a> - Class in <a href="io/micronaut/jsonschema/validation/engine/package-summary.html">io.micronaut.jsonschema.validation.engine</a></dt>
+<dd>
+<div class="block">A JSON Schema validator operating on Micronaut's <code>JsonNode</code> tree.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html#%3Cinit%3E(io.micronaut.json.JsonMapper,io.micronaut.jsonschema.validation.engine.SchemaRetriever,io.micronaut.jsonschema.validation.engine.Dialect,java.lang.String)" class="member-name-link">JsonSchemaEngine(JsonMapper, SchemaRetriever, Dialect, String)</a> - Constructor for class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html" title="class in io.micronaut.jsonschema.validation.engine">JsonSchemaEngine</a></dt>
+<dd>
+<div class="block">Creates an engine that asserts formats.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html#%3Cinit%3E(io.micronaut.json.JsonMapper,io.micronaut.jsonschema.validation.engine.SchemaRetriever,io.micronaut.jsonschema.validation.engine.Dialect,java.lang.String,boolean)" class="member-name-link">JsonSchemaEngine(JsonMapper, SchemaRetriever, Dialect, String, boolean)</a> - Constructor for class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html" title="class in io.micronaut.jsonschema.validation.engine">JsonSchemaEngine</a></dt>
+<dd>
+<div class="block">Creates an engine.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/serialization/JsonSchemaMapperFactory.html" class="type-name-link" title="class in io.micronaut.jsonschema.serialization">JsonSchemaMapperFactory</a> - Class in <a href="io/micronaut/jsonschema/serialization/package-summary.html">io.micronaut.jsonschema.serialization</a></dt>
 <dd>
@@ -4167,6 +4274,14 @@ load balancer strategies and the names of <code>@Named</code> <code>LoadBalancer
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidationModuleInfo.html#%3Cinit%3E()" class="member-name-link">MicronautJsonSchemaValidationModuleInfo()</a> - Constructor for class io.micronaut.jsonschema.info.<a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidationModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaValidationModuleInfo</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidatorModuleInfo.html" class="type-name-link" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaValidatorModuleInfo</a> - Class in <a href="io/micronaut/jsonschema/info/package-summary.html">io.micronaut.jsonschema.info</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidatorModuleInfo.html#%3Cinit%3E()" class="member-name-link">MicronautJsonSchemaValidatorModuleInfo()</a> - Constructor for class io.micronaut.jsonschema.info.<a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidatorModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaValidatorModuleInfo</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidatorNetworkntModuleInfo.html" class="type-name-link" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaValidatorNetworkntModuleInfo</a> - Class in <a href="io/micronaut/jsonschema/info/package-summary.html">io.micronaut.jsonschema.info</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidatorNetworkntModuleInfo.html#%3Cinit%3E()" class="member-name-link">MicronautJsonSchemaValidatorNetworkntModuleInfo()</a> - Constructor for class io.micronaut.jsonschema.info.<a href="io/micronaut/jsonschema/info/MicronautJsonSchemaValidatorNetworkntModuleInfo.html" title="class in io.micronaut.jsonschema.info">MicronautJsonSchemaValidatorNetworkntModuleInfo</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/model/MicronautMetadata.html" class="type-name-link" title="class in io.micronaut.jsonschema.configuration.validator.model">MicronautMetadata</a> - Record Class in <a href="io/micronaut/jsonschema/configuration/validator/model/package-summary.html">io.micronaut.jsonschema.configuration.validator.model</a></dt>
 <dd>
 <div class="block">Micronaut-specific schema metadata.</div>
@@ -4352,12 +4467,23 @@ load balancer strategies and the names of <code>@Named</code> <code>LoadBalancer
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/OsiLicense.html#NCSA" class="member-name-link">NCSA</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/OsiLicense.html" title="enum class in io.micronaut.jsonschema.generator.ref">OsiLicense</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/networknt/NetworkNtValidationMessage.html" class="type-name-link" title="class in io.micronaut.jsonschema.validation.networknt">NetworkNtValidationMessage</a> - Class in <a href="io/micronaut/jsonschema/validation/networknt/package-summary.html">io.micronaut.jsonschema.validation.networknt</a></dt>
+<dd>
+<div class="block">A <a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation"><code>ValidationMessage</code></a> reported by NetworkNT, giving access to the original
+<code>Error</code>.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/networknt/NetworkNtValidationMessage.html#%3Cinit%3E(com.networknt.schema.Error)" class="member-name-link">NetworkNtValidationMessage(Error)</a> - Constructor for class io.micronaut.jsonschema.validation.networknt.<a href="io/micronaut/jsonschema/validation/networknt/NetworkNtValidationMessage.html" title="class in io.micronaut.jsonschema.validation.networknt">NetworkNtValidationMessage</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Personal.Pronoun.html#NEUTRAL" class="member-name-link">NEUTRAL</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Personal.Pronoun.html" title="enum class in io.micronaut.jsonschema.generator.ref">Personal.Pronoun</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/OsiLicense.html#NGPL" class="member-name-link">NGPL</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/OsiLicense.html" title="enum class in io.micronaut.jsonschema.generator.ref">OsiLicense</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/OsiLicense.html#NOKIA" class="member-name-link">NOKIA</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/OsiLicense.html" title="enum class in io.micronaut.jsonschema.generator.ref">OsiLicense</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/SchemaRetriever.html#NONE" class="member-name-link">NONE</a> - Static variable in interface io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/SchemaRetriever.html" title="interface in io.micronaut.jsonschema.validation.engine">SchemaRetriever</a></dt>
+<dd>
+<div class="block">A retriever that cannot load any document.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Cheatsheet.Style.html#NORD" class="member-name-link">NORD</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Cheatsheet.Style.html" title="enum class in io.micronaut.jsonschema.generator.ref">Cheatsheet.Style</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Cv.JobStatus.html#NOT_MOVING" class="member-name-link">NOT_MOVING</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Cv.JobStatus.html" title="enum class in io.micronaut.jsonschema.generator.ref">Cv.JobStatus</a></dt>
@@ -5086,6 +5212,10 @@ and beans with executable entry points) and their traversed dependencies.</div>
 <dd>
 <div class="block">Returns the value of the <a href="./io/micronaut/jsonschema/generator/records/JsonSchemaRecordsManifest.Skipped.html#param-retrievalMode"><code>retrievalMode</code></a> record component.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/SchemaRetriever.html#retrieve(java.lang.String)" class="member-name-link">retrieve(String)</a> - Method in interface io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/SchemaRetriever.html" title="interface in io.micronaut.jsonschema.validation.engine">SchemaRetriever</a></dt>
+<dd>
+<div class="block">Loads the schema document identified by the given absolute URI.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Timezone.html#ROC" class="member-name-link">ROC</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Timezone.html" title="enum class in io.micronaut.jsonschema.generator.ref">Timezone</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Timezone.html#ROK" class="member-name-link">ROK</a> - Enum constant in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Timezone.html" title="enum class in io.micronaut.jsonschema.generator.ref">Timezone</a></dt>
@@ -5217,6 +5347,10 @@ and beans with executable entry points) and their traversed dependencies.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/generator/discovery/SchemaRetrievalException.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">SchemaRetrievalException(String, String, String)</a> - Constructor for exception class io.micronaut.jsonschema.generator.discovery.<a href="io/micronaut/jsonschema/generator/discovery/SchemaRetrievalException.html" title="class in io.micronaut.jsonschema.generator.discovery">SchemaRetrievalException</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/SchemaRetriever.html" class="type-name-link" title="interface in io.micronaut.jsonschema.validation.engine">SchemaRetriever</a> - Interface in <a href="io/micronaut/jsonschema/validation/engine/package-summary.html">io.micronaut.jsonschema.validation.engine</a></dt>
+<dd>
+<div class="block">Loads schema documents referenced by URI (for example through <code>$ref</code>).</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/discovery/DiscoveryResult.html#schemas()" class="member-name-link">schemas()</a> - Method in record class io.micronaut.jsonschema.generator.discovery.<a href="io/micronaut/jsonschema/generator/discovery/DiscoveryResult.html" title="class in io.micronaut.jsonschema.generator.discovery">DiscoveryResult</a></dt>
 <dd>
 <div class="block">Returns the value of the <a href="./io/micronaut/jsonschema/generator/discovery/DiscoveryResult.html#param-schemas"><code>schemas</code></a> record component.</div>
@@ -6125,6 +6259,8 @@ written report files.</div>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/CompiledJsonSchema.html#toString()" class="member-name-link">toString()</a> - Method in class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/CompiledJsonSchema.html" title="class in io.micronaut.jsonschema.validation.engine">CompiledJsonSchema</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html#toString()" class="member-name-link">toString()</a> - Method in record class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html" title="class in io.micronaut.jsonschema.validation">JsonSchemaValidatorConfiguration</a></dt>
 <dd>
 <div class="block">Returns a string representation of this record class.</div>
@@ -6322,6 +6458,10 @@ entry) and return any additional <a href="io/micronaut/jsonschema/configuration/
 </dd>
 <dt><a href="io/micronaut/jsonschema/configuration/validator/LoadBalancerStrategyConfigurationRule.html#validate(io.micronaut.jsonschema.configuration.validator.ConfigurationValidationContext)" class="member-name-link">validate(ConfigurationValidationContext)</a> - Method in class io.micronaut.jsonschema.configuration.validator.<a href="io/micronaut/jsonschema/configuration/validator/LoadBalancerStrategyConfigurationRule.html" title="class in io.micronaut.jsonschema.configuration.validator">LoadBalancerStrategyConfigurationRule</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html#validate(io.micronaut.jsonschema.validation.engine.CompiledJsonSchema,io.micronaut.json.tree.JsonNode)" class="member-name-link">validate(CompiledJsonSchema, JsonNode)</a> - Method in class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/JsonSchemaEngine.html" title="class in io.micronaut.jsonschema.validation.engine">JsonSchemaEngine</a></dt>
+<dd>
+<div class="block">Validates an instance.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/validation/JsonSchemaValidator.html#validate(java.lang.Object,java.lang.Class)" class="member-name-link">validate(Object, Class)</a> - Method in interface io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/JsonSchemaValidator.html" title="interface in io.micronaut.jsonschema.validation">JsonSchemaValidator</a></dt>
 <dd>
 <div class="block">Validate Object based on types JSON schema.</div>
@@ -6362,10 +6502,12 @@ entry) and return any additional <a href="io/micronaut/jsonschema/configuration/
 </dd>
 <dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" class="type-name-link" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a> - Class in <a href="io/micronaut/jsonschema/validation/package-summary.html">io.micronaut.jsonschema.validation</a></dt>
 <dd>
-<div class="block">Adapter from <code>Error</code> into <a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation"><code>ValidationMessage</code></a>.</div>
+<div class="block">The <a href="io/micronaut/jsonschema/validation/ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation"><code>ValidationMessage</code></a> implementation of the <a href="io/micronaut/jsonschema/validation/JsonSchemaValidator.html" title="interface in io.micronaut.jsonschema.validation"><code>JsonSchemaValidator</code></a> implementations.</div>
 </dd>
-<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#%3Cinit%3E(com.networknt.schema.Error)" class="member-name-link">ValidationMessageAdapter(Error)</a> - Constructor for class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
-<dd>&nbsp;</dd>
+<dt><a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">ValidationMessageAdapter(String, String, String, String)</a> - Constructor for class io.micronaut.jsonschema.validation.<a href="io/micronaut/jsonschema/validation/ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></dt>
+<dd>
+<div class="block">Creates a validation message.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Achievement.Type.html#value" class="member-name-link">value</a> - Variable in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Achievement.Type.html" title="enum class in io.micronaut.jsonschema.generator.ref">Achievement.Type</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/micronaut/jsonschema/generator/ref/Cheatsheet.Formatter.html#value" class="member-name-link">value</a> - Variable in enum class io.micronaut.jsonschema.generator.ref.<a href="io/micronaut/jsonschema/generator/ref/Cheatsheet.Formatter.html" title="enum class in io.micronaut.jsonschema.generator.ref">Cheatsheet.Formatter</a></dt>
@@ -6492,6 +6634,10 @@ entry) and return any additional <a href="io/micronaut/jsonschema/configuration/
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/Dialect.html" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a></dt>
+<dd>
+<div class="block">Returns the enum constant of this class with the specified name.</div>
+</dd>
 <dt><a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.JsonSchemaDraft.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.micronaut.jsonschema.visitor.context.<a href="io/micronaut/jsonschema/visitor/context/JsonSchemaContext.JsonSchemaDraft.html" title="enum class in io.micronaut.jsonschema.visitor.context">JsonSchemaContext.JsonSchemaDraft</a></dt>
 <dd>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
@@ -6607,6 +6753,11 @@ the order they are declared.</div>
 the order they are declared.</div>
 </dd>
 <dt><a href="io/micronaut/jsonschema/model/Schema.Type.html#values()" class="member-name-link">values()</a> - Static method in enum class io.micronaut.jsonschema.model.<a href="io/micronaut/jsonschema/model/Schema.Type.html" title="enum class in io.micronaut.jsonschema.model">Schema.Type</a></dt>
+<dd>
+<div class="block">Returns an array containing the constants of this enum class, in
+the order they are declared.</div>
+</dd>
+<dt><a href="io/micronaut/jsonschema/validation/engine/Dialect.html#values()" class="member-name-link">values()</a> - Static method in enum class io.micronaut.jsonschema.validation.engine.<a href="io/micronaut/jsonschema/validation/engine/Dialect.html" title="enum class in io.micronaut.jsonschema.validation.engine">Dialect</a></dt>
 <dd>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>

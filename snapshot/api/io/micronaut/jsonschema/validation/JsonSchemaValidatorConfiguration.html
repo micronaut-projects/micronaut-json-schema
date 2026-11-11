@@ -102,7 +102,9 @@ loadScripts(document, 'script');</script>
 <div class="block">A configuration for <a href="JsonSchemaValidator.html" title="interface in io.micronaut.jsonschema.validation"><code>JsonSchemaValidator</code></a>.
 The validator will resolve URIs that start with base URI to JSON schemas in the specified
 folder on the classpath. URIs with the <code>classpath:</code> scheme, the default base URI of the
-generated schemas, are always resolved from the classpath.</div>
+generated schemas, are always resolved from the classpath. The built-in validator also reads
+<code>micronaut.jsonschema.validation.classpath-folders</code>, the folders that <code>classpath:</code> URIs can reference
+besides the generated schemas folder. The NetworkNT validator ignores it and loads any classpath resource.</div>
 <dl class="notes">
 <dt>Since:</dt>
 <dd>1.0.0</dd>

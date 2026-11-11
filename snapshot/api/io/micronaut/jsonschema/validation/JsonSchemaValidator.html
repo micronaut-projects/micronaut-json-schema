@@ -75,7 +75,18 @@ loadScripts(document, 'script');</script>
 <div class="type-signature"><span class="annotations">@DefaultImplementation(io.micronaut.jsonschema.validation.DefaultJsonSchemaValidator.class)
 </span><span class="modifiers">public interface </span><span class="element-name type-name-label">JsonSchemaValidator</span></div>
 <div class="block">JSON Schema Validator.
-It is configurable with <a href="JsonSchemaValidatorConfiguration.html" title="class in io.micronaut.jsonschema.validation"><code>JsonSchemaValidatorConfiguration</code></a>.</div>
+It is configurable with <a href="JsonSchemaValidatorConfiguration.html" title="class in io.micronaut.jsonschema.validation"><code>JsonSchemaValidatorConfiguration</code></a>.
+
+<p>The value to validate can be any object that the application's <code>JsonMapper</code> can serialize, a
+<code>JsonNode</code>, or a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a>, which is parsed as JSON text. Implementations
+compile a schema when it is first used and keep it compiled (schemas given as a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> or a <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Map.html" title="class or interface in java.util" class="external-link"><code>Map</code></a> are
+kept in a bounded cache). The returned sets are mutable and keep the order in which the errors were found.</p>
+
+<p>Besides <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/IOException.html" title="class or interface in java.io" class="external-link"><code>IOException</code></a>s, implementations throw an <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link"><code>IllegalArgumentException</code></a> when no schema was
+generated for a type, when a schema is invalid, or when a reference in a schema cannot be resolved.</p>
+
+<p>The built-in implementation is provided by <code>micronaut-json-schema-validator</code>; the module
+<code>micronaut-json-schema-validator-networknt</code> replaces it with one based on the NetworkNT JSON Schema Validator.</p></div>
 <dl class="notes">
 <dt>Since:</dt>
 <dd>1.0.0</dd>
@@ -147,7 +158,7 @@ It is configurable with <a href="JsonSchemaValidatorConfiguration.html" title="c
 <dt>Type Parameters:</dt>
 <dd><span id="validate(java.lang.String,java.lang.Class)-type-param-T"><code>T</code> - Type used to generate the JSON Schema</span></dd>
 <dt>Parameters:</dt>
-<dd><code>value</code> - JSON value to validate</dd>
+<dd><code>value</code> - JSON text to validate</dd>
 <dd><code>type</code> - The type used to generate the JSON Schema</dd>
 <dt>Returns:</dt>
 <dd>A set of validation messages. Empty if valid.</dd>
@@ -210,7 +221,7 @@ It is configurable with <a href="JsonSchemaValidatorConfiguration.html" title="c
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>value</code> - Object to validate against a JSON schema</dd>
-<dd><code>jsonSchema</code> - The JSON Schema expressed as a Map</dd>
+<dd><code>jsonSchema</code> - The JSON Schema expressed as JSON text</dd>
 <dt>Returns:</dt>
 <dd>A set of validation messages. Empty if valid.</dd>
 <dt>Throws:</dt>

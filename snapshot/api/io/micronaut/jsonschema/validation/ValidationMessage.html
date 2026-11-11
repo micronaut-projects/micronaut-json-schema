@@ -57,6 +57,9 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
 <li><a href="#getMessage()" tabindex="0">getMessage()</a></li>
+<li><a href="#getInstanceLocation()" tabindex="0">getInstanceLocation()</a></li>
+<li><a href="#getKeyword()" tabindex="0">getKeyword()</a></li>
+<li><a href="#getSchemaLocation()" tabindex="0">getSchemaLocation()</a></li>
 </ol>
 </li>
 </ol>
@@ -69,7 +72,7 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>All Known Implementing Classes:</dt>
-<dd><code><a href="ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></code></dd>
+<dd><code><a href="networknt/NetworkNtValidationMessage.html" title="class in io.micronaut.jsonschema.validation.networknt">NetworkNtValidationMessage</a>, <a href="ValidationMessageAdapter.html" title="class in io.micronaut.jsonschema.validation">ValidationMessageAdapter</a></code></dd>
 </dl>
 <dl class="notes">
 <dt>Functional Interface:</dt>
@@ -95,15 +98,32 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel" aria-labelledby="method-summary-table-tab0">
 <div class="summary-table three-column-summary">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#getInstanceLocation()" class="member-name-link">getInstanceLocation</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Returns the location of the invalid value.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default @Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#getKeyword()" class="member-name-link">getKeyword</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Returns the keyword that failed.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#getMessage()" class="member-name-link">getMessage</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">Returns the validation message.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default @Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#getSchemaLocation()" class="member-name-link">getSchemaLocation</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Returns the location of the failing keyword in the schema.</div>
+</div>
 </div>
 </div>
 </div>
@@ -123,9 +143,56 @@ loadScripts(document, 'script');</script>
 <h3>getMessage</h3>
 <div class="horizontal-scroll">
 <div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getMessage</span>()</div>
+<div class="block">Returns the validation message.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>JSON Schema Validation Message</dd>
+<dd>JSON Schema Validation Message, prefixed with the JSON Pointer of the invalid instance location</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getInstanceLocation()">
+<h3>getInstanceLocation</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getInstanceLocation</span>()</div>
+<div class="block">Returns the location of the invalid value.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>The JSON Pointer (RFC 6901) of the instance location that failed validation, empty for the root</dd>
+<dt>Since:</dt>
+<dd>2.3.2</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getKeyword()">
+<h3>getKeyword</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getKeyword</span>()</div>
+<div class="block">Returns the keyword that failed.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>The JSON Schema keyword that failed validation, if known</dd>
+<dt>Since:</dt>
+<dd>2.3.2</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getSchemaLocation()">
+<h3>getSchemaLocation</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">@Nullable <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getSchemaLocation</span>()</div>
+<div class="block">Returns the location of the failing keyword in the schema.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>The location of the failing keyword within the schema (the base URI of the schema plus a JSON Pointer
+fragment), if known. It is absolute when the schema has an absolute base URI</dd>
+<dt>Since:</dt>
+<dd>2.3.2</dd>
 </dl>
 </div>
 </section>

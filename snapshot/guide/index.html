@@ -58,9 +58,11 @@
                                 
                                 <div class="toc-item" style="margin-left:0"><a href="#configurationValidator"><strong>6</strong><span>Validating Configuration Against Schemas</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>7</strong><span>Repository</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#breaks"><strong>7</strong><span>Breaking Changes</span></a></div>
                                 
-                                <div class="toc-item" style="margin-left:0"><a href="#releaseHistory"><strong>8</strong><span>Release History</span></a></div>
+                                <div class="toc-item" style="margin-left:0"><a href="#repository"><strong>8</strong><span>Repository</span></a></div>
+                                
+                                <div class="toc-item" style="margin-left:0"><a href="#releaseHistory"><strong>9</strong><span>Release History</span></a></div>
                                 
                             </div>
                         </div>
@@ -135,9 +137,11 @@
         
         <div class="toc-item" style="margin-left:0px" id="toc-item-configurationValidator"><a href="#configurationValidator"><strong>6</strong><span>Validating Configuration Against Schemas</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>7</strong><span>Repository</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-breaks"><a href="#breaks"><strong>7</strong><span>Breaking Changes</span></a></div>
         
-        <div class="toc-item" style="margin-left:0px" id="toc-item-releaseHistory"><a href="#releaseHistory"><strong>8</strong><span>Release History</span></a></div>
+        <div class="toc-item" style="margin-left:0px" id="toc-item-repository"><a href="#repository"><strong>8</strong><span>Repository</span></a></div>
+        
+        <div class="toc-item" style="margin-left:0px" id="toc-item-releaseHistory"><a href="#releaseHistory"><strong>9</strong><span>Release History</span></a></div>
         
         </div>
     </div>
@@ -609,7 +613,7 @@ kapt {
 <p>A property whose type is another <code>@JsonSchema</code> type references that schema with a <code>$ref</code> to its <code>$id</code>.</p>
 </div>
 <div class="paragraph">
-<p>By default, the base URI is <code>classpath:META-INF/&lt;outputLocation&gt;</code> (<code>classpath:META-INF/schemas</code> unless <code>micronaut.jsonschema.outputLocation</code> is set), which is where the schema files are written. JSON Schema validators that resolve <code>classpath:</code> URIs, such as <a href="https://github.com/networknt/json-schema-validator">NetworkNT JSON Schema Validator</a> (used by <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a> and by Apache Camel&#8217;s JSON Validator component), therefore resolve the references between generated schemas from the classpath without any configuration and without network access.</p>
+<p>By default, the base URI is <code>classpath:META-INF/&lt;outputLocation&gt;</code> (<code>classpath:META-INF/schemas</code> unless <code>micronaut.jsonschema.outputLocation</code> is set), which is where the schema files are written. JSON Schema validators that resolve <code>classpath:</code> URIs, such as both implementations of <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a> and the <a href="https://github.com/networknt/json-schema-validator">NetworkNT JSON Schema Validator</a> used by Apache Camel&#8217;s JSON Validator component, therefore resolve the references between generated schemas from the classpath without any configuration and without network access.</p>
 </div>
 <div class="paragraph">
 <p>Set <code>micronaut.jsonschema.baseUri</code> when the schemas are published at a URL, for example when you <a href="#serving">serve them from your application</a>, so that the <code>$id</code> and the `$ref`s point to that URL.</p>
@@ -946,6 +950,258 @@ runtime = [
 </div>
 </div>
 </p>
+</div>
+<div class="sect2">
+<h3 id="_choosing_an_implementation">Choosing an implementation</h3>
+<div class="paragraph">
+<p>Two implementations of <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a> are available:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 40%;">
+<col style="width: 60%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Artifact</th>
+<th class="tableblock halign-left valign-top">Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut-json-schema-validator</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The built-in validator. It has no third-party dependencies and validates Micronaut&#8217;s own JSON tree (<code>io.micronaut.json.tree.JsonNode</code>), so it works with both <a href="https://micronaut-projects.github.io/micronaut-serialization/latest/guide/">Micronaut Serialization</a> and Jackson Databind. It does not use reflection, which makes it suitable for GraalVM native images.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut-json-schema-validator-networknt</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <a href="https://github.com/networknt/json-schema-validator">NetworkNT JSON Schema Validator</a> (version 3, on Jackson 3). When it is on the classpath, it replaces the built-in validator.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p><code>micronaut-json-schema-validation</code> depends on both, so it validates with NetworkNT, as in previous versions.</p>
+</div>
+<div class="paragraph">
+<p>To use the built-in validator without NetworkNT, depend on <code>micronaut-json-schema-validator</code> instead:</p>
+</div>
+<div class="paragraph">
+<p>        <div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="gradle">implementation(<span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-validator")</span></code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="maven">&lt;dependency&gt;
+    &lt;groupId&gt;io.micronaut.jsonschema&lt;/groupId&gt;
+    &lt;artifactId&gt;micronaut-json-schema-validator&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title"></div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="pyronaut">[tool.pyronaut.dependencies]
+runtime = [
+    <span class="hljs-string">"io.micronaut.jsonschema:micronaut-json-schema-validator"</span>,
+]</code></pre>
+</div>
+</div>
+</p>
+</div>
+<div class="paragraph">
+<p>This is needed when another library requires a different version of NetworkNT. Both NetworkNT versions use the same <code>com.networknt.schema</code> package, so they cannot be on the same classpath. One such library is Apache Camel&#8217;s <code>camel-json-validator</code>, which uses NetworkNT 2 on Jackson 2.</p>
+</div>
+<div class="paragraph">
+<p>The Micronaut JSON Schema BOM does not manage the NetworkNT version, so it does not force one on your application.</p>
+</div>
+<div class="paragraph">
+<p>Both implementations pass the same technology compatibility kit (TCK). It covers the behaviour and the messages described below, and runs the official <a href="https://github.com/json-schema-org/JSON-Schema-Test-Suite">JSON-Schema-Test-Suite</a> through the public API. The differences are listed in <a href="#validatorDifferences">Differences between the implementations</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_validating_values">Validating values</h3>
+<div class="paragraph">
+<p>To validate a value against the schema generated for a type, pass the value and the type:</p>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Set&lt;? extends ValidationMessage&gt; messages = validator.validate(new Llama("", -1), Llama.class); // <b class="conum">(1)</b>
+for (ValidationMessage message : messages) {
+    System.out.println(message.getMessage()); // <b class="conum">(2)</b>
+    System.out.println(message.getInstanceLocation() + " " + message.getKeyword()); // <b class="conum">(3)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Validate an object against the schema generated for the <code>Llama</code> type. The schema is loaded from the classpath and compiled the first time it is used, then cached.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Each message is prefixed with the <a href="https://www.rfc-editor.org/rfc/rfc6901">JSON Pointer</a> of the invalid value, for example <code>/name: must be at least 1 characters long</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The instance location, the failing keyword and the schema location are also available individually.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>You can also validate against a schema expressed as a JSON string or as a <code>Map</code>:</p>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Map&lt;String, Object&gt; schema = Map.of(
+    "type", "object",
+    "required", List.of("city"),
+    "properties", Map.of("zip", Map.of("type", "string", "pattern", "^[0-9]{5}$"))
+);
+Set&lt;? extends ValidationMessage&gt; messages = validator.validate(Map.of("zip", "1234"), schema); // <b class="conum">(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Values can be any object that the application&#8217;s <code>JsonMapper</code> can serialize, a JSON string, or a <code>io.micronaut.json.tree.JsonNode</code>. Compiled schemas are cached by their content.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_supported_specification">Supported specification</h3>
+<div class="paragraph">
+<p>The built-in validator implements the following JSON Schema dialects. The dialect is selected with the <code>$schema</code> keyword. Schemas without <code>$schema</code> use draft 2020-12, the dialect generated by the processor. The NetworkNT validator accepts the 2020-12 dialect only.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Dialect</th>
+<th class="tableblock halign-left valign-top">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://json-schema.org/draft/2020-12">2020-12</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All keywords, including <code>prefixItems</code>, <code>$dynamicRef</code>/<code>$dynamicAnchor</code>, <code>unevaluatedProperties</code>/<code>unevaluatedItems</code> and <code>$vocabulary</code> in custom meta-schemas.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://json-schema.org/draft/2019-09">2019-09</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All keywords, including <code>$recursiveRef</code>/<code>$recursiveAnchor</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="http://json-schema.org/draft-07/schema">draft-07</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All keywords. <code>contentEncoding</code> (base64) and <code>contentMediaType</code> (JSON media types) are asserted.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">draft-06, draft-04</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All keywords.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>References (<code>$ref</code>) are resolved as follows by the built-in validator:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Within the schema document, using JSON Pointers (<code>#/$defs/item</code>), anchors (<code>$anchor</code>, <code>$dynamicAnchor</code>) and embedded resources identified by <code>$id</code>.</p>
+</li>
+<li>
+<p><code>classpath:</code> URIs, the default base URI of the generated schemas, are loaded from the generated schemas folder on the classpath. Relative references resolve against the <code>classpath:</code> URI of the schema that contains them. To allow references to JSON schemas in other folders of the classpath, list the folders in <code>micronaut.jsonschema.validation.classpath-folders</code> (for example <code>schemas/common</code>). Other classpath resources cannot be loaded, so a schema given as a String or a Map cannot read arbitrary JSON files of the application.</p>
+</li>
+<li>
+<p>URIs that start with the configured base URI (<code>micronaut.jsonschema.validation.base-uri</code>, <code><a href="http://localhost:8080/schemas/" class="bare">http://localhost:8080/schemas/</a></code> by default) are loaded from the generated schemas folder on the classpath (<code>META-INF/schemas/</code> by default). Relative references in schemas without an <code>$id</code>, such as <code>{"$ref": "environment.schema.json"}</code>, are resolved against the base URI too.</p>
+</li>
+<li>
+<p>The meta-schemas of all supported dialects are bundled, so references to <code><a href="https://json-schema.org/draft/2020-12/schema" class="bare">https://json-schema.org/draft/2020-12/schema</a></code> and similar work without network access.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The validator never loads schemas over the network.</p>
+</div>
+<div class="paragraph">
+<p>The built-in validator bounds the work done for untrusted input: matching a regular expression is stopped after a number of steps proportional to the length of the input. A value that cannot be matched within that limit is invalid; this only happens with patterns that backtrack catastrophically, such as <code>^(.*a){20}$</code>. The limit applies to each match rather than to the document, so the work for a document grows with the number of values and property names it contains: limit the size of untrusted documents as well, for example with <code>micronaut.server.max-request-size</code>. An instance nested so deeply that it would overflow the stack of the calling thread is reported with an <code>IllegalStateException</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>format</code> keyword is asserted for strings by both implementations, as in previous versions. To use <code>format</code> as an annotation only with the built-in validator, set <code>micronaut.jsonschema.validation.assert-formats</code> to <code>false</code>; it is then only asserted for schemas whose meta-schema enables the 2020-12 format-assertion vocabulary. The NetworkNT validator is configured by its <code>com.networknt.schema.SchemaRegistryConfig</code> bean. The following formats are validated: <code>date-time</code>, <code>date</code>, <code>time</code>, <code>duration</code>, <code>email</code>, <code>idn-email</code>, <code>hostname</code>, <code>idn-hostname</code>, <code>ipv4</code>, <code>ipv6</code>, <code>uri</code>, <code>uri-reference</code>, <code>iri</code>, <code>iri-reference</code>, <code>uri-template</code>, <code>uuid</code>, <code>json-pointer</code>, <code>relative-json-pointer</code> and <code>regex</code>. Unknown formats are ignored. <code>idn-hostname</code> follows IDNA2008, with the Unicode derived properties approximated from Unicode general categories.</p>
+</div>
+<div class="paragraph">
+<p>Regular expressions (<code>pattern</code>, <code>patternProperties</code> and the <code>regex</code> format) use ECMA-262 syntax and are translated to <code>java.util.regex</code> patterns. For example, <code>$</code> only matches at the end of the input, <code>.</code> matches any character but a line terminator, and <code>\s</code> matches Unicode white space.</p>
+</div>
+<div class="paragraph">
+<p>The built-in validator is verified against the official <a href="https://github.com/json-schema-org/JSON-Schema-Test-Suite">JSON-Schema-Test-Suite</a>. All required and optional tests for draft-04, draft-06, draft-07, 2019-09 and 2020-12 pass, including the optional <code>format</code>, <code>ecmascript-regex</code>, <code>bignum</code>, <code>float-overflow</code>, <code>cross-draft</code>, <code>refOfUnknownKeyword</code> and <code>dependencies-compatibility</code> tests. The 2020-12 tests that expect <code>format</code> to be an annotation only are run with format assertions disabled.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="validatorDifferences">Differences between the implementations</h3>
+<div class="paragraph">
+<p>The TCK runs the official JSON-Schema-Test-Suite (draft-07, 2019-09 and 2020-12, required and optional tests) through <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a> for both implementations. It leaves out the tests that need the remote documents of the test suite, and the 2020-12 tests that expect <code>format</code> to be an annotation only. The built-in validator passes all the other tests. The NetworkNT validator differs as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>It only accepts schemas of the 2020-12 dialect. Schemas that declare another <code>$schema</code> fail with an "Unknown dialect" error.</p>
+</li>
+<li>
+<p>It loads <code>classpath:</code> references from any resource of the classpath and ignores <code>micronaut.jsonschema.validation.classpath-folders</code>, so a schema given as a String or a Map can read any JSON file of the application. This is the behaviour of previous versions, which <code>micronaut-json-schema-validation</code> keeps. Do not use it with schemas from untrusted sources, or use the built-in validator, which restricts these references.</p>
+</li>
+<li>
+<p>It does not pass 74 optional tests, all edge cases of the <code>format</code> keyword (mostly <code>hostname</code>, <code>idn-hostname</code> and <code>email</code>) and of ECMA-262 regular expressions. For example, <code>\s</code> does not match Unicode white space, and some invalid host names are accepted.</p>
+</li>
+<li>
+<p>An invalid JSON string to validate is reported with an unchecked exception, whereas the built-in validator throws an <code>IOException</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The TCK checks that both report the same messages, in the same format (<code>&lt;JSON Pointer&gt;: &lt;message&gt;</code>), for the cases it covers. The details of the messages of composite keywords such as <code>anyOf</code> and <code>oneOf</code> can differ.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration">Configuration</h3>
+<a id="io.micronaut.jsonschema.validation.JsonSchemaValidatorConfiguration" href="#io.micronaut.jsonschema.validation.JsonSchemaValidatorConfiguration">&#128279;</a>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Configuration Properties for <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html">JsonSchemaValidatorConfiguration</a></caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Property</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.validation.base-uri</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The base URI for JSON schemas to be validated. It defaults to {@code <a href="http://localhost:8080/schemas/}" class="bare">http://localhost:8080/schemas/}</a>,
+                the default base URI of schemas generated before 2.3.2.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="http://localhost:8080/schemas/" class="bare">http://localhost:8080/schemas/</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>micronaut.jsonschema.validation.classpath-folder</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.lang.String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">THe folder where the JSON schemas are located, on the classpath. Deprecated. Not used. Use {@link JsonSchemaConfiguration#getOutputLocation()} instead.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">META-INF/schemas/</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 
 <h2 id="sources"><a class="anchor" href="#sources"></a>4.7 Supported Information Sources</h2>
@@ -4052,7 +4308,58 @@ Implementations are discovered using <code>ServiceLoader</code> from the same cl
 </div>
 </div>
 
-<h1 id="repository"><a class="anchor" href="#repository"></a>7 Repository</h1>
+<h1 id="breaks"><a class="anchor" href="#breaks"></a>7 Breaking Changes</h1>
+
+<div class='contribute-btn'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/breaks.adoc"'>
+        <i class='fa fa-pencil-square-o'></i> Improve this doc
+    </button>
+</div>
+
+
+<div class="paragraph">
+<p>This section documents breaking changes between Micronaut JSON Schema versions.</p>
+</div>
+<div class="sect2">
+<h3 id="_2_3_2">2.3.2</h3>
+<div class="sect3">
+<h4 id="_json_schema_validator_modules">JSON Schema validator modules</h4>
+<div class="paragraph">
+<p>The classes of <code>micronaut-json-schema-validation</code> have moved to two new artifacts:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>micronaut-json-schema-validator</code>, which contains the API and a built-in validator without third-party dependencies;</p>
+</li>
+<li>
+<p><code>micronaut-json-schema-validator-networknt</code>, which contains the validator based on the <a href="https://github.com/networknt/json-schema-validator">NetworkNT JSON Schema Validator</a>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><code>micronaut-json-schema-validation</code> depends on both. It still validates with NetworkNT, and the public API (<a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidator.html">JsonSchemaValidator</a>, <a href="../api/io/micronaut/jsonschema/validation/ValidationMessage.html">ValidationMessage</a> and <a href="../api/io/micronaut/jsonschema/validation/JsonSchemaValidatorConfiguration.html">JsonSchemaValidatorConfiguration</a>) is unchanged. See <a href="#validation">JSON Schema Validation</a> to choose an implementation.</p>
+</div>
+<div class="paragraph">
+<p>The Micronaut JSON Schema BOM no longer manages the version of <code>com.networknt:json-schema-validator</code>. If you used it, declare the version of NetworkNT in your build. Managing the version would force NetworkNT 3 on applications that need NetworkNT 2, such as those using Apache Camel&#8217;s <code>camel-json-validator</code>.</p>
+</div>
+<div class="paragraph">
+<p>Changes to internal APIs:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ValidationMessageAdapter</code> no longer wraps a NetworkNT <code>Error</code>. The messages of the NetworkNT validator are <code>NetworkNtValidationMessage</code> instances (package <code>io.micronaut.jsonschema.validation.networknt</code>), and <code>getError()</code> returns the NetworkNT <code>Error</code>. The new <code>ValidationMessage</code> methods <code>getInstanceLocation()</code>, <code>getKeyword()</code> and <code>getSchemaLocation()</code> work with both implementations.</p>
+</li>
+<li>
+<p>The factory of the NetworkNT <code>SchemaRegistryConfig</code> bean has moved to the <code>io.micronaut.jsonschema.validation.networknt</code> package. The bean itself is unchanged.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+<h1 id="repository"><a class="anchor" href="#repository"></a>8 Repository</h1>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/repository.adoc"'>
@@ -4068,7 +4375,7 @@ Implementations are discovered using <code>ServiceLoader</code> from the same cl
 <p><a href="https://github.com/micronaut-projects/micronaut-json-schema">https://github.com/micronaut-projects/micronaut-json-schema</a></p>
 </div>
 
-<h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>8 Release History</h1>
+<h1 id="releaseHistory"><a class="anchor" href="#releaseHistory"></a>9 Release History</h1>
 
 <div class='contribute-btn'>
     <button type='button' class='btn btn-default' onclick='window.location.href="https://github.com/micronaut-projects/micronaut-json-schema/edit/2.4.x/src/main/docs/guide/releaseHistory.adoc"'>

@@ -57,13 +57,16 @@ loadScripts(document, 'script');</script>
 <li><a href="#method-summary" tabindex="0">Method Summary</a></li>
 <li><a href="#constructor-detail" tabindex="0">Constructor Details</a>
 <ol class="toc-list">
-<li><a href="#%3Cinit%3E(com.networknt.schema.Error)" tabindex="0">ValidationMessageAdapter(Error)</a></li>
+<li><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.String)" tabindex="0">ValidationMessageAdapter(String, String, String, String)</a></li>
 </ol>
 </li>
 <li><a href="#method-detail" tabindex="0">Method Details</a>
 <ol class="toc-list">
 <li><a href="#getMessage()" tabindex="0">getMessage()</a></li>
-<li><a href="#getError()" tabindex="0">getError()</a></li>
+<li><a href="#getInstanceLocation()" tabindex="0">getInstanceLocation()</a></li>
+<li><a href="#getKeyword()" tabindex="0">getKeyword()</a></li>
+<li><a href="#getSchemaLocation()" tabindex="0">getSchemaLocation()</a></li>
+<li><a href="#getDetail()" tabindex="0">getDetail()</a></li>
 <li><a href="#toString()" tabindex="0">toString()</a></li>
 </ol>
 </li>
@@ -82,13 +85,20 @@ loadScripts(document, 'script');</script>
 <dt>All Implemented Interfaces:</dt>
 <dd><code><a href="ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></code></dd>
 </dl>
+<dl class="notes">
+<dt>Direct Known Subclasses:</dt>
+<dd><code><a href="networknt/NetworkNtValidationMessage.html" title="class in io.micronaut.jsonschema.validation.networknt">NetworkNtValidationMessage</a></code></dd>
+</dl>
 <hr>
 <div class="horizontal-scroll">
 <div class="type-signature"><span class="annotations">@Internal
 </span><span class="modifiers">public class </span><span class="element-name type-name-label">ValidationMessageAdapter</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></span></div>
-<div class="block">Adapter from <code>Error</code> into <a href="ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation"><code>ValidationMessage</code></a>.</div>
+<div class="block">The <a href="ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation"><code>ValidationMessage</code></a> implementation of the <a href="JsonSchemaValidator.html" title="interface in io.micronaut.jsonschema.validation"><code>JsonSchemaValidator</code></a> implementations. It carries the
+details of an error: the messages of the NetworkNT based validator are a subclass that also gives access to the
+NetworkNT error (<code>NetworkNtValidationMessage</code>, in <code>micronaut-json-schema-validator-networknt</code>). Prior to
+2.3.2 this type wrapped the NetworkNT <code>com.networknt.schema.Error</code>.</div>
 <dl class="notes">
 <dt>Since:</dt>
 <dd>1.0.0</dd>
@@ -107,8 +117,13 @@ implements <a href="ValidationMessage.html" title="interface in io.micronaut.jso
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(com.networknt.schema.Error)" class="member-name-link">ValidationMessageAdapter</a><wbr>(com.networknt.schema.Error&nbsp;error)</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.lang.String,java.lang.String,java.lang.String)" class="member-name-link">ValidationMessageAdapter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;instanceLocation,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;keyword,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;schemaLocation,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;detail)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Creates a validation message.</div>
+</div>
 </div>
 </section>
 </li>
@@ -123,15 +138,34 @@ implements <a href="ValidationMessage.html" title="interface in io.micronaut.jso
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>@NonNull com.networknt.schema.Error</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getError()" class="member-name-link">getError</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>@NonNull <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getMessage()" class="member-name-link">getMessage</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getDetail()" class="member-name-link">getDetail</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the message without the instance location.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getInstanceLocation()" class="member-name-link">getInstanceLocation</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the location of the invalid value.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getKeyword()" class="member-name-link">getKeyword</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the keyword that failed.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getMessage()" class="member-name-link">getMessage</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the validation message.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSchemaLocation()" class="member-name-link">getSchemaLocation</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the location of the failing keyword in the schema.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -150,13 +184,22 @@ implements <a href="ValidationMessage.html" title="interface in io.micronaut.jso
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(com.networknt.schema.Error)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.lang.String,java.lang.String,java.lang.String)">
 <h3>ValidationMessageAdapter</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ValidationMessageAdapter</span><wbr><span class="parameters">(com.networknt.schema.Error&nbsp;error)</span></div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">ValidationMessageAdapter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;instanceLocation,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;keyword,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;schemaLocation,
+ <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;detail)</span></div>
+<div class="block">Creates a validation message.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>error</code> - Original validation error.</dd>
+<dd><code>instanceLocation</code> - The JSON Pointer of the invalid instance location</dd>
+<dd><code>keyword</code> - The keyword that failed</dd>
+<dd><code>schemaLocation</code> - The absolute location of the keyword in the schema</dd>
+<dd><code>detail</code> - The message, without the instance location</dd>
+<dt>Since:</dt>
+<dd>2.3.2</dd>
 </dl>
 </div>
 </section>
@@ -173,24 +216,78 @@ implements <a href="ValidationMessage.html" title="interface in io.micronaut.jso
 <section class="detail" id="getMessage()">
 <h3>getMessage</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">@NonNull <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getMessage</span>()</div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getMessage</span>()</div>
+<div class="block"><span class="description-from-type-label">Description copied from interface:&nbsp;<code><a href="ValidationMessage.html#getMessage()">ValidationMessage</a></code></span></div>
+<div class="block">Returns the validation message.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="ValidationMessage.html#getMessage()">getMessage</a></code>&nbsp;in interface&nbsp;<code><a href="ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></code></dd>
 <dt>Returns:</dt>
-<dd>JSON Schema Validation Message</dd>
+<dd>JSON Schema Validation Message, prefixed with the JSON Pointer of the invalid instance location</dd>
 </dl>
 </div>
 </section>
 </li>
 <li>
-<section class="detail" id="getError()">
-<h3>getError</h3>
+<section class="detail" id="getInstanceLocation()">
+<h3>getInstanceLocation</h3>
 <div class="horizontal-scroll">
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">@NonNull com.networknt.schema.Error</span>&nbsp;<span class="element-name">getError</span>()</div>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getInstanceLocation</span>()</div>
+<div class="block"><span class="description-from-type-label">Description copied from interface:&nbsp;<code><a href="ValidationMessage.html#getInstanceLocation()">ValidationMessage</a></code></span></div>
+<div class="block">Returns the location of the invalid value.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="ValidationMessage.html#getInstanceLocation()">getInstanceLocation</a></code>&nbsp;in interface&nbsp;<code><a href="ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></code></dd>
+<dt>Returns:</dt>
+<dd>The JSON Pointer (RFC 6901) of the instance location that failed validation, empty for the root</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getKeyword()">
+<h3>getKeyword</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getKeyword</span>()</div>
+<div class="block"><span class="description-from-type-label">Description copied from interface:&nbsp;<code><a href="ValidationMessage.html#getKeyword()">ValidationMessage</a></code></span></div>
+<div class="block">Returns the keyword that failed.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="ValidationMessage.html#getKeyword()">getKeyword</a></code>&nbsp;in interface&nbsp;<code><a href="ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></code></dd>
+<dt>Returns:</dt>
+<dd>The JSON Schema keyword that failed validation, if known</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getSchemaLocation()">
+<h3>getSchemaLocation</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getSchemaLocation</span>()</div>
+<div class="block"><span class="description-from-type-label">Description copied from interface:&nbsp;<code><a href="ValidationMessage.html#getSchemaLocation()">ValidationMessage</a></code></span></div>
+<div class="block">Returns the location of the failing keyword in the schema.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="ValidationMessage.html#getSchemaLocation()">getSchemaLocation</a></code>&nbsp;in interface&nbsp;<code><a href="ValidationMessage.html" title="interface in io.micronaut.jsonschema.validation">ValidationMessage</a></code></dd>
+<dt>Returns:</dt>
+<dd>The location of the failing keyword within the schema (the base URI of the schema plus a JSON Pointer
+fragment), if known. It is absolute when the schema has an absolute base URI</dd>
+</dl>
+</div>
+</section>
+</li>
+<li>
+<section class="detail" id="getDetail()">
+<h3>getDetail</h3>
+<div class="horizontal-scroll">
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></span>&nbsp;<span class="element-name">getDetail</span>()</div>
+<div class="block">Returns the message without the instance location.</div>
 <dl class="notes">
 <dt>Returns:</dt>
-<dd>Original validation error.</dd>
+<dd>The message without the instance location prefix</dd>
+<dt>Since:</dt>
+<dd>2.3.2</dd>
 </dl>
 </div>
 </section>
