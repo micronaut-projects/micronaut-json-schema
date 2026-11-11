@@ -21,6 +21,8 @@ enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 rootProject.name = 'json-schema-parent'
 
 include 'json-schema-validation'
+include 'json-schema-validator'
+include 'json-schema-validator-networknt'
 include 'json-schema-bom'
 include 'json-schema-annotations'
 include 'json-schema-common'
@@ -38,6 +40,7 @@ include 'test-suite-generator-python'
 include 'test-suite-groovy'
 include 'test-suite-kotlin'
 include 'test-suite-python'
+include 'test-suite-validator-tck'
 
 enableFeaturePreview 'TYPESAFE_PROJECT_ACCESSORS'
 

@@ -1,0 +1,84 @@
+# Tests of the JSON-Schema-Test-Suite (run by the validator TCK) that the NetworkNT based validator does not pass,
+# that is where its behaviour differs from the built-in validator and from the specification.
+# Format: <draft>/<file>[ > <case description>[ > <test description>]]
+
+# The NetworkNT schema registry is configured with the 2020-12 dialect only (as before 2.3.2): schemas declaring
+# another $schema fail with "Unknown dialect"
+draft2019-09
+draft7
+
+# Optional tests (format and ECMA-262 regular expression edge cases) where NetworkNT differs from the specification
+draft2020-12/optional/ecmascript-regex.json > ECMA 262 \S matches everything but whitespace > EM SPACE does not match (Space_Separator)
+draft2020-12/optional/ecmascript-regex.json > ECMA 262 \S matches everything but whitespace > latin-1 non-breaking-space does not match
+draft2020-12/optional/ecmascript-regex.json > ECMA 262 \S matches everything but whitespace > paragraph separator does not match (line terminator)
+draft2020-12/optional/ecmascript-regex.json > ECMA 262 \S matches everything but whitespace > zero-width whitespace does not match
+draft2020-12/optional/ecmascript-regex.json > ECMA 262 \s matches whitespace > EM SPACE matches (Space_Separator)
+draft2020-12/optional/ecmascript-regex.json > ECMA 262 \s matches whitespace > latin-1 non-breaking-space matches
+draft2020-12/optional/ecmascript-regex.json > ECMA 262 \s matches whitespace > paragraph separator matches (line terminator)
+draft2020-12/optional/ecmascript-regex.json > ECMA 262 \s matches whitespace > zero-width whitespace matches
+draft2020-12/optional/ecmascript-regex.json > ECMA 262 regex escapes control codes with \c and lower letter > matches
+draft2020-12/optional/format/date-time.json > validation of date-time strings > a second fraction of fifteen nines is valid
+draft2020-12/optional/format/date-time.json > validation of date-time strings > a trailing newline is invalid
+draft2020-12/optional/format/date-time.json > validation of date-time strings > an invalid date-time string with trailing content after the offset
+draft2020-12/optional/format/date-time.json > validation of date-time strings > trailing whitespace after a valid date-time
+draft2020-12/optional/format/duration.json > validation of duration strings > hours and seconds cannot appear without minutes
+draft2020-12/optional/format/duration.json > validation of duration strings > years and days cannot appear without months
+draft2020-12/optional/format/ecmascript-regex.json > ECMA 262 character classes and escapes > a negated empty character class is valid ECMA 262
+draft2020-12/optional/format/ecmascript-regex.json > ECMA 262 character classes and escapes > an empty character class is valid ECMA 262
+draft2020-12/optional/format/ecmascript-regex.json > \a is not an ECMA 262 control escape > when used as a pattern
+draft2020-12/optional/format/ecmascript-regex.json > global inline flag groups are not valid ECMA 262 > a single global inline flag (?i)
+draft2020-12/optional/format/ecmascript-regex.json > global inline flag groups are not valid ECMA 262 > multiple global inline flags (?ims)
+draft2020-12/optional/format/email.json > validation of e-mail addresses > a backslash-escaped @ in an unquoted local part is not valid
+draft2020-12/optional/format/email.json > validation of e-mail addresses > a domain that looks like an IPv4 address without brackets is valid
+draft2020-12/optional/format/email.json > validation of e-mail addresses > a lowercase IPv6 tag in an address literal is valid
+draft2020-12/optional/format/email.json > validation of e-mail addresses > a non-ASCII character in a quoted pair is not valid
+draft2020-12/optional/format/email.json > validation of e-mail addresses > a non-ASCII character in the domain is not valid
+draft2020-12/optional/format/email.json > validation of e-mail addresses > a non-ASCII character in the local part is not valid
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Arabic-Indic digits mixed with Extended Arabic-Indic digits
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Begins with a Nonspacing Mark
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Begins with a Spacing Combining Mark
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Begins with an Enclosing Mark
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Exceptions that are DISALLOWED, left-to-right chars
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Exceptions that are DISALLOWED, right-to-left chars
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Greek KERAIA not followed by Greek
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Greek KERAIA not followed by anything
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Hebrew GERESH not preceded by Hebrew
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Hebrew GERESH not preceded by anything
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Hebrew GERSHAYIM not preceded by Hebrew
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > Hebrew GERSHAYIM not preceded by anything
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > KATAKANA MIDDLE DOT with no Hiragana, Katakana, or Han
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > KATAKANA MIDDLE DOT with no other characters
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > MIDDLE DOT with no following 'l'
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > MIDDLE DOT with no preceding 'l'
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > MIDDLE DOT with nothing following
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > MIDDLE DOT with nothing preceding
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > ZERO WIDTH JOINER not preceded by Virama
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > ZERO WIDTH JOINER not preceded by anything
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > contains "--" in the 3rd and 4th position
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > contains illegal char U+302E Hangul single dot tone mark
+draft2020-12/optional/format/hostname.json > validation of A-label (punycode) host names > invalid Punycode
+draft2020-12/optional/format/hostname.json > validation of host names > exceeds maximum overall length (256)
+draft2020-12/optional/format/idn-email.json > validation of an internationalized e-mail addresses > a C1 control in the local part is valid
+draft2020-12/optional/format/idn-hostname.json > validation of internationalized host names > Bidi domain name with a digit-first label is invalid
+draft2020-12/optional/format/idn-hostname.json > validation of internationalized host names > a label of 63 fullwidth characters is valid after mapping
+draft2020-12/optional/format/idn-hostname.json > validation of internationalized host names > a name longer than 253 characters is invalid
+draft2020-12/optional/format/idn-hostname.json > validation of internationalized host names > a non-NFC U-label is valid after UTS 46 normalisation
+draft2020-12/optional/format/idn-hostname.json > validation of internationalized host names > a zero width space is ignored by the mapping
+draft2020-12/optional/format/idn-hostname.json > validation of internationalized host names > an ACE prefix produced by the mapping step is decoded as an A-label
+draft2020-12/optional/format/idn-hostname.json > validation of internationalized host names > fullwidth digits are mapped to ASCII digits
+draft2020-12/optional/format/idn-hostname.json > validation of internationalized host names > label starting with a digit before a right-to-left letter is invalid
+draft2020-12/optional/format/idn-hostname.json > validation of internationalized host names > right-to-left label mixing both digit types is invalid
+draft2020-12/optional/format/idn-hostname.json > validation of separators in internationalized host names > trailing dot
+draft2020-12/optional/format/idn-hostname.json > validation of separators in internationalized host names > trailing fullwidth full stop
+draft2020-12/optional/format/idn-hostname.json > validation of separators in internationalized host names > trailing halfwidth ideographic full stop
+draft2020-12/optional/format/idn-hostname.json > validation of separators in internationalized host names > trailing ideographic full stop
+draft2020-12/optional/format/iri-reference.json > validation of IRI References > an embedded IPv4 with a leading zero is invalid
+draft2020-12/optional/format/iri.json > validation of IRIs > an IPv6 host whose embedded IPv4 has a leading zero is invalid
+draft2020-12/optional/format/time.json > validation of time strings > a second fraction with no digits
+draft2020-12/optional/format/time.json > validation of time strings > a valid time string with a 15 digit second fraction
+draft2020-12/optional/format/uri-reference.json > validation of URI References > a leading zero in the IPv4 part of an IPv6 literal
+draft2020-12/optional/format/uri-reference.json > validation of URI References > a non-numeric port in a network-path reference
+draft2020-12/optional/format/uri-reference.json > validation of URI References > more than one at-sign in the authority
+draft2020-12/optional/format/uri-template.json > format: uri-template > a space in a literal is invalid
+draft2020-12/optional/format/uri.json > validation of URIs > leading zero in an embedded IPv4 address is invalid
+draft2020-12/optional/format/uri.json > validation of URIs > non-numeric port is invalid

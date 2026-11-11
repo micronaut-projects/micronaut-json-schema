@@ -30,5 +30,6 @@ generator:
   example: Example Output of Generation
 configurationValidator:
   title: Validating Configuration Against Schemas
+breaks: Breaking Changes
 repository: Repository
 releaseHistory: Release History
