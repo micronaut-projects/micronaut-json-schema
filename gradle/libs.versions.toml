@@ -16,9 +16,9 @@
 # a managed version (a version which alias starts with "managed-"
 
 [versions]
-micronaut = "5.2.22"
+micronaut = "5.2.23"
 micronaut-gradle-plugin = "5.0.2"
-micronaut-platform = "5.2.5"
+micronaut-platform = "5.2.6"
 micronaut-serde = "3.2.6"
 micronaut-sourcegen = "2.2.4"
 micronaut-validation = "5.2.1"
