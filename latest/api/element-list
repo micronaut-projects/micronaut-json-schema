@@ -16,9 +16,12 @@ io.micronaut.jsonschema.gradle
 io.micronaut.jsonschema.info
 io.micronaut.jsonschema.maven
 io.micronaut.jsonschema.model
+io.micronaut.jsonschema.naming
 io.micronaut.jsonschema.serialization
 io.micronaut.jsonschema.utils
 io.micronaut.jsonschema.validation
+io.micronaut.jsonschema.validation.engine
+io.micronaut.jsonschema.validation.networknt
 io.micronaut.jsonschema.visitor
 io.micronaut.jsonschema.visitor.aggregator
 io.micronaut.jsonschema.visitor.context
